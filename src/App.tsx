@@ -1,51 +1,216 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+type Header = { key: string; value: string };
 
-  return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
-  );
+interface ResponsePayload {
+  status: number;
+  status_text: string;
+  headers: Record<string, string>;
+  body: string;
+  duration_ms: number;
 }
 
-export default App;
+type ReqTab = "headers" | "body";
+type RespTab = "body" | "headers";
+
+function statusColor(status: number): string {
+  if (status < 300) return "#4caf50";
+  if (status < 400) return "#ff9800";
+  return "#f44336";
+}
+
+function tryFormatJson(text: string): string {
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
+}
+
+export default function App() {
+  const [method, setMethod] = useState("GET");
+  const [url, setUrl] = useState("");
+  const [headers, setHeaders] = useState<Header[]>([{ key: "", value: "" }]);
+  const [body, setBody] = useState("");
+  const [reqTab, setReqTab] = useState<ReqTab>("headers");
+  const [respTab, setRespTab] = useState<RespTab>("body");
+  const [response, setResponse] = useState<ResponsePayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function setHeader(index: number, field: "key" | "value", val: string) {
+    const next = headers.map((h, i) => (i === index ? { ...h, [field]: val } : h));
+    if (index === headers.length - 1 && val !== "") {
+      next.push({ key: "", value: "" });
+    }
+    setHeaders(next);
+  }
+
+  function removeHeader(index: number) {
+    setHeaders(headers.filter((_, i) => i !== index));
+  }
+
+  async function sendRequest() {
+    if (!url.trim()) return;
+    setLoading(true);
+    setError(null);
+    setResponse(null);
+
+    const headerMap: Record<string, string> = {};
+    for (const { key, value } of headers) {
+      if (key.trim()) headerMap[key.trim()] = value;
+    }
+
+    try {
+      const result = await invoke<ResponsePayload>("send_request", {
+        payload: {
+          method,
+          url: url.trim(),
+          headers: headerMap,
+          body: body || null,
+        },
+      });
+      setResponse(result);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const hasBody = ["POST", "PUT", "PATCH"].includes(method);
+
+  return (
+    <div className="app">
+      <div className="request-bar">
+        <select
+          className="method-select"
+          value={method}
+          onChange={(e) => setMethod(e.target.value)}
+        >
+          {METHODS.map((m) => (
+            <option key={m}>{m}</option>
+          ))}
+        </select>
+        <input
+          className="url-input"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendRequest()}
+          placeholder="https://example.com/api"
+        />
+        <button className="send-btn" onClick={sendRequest} disabled={loading}>
+          {loading ? "..." : "Send"}
+        </button>
+      </div>
+
+      <div className="panels">
+        <div className="panel request-panel">
+          <div className="tabs">
+            <button
+              className={reqTab === "headers" ? "tab active" : "tab"}
+              onClick={() => setReqTab("headers")}
+            >
+              Headers
+            </button>
+            <button
+              className={reqTab === "body" ? "tab active" : "tab"}
+              onClick={() => setReqTab("body")}
+              disabled={!hasBody}
+            >
+              Body
+            </button>
+          </div>
+
+          {reqTab === "headers" && (
+            <div className="headers-editor">
+              {headers.map((h, i) => (
+                <div key={i} className="header-row">
+                  <input
+                    placeholder="Header-Name"
+                    value={h.key}
+                    onChange={(e) => setHeader(i, "key", e.target.value)}
+                  />
+                  <input
+                    placeholder="value"
+                    value={h.value}
+                    onChange={(e) => setHeader(i, "value", e.target.value)}
+                  />
+                  {headers.length > 1 && (
+                    <button className="remove-btn" onClick={() => removeHeader(i)}>
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {reqTab === "body" && (
+            <textarea
+              className="body-editor"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder='{"key": "value"}'
+            />
+          )}
+        </div>
+
+        <div className="panel response-panel">
+          {error && <div className="error">{error}</div>}
+
+          {response && (
+            <>
+              <div className="response-meta">
+                <span className="status" style={{ color: statusColor(response.status) }}>
+                  {response.status} {response.status_text}
+                </span>
+                <span className="duration">{response.duration_ms} ms</span>
+              </div>
+
+              <div className="tabs">
+                <button
+                  className={respTab === "body" ? "tab active" : "tab"}
+                  onClick={() => setRespTab("body")}
+                >
+                  Body
+                </button>
+                <button
+                  className={respTab === "headers" ? "tab active" : "tab"}
+                  onClick={() => setRespTab("headers")}
+                >
+                  Headers ({Object.keys(response.headers).length})
+                </button>
+              </div>
+
+              {respTab === "body" && (
+                <pre className="response-body">{tryFormatJson(response.body)}</pre>
+              )}
+
+              {respTab === "headers" && (
+                <div className="headers-editor resp-headers">
+                  {Object.entries(response.headers).map(([k, v]) => (
+                    <div key={k} className="header-row resp-header-row">
+                      <span className="resp-header-key">{k}</span>
+                      <span className="resp-header-val">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {!response && !error && !loading && (
+            <div className="placeholder">Enter a URL and press Send</div>
+          )}
+
+          {loading && <div className="placeholder">Sending...</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
