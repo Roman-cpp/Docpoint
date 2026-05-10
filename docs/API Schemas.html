@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Schemas — Lesser Known Laravel</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans:  'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:  'Menlo', 'SF Mono', 'Courier New', monospace;
+  --bg:          #FAF7F2;
+  --surface:     #FFFFFF;
+  --ink:         #1A1A1A;
+  --ink-mid:     #555555;
+  --ink-low:     #888888;
+  --border:      #E8E2D9;
+  --border-hover:#C8C0B4;
+  --green:       #1E7E52;  --green-bg: #EAF5EF;
+  --amber:       #9A5F00;  --amber-bg: #FFF3DC;
+  --red:         #9A2800;  --red-bg:   #FFF0EC;
+  --cat-bg:      #F0EDE8;  --cat-ink:  #4A4540;
+  --blue:        #1A5EA8;  --blue-bg:  #EAF1FB;
+  --code-bg:     #F4F1EC;  --code-ink: #3D2B1F;
+  --purple:      #7A4F9A;  --purple-bg:#F3EAFB;
+}
+html, body { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; height: 100%; overflow: hidden; }
+h1,h2,h3 { font-family: var(--font-serif); font-weight: 400; color: var(--ink); }
+#root { height: 100vh; display: flex; flex-direction: column; }
+
+/* NAV */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; flex-shrink: 0; z-index: 100; gap: 12px; }
+.nav-brand { font-family: var(--font-serif); font-size: 16px; font-weight: 400; color: var(--ink); letter-spacing: -.2px; display: flex; align-items: center; gap: 10px; white-space: nowrap; flex-shrink: 0; text-decoration: none; }
+.nav-sep { width: 1px; height: 14px; background: var(--border); }
+.nav-section { font-family: var(--font-sans); font-size: 12px; color: var(--ink-low); }
+.nav-links { display: flex; align-items: center; gap: 3px; }
+.nav-link { padding: 5px 11px; font-size: 13px; color: var(--ink-mid); border-radius: 6px; cursor: pointer; transition: background .15s, color .15s; text-decoration: none; background: none; border: none; font-family: var(--font-sans); white-space: nowrap; }
+.nav-link:hover { background: var(--cat-bg); color: var(--ink); }
+.nav-link.active { color: var(--ink); font-weight: 500; }
+.nav-link.cta { background: var(--ink); color: #fff; }
+.nav-link.cta:hover { background: #333; }
+
+/* SHELL */
+.shell { display: flex; flex: 1; overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar { width: 248px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.sidebar-search { padding: 11px 13px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.search-wrap { position: relative; }
+.search-wrap svg { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; color: var(--ink-low); pointer-events: none; }
+.search-input { width: 100%; padding: 7px 8px 7px 27px; font-size: 12px; font-family: var(--font-sans); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; outline: none; transition: border-color .15s; }
+.search-input:focus { border-color: var(--border-hover); }
+.search-input::placeholder { color: var(--ink-low); }
+
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px 0 16px; }
+.sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sidebar-section-label { font-size: 10px; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; color: var(--ink-low); padding: 8px 15px 4px; }
+.entity-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--font-sans); transition: background .12s; border-radius: 0; }
+.entity-item:hover { background: var(--cat-bg); }
+.entity-item.active { background: var(--cat-bg); }
+.entity-item-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.entity-item-icon svg { width: 14px; height: 14px; }
+.entity-item-info { flex: 1; min-width: 0; }
+.entity-item-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.entity-item-count { font-size: 11px; color: var(--ink-low); margin-top: 1px; }
+.entity-item-badge { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+
+/* MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* DETAIL VIEW */
+.detail-wrap { flex: 1; overflow-y: auto; }
+.detail-wrap::-webkit-scrollbar { width: 4px; }
+.detail-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.detail-inner { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: 100%; }
+
+/* LEFT: schema */
+.schema-col { padding: 32px 36px 60px; border-right: 1px solid var(--border); }
+
+/* Entity header */
+.entity-header { margin-bottom: 28px; }
+.entity-eyebrow { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-low); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.entity-title-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.entity-icon-lg { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.entity-icon-lg svg { width: 22px; height: 22px; }
+.entity-name { font-family: var(--font-serif); font-size: 30px; font-weight: 400; color: var(--ink); letter-spacing: -.3px; line-height: 1.15; }
+.entity-desc { font-size: 14px; color: var(--ink-mid); line-height: 1.75; max-width: 560px; margin-bottom: 16px; }
+.entity-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.entity-tag { font-size: 11px; padding: 3px 9px; border-radius: 5px; background: var(--cat-bg); color: var(--cat-ink); }
+
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+.section-label { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-low); margin-bottom: 12px; }
+
+/* Fields table */
+.fields-table { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.fields-head { display: grid; grid-template-columns: 160px 100px 1fr 130px; gap: 10px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.fields-head span { font-size: 10px; font-weight: 500; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-low); }
+.field-row { display: grid; grid-template-columns: 160px 100px 1fr 130px; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); align-items: start; transition: background .12s; }
+.field-row:last-child { border-bottom: none; }
+.field-row:hover { background: var(--bg); }
+.field-row.optional { opacity: .85; }
+.f-name { font-family: var(--font-mono); font-size: 12.5px; color: var(--code-ink); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.f-req { font-size: 9px; color: var(--red); font-family: var(--font-sans); font-weight: 600; letter-spacing: .3px; }
+.f-nullable { font-size: 9px; color: var(--ink-low); font-family: var(--font-sans); }
+.f-type { font-family: var(--font-mono); font-size: 12px; padding-top: 1px; }
+.f-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.55; }
+.f-desc-note { font-size: 11px; color: var(--ink-low); margin-top: 3px; }
+.f-example { font-family: var(--font-mono); font-size: 11.5px; color: var(--code-ink); background: var(--code-bg); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: block; }
+
+/* Enum block */
+.enum-block { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.enum-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); transition: background .12s; }
+.enum-row:last-child { border-bottom: none; }
+.enum-row:hover { background: var(--bg); }
+.enum-val { font-family: var(--font-mono); font-size: 12px; color: var(--code-ink); background: var(--code-bg); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; min-width: 90px; }
+.enum-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.55; }
+
+/* RIGHT: JSON example + used by */
+.json-col { padding: 32px 24px 60px; background: var(--bg); display: flex; flex-direction: column; gap: 24px; }
+.json-col-sticky { position: sticky; top: 32px; display: flex; flex-direction: column; gap: 20px; }
+
+.code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.code-hdr { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.code-lang { font-size: 10px; font-weight: 500; color: var(--ink-low); letter-spacing: .5px; text-transform: uppercase; }
+.copy-btn { font-size: 11px; color: var(--ink-low); background: none; border: none; cursor: pointer; font-family: var(--font-sans); display: flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 4px; transition: background .13s, color .13s; }
+.copy-btn:hover { background: var(--border); color: var(--ink); }
+.copy-btn svg { width: 10px; height: 10px; }
+.code-pre { padding: 14px 16px; font-family: var(--font-mono); font-size: 12px; line-height: 1.75; color: var(--code-ink); overflow-x: auto; white-space: pre; }
+
+/* Used by widget */
+.used-by-widget { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.widget-title { font-size: 10px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-low); padding: 10px 14px 8px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.used-by-item { display: flex; align-items: center; gap: 9px; padding: 9px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+.used-by-item:last-child { border-bottom: none; }
+.used-by-item:hover { background: var(--cat-bg); }
+.used-by-method { font-size: 9px; font-weight: 600; padding: 2px 5px; border-radius: 3px; flex-shrink: 0; min-width: 40px; text-align: center; }
+.used-by-path { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-mid); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.used-by-role { font-size: 10px; color: var(--ink-low); flex-shrink: 0; }
+
+/* Stats widget */
+.stats-widget { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.stats-row { display: flex; align-items: center; justify-content: space-between; }
+.stats-label { font-size: 12px; color: var(--ink-mid); }
+.stats-value { font-size: 12px; font-weight: 500; color: var(--ink); font-family: var(--font-mono); }
+
+/* Empty state */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; color: var(--ink-low); padding: 40px; text-align: center; }
+.empty-state svg { width: 48px; height: 48px; opacity: .35; }
+.empty-title { font-size: 15px; color: var(--ink-mid); font-family: var(--font-serif); }
+.empty-sub { font-size: 13px; line-height: 1.65; max-width: 260px; }
+
+/* Tweaks */
+.tweaks-panel { position: fixed; bottom: 20px; right: 20px; width: 248px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.12); z-index: 1000; overflow: hidden; display: none; }
+.tweaks-panel.visible { display: block; }
+.tweaks-hdr { display: flex; align-items: center; justify-content: space-between; padding: 11px 15px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.tweaks-title { font-size: 12px; font-weight: 500; color: var(--ink); }
+.tweaks-close { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; color: var(--ink-low); border-radius: 4px; transition: background .13s; }
+.tweaks-close:hover { background: var(--cat-bg); color: var(--ink); }
+.tweaks-close svg { width: 11px; height: 11px; }
+.tweaks-body { padding: 13px 15px; display: flex; flex-direction: column; gap: 12px; }
+.tweak-row { display: flex; flex-direction: column; gap: 5px; }
+.tweak-lbl { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .7px; color: var(--ink-low); }
+.tweak-opts { display: flex; gap: 4px; flex-wrap: wrap; }
+.tweak-opt { padding: 5px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; background: none; color: var(--ink-mid); font-family: var(--font-sans); transition: all .13s; }
+.tweak-opt:hover { border-color: var(--border-hover); color: var(--ink); }
+.tweak-opt.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tweak-toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.tweak-toggle-lbl { font-size: 13px; color: var(--ink-mid); }
+.toggle-sw { width: 32px; height: 18px; background: var(--border); border-radius: 100px; position: relative; cursor: pointer; transition: background .2s; border: none; flex-shrink: 0; }
+.toggle-sw.on { background: var(--ink); }
+.toggle-sw::after { content: ''; position: absolute; width: 13px; height: 13px; background: #fff; border-radius: 50%; top: 2.5px; left: 2.5px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.toggle-sw.on::after { transform: translateX(14px); }
+
+/* Type colors */
+.type-string  { color: #9A5F00; }
+.type-integer { color: #9A2800; }
+.type-boolean { color: #1E7E52; }
+.type-array   { color: #7A4F9A; }
+.type-object  { color: #1A5EA8; }
+.type-uuid    { color: #555; }
+.type-datetime{ color: #555; }
+.type-enum    { color: #9A2800; }
+.ic { font-family: var(--font-mono); font-size: 11px; background: var(--code-bg); color: var(--code-ink); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ══════════ DATA ══════════ */
+const ENTITIES = [
+  {
+    id: "user",
+    name: "User",
+    icon: (color) => (
+      <svg viewBox="0 0 22 22" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="11" cy="7" r="4"/>
+        <path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8"/>
+      </svg>
+    ),
+    iconColor: "#1E7E52",
+    iconBg: "#EAF5EF",
+    accent: "#1E7E52",
+    tag: "Core API",
+    tagBg: "#EAF5EF", tagColor: "#1E7E52",
+    desc: "Represents a registered account on the platform. Users can author articles, post comments, and manage webhooks depending on their assigned role.",
+    fieldCount: 9,
+    fields: [
+      { name: "id",           type: "uuid",     req: true,  nullable: false, desc: "Unique identifier",                      note: "UUIDv4 format",              example: '"3fa85f64-5717-4562-b3fc"' },
+      { name: "name",         type: "string",   req: true,  nullable: false, desc: "Full display name",                      note: "Max 120 chars",              example: '"Alice Smith"' },
+      { name: "email",        type: "string",   req: true,  nullable: false, desc: "Primary email address",                  note: "Unique across all users",    example: '"alice@example.com"' },
+      { name: "role",         type: "enum",     req: true,  nullable: false, desc: "Access level assigned to the user",      note: "See enum values below",      example: '"editor"',
+        enum: [
+          { val: "admin",  desc: "Full access — manage users, settings, all content" },
+          { val: "editor", desc: "Can create, edit, and publish articles" },
+          { val: "viewer", desc: "Read-only access to published content" },
+        ]
+      },
+      { name: "avatar_url",   type: "string",   req: false, nullable: true,  desc: "URL to the user's profile picture",      note: "CDN-hosted, HTTPS",          example: '"https://cdn.example.com/..."' },
+      { name: "bio",          type: "string",   req: false, nullable: true,  desc: "Short user biography",                   note: "Max 300 chars. Markdown allowed", example: '"Laravel enthusiast..."' },
+      { name: "email_verified", type: "boolean",req: true,  nullable: false, desc: "Whether email has been verified",        note: "",                           example: "true" },
+      { name: "created_at",   type: "datetime", req: true,  nullable: false, desc: "ISO 8601 account creation timestamp",    note: "UTC, read-only",             example: '"2025-03-14T10:22:00Z"' },
+      { name: "updated_at",   type: "datetime", req: true,  nullable: false, desc: "ISO 8601 last-modified timestamp",       note: "UTC, read-only",             example: '"2026-04-30T18:00:00Z"' },
+    ],
+    jsonExample: `{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "name": "Alice Smith",
+  "email": "alice@example.com",
+  "role": "editor",
+  "avatar_url": "https://cdn.example.com/avatars/alice.jpg",
+  "bio": "Laravel enthusiast. Writing about hidden gems.",
+  "email_verified": true,
+  "created_at": "2025-03-14T10:22:00Z",
+  "updated_at": "2026-04-30T18:00:00Z"
+}`,
+    usedBy: [
+      { method: "GET",    path: "/users",          role: "response[]" },
+      { method: "POST",   path: "/users",          role: "response" },
+      { method: "GET",    path: "/users/{id}",     role: "response" },
+      { method: "PUT",    path: "/users/{id}",     role: "response" },
+      { method: "GET",    path: "/articles",       role: "author field" },
+    ],
+    stats: { fields: 9, required: 6, nullable: 2, enums: 1 },
+  },
+  {
+    id: "article",
+    name: "Article",
+    icon: (color) => (
+      <svg viewBox="0 0 22 22" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <rect x="3" y="2" width="16" height="18" rx="2.5"/>
+        <path d="M7 7h8M7 11h8M7 15h5"/>
+      </svg>
+    ),
+    iconColor: "#1A5EA8",
+    iconBg: "#EAF1FB",
+    accent: "#1A5EA8",
+    tag: "Core API",
+    tagBg: "#EAF1FB", tagColor: "#1A5EA8",
+    desc: "A documentation article or glossary entry written by a community member. Articles contain markdown body content and can be tagged, commented on, and rated.",
+    fieldCount: 12,
+    fields: [
+      { name: "id",           type: "uuid",     req: true,  nullable: false, desc: "Unique identifier",                       note: "UUIDv4 format",              example: '"a1b2c3d4-..."' },
+      { name: "title",        type: "string",   req: true,  nullable: false, desc: "Article headline",                        note: "Max 160 chars",              example: '"The tap() Helper"' },
+      { name: "slug",         type: "string",   req: true,  nullable: false, desc: "URL-safe identifier derived from title",  note: "Unique, auto-generated",     example: '"the-tap-helper"' },
+      { name: "excerpt",      type: "string",   req: true,  nullable: false, desc: "Short plain-text summary",                note: "Max 240 chars",              example: '"Call a closure on a value..."' },
+      { name: "body",         type: "string",   req: true,  nullable: false, desc: "Full article content in Markdown",        note: "Rendered client-side",       example: '"## What it does\\n\\nThe tap() helper is..."' },
+      { name: "status",       type: "enum",     req: true,  nullable: false, desc: "Publication state of the article",        note: "See enum values below",      example: '"published"',
+        enum: [
+          { val: "draft",     desc: "Not publicly visible. Accessible by author and admins only." },
+          { val: "published", desc: "Publicly visible. Indexed by search." },
+          { val: "archived",  desc: "Hidden from listings but accessible by direct URL." },
+        ]
+      },
+      { name: "level",        type: "enum",     req: true,  nullable: false, desc: "Difficulty level for readers",            note: "",                           example: '"beginner"',
+        enum: [
+          { val: "beginner",     desc: "No prior knowledge assumed" },
+          { val: "intermediate", desc: "Familiarity with Laravel recommended" },
+          { val: "advanced",     desc: "Deep framework knowledge required" },
+        ]
+      },
+      { name: "author",       type: "object",   req: true,  nullable: false, desc: "Embedded User object (id, name, avatar)", note: "Partial — id and name only", example: '{ "id": "...", "name": "Alice" }' },
+      { name: "tags",         type: "array",    req: true,  nullable: false, desc: "Array of Tag objects attached to this article", note: "Empty array if untagged", example: '[{ "slug": "helpers" }]' },
+      { name: "comment_count",type: "integer",  req: true,  nullable: false, desc: "Number of approved comments",             note: "Read-only counter",          example: "7" },
+      { name: "published_at", type: "datetime", req: false, nullable: true,  desc: "ISO 8601 publication timestamp",          note: "null if still a draft",      example: '"2026-03-14T10:00:00Z"' },
+      { name: "updated_at",   type: "datetime", req: true,  nullable: false, desc: "ISO 8601 last-modified timestamp",        note: "UTC, read-only",             example: '"2026-04-30T18:00:00Z"' },
+    ],
+    jsonExample: `{
+  "id": "a1b2c3d4-5e6f-7890-abcd-ef1234567890",
+  "title": "The tap() Helper",
+  "slug": "the-tap-helper",
+  "excerpt": "Call a closure on a value and return the value itself.",
+  "body": "## What it does\\n\\nThe tap() helper is...",
+  "status": "published",
+  "level": "beginner",
+  "author": {
+    "id": "3fa85f64-5717-4562-b3fc",
+    "name": "Alex Kowalski",
+    "avatar_url": "https://cdn.example.com/avatars/ak.jpg"
+  },
+  "tags": [
+    { "slug": "helpers", "name": "Helpers" }
+  ],
+  "comment_count": 7,
+  "published_at": "2026-03-14T10:00:00Z",
+  "updated_at": "2026-04-30T18:00:00Z"
+}`,
+    usedBy: [
+      { method: "GET",    path: "/articles",          role: "response[]" },
+      { method: "POST",   path: "/articles",          role: "response" },
+      { method: "GET",    path: "/articles/{id}",     role: "response" },
+      { method: "PATCH",  path: "/articles/{id}",     role: "response" },
+      { method: "GET",    path: "/articles/{id}/comments", role: "parent context" },
+    ],
+    stats: { fields: 12, required: 10, nullable: 1, enums: 2 },
+  },
+  {
+    id: "tag",
+    name: "Tag",
+    icon: (color) => (
+      <svg viewBox="0 0 22 22" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M3 3h8l8 8-8 8-8-8V3z"/>
+        <circle cx="8" cy="8" r="1.5" fill={color} stroke="none"/>
+      </svg>
+    ),
+    iconColor: "#9A5F00",
+    iconBg: "#FFF3DC",
+    accent: "#9A5F00",
+    tag: "Core API",
+    tagBg: "#FFF3DC", tagColor: "#9A5F00",
+    desc: "A taxonomy label applied to articles. Tags help readers discover related content and are used for filtering in the catalog and search.",
+    fieldCount: 5,
+    fields: [
+      { name: "slug",         type: "string",   req: true,  nullable: false, desc: "URL-safe unique identifier",              note: "Lowercase, hyphens only",    example: '"hidden-methods"' },
+      { name: "name",         type: "string",   req: true,  nullable: false, desc: "Human-readable display name",             note: "Max 60 chars",               example: '"Hidden Methods"' },
+      { name: "description",  type: "string",   req: false, nullable: true,  desc: "Optional description of what the tag covers", note: "Max 240 chars",         example: '"Methods rarely documented..."' },
+      { name: "color",        type: "string",   req: false, nullable: true,  desc: "Hex color for UI display",                note: "6-digit hex with #",         example: '"#1E7E52"' },
+      { name: "article_count",type: "integer",  req: true,  nullable: false, desc: "Number of published articles with this tag", note: "Read-only counter",       example: "14" },
+    ],
+    jsonExample: `{
+  "slug": "hidden-methods",
+  "name": "Hidden Methods",
+  "description": "Methods that exist in Laravel but are rarely documented.",
+  "color": "#1E7E52",
+  "article_count": 14
+}`,
+    usedBy: [
+      { method: "GET",  path: "/tags",          role: "response[]" },
+      { method: "GET",  path: "/tags/{slug}",   role: "response" },
+      { method: "GET",  path: "/articles",      role: "tags field" },
+      { method: "GET",  path: "/search",        role: "filter param" },
+    ],
+    stats: { fields: 5, required: 3, nullable: 2, enums: 0 },
+  },
+  {
+    id: "comment",
+    name: "Comment",
+    icon: (color) => (
+      <svg viewBox="0 0 22 22" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M3 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H8l-5 3V5z"/>
+      </svg>
+    ),
+    iconColor: "#7A4F9A",
+    iconBg: "#F3EAFB",
+    accent: "#7A4F9A",
+    tag: "Core API",
+    tagBg: "#F3EAFB", tagColor: "#7A4F9A",
+    desc: "A community comment posted on an article. Comments support basic Markdown and are subject to moderation before appearing publicly.",
+    fieldCount: 8,
+    fields: [
+      { name: "id",           type: "uuid",     req: true,  nullable: false, desc: "Unique identifier",                       note: "UUIDv4 format",              example: '"c9d1e2f3-..."' },
+      { name: "article_id",   type: "uuid",     req: true,  nullable: false, desc: "UUID of the parent article",             note: "References Article.id",      example: '"a1b2c3d4-..."' },
+      { name: "author",       type: "object",   req: true,  nullable: false, desc: "Partial User object (id, name, avatar)",  note: "Read-only",                  example: '{ "id": "...", "name": "Bob" }' },
+      { name: "body",         type: "string",   req: true,  nullable: false, desc: "Comment text in Markdown",               note: "Max 2000 chars",             example: '"Great explanation! I use tap() in..."' },
+      { name: "status",       type: "enum",     req: true,  nullable: false, desc: "Moderation state",                       note: "See enum values below",      example: '"approved"',
+        enum: [
+          { val: "pending",  desc: "Awaiting moderator review. Not publicly visible." },
+          { val: "approved", desc: "Visible to all readers." },
+          { val: "rejected", desc: "Rejected by moderator. Only visible to author." },
+        ]
+      },
+      { name: "upvotes",      type: "integer",  req: true,  nullable: false, desc: "Number of community upvotes",             note: "Read-only counter",          example: "12" },
+      { name: "created_at",   type: "datetime", req: true,  nullable: false, desc: "ISO 8601 creation timestamp",            note: "UTC, read-only",             example: '"2026-04-01T09:15:00Z"' },
+      { name: "updated_at",   type: "datetime", req: true,  nullable: false, desc: "ISO 8601 last-edited timestamp",         note: "UTC, read-only",             example: '"2026-04-01T10:00:00Z"' },
+    ],
+    jsonExample: `{
+  "id": "c9d1e2f3-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
+  "article_id": "a1b2c3d4-5e6f-7890-abcd-ef1234567890",
+  "author": {
+    "id": "3fa85f64-5717-4562-b3fc",
+    "name": "Bob Jones",
+    "avatar_url": "https://cdn.example.com/avatars/bob.jpg"
+  },
+  "body": "Great explanation! I use tap() in pipelines all the time.",
+  "status": "approved",
+  "upvotes": 12,
+  "created_at": "2026-04-01T09:15:00Z",
+  "updated_at": "2026-04-01T10:00:00Z"
+}`,
+    usedBy: [
+      { method: "GET",    path: "/articles/{id}/comments", role: "response[]" },
+      { method: "POST",   path: "/articles/{id}/comments", role: "response" },
+      { method: "DELETE", path: "/comments/{id}",          role: "target" },
+    ],
+    stats: { fields: 8, required: 7, nullable: 0, enums: 1 },
+  }
+];
+
+const METHOD_CFG = {
+  GET:    { color:"var(--get)",    bg:"var(--get-bg)"    },
+  POST:   { color:"var(--post)",   bg:"var(--post-bg)"   },
+  PUT:    { color:"var(--put)",    bg:"var(--put-bg)"    },
+  PATCH:  { color:"var(--patch)",  bg:"var(--patch-bg)"  },
+  DELETE: { color:"var(--delete)", bg:"var(--delete-bg)" },
+};
+
+const TYPE_CLASS = {
+  string: "type-string", integer: "type-integer", boolean: "type-boolean",
+  array: "type-array", object: "type-object", uuid: "type-uuid",
+  datetime: "type-datetime", enum: "type-enum",
+};
+
+function CopyBtn({ text }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => { navigator.clipboard?.writeText(text).catch(()=>{}); setCopied(true); setTimeout(()=>setCopied(false), 1400); };
+  return (
+    <button className="copy-btn" onClick={copy}>
+      <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="3" y="3" width="6" height="6" rx="1"/><path d="M7 3V1.5a1 1 0 00-1-1H1.5a1 1 0 00-1 1V6a1 1 0 001 1H3" strokeLinecap="round"/></svg>
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+/* ── ENTITY DETAIL ── */
+function EntityDetail({ entity, tweaks }) {
+  const enumFields = entity.fields.filter(f => f.enum);
+
+  return (
+    <div className="detail-wrap">
+      <div className="detail-inner">
+        {/* LEFT */}
+        <div className="schema-col">
+          {/* Header */}
+          <div className="entity-header">
+            <div className="entity-eyebrow">
+              <span>Schema</span>
+              <span style={{ color:"var(--border-hover)" }}>·</span>
+              <span style={{ color:"var(--ink)" }}>{entity.name}</span>
+            </div>
+            <div className="entity-title-row">
+              <div className="entity-icon-lg" style={{ background: entity.iconBg }}>
+                {entity.icon(entity.iconColor)}
+              </div>
+              <h1 className="entity-name">{entity.name}</h1>
+            </div>
+            <p className="entity-desc">{entity.desc}</p>
+            <div className="entity-meta-row">
+              <span className="entity-tag" style={{ background: entity.tagBg, color: entity.tagColor }}>{entity.tag}</span>
+              <span className="entity-tag">{entity.stats.fields} fields</span>
+              <span className="entity-tag" style={{ background:"var(--red-bg)", color:"var(--red)" }}>{entity.stats.required} required</span>
+              {entity.stats.nullable > 0 && <span className="entity-tag">{entity.stats.nullable} nullable</span>}
+              {entity.stats.enums > 0 && <span className="entity-tag" style={{ background:"var(--amber-bg)", color:"var(--amber)" }}>{entity.stats.enums} enum{entity.stats.enums>1?"s":""}</span>}
+            </div>
+          </div>
+
+          <div className="divider"></div>
+
+          {/* Fields */}
+          <div className="section-label">Fields</div>
+          <div className="fields-table">
+            <div className="fields-head">
+              <span>Field</span>
+              <span>Type</span>
+              <span>Description</span>
+              <span>Example</span>
+            </div>
+            {entity.fields.map(f => (
+              <div key={f.name} className={`field-row${!f.req ? " optional" : ""}`}>
+                <div className="f-name">
+                  {f.name}
+                  {f.req && <span className="f-req">required</span>}
+                  {f.nullable && <span className="f-nullable">nullable</span>}
+                </div>
+                <span className={`f-type ${TYPE_CLASS[f.type] || ""}`}>{f.type}</span>
+                <div>
+                  <div className="f-desc">{f.desc}</div>
+                  {tweaks.showNotes && f.note && <div className="f-desc-note">{f.note}</div>}
+                </div>
+                <span className="f-example">{f.example}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Enum blocks */}
+          {enumFields.length > 0 && enumFields.map(ef => (
+            <div key={ef.name} style={{ marginTop: 24 }}>
+              <div className="divider"></div>
+              <div className="section-label">Enum: <span className="ic" style={{fontSize:"10px"}}>{ef.name}</span></div>
+              <div className="enum-block">
+                {ef.enum.map(e => (
+                  <div className="enum-row" key={e.val}>
+                    <span className="enum-val">{e.val}</span>
+                    <span className="enum-desc">{e.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* RIGHT */}
+        <div className="json-col">
+          <div className="json-col-sticky">
+            {/* Example JSON */}
+            <div className="code-block">
+              <div className="code-hdr">
+                <span className="code-lang">Example · {entity.name}</span>
+                <CopyBtn text={entity.jsonExample} />
+              </div>
+              <div className="code-pre" style={{ fontSize:"11px", lineHeight:"1.7", maxHeight: tweaks.compactJson ? "260px" : "none", overflow: tweaks.compactJson ? "auto" : "visible" }}>
+                {entity.jsonExample}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="stats-widget">
+              <div style={{ fontSize:"10px", fontWeight:500, letterSpacing:".7px", textTransform:"uppercase", color:"var(--ink-low)", marginBottom:4 }}>Object stats</div>
+              {[
+                ["Total fields", entity.stats.fields],
+                ["Required", entity.stats.required],
+                ["Optional", entity.stats.fields - entity.stats.required],
+                ["Nullable", entity.stats.nullable],
+                ["Enum types", entity.stats.enums],
+              ].map(([lbl, val]) => (
+                <div className="stats-row" key={lbl}>
+                  <span className="stats-label">{lbl}</span>
+                  <span className="stats-value">{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Used by */}
+            <div className="used-by-widget">
+              <div className="widget-title">Used by {entity.usedBy.length} endpoints</div>
+              {entity.usedBy.map((u, i) => {
+                const ms = METHOD_CFG[u.method] || {};
+                return (
+                  <div className="used-by-item" key={i}>
+                    <span className="used-by-method" style={{ color: ms.color, background: ms.bg }}>{u.method}</span>
+                    <span className="used-by-path">{u.path}</span>
+                    <span className="used-by-role">{u.role}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── TWEAKS ── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "showNotes": true,
+  "compactJson": false,
+  "fieldDensity": "Default"
+}/*EDITMODE-END*/;
+
+function TweaksPanel({ visible, onClose, tweaks, setTweak }) {
+  return (
+    <div className={`tweaks-panel${visible ? " visible" : ""}`}>
+      <div className="tweaks-hdr">
+        <span className="tweaks-title">Tweaks</span>
+        <button className="tweaks-close" onClick={onClose}>
+          <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8"/></svg>
+        </button>
+      </div>
+      <div className="tweaks-body">
+        <div className="tweak-row">
+          <div className="tweak-toggle-row">
+            <span className="tweak-toggle-lbl">Show field notes</span>
+            <button className={`toggle-sw${tweaks.showNotes?" on":""}`} onClick={()=>setTweak("showNotes",!tweaks.showNotes)} />
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-toggle-row">
+            <span className="tweak-toggle-lbl">Compact JSON example</span>
+            <button className={`toggle-sw${tweaks.compactJson?" on":""}`} onClick={()=>setTweak("compactJson",!tweaks.compactJson)} />
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-lbl">Field row density</div>
+          <div className="tweak-opts">
+            {["Compact","Default","Spacious"].map(o => (
+              <button key={o} className={`tweak-opt${tweaks.fieldDensity===o?" active":""}`} onClick={()=>setTweak("fieldDensity",o)}>{o}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [activeId, setActiveId]       = useState("user");
+  const [search, setSearch]           = useState("");
+  const [tweaksVisible, setTweaksVisible] = useState(false);
+  const [tweaks, setTweaksState]      = useState(TWEAK_DEFAULTS);
+
+  const setTweak = (key, val) => {
+    setTweaksState(p => {
+      const next = { ...p, [key]: val };
+      window.parent?.postMessage({ type:"__edit_mode_set_keys", edits: next }, "*");
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const handler = e => {
+      if (e.data?.type === "__activate_edit_mode")   setTweaksVisible(true);
+      if (e.data?.type === "__deactivate_edit_mode") setTweaksVisible(false);
+    };
+    window.addEventListener("message", handler);
+    window.parent?.postMessage({ type:"__edit_mode_available" }, "*");
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  // density padding
+  useEffect(() => {
+    const rows = document.querySelectorAll(".field-row");
+    const pad = tweaks.fieldDensity === "Compact" ? "7px 16px" : tweaks.fieldDensity === "Spacious" ? "16px 16px" : "11px 16px";
+    rows.forEach(r => r.style.padding = pad);
+  }, [tweaks.fieldDensity, activeId]);
+
+  const filtered = search.trim()
+    ? ENTITIES.filter(e =>
+        e.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.desc.toLowerCase().includes(search.toLowerCase())
+      )
+    : ENTITIES;
+
+  const activeEntity = ENTITIES.find(e => e.id === activeId);
+
+  return (
+    <>
+      {/* NAV */}
+      <nav className="nav">
+        <div className="nav-brand">
+          Lesser Known Laravel
+          <div className="nav-sep"></div>
+          <span className="nav-section">API Schemas</span>
+        </div>
+        <div className="nav-links">
+          <a className="nav-link" href="API Docs.html">API Docs</a>
+          <a className="nav-link" href="API Explorer.html">Explorer</a>
+          <a className="nav-link" href="HTTP Client.html">HTTP Client</a>
+          <a className="nav-link active" href="#">Schemas</a>
+          <a className="nav-link cta" href="#">Get token →</a>
+        </div>
+      </nav>
+
+      <div className="shell">
+        {/* SIDEBAR */}
+        <div className="sidebar">
+          <div className="sidebar-search">
+            <div className="search-wrap">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <circle cx="5" cy="5" r="3.5"/><path d="M8 8l2.5 2.5"/>
+              </svg>
+              <input
+                className="search-input"
+                placeholder="Search schemas…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="sidebar-scroll">
+            <div className="sidebar-section-label">Entities · Core API</div>
+            {filtered.map(entity => (
+              <button
+                key={entity.id}
+                className={`entity-item${activeId === entity.id ? " active" : ""}`}
+                onClick={() => setActiveId(entity.id)}
+              >
+                <div className="entity-item-icon" style={{ background: entity.iconBg }}>
+                  {entity.icon(entity.iconColor)}
+                </div>
+                <div className="entity-item-info">
+                  <div className="entity-item-name">{entity.name}</div>
+                  <div className="entity-item-count">{entity.stats.fields} fields · {entity.stats.enums > 0 ? `${entity.stats.enums} enum${entity.stats.enums>1?"s":""}` : "no enums"}</div>
+                </div>
+                <span className="entity-item-badge" style={{ background: entity.tagBg, color: entity.tagColor }}>
+                  {entity.stats.required}r
+                </span>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ padding:"20px 16px", fontSize:"12px", color:"var(--ink-low)", textAlign:"center" }}>No results</div>
+            )}
+          </div>
+        </div>
+
+        {/* MAIN */}
+        <div className="main">
+          {activeEntity
+            ? <EntityDetail entity={activeEntity} tweaks={tweaks} key={activeId} />
+            : (
+              <div className="empty-state">
+                <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+                  <rect x="6" y="6" width="36" height="36" rx="4"/>
+                  <path d="M14 17h20M14 24h20M14 31h12"/>
+                </svg>
+                <div className="empty-title">Select a schema</div>
+                <div className="empty-sub">Choose an entity from the sidebar to view its full field documentation.</div>
+              </div>
+            )
+          }
+        </div>
+      </div>
+
+      <TweaksPanel
+        visible={tweaksVisible}
+        onClose={() => { setTweaksVisible(false); window.parent?.postMessage({ type:"__edit_mode_dismissed" }, "*"); }}
+        tweaks={tweaks}
+        setTweak={setTweak}
+      />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

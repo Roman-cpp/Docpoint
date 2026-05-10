@@ -1,0 +1,179 @@
+import s from "./ApiDocsPage.module.css";
+import { selectDoca, useDocaStore } from "@/features/doca";
+
+export const OverviewPage = () => {
+	const doca = useDocaStore(selectDoca);
+
+	if (!doca) return null;
+
+	return (
+		<div>
+			<div className={s.breadcrumb}>
+				<span className={s.bcCurrent}>Overview</span>
+			</div>
+			<div className={s.endpointHeader}>
+				<h1
+					style={{
+						fontFamily: "var(--font-serif)",
+						fontSize: "30px",
+						fontWeight: 400,
+						letterSpacing: "-0.3px",
+						lineHeight: 1.2,
+						marginBottom: "10px",
+					}}
+				>
+					{doca.name}
+				</h1>
+				<p className={s.endpointDesc}>{doca.desc}</p>
+			</div>
+
+			<div className={s.overviewGrid}>
+				<div className={s.overviewCard}>
+					<div className={s.overviewCardLabel}>Base URL</div>
+					<div className={s.overviewCardValue}>
+						<code>https://api.example.com/{doca.version}</code>
+					</div>
+				</div>
+				<div className={s.overviewCard}>
+					<div className={s.overviewCardLabel}>Version</div>
+					<div className={s.overviewCardValue}>
+						<code>{doca.version}</code>
+					</div>
+				</div>
+				<div className={s.overviewCard}>
+					<div className={s.overviewCardLabel}>Endpoints</div>
+					<div className={s.overviewCardValue}>
+						55 endpoints across 5 resources
+					</div>
+				</div>
+				{/* <div className={s.overviewCard}>
+					<div className={s.overviewCardLabel}>Auth</div>
+					<div className={s.overviewCardValue}>
+						Bearer token via <code>/auth/token</code>
+					</div>
+				</div> */}
+			</div>
+
+			<div className={s.divider} />
+			{/*<div className={s.sectionBlock}>
+				<div className={s.sectionLabel}>Authentication</div>
+				<p
+					style={{
+						fontSize: "14px",
+						color: "var(--ink-mid)",
+						lineHeight: 1.75,
+						marginBottom: "14px",
+					}}
+				>
+					Most endpoints require a Bearer token in the{" "}
+					<span className={s.ic}>Authorization</span> header. Obtain a token via{" "}
+					<span className={s.ic}>POST /auth/token</span>. Tokens expire after{" "}
+					<strong>60 minutes</strong>; use the refresh token to extend the
+					session.
+				</p>
+				{/* <div className={s.codeBlock}>
+					<div className={s.codeHeader}>
+						<span className={s.codeLang}>HTTP Header</span>
+						<CopyBtn text="Authorization: Bearer {your_token}" />
+					</div>
+					<div className={s.codeBody}>
+						<pre>
+							<span className={s.hlK}>Authorization</span>
+							{": Bearer "}
+							<span className={s.hlS}>{"{" + "your_token" + "}"}</span>
+						</pre>
+					</div>
+				</div>
+			</div> */}
+
+			{/*<div className={s.sectionBlock}>
+				<div className={s.sectionLabel}>Rate Limiting</div>
+				<p
+					style={{
+						fontSize: "14px",
+						color: "var(--ink-mid)",
+						lineHeight: 1.75,
+						marginBottom: "14px",
+					}}
+				>
+					API requests are limited to <strong>1 000 requests / hour</strong> per
+					token. Rate limit headers are included in every response.
+				</p>
+				<div className={s.schemaBlock}>
+					{[
+						["X-RateLimit-Limit", "string", "Maximum requests per window"],
+						[
+							"X-RateLimit-Remaining",
+							"string",
+							"Requests left in current window",
+						],
+						[
+							"X-RateLimit-Reset",
+							"string",
+							"Unix timestamp when window resets",
+						],
+						[
+							"Retry-After",
+							"string",
+							"Seconds to wait if rate limited (429 only)",
+						],
+					].map(([k, t, d]) => (
+						<div className={s.schemaRow} key={k}>
+							<span className={s.schemaKey}>{k}</span>
+							<span className={s.schemaType}>{t}</span>
+							<span className={s.schemaDesc}>{d}</span>
+						</div>
+					))}
+				</div>
+			</div> */}
+
+			<div className={s.sectionBlock}>
+				<div className={s.sectionLabel}>Errors</div>
+				<p
+					style={{
+						fontSize: "14px",
+						color: "var(--ink-mid)",
+						lineHeight: 1.75,
+						marginBottom: "14px",
+					}}
+				>
+					All errors follow a consistent shape with a machine-readable{" "}
+					<span className={s.ic}>error</span> code and a human-readable{" "}
+					<span className={s.ic}>message</span>.
+				</p>
+				<div className={s.schemaBlock}>
+					{[
+						["400", "Bad Request", "Invalid query params or request format"],
+						["401", "Unauthorized", "Missing or invalid token"],
+						["403", "Forbidden", "Token lacks required scope"],
+						["404", "Not Found", "Resource doesn't exist"],
+						["409", "Conflict", "Duplicate resource (e.g. email taken)"],
+						["422", "Unprocessable", "Validation errors in request body"],
+						["429", "Too Many Requests", "Rate limit exceeded"],
+						["500", "Server Error", "Internal error — please retry"],
+					].map(([code, label, desc]) => (
+						<div className={s.schemaRow} key={code}>
+							<span
+								className={s.schemaKey}
+								style={{
+									color:
+										parseInt(code) >= 500
+											? "var(--red)"
+											: parseInt(code) >= 400
+												? "var(--amber)"
+												: "var(--green)",
+								}}
+							>
+								{code}
+							</span>
+							<span className={s.schemaType} style={{ color: "var(--ink)" }}>
+								{label}
+							</span>
+							<span className={s.schemaDesc}>{desc}</span>
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+};

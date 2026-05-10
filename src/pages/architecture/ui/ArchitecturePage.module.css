@@ -1,0 +1,182 @@
+.wrapper {
+	--font-serif: "Lora", Georgia, "Times New Roman", serif;
+	--font-sans:
+		"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--font-mono: "Menlo", "SF Mono", "Courier New", monospace;
+
+	--bg: #faf7f2;
+	--surface: #ffffff;
+	--ink: #1a1a1a;
+	--ink-mid: #555555;
+	--ink-low: #888888;
+	--border: #e8e2d9;
+	--code-bg: #f4f1ec;
+	--code-ink: #3d2b1f;
+
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	font-family: var(--font-sans);
+	font-size: 15px;
+	line-height: 1.6;
+	color: var(--ink);
+	background: var(--bg);
+	-webkit-font-smoothing: antialiased;
+}
+
+.shell {
+	flex: 1;
+	max-width: 860px;
+	width: 100%;
+	margin: 0 auto;
+	padding: 48px 32px 80px;
+}
+
+/* ── Prose styles ── */
+
+.prose h1 {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 30px;
+	letter-spacing: -0.3px;
+	line-height: 1.2;
+	color: var(--ink);
+	margin: 0 0 24px;
+}
+
+.prose h2 {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 22px;
+	letter-spacing: -0.2px;
+	color: var(--ink);
+	margin: 40px 0 14px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--border);
+}
+
+.prose h3 {
+	font-size: 14px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--ink-mid);
+	margin: 28px 0 10px;
+}
+
+.prose h4 {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--ink);
+	margin: 20px 0 8px;
+}
+
+.prose p {
+	color: var(--ink-mid);
+	margin: 0 0 14px;
+	line-height: 1.75;
+}
+
+.prose a {
+	color: #1a5ea8;
+	text-decoration: none;
+}
+
+.prose a:hover {
+	text-decoration: underline;
+}
+
+.prose strong {
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.prose ul,
+.prose ol {
+	margin: 0 0 14px 0;
+	padding-left: 22px;
+	color: var(--ink-mid);
+	line-height: 1.75;
+}
+
+.prose li {
+	margin-bottom: 4px;
+}
+
+.prose hr {
+	border: none;
+	border-top: 1px solid var(--border);
+	margin: 32px 0;
+}
+
+.prose code {
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	background: var(--code-bg);
+	color: var(--code-ink);
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+.prose pre {
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 16px 20px;
+	overflow-x: auto;
+	margin: 0 0 20px;
+}
+
+.prose pre code {
+	background: none;
+	padding: 0;
+	font-size: 13px;
+	color: var(--code-ink);
+}
+
+.prose blockquote {
+	border-left: 3px solid var(--border);
+	margin: 0 0 14px;
+	padding: 4px 16px;
+	color: var(--ink-low);
+	font-style: italic;
+}
+
+/* ── Tables ── */
+
+.prose table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+	margin: 0 0 24px;
+}
+
+.prose thead {
+	background: #f0ede8;
+}
+
+.prose th {
+	text-align: left;
+	font-weight: 600;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ink-mid);
+	padding: 8px 14px;
+	border-bottom: 1px solid var(--border);
+}
+
+.prose td {
+	padding: 9px 14px;
+	border-bottom: 1px solid var(--border);
+	color: var(--ink-mid);
+	vertical-align: top;
+}
+
+.prose tr:last-child td {
+	border-bottom: none;
+}
+
+.prose tbody tr:hover {
+	background: #f7f4ef;
+}

@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP Client — Lesser Known Laravel</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans:  'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:  'Menlo', 'SF Mono', 'Courier New', monospace;
+
+  --bg:          #FAF7F2;
+  --surface:     #FFFFFF;
+  --ink:         #1A1A1A;
+  --ink-mid:     #555555;
+  --ink-low:     #888888;
+  --border:      #E8E2D9;
+  --border-hover:#C8C0B4;
+  --green:       #1E7E52;  --green-bg:  #EAF5EF;
+  --amber:       #9A5F00;  --amber-bg:  #FFF3DC;
+  --red:         #9A2800;  --red-bg:    #FFF0EC;
+  --cat-bg:      #F0EDE8;  --cat-ink:   #4A4540;
+  --blue:        #1A5EA8;  --blue-bg:   #EAF1FB;
+  --code-bg:     #F4F1EC;  --code-ink:  #3D2B1F;
+
+  --get:    #1E7E52; --get-bg:    #EAF5EF;
+  --post:   #1A5EA8; --post-bg:   #EAF1FB;
+  --put:    #9A5F00; --put-bg:    #FFF3DC;
+  --patch:  #7A4F9A; --patch-bg:  #F3EAFB;
+  --delete: #9A2800; --delete-bg: #FFF0EC;
+}
+html, body { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; height: 100%; overflow: hidden; }
+#root { height: 100vh; display: flex; flex-direction: column; }
+
+/* NAV */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 52px; flex-shrink: 0; z-index: 100; gap: 12px; }
+.nav-brand { font-family: var(--font-serif); font-size: 16px; font-weight: 400; color: var(--ink); letter-spacing: -.2px; display: flex; align-items: center; gap: 10px; white-space: nowrap; flex-shrink: 0; }
+.nav-sep { width: 1px; height: 14px; background: var(--border); }
+.nav-section { font-family: var(--font-sans); font-size: 12px; color: var(--ink-low); }
+.nav-links { display: flex; align-items: center; gap: 3px; }
+.nav-link { padding: 5px 11px; font-size: 13px; color: var(--ink-mid); border-radius: 6px; cursor: pointer; transition: background .15s, color .15s; text-decoration: none; background: none; border: none; font-family: var(--font-sans); }
+.nav-link:hover { background: var(--cat-bg); color: var(--ink); }
+.nav-link.active { color: var(--ink); font-weight: 500; }
+.nav-link.cta { background: var(--ink); color: #fff; }
+.nav-link.cta:hover { background: #333; }
+
+/* LAYOUT */
+.shell { display: flex; flex: 1; overflow: hidden; }
+
+/* SIDEBAR (history) */
+.sidebar { width: 232px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.sidebar-header { padding: 11px 14px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.sidebar-title { font-size: 11px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-low); }
+.sidebar-clear { font-size: 11px; color: var(--ink-low); background: none; border: none; cursor: pointer; font-family: var(--font-sans); padding: 2px 6px; border-radius: 4px; transition: background .13s, color .13s; }
+.sidebar-clear:hover { background: var(--cat-bg); color: var(--red); }
+
+.sidebar-search { padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sidebar-search-wrap { position: relative; }
+.sidebar-search-wrap svg { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; color: var(--ink-low); pointer-events: none; }
+.sidebar-search-input { width: 100%; padding: 6px 8px 6px 26px; font-size: 12px; font-family: var(--font-sans); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; outline: none; transition: border-color .15s; }
+.sidebar-search-input:focus { border-color: var(--border-hover); }
+.sidebar-search-input::placeholder { color: var(--ink-low); }
+
+.history-scroll { flex: 1; overflow-y: auto; padding: 6px 0 12px; }
+.history-scroll::-webkit-scrollbar { width: 3px; }
+.history-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.history-group-label { font-size: 10px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-low); padding: 8px 14px 4px; }
+.history-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; cursor: pointer; border-radius: 0; transition: background .12s; border: none; background: none; width: 100%; text-align: left; font-family: var(--font-sans); }
+.history-item:hover { background: var(--cat-bg); }
+.history-item.active { background: var(--cat-bg); }
+.history-method { font-size: 9px; font-weight: 600; letter-spacing: .4px; padding: 2px 5px; border-radius: 3px; flex-shrink: 0; min-width: 38px; text-align: center; }
+.history-info { flex: 1; min-width: 0; }
+.history-name { font-size: 12px; color: var(--ink); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-url { font-size: 11px; color: var(--ink-low); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-status { font-size: 10px; font-weight: 500; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+
+.sidebar-collections { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.sidebar-collections-title { font-size: 10px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-low); margin-bottom: 8px; }
+.collection-item { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background .12s; }
+.collection-item:hover { background: var(--cat-bg); }
+.collection-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.collection-name { font-size: 12px; color: var(--ink-mid); }
+.collection-count { font-size: 10px; color: var(--ink-low); margin-left: auto; }
+
+/* MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* URL BAR */
+.url-bar { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+.url-row { display: flex; align-items: center; gap: 8px; }
+.method-select-wrap { position: relative; flex-shrink: 0; }
+.method-select { appearance: none; -webkit-appearance: none; padding: 8px 28px 8px 11px; font-size: 12px; font-weight: 600; letter-spacing: .4px; font-family: var(--font-sans); border: 1px solid var(--border); border-radius: 7px; background: var(--bg); outline: none; cursor: pointer; transition: border-color .15s; min-width: 85px; }
+.method-select:focus { border-color: var(--border-hover); }
+.method-select-chevron { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 10px; height: 10px; color: var(--ink-low); }
+.url-input { flex: 1; padding: 8px 12px; font-size: 13px; font-family: var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; outline: none; transition: border-color .15s; }
+.url-input:focus { border-color: var(--border-hover); background: var(--surface); }
+.url-input::placeholder { color: var(--ink-low); font-family: var(--font-sans); font-size: 13px; }
+.send-btn { padding: 8px 20px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 500; border: none; border-radius: 7px; cursor: pointer; font-family: var(--font-sans); transition: background .15s; display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
+.send-btn:hover { background: #333; }
+.send-btn:disabled { background: var(--ink-low); cursor: not-allowed; }
+.send-btn svg { width: 12px; height: 12px; }
+
+.url-meta { display: flex; align-items: center; gap: 12px; }
+.url-meta-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-low); }
+.url-meta-item svg { width: 11px; height: 11px; }
+.url-meta-tag { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+
+/* CONTENT SPLIT */
+.content-split { flex: 1; display: flex; overflow: hidden; }
+
+/* REQUEST PANEL */
+.req-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); min-width: 0; }
+.panel-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg); padding: 0 4px; flex-shrink: 0; }
+.panel-tab { padding: 9px 13px; font-size: 12px; color: var(--ink-low); cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-sans); transition: color .13s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+.panel-tab:hover { color: var(--ink-mid); }
+.panel-tab.active { color: var(--ink); font-weight: 500; border-bottom-color: var(--ink); }
+.tab-badge { font-size: 9px; background: var(--cat-bg); color: var(--cat-ink); padding: 1px 5px; border-radius: 10px; font-weight: 500; }
+.tab-badge.active { background: var(--ink); color: #fff; }
+
+.panel-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.panel-body::-webkit-scrollbar { width: 3px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* KV Table */
+.kv-table { display: flex; flex-direction: column; gap: 6px; }
+.kv-header { display: grid; grid-template-columns: 28px 1fr 1fr 28px; gap: 6px; padding: 0 2px; }
+.kv-header span { font-size: 10px; font-weight: 500; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-low); }
+.kv-row { display: grid; grid-template-columns: 28px 1fr 1fr 28px; gap: 6px; align-items: center; }
+.kv-check { width: 16px; height: 16px; accent-color: var(--ink); cursor: pointer; }
+.kv-input { padding: 7px 9px; font-size: 12px; font-family: var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; outline: none; transition: border-color .15s; width: 100%; }
+.kv-input:focus { border-color: var(--border-hover); background: var(--surface); }
+.kv-input::placeholder { color: var(--ink-low); font-family: var(--font-sans); font-size: 12px; }
+.kv-del { width: 26px; height: 26px; background: none; border: none; cursor: pointer; color: var(--ink-low); border-radius: 5px; display: flex; align-items: center; justify-content: center; transition: background .12s, color .13s; }
+.kv-del:hover { background: var(--red-bg); color: var(--red); }
+.kv-del svg { width: 11px; height: 11px; }
+.kv-add { display: flex; align-items: center; gap: 6px; padding: 6px 4px; font-size: 12px; color: var(--ink-low); background: none; border: none; cursor: pointer; font-family: var(--font-sans); transition: color .13s; margin-top: 2px; }
+.kv-add:hover { color: var(--ink); }
+.kv-add svg { width: 12px; height: 12px; }
+
+/* Body editor */
+.body-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.body-type-select { padding: 5px 8px; font-size: 12px; font-family: var(--font-sans); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; outline: none; cursor: pointer; }
+.body-format-btn { padding: 5px 10px; font-size: 11px; background: var(--cat-bg); color: var(--cat-ink); border: none; border-radius: 5px; cursor: pointer; font-family: var(--font-sans); transition: background .13s; }
+.body-format-btn:hover { background: var(--border); }
+.body-textarea { width: 100%; min-height: 200px; padding: 11px 12px; font-size: 12.5px; font-family: var(--font-mono); color: var(--code-ink); background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; transition: border-color .15s; line-height: 1.7; }
+.body-textarea:focus { border-color: var(--border-hover); }
+
+/* Auth panel */
+.auth-grid { display: flex; flex-direction: column; gap: 13px; }
+.auth-type-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.auth-type-btn { padding: 6px 13px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: none; color: var(--ink-mid); font-family: var(--font-sans); transition: all .13s; }
+.auth-type-btn:hover { border-color: var(--border-hover); color: var(--ink); }
+.auth-type-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.auth-field { display: flex; flex-direction: column; gap: 5px; }
+.auth-label { font-size: 11px; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; color: var(--ink-low); }
+.auth-input { padding: 8px 10px; font-size: 13px; font-family: var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; outline: none; transition: border-color .15s; }
+.auth-input:focus { border-color: var(--border-hover); background: var(--surface); }
+.auth-hint { font-size: 12px; color: var(--ink-low); line-height: 1.6; }
+.callout { border-radius: 8px; padding: 10px 13px; display: flex; gap: 9px; }
+.callout.info { background: var(--blue-bg); border-left: 3px solid var(--blue); }
+.callout.tip { background: var(--green-bg); border-left: 3px solid var(--green); }
+.callout.warn { background: var(--amber-bg); border-left: 3px solid var(--amber); }
+.callout-icon { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+.callout-text { font-size: 12px; line-height: 1.6; }
+.callout.info .callout-text { color: var(--blue); }
+.callout.tip  .callout-text { color: var(--green); }
+.callout.warn .callout-text { color: var(--amber); }
+
+/* RESPONSE PANEL */
+.res-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.res-status-bar { padding: 9px 16px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.res-status-code { font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 5px; }
+.res-meta-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-low); }
+.res-meta-item svg { width: 11px; height: 11px; }
+.res-meta-sep { width: 1px; height: 12px; background: var(--border); }
+.res-copy { margin-left: auto; font-size: 11px; color: var(--ink-low); background: none; border: 1px solid var(--border); border-radius: 5px; padding: 3px 9px; cursor: pointer; font-family: var(--font-sans); transition: all .13s; display: flex; align-items: center; gap: 4px; }
+.res-copy:hover { border-color: var(--border-hover); color: var(--ink); }
+.res-copy svg { width: 10px; height: 10px; }
+
+.res-body { flex: 1; overflow-y: auto; }
+.res-body::-webkit-scrollbar { width: 3px; }
+.res-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Empty state */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--ink-low); text-align: center; padding: 32px; }
+.empty-state svg { width: 44px; height: 44px; opacity: .4; }
+.empty-title { font-size: 14px; color: var(--ink-mid); }
+.empty-sub { font-size: 12px; line-height: 1.6; max-width: 220px; }
+
+/* Spinner */
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; }
+.big-spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--ink-mid); border-radius: 50%; animation: spin .8s linear infinite; }
+.loading-text { font-size: 13px; color: var(--ink-low); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Response tabs */
+.res-tabs-bar { display: flex; padding: 0 4px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+.res-tab { padding: 8px 12px; font-size: 12px; color: var(--ink-low); cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-sans); transition: color .13s; }
+.res-tab:hover { color: var(--ink-mid); }
+.res-tab.active { color: var(--ink); font-weight: 500; border-bottom-color: var(--ink); }
+
+/* JSON viewer */
+.json-pre { padding: 16px; font-family: var(--font-mono); font-size: 12px; line-height: 1.75; color: var(--code-ink); overflow-x: auto; white-space: pre; background: var(--code-bg); min-height: 100%; }
+.json-key { color: #1A5EA8; }
+.json-str { color: #9A5F00; }
+.json-num { color: #9A2800; }
+.json-bool { color: #1E7E52; }
+.json-null { color: #888; }
+
+/* Headers table */
+.headers-table { width: 100%; }
+.headers-table tr:first-child td { padding-top: 16px; }
+.headers-table td { padding: 6px 16px; font-size: 12px; vertical-align: top; border-bottom: 1px solid var(--border); }
+.headers-table tr:last-child td { border-bottom: none; }
+.hdr-key { font-family: var(--font-mono); font-size: 11.5px; color: var(--blue); width: 40%; }
+.hdr-val { font-family: var(--font-mono); font-size: 11.5px; color: var(--code-ink); }
+
+/* Tweaks */
+.tweaks-panel { position: fixed; bottom: 20px; right: 20px; width: 252px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.12); z-index: 1000; overflow: hidden; display: none; }
+.tweaks-panel.visible { display: block; }
+.tweaks-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 15px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.tweaks-title { font-size: 12px; font-weight: 500; color: var(--ink); }
+.tweaks-close { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; color: var(--ink-low); border-radius: 4px; transition: background .13s; }
+.tweaks-close:hover { background: var(--cat-bg); color: var(--ink); }
+.tweaks-close svg { width: 11px; height: 11px; }
+.tweaks-body { padding: 13px 15px; display: flex; flex-direction: column; gap: 13px; }
+.tweak-row { display: flex; flex-direction: column; gap: 5px; }
+.tweak-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .7px; color: var(--ink-low); }
+.tweak-options { display: flex; gap: 4px; flex-wrap: wrap; }
+.tweak-opt { padding: 5px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; background: none; color: var(--ink-mid); font-family: var(--font-sans); transition: all .13s; }
+.tweak-opt:hover { border-color: var(--border-hover); color: var(--ink); }
+.tweak-opt.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tweak-toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.tweak-toggle-lbl { font-size: 13px; color: var(--ink-mid); }
+.toggle-sw { width: 32px; height: 18px; background: var(--border); border-radius: 100px; position: relative; cursor: pointer; transition: background .2s; border: none; flex-shrink: 0; }
+.toggle-sw.on { background: var(--ink); }
+.toggle-sw::after { content: ''; position: absolute; width: 13px; height: 13px; background: #fff; border-radius: 50%; top: 2.5px; left: 2.5px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.toggle-sw.on::after { transform: translateX(14px); }
+
+/* Inline code */
+.ic { font-family: var(--font-mono); font-size: 11px; background: var(--code-bg); color: var(--code-ink); padding: 1px 4px; border-radius: 3px; border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useCallback, useEffect } = React;
+
+/* ─── METHOD CONFIG ──────────────────────────── */
+const METHOD_CFG = {
+  GET:    { color: "var(--get)",    bg: "var(--get-bg)"    },
+  POST:   { color: "var(--post)",   bg: "var(--post-bg)"   },
+  PUT:    { color: "var(--put)",    bg: "var(--put-bg)"    },
+  PATCH:  { color: "var(--patch)",  bg: "var(--patch-bg)"  },
+  DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
+  HEAD:   { color: "var(--ink-mid)", bg: "var(--cat-bg)"   },
+  OPTIONS:{ color: "var(--ink-mid)", bg: "var(--cat-bg)"   },
+};
+
+/* ─── MOCK RESPONSES ─────────────────────────── */
+const MOCK_RESPONSES = {
+  users_list: {
+    status: 200, time: 87, size: "1.4 KB",
+    body: {
+      data: [
+        { id: "3fa85f64-5717-4562-b3fc", name: "Alice Smith", email: "alice@example.com", role: "editor", created_at: "2025-03-14T10:22:00Z" },
+        { id: "9bc12e44-2201-4f88-a99d", name: "Bob Jones",  email: "bob@example.com",   role: "viewer", created_at: "2025-04-01T08:00:00Z" }
+      ],
+      meta: { total: 142, page: 1, per_page: 20, last_page: 8 }
+    },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-RateLimit-Limit": "1000",
+      "X-RateLimit-Remaining": "997",
+      "X-RateLimit-Reset": "1746370800",
+      "Cache-Control": "no-cache, private",
+      "X-Request-Id": "f7b3c2a1-84d5-4e9f-a012-1234567890ab"
+    }
+  },
+  auth_token: {
+    status: 200, time: 142, size: "0.6 KB",
+    body: {
+      access_token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzZmE4NWY2NCJ9...",
+      refresh_token: "def50200a0b1c2d3e4f5...",
+      expires_in: 3600,
+      token_type: "Bearer"
+    },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-RateLimit-Limit": "1000",
+      "X-RateLimit-Remaining": "999",
+    }
+  },
+  not_found: {
+    status: 404, time: 32, size: "0.1 KB",
+    body: { error: "not_found", message: "The requested resource does not exist." },
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  },
+  unauthorized: {
+    status: 401, time: 28, size: "0.1 KB",
+    body: { error: "unauthorized", message: "Token missing or invalid." },
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  },
+  created: {
+    status: 201, time: 184, size: "0.4 KB",
+    body: { data: { id: "7ab34c11-9f22-4d88-b10a", name: "New User", email: "new@example.com", role: "viewer", created_at: "2026-05-01T12:00:00Z" } },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Location": "/v2/users/7ab34c11-9f22-4d88-b10a" }
+  },
+  server_error: {
+    status: 500, time: 3200, size: "0.1 KB",
+    body: { error: "server_error", message: "An unexpected error occurred. Please try again." },
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  },
+};
+
+function pickMockResponse(method, url) {
+  const u = url.toLowerCase();
+  if (!url.trim()) return null;
+  if (u.includes("auth/token") || u.includes("login")) return MOCK_RESPONSES.auth_token;
+  if (u.includes("/users") && method === "POST") return MOCK_RESPONSES.created;
+  if (u.includes("/users")) return MOCK_RESPONSES.users_list;
+  if (u.includes("nonexistent") || u.includes("404")) return MOCK_RESPONSES.not_found;
+  if (u.includes("error") || u.includes("500")) return MOCK_RESPONSES.server_error;
+  if (!url.includes("token") && (method === "GET" || method === "DELETE")) {
+    const rand = Math.random();
+    if (rand < 0.15) return MOCK_RESPONSES.unauthorized;
+  }
+  if (method === "POST" || method === "PUT" || method === "PATCH") return MOCK_RESPONSES.created;
+  return MOCK_RESPONSES.users_list;
+}
+
+/* ─── INITIAL HISTORY ────────────────────────── */
+const INITIAL_HISTORY = [
+  { id: 1, name: "List Users", method: "GET", url: "https://api.example.com/v2/users", status: 200, ts: "10:42" },
+  { id: 2, name: "Create User", method: "POST", url: "https://api.example.com/v2/users", status: 201, ts: "10:38" },
+  { id: 3, name: "Get Token", method: "POST", url: "https://api.example.com/v2/auth/token", status: 200, ts: "10:31" },
+  { id: 4, name: "Get Article", method: "GET", url: "https://api.example.com/v2/articles/the-tap-helper", status: 200, ts: "Yesterday" },
+  { id: 5, name: "List Articles", method: "GET", url: "https://api.example.com/v2/articles?page=1&tag=helpers", status: 200, ts: "Yesterday" },
+  { id: 6, name: "Delete Comment", method: "DELETE", url: "https://api.example.com/v2/comments/99", status: 404, ts: "Yesterday" },
+];
+
+/* ─── JSON SYNTAX HIGHLIGHT ──────────────────── */
+function syntaxHighlight(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+      let cls = 'json-num';
+      if (/^"/.test(match)) {
+        cls = /:$/.test(match) ? 'json-key' : 'json-str';
+      } else if (/true|false/.test(match)) {
+        cls = 'json-bool';
+      } else if (/null/.test(match)) {
+        cls = 'json-null';
+      }
+      return `<span class="${cls}">${match}</span>`;
+    });
+}
+
+/* ─── STATUS COLOR ───────────────────────────── */
+function statusStyle(code) {
+  if (!code) return { color: "var(--ink-low)", bg: "var(--cat-bg)" };
+  if (code < 300) return { color: "var(--green)", bg: "var(--green-bg)" };
+  if (code < 400) return { color: "var(--blue)",  bg: "var(--blue-bg)" };
+  if (code < 500) return { color: "var(--amber)", bg: "var(--amber-bg)" };
+  return { color: "var(--red)", bg: "var(--red-bg)" };
+}
+
+/* ─── KV EDITOR ──────────────────────────────── */
+function KVEditor({ rows, onChange }) {
+  const add = () => onChange([...rows, { id: Date.now(), enabled: true, key: "", value: "" }]);
+  const del = (id) => onChange(rows.filter(r => r.id !== id));
+  const upd = (id, field, val) => onChange(rows.map(r => r.id === id ? { ...r, [field]: val } : r));
+
+  return (
+    <div className="kv-table">
+      <div className="kv-header">
+        <span></span><span>Key</span><span>Value</span><span></span>
+      </div>
+      {rows.map(row => (
+        <div className="kv-row" key={row.id}>
+          <input type="checkbox" className="kv-check" checked={row.enabled} onChange={e => upd(row.id, "enabled", e.target.checked)} />
+          <input className="kv-input" placeholder="key" value={row.key} onChange={e => upd(row.id, "key", e.target.value)} />
+          <input className="kv-input" placeholder="value" value={row.value} onChange={e => upd(row.id, "value", e.target.value)} />
+          <button className="kv-del" onClick={() => del(row.id)}>
+            <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M2 2l7 7M9 2l-7 7"/>
+            </svg>
+          </button>
+        </div>
+      ))}
+      <button className="kv-add" onClick={add}>
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <path d="M6 2v8M2 6h8"/>
+        </svg>
+        Add row
+      </button>
+    </div>
+  );
+}
+
+/* ─── REQUEST PANEL ──────────────────────────── */
+function RequestPanel({ params, setParams, headers, setHeaders, body, setBody, bodyType, setBodyType, authType, setAuthType, authToken, setAuthToken, authUser, setAuthUser, authPass, setAuthPass }) {
+  const [tab, setTab] = useState("params");
+
+  const paramCount = params.filter(p => p.key && p.enabled).length;
+  const headerCount = headers.filter(h => h.key && h.enabled).length;
+
+  const formatJSON = () => {
+    try { setBody(JSON.stringify(JSON.parse(body), null, 2)); } catch (e) {}
+  };
+
+  return (
+    <div className="req-panel">
+      <div className="panel-tabs">
+        {[
+          { id: "params",  label: "Query Params", count: paramCount },
+          { id: "headers", label: "Headers",      count: headerCount },
+          { id: "body",    label: "Body" },
+          { id: "auth",    label: "Auth" },
+        ].map(t => (
+          <button key={t.id} className={`panel-tab${tab === t.id ? " active" : ""}`} onClick={() => setTab(t.id)}>
+            {t.label}
+            {t.count > 0 && <span className={`tab-badge${tab === t.id ? " active" : ""}`}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+      <div className="panel-body">
+        {tab === "params" && (
+          <KVEditor rows={params} onChange={setParams} />
+        )}
+        {tab === "headers" && (
+          <>
+            <KVEditor rows={headers} onChange={setHeaders} />
+            <div className="callout info" style={{ marginTop:"12px" }}>
+              <svg className="callout-icon" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="#1A5EA8" strokeWidth="1.2"/>
+                <path d="M7 6.5v3.5M7 5V5.5" stroke="#1A5EA8" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+              <span className="callout-text">The <span className="ic">Authorization</span> header is managed by the Auth tab and will be added automatically.</span>
+            </div>
+          </>
+        )}
+        {tab === "body" && (
+          <>
+            <div className="body-toolbar">
+              <select className="body-type-select" value={bodyType} onChange={e => setBodyType(e.target.value)}>
+                <option value="json">JSON</option>
+                <option value="form">Form Data</option>
+                <option value="raw">Raw</option>
+                <option value="none">None</option>
+              </select>
+              {bodyType === "json" && (
+                <button className="body-format-btn" onClick={formatJSON}>Format JSON</button>
+              )}
+            </div>
+            {bodyType === "none" ? (
+              <div style={{ color:"var(--ink-low)", fontSize:"13px", padding:"12px 4px" }}>No body for this request.</div>
+            ) : bodyType === "form" ? (
+              <KVEditor rows={params} onChange={setParams} />
+            ) : (
+              <textarea
+                className="body-textarea"
+                placeholder={bodyType === "json" ? '{\n  "key": "value"\n}' : "Enter request body…"}
+                value={body}
+                onChange={e => setBody(e.target.value)}
+                spellCheck={false}
+              />
+            )}
+          </>
+        )}
+        {tab === "auth" && (
+          <div className="auth-grid">
+            <div className="auth-type-row">
+              {["None", "Bearer Token", "Basic Auth", "API Key"].map(t => (
+                <button key={t} className={`auth-type-btn${authType === t ? " active" : ""}`} onClick={() => setAuthType(t)}>{t}</button>
+              ))}
+            </div>
+            {authType === "Bearer Token" && (
+              <div className="auth-field">
+                <label className="auth-label">Token</label>
+                <input className="auth-input" placeholder="eyJ0eXAiOiJKV1Qi..." value={authToken} onChange={e => setAuthToken(e.target.value)} />
+                <span className="auth-hint">Will be sent as <span className="ic">Authorization: Bearer {"{token}"}</span></span>
+              </div>
+            )}
+            {authType === "Basic Auth" && (
+              <>
+                <div className="auth-field">
+                  <label className="auth-label">Username</label>
+                  <input className="auth-input" placeholder="username" value={authUser} onChange={e => setAuthUser(e.target.value)} />
+                </div>
+                <div className="auth-field">
+                  <label className="auth-label">Password</label>
+                  <input className="auth-input" type="password" placeholder="••••••••" value={authPass} onChange={e => setAuthPass(e.target.value)} />
+                </div>
+                <span className="auth-hint">Credentials will be Base64-encoded and sent as <span className="ic">Authorization: Basic …</span></span>
+              </>
+            )}
+            {authType === "API Key" && (
+              <>
+                <div className="auth-field">
+                  <label className="auth-label">Key name</label>
+                  <input className="auth-input" placeholder="X-API-Key" value={authUser} onChange={e => setAuthUser(e.target.value)} />
+                </div>
+                <div className="auth-field">
+                  <label className="auth-label">Key value</label>
+                  <input className="auth-input" placeholder="sk-…" value={authToken} onChange={e => setAuthToken(e.target.value)} />
+                </div>
+              </>
+            )}
+            {authType === "None" && (
+              <div className="callout warn">
+                <svg className="callout-icon" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1.5l5.5 10H1.5L7 1.5zm0 4v3m0 1.5v.5" stroke="#9A5F00" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="callout-text">No auth set. Requests to protected endpoints will return 401 Unauthorized.</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── RESPONSE PANEL ─────────────────────────── */
+function ResponsePanel({ response, loading }) {
+  const [tab, setTab] = useState("body");
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    if (!response) return;
+    navigator.clipboard?.writeText(JSON.stringify(response.body, null, 2)).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  if (loading) {
+    return (
+      <div className="res-panel">
+        <div style={{ padding:"9px 16px", borderBottom:"1px solid var(--border)", background:"var(--bg)", height:"38px" }}></div>
+        <div className="loading-state">
+          <div className="big-spinner"></div>
+          <div className="loading-text">Sending request…</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!response) {
+    return (
+      <div className="res-panel">
+        <div style={{ padding:"9px 16px", borderBottom:"1px solid var(--border)", background:"var(--bg)", height:"38px" }}></div>
+        <div className="empty-state">
+          <svg viewBox="0 0 44 44" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+            <rect x="6" y="8" width="32" height="28" rx="3"/>
+            <path d="M14 16h16M14 22h16M14 28h8"/>
+            <path d="M34 34l5 5" strokeWidth="2"/>
+            <circle cx="34" cy="34" r="5"/>
+          </svg>
+          <div className="empty-title">No response yet</div>
+          <div className="empty-sub">Hit Send to make a request. The response will appear here.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const ss = statusStyle(response.status);
+  const statusLabel = {200:"OK", 201:"Created", 400:"Bad Request", 401:"Unauthorized", 403:"Forbidden", 404:"Not Found", 422:"Unprocessable", 429:"Too Many Requests", 500:"Server Error"}[response.status] || "";
+
+  return (
+    <div className="res-panel">
+      <div className="res-status-bar">
+        <span className="res-status-code" style={{ color: ss.color, background: ss.bg }}>{response.status} {statusLabel}</span>
+        <div className="res-meta-sep"></div>
+        <div className="res-meta-item">
+          <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+            <circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3v3l2 1.5"/>
+          </svg>
+          {response.time} ms
+        </div>
+        <div className="res-meta-sep"></div>
+        <div className="res-meta-item">
+          <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+            <rect x="1" y="1" width="9" height="9" rx="1.5"/>
+          </svg>
+          {response.size}
+        </div>
+        <button className="res-copy" onClick={copy}>
+          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.3">
+            <rect x="3" y="3" width="6" height="6" rx="1"/>
+            <path d="M7 3V1.5a1 1 0 00-1-1H1.5a1 1 0 00-1 1V6a1 1 0 001 1H3" strokeLinecap="round"/>
+          </svg>
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <div className="res-tabs-bar">
+        {["body", "headers"].map(t => (
+          <button key={t} className={`res-tab${tab === t ? " active" : ""}`} onClick={() => setTab(t)}>
+            {t === "body" ? "Body" : "Headers"}{t === "headers" ? ` (${Object.keys(response.headers || {}).length})` : ""}
+          </button>
+        ))}
+      </div>
+      <div className="res-body">
+        {tab === "body" && (
+          <div className="json-pre" dangerouslySetInnerHTML={{ __html: syntaxHighlight(response.body) }} />
+        )}
+        {tab === "headers" && (
+          <table className="headers-table">
+            <tbody>
+              {Object.entries(response.headers || {}).map(([k, v]) => (
+                <tr key={k}>
+                  <td className="hdr-key">{k}</td>
+                  <td className="hdr-val">{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── SIDEBAR ────────────────────────────────── */
+function Sidebar({ history, activeId, onSelect, onClear }) {
+  const [search, setSearch] = useState("");
+
+  const today = history.filter(h => h.ts.includes(":"));
+  const older  = history.filter(h => !h.ts.includes(":"));
+
+  const filter = (items) => search
+    ? items.filter(h => h.url.toLowerCase().includes(search.toLowerCase()) || h.name.toLowerCase().includes(search.toLowerCase()) || h.method.toLowerCase().includes(search.toLowerCase()))
+    : items;
+
+  const todayF = filter(today);
+  const olderF = filter(older);
+
+  return (
+    <div className="sidebar">
+      <div className="sidebar-header">
+        <span className="sidebar-title">History</span>
+        <button className="sidebar-clear" onClick={onClear}>Clear</button>
+      </div>
+      <div className="sidebar-search">
+        <div className="sidebar-search-wrap">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+            <circle cx="5" cy="5" r="3.5"/><path d="M8 8l2.5 2.5"/>
+          </svg>
+          <input className="sidebar-search-input" placeholder="Search history…" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+      </div>
+      <div className="history-scroll">
+        {todayF.length > 0 && (
+          <>
+            <div className="history-group-label">Today</div>
+            {todayF.map(h => {
+              const ms = METHOD_CFG[h.method] || {};
+              const ss = statusStyle(h.status);
+              return (
+                <button key={h.id} className={`history-item${activeId === h.id ? " active" : ""}`} onClick={() => onSelect(h)}>
+                  <span className="history-method" style={{ color: ms.color, background: ms.bg }}>{h.method}</span>
+                  <div className="history-info">
+                    <div className="history-name">{h.name}</div>
+                    <div className="history-url">{h.url.replace("https://api.example.com/v2", "")}</div>
+                  </div>
+                  <span className="history-status" style={{ color: ss.color, background: ss.bg }}>{h.status}</span>
+                </button>
+              );
+            })}
+          </>
+        )}
+        {olderF.length > 0 && (
+          <>
+            <div className="history-group-label">Earlier</div>
+            {olderF.map(h => {
+              const ms = METHOD_CFG[h.method] || {};
+              const ss = statusStyle(h.status);
+              return (
+                <button key={h.id} className={`history-item${activeId === h.id ? " active" : ""}`} onClick={() => onSelect(h)}>
+                  <span className="history-method" style={{ color: ms.color, background: ms.bg }}>{h.method}</span>
+                  <div className="history-info">
+                    <div className="history-name">{h.name}</div>
+                    <div className="history-url">{h.url.replace("https://api.example.com/v2", "")}</div>
+                  </div>
+                  <span className="history-status" style={{ color: ss.color, background: ss.bg }}>{h.status}</span>
+                </button>
+              );
+            })}
+          </>
+        )}
+        {todayF.length === 0 && olderF.length === 0 && (
+          <div style={{ padding:"24px 16px", textAlign:"center", color:"var(--ink-low)", fontSize:"12px" }}>No results</div>
+        )}
+      </div>
+      {/* Collections */}
+      <div className="sidebar-collections">
+        <div className="sidebar-collections-title">Collections</div>
+        {[
+          { name: "Authentication", color: "var(--green)", count: 3 },
+          { name: "Users API", color: "var(--blue)", count: 5 },
+          { name: "Articles API", color: "var(--amber)", count: 5 },
+        ].map(c => (
+          <div className="collection-item" key={c.name}>
+            <div className="collection-dot" style={{ background: c.color }}></div>
+            <span className="collection-name">{c.name}</span>
+            <span className="collection-count">{c.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── TWEAKS PANEL ───────────────────────────── */
+function TweaksPanel({ visible, onClose, tweaks, setTweak }) {
+  return (
+    <div className={`tweaks-panel${visible ? " visible" : ""}`}>
+      <div className="tweaks-header">
+        <span className="tweaks-title">Tweaks</span>
+        <button className="tweaks-close" onClick={onClose}>
+          <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M1.5 1.5l8 8M9.5 1.5l-8 8"/>
+          </svg>
+        </button>
+      </div>
+      <div className="tweaks-body">
+        <div className="tweak-row">
+          <div className="tweak-label">Layout</div>
+          <div className="tweak-options">
+            {["Horizontal", "Vertical"].map(o => (
+              <button key={o} className={`tweak-opt${tweaks.layout === o ? " active" : ""}`} onClick={() => setTweak("layout", o)}>{o}</button>
+            ))}
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-toggle-row">
+            <span className="tweak-toggle-lbl">Show sidebar</span>
+            <button className={`toggle-sw${tweaks.showSidebar ? " on" : ""}`} onClick={() => setTweak("showSidebar", !tweaks.showSidebar)} />
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-toggle-row">
+            <span className="tweak-toggle-lbl">Syntax highlight</span>
+            <button className={`toggle-sw${tweaks.highlight ? " on" : ""}`} onClick={() => setTweak("highlight", !tweaks.highlight)} />
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-label">Theme</div>
+          <div className="tweak-options">
+            {["Light", "Dark"].map(o => (
+              <button key={o} className={`tweak-opt${tweaks.theme === o ? " active" : ""}`} onClick={() => setTweak("theme", o)}>{o}</button>
+            ))}
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-label">Font size</div>
+          <div className="tweak-options">
+            {["Small", "Default", "Large"].map(o => (
+              <button key={o} className={`tweak-opt${tweaks.fontSize === o ? " active" : ""}`} onClick={() => setTweak("fontSize", o)}>{o}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── APP ────────────────────────────────────── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "layout": "Horizontal",
+  "showSidebar": true,
+  "highlight": true,
+  "theme": "Light",
+  "fontSize": "Default"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [method, setMethod]       = useState("GET");
+  const [url, setUrl]             = useState("https://api.example.com/v2/users");
+  const [params, setParams]       = useState([{ id: 1, enabled: true, key: "page", value: "1" }, { id: 2, enabled: true, key: "per_page", value: "20" }]);
+  const [headers, setHeaders]     = useState([{ id: 1, enabled: true, key: "Accept", value: "application/json" }]);
+  const [body, setBody]           = useState('{\n  "name": "",\n  "email": ""\n}');
+  const [bodyType, setBodyType]   = useState("json");
+  const [authType, setAuthType]   = useState("Bearer Token");
+  const [authToken, setAuthToken] = useState("");
+  const [authUser, setAuthUser]   = useState("");
+  const [authPass, setAuthPass]   = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [response, setResponse]   = useState(null);
+  const [history, setHistory]     = useState(INITIAL_HISTORY);
+  const [activeHistId, setActiveHistId] = useState(null);
+  const [tweaksVisible, setTweaksVisible] = useState(false);
+  const [tweaks, setTweaksState]  = useState(TWEAK_DEFAULTS);
+
+  const setTweak = (key, val) => {
+    setTweaksState(p => {
+      const next = { ...p, [key]: val };
+      window.parent?.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*');
+      return next;
+    });
+  };
+
+  // Tweaks protocol
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setTweaksVisible(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweaksVisible(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent?.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // Dark theme
+  useEffect(() => {
+    const root = document.documentElement;
+    if (tweaks.theme === "Dark") {
+      root.style.setProperty('--bg', '#141210');
+      root.style.setProperty('--surface', '#1C1917');
+      root.style.setProperty('--ink', '#F0EDE8');
+      root.style.setProperty('--ink-mid', '#A09890');
+      root.style.setProperty('--ink-low', '#706860');
+      root.style.setProperty('--border', '#2E2A26');
+      root.style.setProperty('--border-hover', '#403830');
+      root.style.setProperty('--cat-bg', '#252018');
+      root.style.setProperty('--cat-ink', '#C0B8A8');
+      root.style.setProperty('--code-bg', '#1A1612');
+      root.style.setProperty('--code-ink', '#D0C8B8');
+    } else {
+      root.style.setProperty('--bg', '#FAF7F2');
+      root.style.setProperty('--surface', '#FFFFFF');
+      root.style.setProperty('--ink', '#1A1A1A');
+      root.style.setProperty('--ink-mid', '#555555');
+      root.style.setProperty('--ink-low', '#888888');
+      root.style.setProperty('--border', '#E8E2D9');
+      root.style.setProperty('--border-hover', '#C8C0B4');
+      root.style.setProperty('--cat-bg', '#F0EDE8');
+      root.style.setProperty('--cat-ink', '#4A4540');
+      root.style.setProperty('--code-bg', '#F4F1EC');
+      root.style.setProperty('--code-ink', '#3D2B1F');
+    }
+  }, [tweaks.theme]);
+
+  // Font size
+  useEffect(() => {
+    const sz = tweaks.fontSize === "Small" ? "12px" : tweaks.fontSize === "Large" ? "15px" : "14px";
+    document.documentElement.style.fontSize = sz;
+  }, [tweaks.fontSize]);
+
+  // Method color on select
+  const ms = METHOD_CFG[method] || {};
+
+  const send = () => {
+    if (!url.trim()) return;
+    setLoading(true);
+    setResponse(null);
+    const delay = 400 + Math.random() * 600;
+    setTimeout(() => {
+      const mock = pickMockResponse(method, url);
+      const resp = mock || MOCK_RESPONSES.not_found;
+      const jitter = Math.floor(Math.random() * 60) - 20;
+      setResponse({ ...resp, time: resp.time + jitter });
+      setLoading(false);
+      // add to history
+      const now = new Date();
+      const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const pathName = url.split("/").filter(Boolean).pop() || url;
+      const newEntry = {
+        id: Date.now(),
+        name: pathName.charAt(0).toUpperCase() + pathName.slice(1).replace(/\?.*/, ""),
+        method, url,
+        status: resp.status,
+        ts: timeStr
+      };
+      setHistory(h => [newEntry, ...h.slice(0, 19)]);
+      setActiveHistId(newEntry.id);
+    }, delay);
+  };
+
+  const loadHistory = (item) => {
+    setMethod(item.method);
+    setUrl(item.url);
+    setActiveHistId(item.id);
+    setResponse(null);
+  };
+
+  const handleKey = (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send(); };
+
+  return (
+    <>
+      {/* NAV */}
+      <nav className="nav">
+        <div className="nav-brand">
+          Lesser Known Laravel
+          <div className="nav-sep"></div>
+          <span className="nav-section">HTTP Client</span>
+        </div>
+        <div className="nav-links">
+          <a className="nav-link" href="API Docs.html">API Docs</a>
+          <a className="nav-link active" href="#">HTTP Client</a>
+          <a className="nav-link" href="#">Changelog</a>
+          <a className="nav-link cta" href="#">Get token →</a>
+        </div>
+      </nav>
+
+      <div className="shell">
+        {tweaks.showSidebar && (
+          <Sidebar
+            history={history}
+            activeId={activeHistId}
+            onSelect={loadHistory}
+            onClear={() => setHistory([])}
+          />
+        )}
+
+        <div className="main">
+          {/* URL BAR */}
+          <div className="url-bar">
+            <div className="url-row">
+              <div className="method-select-wrap">
+                <select
+                  className="method-select"
+                  value={method}
+                  onChange={e => setMethod(e.target.value)}
+                  style={{ color: ms.color, borderColor: ms.bg === "var(--cat-bg)" ? "var(--border)" : ms.bg }}
+                >
+                  {Object.keys(METHOD_CFG).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <svg className="method-select-chevron" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M2 4l3 3 3-3"/>
+                </svg>
+              </div>
+              <input
+                className="url-input"
+                placeholder="https://api.example.com/v2/…"
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                onKeyDown={handleKey}
+              />
+              <button className="send-btn" onClick={send} disabled={loading || !url.trim()}>
+                {loading ? (
+                  <><div style={{ width:"12px", height:"12px", border:"2px solid rgba(255,255,255,.3)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin .7s linear infinite" }}></div> Sending</>
+                ) : (
+                  <><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><polygon points="2,1.5 11,6 2,10.5" fill="currentColor" stroke="none"/></svg> Send</>
+                )}
+              </button>
+            </div>
+            <div className="url-meta">
+              <div className="url-meta-item">
+                <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+                  <circle cx="5.5" cy="5.5" r="4.5"/>
+                  <path d="M5.5 2v2M5.5 7v2M2 5.5h2M7 5.5h2"/>
+                </svg>
+                <span className="ic" style={{ fontSize:"10px" }}>api.example.com</span>
+              </div>
+              <div className="url-meta-item">
+                <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+                  <rect x="2" y="5" width="7" height="5" rx="1"/>
+                  <path d="M3.5 5V3.5a2 2 0 014 0V5"/>
+                </svg>
+                HTTPS
+              </div>
+              <span className="url-meta-tag" style={{ background:"var(--green-bg)", color:"var(--green)" }}>v2</span>
+              <div style={{ marginLeft:"auto", fontSize:"11px", color:"var(--ink-low)" }}>
+                ⌘ + Enter to send
+              </div>
+            </div>
+          </div>
+
+          {/* SPLIT */}
+          <div className="content-split" style={{ flexDirection: tweaks.layout === "Vertical" ? "column" : "row" }}>
+            <RequestPanel
+              params={params} setParams={setParams}
+              headers={headers} setHeaders={setHeaders}
+              body={body} setBody={setBody}
+              bodyType={bodyType} setBodyType={setBodyType}
+              authType={authType} setAuthType={setAuthType}
+              authToken={authToken} setAuthToken={setAuthToken}
+              authUser={authUser} setAuthUser={setAuthUser}
+              authPass={authPass} setAuthPass={setAuthPass}
+            />
+            <ResponsePanel response={response} loading={loading} />
+          </div>
+        </div>
+      </div>
+
+      <TweaksPanel
+        visible={tweaksVisible}
+        onClose={() => {
+          setTweaksVisible(false);
+          window.parent?.postMessage({ type: '__edit_mode_dismissed' }, '*');
+        }}
+        tweaks={tweaks}
+        setTweak={setTweak}
+      />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

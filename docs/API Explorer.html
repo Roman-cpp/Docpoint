@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Explorer — Lesser Known Laravel</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans:  'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:  'Menlo', 'SF Mono', 'Courier New', monospace;
+  --bg:         #FAF7F2;
+  --surface:    #FFFFFF;
+  --ink:        #1A1A1A;
+  --ink-mid:    #555555;
+  --ink-low:    #888888;
+  --border:     #E8E2D9;
+  --border-h:   #C8C0B4;
+  --green:      #1E7E52; --green-bg: #EAF5EF;
+  --amber:      #9A5F00; --amber-bg: #FFF3DC;
+  --red:        #9A2800; --red-bg:   #FFF0EC;
+  --blue:       #1A5EA8; --blue-bg:  #EAF1FB;
+  --cat-bg:     #F0EDE8; --cat-ink:  #4A4540;
+  --code-bg:    #F4F1EC; --code-ink: #3D2B1F;
+  --get:    #1E7E52; --get-bg:    #EAF5EF;
+  --post:   #1A5EA8; --post-bg:   #EAF1FB;
+  --put:    #9A5F00; --put-bg:    #FFF3DC;
+  --patch:  #7A4F9A; --patch-bg:  #F3EAFB;
+  --delete: #9A2800; --delete-bg: #FFF0EC;
+}
+html, body { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; height: 100%; overflow: hidden; }
+h1,h2,h3 { font-family: var(--font-serif); font-weight: 400; }
+#root { height: 100vh; display: flex; flex-direction: column; }
+
+/* ── NAV ── */
+.nav { height: 52px; flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; padding: 0 20px; z-index: 100; }
+.nav-brand { font-family: var(--font-serif); font-size: 16px; color: var(--ink); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+.nav-sep { width: 1px; height: 14px; background: var(--border); flex-shrink: 0; }
+.nav-page { font-size: 12px; color: var(--ink-low); white-space: nowrap; flex-shrink: 0; }
+.nav-env { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 3px; margin: 0 auto; flex-shrink: 0; }
+.env-btn { padding: 4px 12px; font-size: 12px; border-radius: 5px; border: none; background: none; color: var(--ink-mid); cursor: pointer; font-family: var(--font-sans); transition: all .15s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.env-btn:hover { color: var(--ink); }
+.env-btn.on { background: var(--surface); color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+.env-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.nav-btn { padding: 5px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--ink-mid); cursor: pointer; font-family: var(--font-sans); transition: all .13s; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; }
+.nav-btn:hover { border-color: var(--border-h); color: var(--ink); }
+.nav-btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.nav-btn.primary:hover { background: #333; }
+.nav-btn.token-ok { background: var(--green-bg); color: var(--green); border-color: #9DD4B5; }
+
+/* ── SHELL ── */
+.shell { flex: 1; display: flex; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: 252px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.sb-apis { border-bottom: 1px solid var(--border); padding: 8px 8px 6px; flex-shrink: 0; }
+.sb-sec-lbl { font-size: 10px; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; color: var(--ink-low); padding: 3px 8px 4px; display: block; }
+.sb-api-btn { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 7px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--font-sans); transition: background .12s; }
+.sb-api-btn:hover { background: var(--cat-bg); }
+.sb-api-btn.on { background: var(--cat-bg); }
+.sb-api-icon { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.sb-api-name { font-size: 13px; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-api-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sb-search { padding: 8px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sb-search-wrap { position: relative; }
+.sb-search-ico { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; color: var(--ink-low); pointer-events: none; }
+.sb-search-input { width: 100%; padding: 5px 8px 5px 26px; font-size: 12px; font-family: var(--font-sans); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; outline: none; transition: border-color .15s; }
+.sb-search-input:focus { border-color: var(--border-h); }
+.sb-search-input::placeholder { color: var(--ink-low); }
+.sb-eps { flex: 1; overflow-y: auto; padding: 4px 0 20px; }
+.sb-eps::-webkit-scrollbar { width: 3px; }
+.sb-eps::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sb-grp-hdr { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px 3px; cursor: pointer; user-select: none; }
+.sb-grp-lbl { font-size: 10px; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; color: var(--ink-low); }
+.sb-grp-chev { width: 11px; height: 11px; color: var(--border-h); transition: transform .18s; flex-shrink: 0; }
+.sb-grp-chev.open { transform: rotate(180deg); }
+.sb-ep-list { padding: 1px 6px; display: flex; flex-direction: column; gap: 1px; }
+.sb-ep { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 6px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--font-sans); transition: background .12s; }
+.sb-ep:hover { background: var(--cat-bg); }
+.sb-ep.on { background: var(--cat-bg); }
+.sb-method { font-size: 9px; font-weight: 600; padding: 2px 5px; border-radius: 3px; min-width: 42px; text-align: center; flex-shrink: 0; letter-spacing: .2px; }
+.sb-path { font-size: 12px; color: var(--ink-mid); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.sb-ep.on .sb-path { color: var(--ink); font-weight: 500; }
+
+/* ── DOCS PANE ── */
+.docs-pane { flex: 1; overflow-y: auto; min-width: 0; }
+.docs-pane::-webkit-scrollbar { width: 4px; }
+.docs-pane::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.docs-inner { padding: 30px 36px 60px; max-width: 660px; }
+.ep-hdr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.ep-method-badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 5px; letter-spacing: .3px; flex-shrink: 0; }
+.ep-path { font-family: var(--font-mono); font-size: 20px; color: var(--ink); letter-spacing: -.3px; line-height: 1.2; }
+.ep-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 14px; }
+.tag { padding: 3px 9px; border-radius: 5px; font-size: 11px; background: var(--cat-bg); color: var(--cat-ink); }
+.tag.auth { background: var(--amber-bg); color: var(--amber); }
+.tag.new  { background: var(--green-bg); color: var(--green); }
+.ep-desc { font-size: 14px; color: var(--ink-mid); line-height: 1.75; margin-bottom: 24px; max-width: 540px; }
+.sec-lbl { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-low); margin-bottom: 10px; }
+.divider { height: 1px; background: var(--border); margin: 22px 0; }
+
+/* params table */
+.params-tbl { border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: var(--surface); margin-bottom: 24px; }
+.params-hd { display: grid; grid-template-columns: 150px 82px 1fr 68px; gap: 10px; padding: 7px 14px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.params-hd span { font-size: 10px; font-weight: 500; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-low); }
+.param-row { display: grid; grid-template-columns: 150px 82px 1fr 68px; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); align-items: start; transition: background .12s; }
+.param-row:last-child { border-bottom: none; }
+.param-row:hover { background: var(--bg); }
+.p-name { font-family: var(--font-mono); font-size: 12px; color: var(--code-ink); display: flex; align-items: center; gap: 3px; }
+.p-req { color: var(--red); font-size: 10px; }
+.p-type { font-family: var(--font-mono); font-size: 12px; color: var(--blue); }
+.p-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.55; }
+.p-def { font-family: var(--font-mono); font-size: 11px; color: var(--ink-low); }
+
+/* response tabs */
+.resp-tabs { display: flex; border: 1px solid var(--border); border-radius: 9px 9px 0 0; overflow: hidden; background: var(--bg); }
+.resp-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; font-size: 12px; color: var(--ink-mid); cursor: pointer; border-right: 1px solid var(--border); border: none; border-right: 1px solid var(--border); background: none; font-family: var(--font-sans); transition: background .12s; }
+.resp-tab:last-child { border-right: none; }
+.resp-tab:hover { background: var(--cat-bg); color: var(--ink); }
+.resp-tab.on { background: var(--surface); color: var(--ink); font-weight: 500; }
+.resp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.resp-body-wrap { border: 1px solid var(--border); border-top: none; border-radius: 0 0 9px 9px; background: var(--surface); margin-bottom: 24px; }
+.schema-row { display: grid; grid-template-columns: 140px 80px 1fr; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--border); transition: background .12s; }
+.schema-row:last-child { border-bottom: none; }
+.schema-row:hover { background: var(--bg); }
+.s-key { font-family: var(--font-mono); font-size: 11.5px; color: var(--code-ink); }
+.s-type { font-family: var(--font-mono); font-size: 11.5px; color: var(--blue); }
+.s-desc { font-size: 12.5px; color: var(--ink-mid); line-height: 1.5; }
+.s-ex { font-size: 11px; color: var(--ink-low); font-family: var(--font-mono); margin-top: 2px; }
+
+/* code block */
+.code-wrap { border: 1px solid var(--border); border-radius: 9px; overflow: hidden; margin-bottom: 24px; }
+.code-hdr { display: flex; align-items: center; justify-content: space-between; padding: 7px 13px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.lang-tabs { display: flex; gap: 2px; }
+.lang-btn { padding: 3px 9px; font-size: 11px; border-radius: 4px; border: none; background: none; color: var(--ink-low); cursor: pointer; font-family: var(--font-sans); transition: all .13s; letter-spacing: .2px; }
+.lang-btn:hover { color: var(--ink); background: var(--cat-bg); }
+.lang-btn.on { background: var(--ink); color: #fff; }
+.code-pre { padding: 13px 15px; font-family: var(--font-mono); font-size: 12px; line-height: 1.75; color: var(--code-ink); overflow-x: auto; white-space: pre; background: var(--code-bg); }
+.code-pre::-webkit-scrollbar { height: 3px; }
+.code-pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.copy-btn { font-size: 11px; color: var(--ink-low); background: none; border: none; cursor: pointer; font-family: var(--font-sans); display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; transition: all .13s; }
+.copy-btn:hover { background: var(--cat-bg); color: var(--ink); }
+
+/* ── TRY IT PANE ── */
+.try-pane { width: 348px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.try-hdr { padding: 13px 18px 11px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+.try-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+.try-env-pill { font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 100px; background: var(--bg); border: 1px solid var(--border); color: var(--ink-mid); display: flex; align-items: center; gap: 5px; }
+.try-body { flex: 1; overflow-y: auto; padding: 16px 18px 24px; display: flex; flex-direction: column; gap: 14px; }
+.try-body::-webkit-scrollbar { width: 3px; }
+.try-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* url bar */
+.url-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.url-bar-inner { display: flex; align-items: stretch; }
+.url-method { padding: 8px 11px; font-size: 10px; font-weight: 600; letter-spacing: .4px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; align-items: center; }
+.url-text { padding: 8px 10px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-mid); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; line-height: 1.5; }
+
+/* auth row */
+.auth-notice { border-radius: 7px; padding: 8px 11px; display: flex; align-items: center; gap: 7px; border: 1px solid #F0D99A; background: var(--amber-bg); }
+.auth-notice.ok { background: var(--green-bg); border-color: #9DD4B5; }
+.auth-notice-txt { font-size: 12px; color: var(--amber); flex: 1; line-height: 1.4; }
+.auth-notice.ok .auth-notice-txt { color: var(--green); }
+.auth-notice-btn { font-size: 11px; color: var(--amber); background: none; border: 1px solid rgba(154,95,0,.35); border-radius: 5px; padding: 2px 8px; cursor: pointer; font-family: var(--font-sans); transition: all .13s; white-space: nowrap; }
+.auth-notice-btn:hover { background: var(--amber); color: #fff; }
+
+/* fields */
+.fields-group { display: flex; flex-direction: column; gap: 9px; }
+.fields-lbl { font-size: 10px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-low); }
+.field-row { display: flex; flex-direction: column; gap: 3px; }
+.field-label { font-size: 11px; color: var(--ink-mid); display: flex; align-items: baseline; gap: 4px; }
+.field-fname { font-family: var(--font-mono); font-weight: 500; color: var(--code-ink); }
+.field-req { color: var(--red); }
+.field-ftype { color: var(--ink-low); font-size: 10px; }
+.field-input { padding: 7px 10px; font-size: 12px; font-family: var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; outline: none; transition: border-color .15s; width: 100%; }
+.field-input:focus { border-color: var(--border-h); }
+.field-input::placeholder { color: var(--ink-low); font-family: var(--font-sans); font-size: 11.5px; }
+
+/* send */
+.send-btn { width: 100%; padding: 9px; font-size: 13px; font-weight: 500; font-family: var(--font-sans); background: var(--ink); color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.send-btn:hover:not(:disabled) { background: #333; }
+.send-btn:disabled { opacity: .45; cursor: default; }
+.spin { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* response */
+.resp-card { border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.resp-card-hdr { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px; background: var(--bg); border-bottom: 1px solid var(--border); gap: 8px; }
+.resp-status-badge { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 5px; font-family: var(--font-mono); flex-shrink: 0; }
+.resp-dur { font-size: 11px; color: var(--ink-low); }
+.resp-pre { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.72; color: var(--code-ink); padding: 11px 13px; max-height: 300px; overflow-y: auto; white-space: pre; background: var(--code-bg); }
+.resp-pre::-webkit-scrollbar { width: 3px; }
+.resp-pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.resp-error { font-size: 12px; color: var(--red); padding: 11px 13px; background: var(--red-bg); line-height: 1.5; }
+
+/* ── OVERVIEW ── */
+.overview { flex: 1; overflow-y: auto; padding: 36px 44px 60px; }
+.ov-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-low); margin-bottom: 10px; }
+.ov-title { font-family: var(--font-serif); font-size: 28px; color: var(--ink); line-height: 1.2; margin-bottom: 9px; }
+.ov-sub { font-size: 14px; color: var(--ink-mid); line-height: 1.75; max-width: 500px; margin-bottom: 28px; }
+.stats-row { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 32px; overflow: hidden; }
+.stat-item { flex: 1; padding: 16px 22px; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; }
+.stat-lbl { font-size: 10px; font-weight: 500; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-low); margin-bottom: 6px; }
+.stat-val { font-family: var(--font-serif); font-size: 22px; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+.stat-sub { font-size: 11px; color: var(--ink-low); }
+.api-cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.api-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; cursor: pointer; transition: border-color .18s, box-shadow .18s, transform .15s; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 11px; }
+.api-card:hover { border-color: var(--border-h); box-shadow: 0 6px 24px rgba(0,0,0,.07); transform: translateY(-2px); }
+.api-card.sel { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.ac-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.ac-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.ac-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.ac-status { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 100px; }
+.ac-name { font-family: var(--font-serif); font-size: 17px; color: var(--ink); line-height: 1.2; }
+.ac-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.65; }
+.ac-footer { display: flex; gap: 5px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); align-items: center; }
+.ac-tag { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; background: var(--cat-bg); color: var(--cat-ink); }
+.ac-count { margin-left: auto; font-size: 11px; color: var(--ink-low); }
+
+/* ── TOKEN MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.22); z-index: 500; display: flex; align-items: center; justify-content: center; }
+.modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; width: 392px; box-shadow: 0 16px 56px rgba(0,0,0,.14); overflow: hidden; }
+.modal-hdr { display: flex; align-items: center; justify-content: space-between; padding: 13px 18px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.modal-title { font-size: 14px; font-weight: 500; color: var(--ink); }
+.modal-x { width: 22px; height: 22px; border: none; background: none; cursor: pointer; color: var(--ink-low); display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background .13s; }
+.modal-x:hover { background: var(--cat-bg); color: var(--ink); }
+.modal-body { padding: 18px; display: flex; flex-direction: column; gap: 13px; }
+.modal-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.65; }
+.ic { font-family: var(--font-mono); font-size: 11px; background: var(--code-bg); color: var(--code-ink); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); }
+.modal-input { padding: 9px 12px; font-size: 13px; font-family: var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; outline: none; width: 100%; transition: border-color .15s; }
+.modal-input:focus { border-color: var(--border-h); }
+.modal-actions { display: flex; align-items: center; gap: 10px; }
+.modal-save { padding: 8px 22px; font-size: 13px; font-weight: 500; font-family: var(--font-sans); background: var(--ink); color: #fff; border: none; border-radius: 7px; cursor: pointer; transition: background .15s; }
+.modal-save:hover { background: #333; }
+.modal-clear { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; font-family: var(--font-sans); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ══ DATA ══ */
+const ENV_CONFIG = {
+  prod:    { label: "Production",  dot: "#1E7E52", baseUrl: "https://api.example.com" },
+  staging: { label: "Staging",     dot: "#9A5F00", baseUrl: "https://staging.api.example.com" },
+  local:   { label: "Local",       dot: "#1A5EA8", baseUrl: "http://localhost:8000" },
+};
+
+const APIS = [
+  {
+    id: "core", name: "Core API", icon: "⚡", iconBg: "#EAF5EF", accent: "#1E7E52",
+    version: "v2", desc: "Main application API. Users, articles, tags, comments — the full content layer.",
+    uptime: 99.97, status: "operational", latency: "42ms", requests: "1.2M/day",
+    tags: ["REST", "JSON", "Auth required"],
+    groups: [
+      { id: "g-auth", label: "Authentication", endpoints: [
+        { id: "c-auth-1", method: "POST", path: "/auth/token", summary: "Obtain access token",
+          desc: "Exchange credentials for a short-lived Bearer token and a refresh token. Tokens expire after 60 minutes.",
+          tags: ["public"], auth: false,
+          params: [
+            { name: "email",    type: "string", req: true,  desc: "Registered email address" },
+            { name: "password", type: "string", req: true,  desc: "Account password" },
+          ],
+          response200: {
+            schema: [
+              { key: "access_token",  type: "string",  desc: "Bearer token (60 min)" },
+              { key: "refresh_token", type: "string",  desc: "Refresh token (30 days)" },
+              { key: "expires_in",    type: "integer", desc: "Seconds until expiry", ex: "3600" },
+            ],
+            example: '{\n  "access_token": "eyJ0eXAiOiJKV1Qi...",\n  "refresh_token": "def50200...",\n  "expires_in": 3600,\n  "token_type": "Bearer"\n}'
+          }
+        },
+        { id: "c-auth-2", method: "POST", path: "/auth/refresh", summary: "Refresh token",
+          desc: "Use a refresh token to obtain a new access token without re-entering credentials.",
+          tags: ["public"], auth: false,
+          params: [{ name: "refresh_token", type: "string", req: true, desc: "Valid refresh token" }],
+          response200: {
+            schema: [
+              { key: "access_token", type: "string",  desc: "New Bearer token" },
+              { key: "expires_in",   type: "integer", desc: "Seconds until expiry", ex: "3600" },
+            ],
+            example: '{\n  "access_token": "eyJ0eXAi...",\n  "expires_in": 3600\n}'
+          }
+        },
+        { id: "c-auth-3", method: "DELETE", path: "/auth/token", summary: "Revoke token",
+          desc: "Immediately invalidates the current access token.", tags: ["auth-required"], auth: true, params: [],
+          response200: {
+            schema: [{ key: "message", type: "string", desc: "Confirmation message", ex: '"Token revoked"' }],
+            example: '{\n  "message": "Token revoked successfully"\n}'
+          }
+        },
+      ]},
+      { id: "g-users", label: "Users", endpoints: [
+        { id: "c-users-1", method: "GET", path: "/users", summary: "List users",
+          desc: "Returns a paginated list of all registered users. Supports filtering by role and search.",
+          tags: ["paginated", "auth-required"], auth: true,
+          params: [
+            { name: "page",     type: "integer", req: false, desc: "Page number",             def: "1" },
+            { name: "per_page", type: "integer", req: false, desc: "Items per page, max 100", def: "20" },
+            { name: "role",     type: "string",  req: false, desc: "Filter: admin · editor · viewer" },
+            { name: "search",   type: "string",  req: false, desc: "Search by name or email" },
+          ],
+          response200: {
+            schema: [
+              { key: "data",       type: "array",   desc: "User objects" },
+              { key: "meta.total", type: "integer", desc: "Total matching records" },
+              { key: "meta.page",  type: "integer", desc: "Current page" },
+            ],
+            example: '{\n  "data": [\n    { "id": "3fa85f64", "name": "Alice", "email": "alice@example.com", "role": "editor" }\n  ],\n  "meta": { "total": 142, "page": 1, "per_page": 20, "last_page": 8 }\n}'
+          }
+        },
+        { id: "c-users-2", method: "POST", path: "/users", summary: "Create user",
+          desc: "Creates a new user account and optionally sends a welcome email.",
+          tags: ["auth-required", "new"], auth: true,
+          params: [
+            { name: "name",     type: "string", req: true,  desc: "Full display name" },
+            { name: "email",    type: "string", req: true,  desc: "Unique email address" },
+            { name: "password", type: "string", req: true,  desc: "Min 8 chars, uppercase + digit" },
+            { name: "role",     type: "string", req: false, desc: "Role to assign", def: "viewer" },
+          ],
+          response200: {
+            schema: [
+              { key: "data.id",   type: "string", desc: "UUID of new user" },
+              { key: "data.name", type: "string", desc: "Display name" },
+              { key: "data.role", type: "string", desc: "Assigned role" },
+            ],
+            example: '{\n  "data": {\n    "id": "7ab34c11",\n    "name": "Bob Jones",\n    "email": "bob@example.com",\n    "role": "viewer"\n  }\n}'
+          }
+        },
+        { id: "c-users-3", method: "GET", path: "/users/{id}", summary: "Get user",
+          desc: "Returns a single user by UUID.", tags: ["auth-required"], auth: true,
+          params: [{ name: "id", type: "string", req: true, desc: "User UUID (path param)" }],
+          response200: {
+            schema: [
+              { key: "data.id",    type: "string", desc: "UUID" },
+              { key: "data.name",  type: "string", desc: "Name" },
+              { key: "data.email", type: "string", desc: "Email" },
+            ],
+            example: '{\n  "data": { "id": "3fa85f64", "name": "Alice", "email": "alice@example.com" }\n}'
+          }
+        },
+      ]},
+      { id: "g-articles", label: "Articles", endpoints: [
+        { id: "c-art-1", method: "GET", path: "/articles", summary: "List articles",
+          desc: "Returns paginated list of articles. Public for published; auth required for drafts.",
+          tags: ["paginated", "public"], auth: false,
+          params: [
+            { name: "page",   type: "integer", req: false, desc: "Page number",                        def: "1" },
+            { name: "tag",    type: "string",  req: false, desc: "Filter by tag slug" },
+            { name: "status", type: "string",  req: false, desc: "published · draft (auth required)", def: "published" },
+          ],
+          response200: {
+            schema: [
+              { key: "data",       type: "array",   desc: "Article objects" },
+              { key: "meta.total", type: "integer", desc: "Total count" },
+            ],
+            example: '{\n  "data": [\n    { "id": "a1b2c3", "title": "The tap() Helper", "slug": "the-tap-helper" }\n  ],\n  "meta": { "total": 48, "page": 1, "per_page": 15 }\n}'
+          }
+        },
+        { id: "c-art-2", method: "POST", path: "/articles", summary: "Create article",
+          desc: "Publishes a new article. Requires editor or admin role.", tags: ["auth-required"], auth: true,
+          params: [
+            { name: "title",  type: "string", req: true,  desc: "Article title" },
+            { name: "body",   type: "string", req: true,  desc: "Markdown body content" },
+            { name: "tags",   type: "array",  req: false, desc: "Array of tag slugs" },
+            { name: "status", type: "string", req: false, desc: "published · draft", def: "draft" },
+          ],
+          response200: {
+            schema: [
+              { key: "data.id",   type: "string", desc: "Article UUID" },
+              { key: "data.slug", type: "string", desc: "URL slug", ex: '"the-tap-helper"' },
+            ],
+            example: '{\n  "data": { "id": "a1b2c3", "title": "New Article", "slug": "new-article", "status": "draft" }\n}'
+          }
+        },
+      ]},
+    ]
+  },
+  {
+    id: "search", name: "Search API", icon: "🔍", iconBg: "#EAF1FB", accent: "#1A5EA8",
+    version: "v1", desc: "Full-text search across articles, glossary entries, and user profiles using Meilisearch.",
+    uptime: 99.82, status: "operational", latency: "18ms", requests: "340K/day",
+    tags: ["REST", "JSON", "Public"],
+    groups: [
+      { id: "sg-search", label: "Search", endpoints: [
+        { id: "s-1", method: "GET", path: "/search", summary: "Global search",
+          desc: "Full-text search across all content types. Returns ranked results with hit highlighting.",
+          tags: ["public"], auth: false,
+          params: [
+            { name: "q",     type: "string",  req: true,  desc: "Search query (min 2 chars)" },
+            { name: "type",  type: "string",  req: false, desc: "articles · users · glossary · all", def: "all" },
+            { name: "limit", type: "integer", req: false, desc: "Max results to return",              def: "20" },
+          ],
+          response200: {
+            schema: [
+              { key: "hits",               type: "array",   desc: "Ranked result objects" },
+              { key: "hits[].type",        type: "string",  desc: "Content type", ex: '"article"' },
+              { key: "hits[].title",       type: "string",  desc: "Result title" },
+              { key: "hits[].highlight",   type: "string",  desc: "HTML snippet with <mark> tags" },
+              { key: "processing_time_ms", type: "integer", desc: "Server-side search time" },
+            ],
+            example: '{\n  "hits": [\n    {\n      "type": "article",\n      "title": "The tap() Helper",\n      "highlight": "...a closure on a <mark>value</mark>..."\n    }\n  ],\n  "processing_time_ms": 3,\n  "total": 12\n}'
+          }
+        },
+        { id: "s-2", method: "GET", path: "/search/suggest", summary: "Autocomplete",
+          desc: "Returns prefix-match suggestions for search-as-you-type use cases.",
+          tags: ["public"], auth: false,
+          params: [
+            { name: "q",     type: "string",  req: true,  desc: "Prefix to complete (min 1 char)" },
+            { name: "limit", type: "integer", req: false, desc: "Max suggestions", def: "5" },
+          ],
+          response200: {
+            schema: [{ key: "suggestions", type: "array", desc: "String suggestions" }],
+            example: '{\n  "suggestions": ["tap helper", "tap() method", "tap collection"]\n}'
+          }
+        },
+      ]},
+      { id: "sg-index", label: "Index", endpoints: [
+        { id: "s-3", method: "POST", path: "/search/reindex", summary: "Trigger reindex",
+          desc: "Queues a full reindex of all content. Admin only. Takes 30–60 seconds.",
+          tags: ["admin-only", "auth-required"], auth: true,
+          params: [{ name: "type", type: "string", req: false, desc: "Limit to content type. Omit to reindex all." }],
+          response200: {
+            schema: [
+              { key: "job_id",            type: "string",  desc: "Background job ID" },
+              { key: "estimated_seconds", type: "integer", desc: "Estimated completion time", ex: "45" },
+            ],
+            example: '{\n  "job_id": "job_8c3f1a",\n  "status": "queued",\n  "estimated_seconds": 45\n}'
+          }
+        },
+      ]},
+    ]
+  },
+  {
+    id: "webhook", name: "Webhooks API", icon: "🔔", iconBg: "#FFF3DC", accent: "#9A5F00",
+    version: "v1", desc: "Subscribe to real-time events from the platform — article published, user created, comment added.",
+    uptime: 98.41, status: "degraded", latency: "—", requests: "28K/day",
+    tags: ["REST", "JSON", "Auth required"],
+    groups: [
+      { id: "wg-eps", label: "Endpoints", endpoints: [
+        { id: "w-1", method: "GET", path: "/webhooks", summary: "List webhooks",
+          desc: "Returns all registered webhook endpoints for the authenticated user.",
+          tags: ["auth-required"], auth: true, params: [],
+          response200: {
+            schema: [
+              { key: "data",          type: "array",   desc: "Webhook objects" },
+              { key: "data[].id",     type: "string",  desc: "Webhook UUID" },
+              { key: "data[].url",    type: "string",  desc: "Target URL" },
+              { key: "data[].events", type: "array",   desc: "Subscribed event types" },
+              { key: "data[].active", type: "boolean", desc: "Whether webhook is active" },
+            ],
+            example: '{\n  "data": [\n    {\n      "id": "wh_abc123",\n      "url": "https://yourapp.com/hooks/lkl",\n      "events": ["article.published"],\n      "active": true\n    }\n  ]\n}'
+          }
+        },
+        { id: "w-2", method: "POST", path: "/webhooks", summary: "Create webhook",
+          desc: "Registers a new webhook endpoint to receive event notifications.",
+          tags: ["auth-required"], auth: true,
+          params: [
+            { name: "url",    type: "string", req: true,  desc: "HTTPS endpoint to deliver events to" },
+            { name: "events", type: "array",  req: true,  desc: "Event types: article.published · user.created · comment.added" },
+            { name: "secret", type: "string", req: false, desc: "HMAC-SHA256 signing secret for verification" },
+          ],
+          response200: {
+            schema: [
+              { key: "data.id",     type: "string", desc: "Webhook UUID" },
+              { key: "data.url",    type: "string", desc: "Target URL" },
+              { key: "data.events", type: "array",  desc: "Subscribed events" },
+            ],
+            example: '{\n  "data": {\n    "id": "wh_abc123",\n    "url": "https://yourapp.com/hooks/lkl",\n    "events": ["article.published"],\n    "active": true\n  }\n}'
+          }
+        },
+        { id: "w-3", method: "DELETE", path: "/webhooks/{id}", summary: "Delete webhook",
+          desc: "Removes a webhook subscription. Events will no longer be delivered.", tags: ["auth-required"], auth: true,
+          params: [{ name: "id", type: "string", req: true, desc: "Webhook UUID (path param)" }],
+          response200: {
+            schema: [{ key: "message", type: "string", desc: "Confirmation", ex: '"Webhook deleted"' }],
+            example: '{\n  "message": "Webhook deleted successfully"\n}'
+          }
+        },
+      ]},
+      { id: "wg-events", label: "Events", endpoints: [
+        { id: "w-4", method: "GET", path: "/webhooks/{id}/events", summary: "Delivery log",
+          desc: "Returns the last 100 delivery attempts for a webhook, with status and response codes.",
+          tags: ["auth-required"], auth: true,
+          params: [
+            { name: "id",     type: "string", req: true,  desc: "Webhook UUID" },
+            { name: "status", type: "string", req: false, desc: "Filter: success · failed", def: "all" },
+          ],
+          response200: {
+            schema: [
+              { key: "data",               type: "array",   desc: "Delivery attempts" },
+              { key: "data[].event",       type: "string",  desc: "Event type", ex: '"article.published"' },
+              { key: "data[].status_code", type: "integer", desc: "HTTP response status", ex: "200" },
+              { key: "data[].delivered_at",type: "string",  desc: "ISO 8601 timestamp" },
+            ],
+            example: '{\n  "data": [\n    {\n      "event": "article.published",\n      "status_code": 200,\n      "duration_ms": 142,\n      "delivered_at": "2026-05-01T10:30:00Z"\n    }\n  ]\n}'
+          }
+        },
+      ]},
+    ]
+  },
+];
+
+const METHOD_CFG = {
+  GET:    { color: "var(--get)",    bg: "var(--get-bg)"    },
+  POST:   { color: "var(--post)",   bg: "var(--post-bg)"   },
+  PUT:    { color: "var(--put)",    bg: "var(--put-bg)"    },
+  PATCH:  { color: "var(--patch)",  bg: "var(--patch-bg)"  },
+  DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
+};
+
+/* ══ HELPERS ══ */
+function statusColor(s) {
+  if (s === "operational") return { color: "var(--green)", bg: "var(--green-bg)", label: "Operational" };
+  if (s === "degraded")    return { color: "var(--amber)", bg: "var(--amber-bg)", label: "Degraded" };
+  return                          { color: "var(--red)",   bg: "var(--red-bg)",   label: "Outage" };
+}
+
+function buildUrl(ep, api, env, vals) {
+  let path = ep.path;
+  const qp = {};
+  for (const p of ep.params || []) {
+    const v = (vals[p.name] || '').trim();
+    if (!v) continue;
+    if (path.includes(`{${p.name}}`)) path = path.replace(`{${p.name}}`, encodeURIComponent(v));
+    else if (ep.method === 'GET') qp[p.name] = v;
+  }
+  const qs = new URLSearchParams(qp).toString();
+  return `${ENV_CONFIG[env].baseUrl}/${api.version}${path}${qs ? '?' + qs : ''}`;
+}
+
+function buildBody(ep, vals) {
+  if (ep.method === 'GET') return {};
+  const b = {};
+  for (const p of ep.params || []) {
+    const v = (vals[p.name] || '').trim();
+    if (v && !ep.path.includes(`{${p.name}}`)) b[p.name] = v;
+  }
+  return b;
+}
+
+function genCode(lang, ep, api, env, token, vals = {}) {
+  const url = buildUrl(ep, api, env, vals);
+  const body = buildBody(ep, vals);
+  const hasBody = Object.keys(body).length > 0;
+  const auth = ep.auth && token ? `Bearer ${token}` : null;
+
+  if (lang === 'curl') {
+    const parts = [`curl -X ${ep.method} "${url}"`];
+    if (auth) parts.push(`  -H "Authorization: ${auth}"`);
+    parts.push(`  -H "Accept: application/json"`);
+    if (hasBody) {
+      parts.push(`  -H "Content-Type: application/json"`);
+      parts.push(`  -d '${JSON.stringify(body)}'`);
+    }
+    return parts.join(' \\\n');
+  }
+
+  if (lang === 'js') {
+    const hdrs = { 'Accept': 'application/json' };
+    if (auth) hdrs['Authorization'] = auth;
+    if (hasBody) hdrs['Content-Type'] = 'application/json';
+    const hdrLines = Object.entries(hdrs).map(([k, v]) => `    "${k}": "${v}"`).join(',\n');
+    let s = `const res = await fetch("${url}", {\n  method: "${ep.method}",\n  headers: {\n${hdrLines}\n  }`;
+    if (hasBody) s += `,\n  body: JSON.stringify(${JSON.stringify(body)})`;
+    return s + `\n});\n\nconst data = await res.json();\nconsole.log(data);`;
+  }
+
+  if (lang === 'python') {
+    const hdrs = { 'Accept': 'application/json' };
+    if (auth) hdrs['Authorization'] = auth;
+    const hdrLines = Object.entries(hdrs).map(([k, v]) => `    "${k}": "${v}"`).join(',\n');
+    let s = `import requests\n\nheaders = {\n${hdrLines}\n}\n\nresponse = requests.${ep.method.toLowerCase()}(\n    "${url}",\n    headers=headers`;
+    if (hasBody) s += `,\n    json=${JSON.stringify(body)}`;
+    return s + `\n)\n\nprint(response.json())`;
+  }
+
+  return '';
+}
+
+/* ══ COMPONENTS ══ */
+function CopyBtn({ text }) {
+  const [done, setDone] = useState(false);
+  const go = () => { navigator.clipboard?.writeText(text).catch(() => {}); setDone(true); setTimeout(() => setDone(false), 1400); };
+  return (
+    <button className="copy-btn" onClick={go}>
+      <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" width="10" height="10">
+        <rect x="3" y="3" width="6" height="6" rx="1"/>
+        <path d="M7 3V1.5a1 1 0 00-1-1H1.5a1 1 0 00-1 1V6a1 1 0 001 1H3" strokeLinecap="round"/>
+      </svg>
+      {done ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+/* ── Sidebar ── */
+function Sidebar({ apis, selApiId, selEpId, onApi, onEp }) {
+  const [search, setSearch] = useState('');
+  const [closed, setClosed] = useState({});
+  const api = apis.find(a => a.id === selApiId);
+  const toggle = id => setClosed(p => ({ ...p, [id]: !p[id] }));
+
+  const groups = api ? api.groups.map(g => ({
+    ...g,
+    endpoints: g.endpoints.filter(e =>
+      !search.trim() ||
+      e.path.toLowerCase().includes(search.toLowerCase()) ||
+      e.summary.toLowerCase().includes(search.toLowerCase()) ||
+      e.method.toLowerCase().startsWith(search.toLowerCase())
+    )
+  })).filter(g => !search.trim() || g.endpoints.length > 0) : [];
+
+  return (
+    <aside className="sidebar">
+      <div className="sb-apis">
+        <span className="sb-sec-lbl">APIs</span>
+        {apis.map(a => {
+          const sc = statusColor(a.status);
+          return (
+            <button key={a.id} className={`sb-api-btn${selApiId === a.id ? ' on' : ''}`} onClick={() => onApi(a.id)}>
+              <div className="sb-api-icon" style={{ background: a.iconBg }}>{a.icon}</div>
+              <span className="sb-api-name">{a.name}</span>
+              <div className="sb-api-dot" style={{ background: sc.color }}></div>
+            </button>
+          );
+        })}
+      </div>
+
+      {api && (<>
+        <div className="sb-search">
+          <div className="sb-search-wrap">
+            <svg className="sb-search-ico" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <circle cx="5" cy="5" r="3.5"/><path d="M8 8l2.5 2.5"/>
+            </svg>
+            <input className="sb-search-input" placeholder={`Search ${api.name}…`} value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+        </div>
+        <div className="sb-eps">
+          {groups.map(g => {
+            const open = !closed[g.id];
+            return (
+              <div key={g.id}>
+                <div className="sb-grp-hdr" onClick={() => toggle(g.id)}>
+                  <span className="sb-grp-lbl">{g.label}</span>
+                  <svg className={`sb-grp-chev${open ? ' open' : ''}`} viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                    <path d="M2.5 4l3 3 3-3"/>
+                  </svg>
+                </div>
+                {open && (
+                  <div className="sb-ep-list">
+                    {g.endpoints.map(ep => {
+                      const mc = METHOD_CFG[ep.method] || {};
+                      return (
+                        <button key={ep.id} className={`sb-ep${selEpId === ep.id ? ' on' : ''}`} onClick={() => onEp(ep.id)}>
+                          <span className="sb-method" style={{ color: mc.color, background: mc.bg }}>{ep.method}</span>
+                          <span className="sb-path">{ep.path}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </>)}
+    </aside>
+  );
+}
+
+/* ── DocsPanel ── */
+function DocsPanel({ ep, api, env, authToken }) {
+  const [respTab, setRespTab] = useState('200');
+  const [lang, setLang] = useState('curl');
+  const mc = METHOD_CFG[ep.method] || {};
+  const code = genCode(lang, ep, api, env, authToken);
+
+  return (
+    <div className="docs-pane">
+      <div className="docs-inner">
+        <div className="ep-hdr">
+          <span className="ep-method-badge" style={{ color: mc.color, background: mc.bg }}>{ep.method}</span>
+          <span className="ep-path">{ep.path}</span>
+        </div>
+        <div className="ep-tags">
+          {ep.auth && <span className="tag auth">🔐 Auth required</span>}
+          {ep.tags.map(t => <span key={t} className={`tag${t === 'new' ? ' new' : ''}`}>{t}</span>)}
+          <span className="tag" style={{ background: api.iconBg, color: api.accent }}>{api.name} {api.version}</span>
+        </div>
+        <p className="ep-desc">{ep.desc}</p>
+
+        {ep.params && ep.params.length > 0 && (
+          <div>
+            <div className="sec-lbl">{ep.method === 'GET' ? 'Query parameters' : 'Request body'}</div>
+            <div className="params-tbl">
+              <div className="params-hd"><span>Name</span><span>Type</span><span>Description</span><span>Default</span></div>
+              {ep.params.map(p => (
+                <div key={p.name} className="param-row">
+                  <span className="p-name">{p.name}{p.req && <span className="p-req"> *</span>}</span>
+                  <span className="p-type">{p.type}</span>
+                  <span className="p-desc">{p.desc}</span>
+                  <span className="p-def">{p.def || '—'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="divider"></div>
+
+        <div>
+          <div className="sec-lbl">Response schema</div>
+          <div className="resp-tabs">
+            <button className={`resp-tab${respTab === '200' ? ' on' : ''}`} onClick={() => setRespTab('200')}>
+              <span className="resp-dot" style={{ background: 'var(--green)' }}></span>200 OK
+            </button>
+            <button className={`resp-tab${respTab === '401' ? ' on' : ''}`} onClick={() => setRespTab('401')}>
+              <span className="resp-dot" style={{ background: 'var(--red)' }}></span>401
+            </button>
+            {ep.method !== 'GET' && (
+              <button className={`resp-tab${respTab === '422' ? ' on' : ''}`} onClick={() => setRespTab('422')}>
+                <span className="resp-dot" style={{ background: 'var(--amber)' }}></span>422
+              </button>
+            )}
+          </div>
+          <div className="resp-body-wrap">
+            {respTab === '200' && ep.response200?.schema.map((s, i) => (
+              <div key={i} className="schema-row">
+                <span className="s-key">{s.key}</span>
+                <span className="s-type">{s.type}</span>
+                <div><div className="s-desc">{s.desc}</div>{s.ex && <div className="s-ex">e.g. {s.ex}</div>}</div>
+              </div>
+            ))}
+            {respTab === '401' && (<>
+              <div className="schema-row"><span className="s-key">error</span><span className="s-type">string</span><div className="s-desc">Machine-readable error code</div></div>
+              <div className="schema-row"><span className="s-key">message</span><span className="s-type">string</span><div className="s-desc">Human-readable message</div></div>
+            </>)}
+            {respTab === '422' && (<>
+              <div className="schema-row"><span className="s-key">error</span><span className="s-type">string</span><div className="s-desc">validation_error</div></div>
+              <div className="schema-row"><span className="s-key">errors</span><span className="s-type">object</span><div className="s-desc">Field-level validation errors</div></div>
+            </>)}
+          </div>
+        </div>
+
+        {respTab === '200' && ep.response200 && (
+          <div style={{ marginTop: 20 }}>
+            <div className="sec-lbl">Example response</div>
+            <div className="code-wrap" style={{ marginBottom: 0 }}>
+              <div className="code-hdr">
+                <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--ink-low)', letterSpacing: '.5px', textTransform: 'uppercase' }}>JSON</span>
+                <CopyBtn text={ep.response200.example} />
+              </div>
+              <div className="code-pre">{ep.response200.example}</div>
+            </div>
+          </div>
+        )}
+
+        <div className="divider"></div>
+
+        <div>
+          <div className="sec-lbl">Code sample</div>
+          <div className="code-wrap">
+            <div className="code-hdr">
+              <div className="lang-tabs">
+                {[['curl', 'cURL'], ['js', 'JavaScript'], ['python', 'Python']].map(([l, label]) => (
+                  <button key={l} className={`lang-btn${lang === l ? ' on' : ''}`} onClick={() => setLang(l)}>{label}</button>
+                ))}
+              </div>
+              <CopyBtn text={code} />
+            </div>
+            <div className="code-pre">{code}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── TryItPanel ── */
+function TryItPanel({ ep, api, env, authToken, onTokenRequest }) {
+  const [vals, setVals] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [resp, setResp] = useState(null);
+  const mc = METHOD_CFG[ep.method] || {};
+  const envCfg = ENV_CONFIG[env];
+
+  useEffect(() => { setVals({}); setResp(null); }, [ep.id]);
+
+  const url = buildUrl(ep, api, env, vals);
+
+  const send = async () => {
+    setLoading(true);
+    setResp(null);
+    const headers = { 'Accept': 'application/json' };
+    if (ep.auth && authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const body = buildBody(ep, vals);
+    const hasBody = Object.keys(body).length > 0;
+    if (hasBody) headers['Content-Type'] = 'application/json';
+    const opts = { method: ep.method, headers };
+    if (hasBody) opts.body = JSON.stringify(body);
+    const t0 = Date.now();
+    try {
+      const res = await fetch(url, opts);
+      const dur = Date.now() - t0;
+      const txt = await res.text();
+      let bodyStr;
+      try { bodyStr = JSON.stringify(JSON.parse(txt), null, 2); } catch { bodyStr = txt || '(empty)'; }
+      setResp({ ok: res.ok, status: res.status, statusText: res.statusText, dur, body: bodyStr });
+    } catch (e) {
+      setResp({ error: e.message, dur: Date.now() - t0 });
+    }
+    setLoading(false);
+  };
+
+  const sBg  = s => s < 300 ? 'var(--green-bg)' : s < 500 ? 'var(--amber-bg)' : 'var(--red-bg)';
+  const sClr = s => s < 300 ? 'var(--green)'    : s < 500 ? 'var(--amber)'    : 'var(--red)';
+
+  return (
+    <div className="try-pane">
+      <div className="try-hdr">
+        <span className="try-title">Try it</span>
+        <span className="try-env-pill">
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: envCfg.dot, display: 'inline-block', flexShrink: 0 }}></span>
+          {envCfg.label}
+        </span>
+      </div>
+      <div className="try-body">
+        <div className="url-bar">
+          <div className="url-bar-inner">
+            <span className="url-method" style={{ color: mc.color, background: mc.bg }}>{ep.method}</span>
+            <span className="url-text" title={url}>{url}</span>
+          </div>
+        </div>
+
+        {ep.auth && (
+          <div className={`auth-notice${authToken ? ' ok' : ''}`}>
+            <span style={{ fontSize: 15 }}>{authToken ? '🔑' : '🔒'}</span>
+            <span className="auth-notice-txt">
+              {authToken ? 'Authorized' : 'This endpoint requires a Bearer token'}
+            </span>
+            {!authToken && (
+              <button className="auth-notice-btn" onClick={onTokenRequest}>Set token</button>
+            )}
+          </div>
+        )}
+
+        {ep.params && ep.params.length > 0 && (
+          <div className="fields-group">
+            <div className="fields-lbl">{ep.method === 'GET' ? 'Parameters' : 'Request body'}</div>
+            {ep.params.map(p => (
+              <div key={p.name} className="field-row">
+                <label className="field-label">
+                  <span className="field-fname">{p.name}</span>
+                  {p.req && <span className="field-req">*</span>}
+                  <span className="field-ftype">{p.type}</span>
+                </label>
+                <input
+                  className="field-input"
+                  placeholder={p.def ? `default: ${p.def}` : p.desc}
+                  value={vals[p.name] || ''}
+                  onChange={e => setVals(v => ({ ...v, [p.name]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button className="send-btn" disabled={loading} onClick={send}>
+          {loading ? <><span className="spin"></span>Sending…</> : `Send ${ep.method}`}
+        </button>
+
+        {resp && (
+          <div className="resp-card">
+            <div className="resp-card-hdr">
+              {resp.error
+                ? <span className="resp-status-badge" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>Error</span>
+                : <span className="resp-status-badge" style={{ background: sBg(resp.status), color: sClr(resp.status) }}>
+                    {resp.status} {resp.statusText}
+                  </span>
+              }
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="resp-dur">{resp.dur}ms</span>
+                {!resp.error && <CopyBtn text={resp.body} />}
+              </div>
+            </div>
+            {resp.error
+              ? <div className="resp-error">Network error: {resp.error}</div>
+              : <div className="resp-pre">{resp.body}</div>
+            }
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── TokenModal ── */
+function TokenModal({ current, onClose, onSave }) {
+  const [val, setVal] = useState(current || '');
+  const save = () => { onSave(val.trim()); onClose(); };
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-hdr">
+          <span className="modal-title">Bearer token</span>
+          <button className="modal-x" onClick={onClose}>
+            <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" width="11" height="11">
+              <path d="M1.5 1.5l8 8M9.5 1.5l-8 8"/>
+            </svg>
+          </button>
+        </div>
+        <div className="modal-body">
+          <p className="modal-desc">
+            Paste a Bearer token. It will be sent as <span className="ic">Authorization: Bearer …</span> on authenticated requests in the Try It panel.
+          </p>
+          <input
+            className="modal-input"
+            placeholder="eyJ0eXAiOiJKV1Qi…"
+            value={val}
+            onChange={e => setVal(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && save()}
+            autoFocus
+          />
+          <div className="modal-actions">
+            <button className="modal-save" onClick={save}>Save token</button>
+            {current && <button className="modal-clear" onClick={() => { onSave(''); onClose(); }}>Clear</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Overview ── */
+function Overview({ apis, selApiId, onApi, env }) {
+  const envCfg = ENV_CONFIG[env];
+  const totalEps = apis.reduce((s, a) => s + a.groups.reduce((ss, g) => ss + g.endpoints.length, 0), 0);
+  return (
+    <div className="overview">
+      <div className="ov-eyebrow">Lesser Known Laravel</div>
+      <h1 className="ov-title">API Explorer</h1>
+      <p className="ov-sub">Three APIs, one place. Select an API in the sidebar or click a card below to browse endpoints and try live requests.</p>
+
+      <div className="stats-row">
+        <div className="stat-item">
+          <div className="stat-lbl">APIs</div>
+          <div className="stat-val">{apis.length}</div>
+          <div className="stat-sub">{apis.filter(a => a.status === 'operational').length} operational</div>
+        </div>
+        <div className="stat-item">
+          <div className="stat-lbl">Endpoints</div>
+          <div className="stat-val">{totalEps}</div>
+          <div className="stat-sub">across {apis.reduce((s, a) => s + a.groups.length, 0)} groups</div>
+        </div>
+        <div className="stat-item">
+          <div className="stat-lbl">Environment</div>
+          <div className="stat-val" style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ width: 9, height: 9, borderRadius: '50%', background: envCfg.dot, display: 'inline-block', flexShrink: 0 }}></span>
+            {envCfg.label}
+          </div>
+          <div className="stat-sub" style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}>{envCfg.baseUrl}</div>
+        </div>
+      </div>
+
+      <div className="api-cards-grid">
+        {apis.map(a => {
+          const sc = statusColor(a.status);
+          const epCount = a.groups.reduce((s, g) => s + g.endpoints.length, 0);
+          return (
+            <div key={a.id} className={`api-card${selApiId === a.id ? ' sel' : ''}`} onClick={() => onApi(a.id)}>
+              <div className="ac-accent" style={{ background: a.accent }}></div>
+              <div className="ac-top">
+                <div className="ac-icon" style={{ background: a.iconBg }}>{a.icon}</div>
+                <span className="ac-status" style={{ background: sc.bg, color: sc.color }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc.color, display: 'inline-block', flexShrink: 0 }}></span>
+                  {sc.label}
+                </span>
+              </div>
+              <div className="ac-name">{a.name}</div>
+              <div className="ac-desc">{a.desc}</div>
+              <div className="ac-footer">
+                {a.tags.map(t => <span key={t} className="ac-tag">{t}</span>)}
+                <span className="ac-count">{epCount} endpoints →</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ══ APP ══ */
+function App() {
+  const [env, setEnv]           = useState('prod');
+  const [selApiId, setSelApiId] = useState(null);
+  const [selEpId, setSelEpId]   = useState(null);
+  const [authToken, setToken]   = useState('');
+  const [tokenModal, setModal]  = useState(false);
+
+  const selApi = APIS.find(a => a.id === selApiId);
+  const selEp  = selApi?.groups.flatMap(g => g.endpoints).find(e => e.id === selEpId);
+  const envCfg = ENV_CONFIG[env];
+
+  const pickApi = id => { setSelApiId(id); setSelEpId(null); };
+  const pickEp  = id => setSelEpId(id);
+
+  return (
+    <>
+      <nav className="nav">
+        <a className="nav-brand" href="#">Lesser Known Laravel</a>
+        <div className="nav-sep"></div>
+        <span className="nav-page">API Explorer</span>
+        <div className="nav-env">
+          {Object.entries(ENV_CONFIG).map(([k, cfg]) => (
+            <button key={k} className={`env-btn${env === k ? ' on' : ''}`} onClick={() => setEnv(k)}>
+              <span className="env-dot" style={{ background: env === k ? cfg.dot : 'var(--border)' }}></span>
+              {cfg.label}
+            </button>
+          ))}
+        </div>
+        <div className="nav-right">
+          <a className="nav-btn" href="API Docs.html">API Docs</a>
+          <button
+            className={`nav-btn${authToken ? ' token-ok' : ' primary'}`}
+            onClick={() => setModal(true)}
+          >
+            {authToken ? '🔑 Token set' : 'Get token →'}
+          </button>
+        </div>
+      </nav>
+
+      <div className="shell">
+        <Sidebar apis={APIS} selApiId={selApiId} selEpId={selEpId} onApi={pickApi} onEp={pickEp} />
+
+        {selEp && selApi ? (
+          <>
+            <DocsPanel ep={selEp} api={selApi} env={env} authToken={authToken} />
+            <TryItPanel ep={selEp} api={selApi} env={env} authToken={authToken} onTokenRequest={() => setModal(true)} />
+          </>
+        ) : (
+          <Overview apis={APIS} selApiId={selApiId} onApi={pickApi} env={env} />
+        )}
+      </div>
+
+      {tokenModal && (
+        <TokenModal current={authToken} onClose={() => setModal(false)} onSave={setToken} />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
