@@ -2,6 +2,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
+use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[derive(Deserialize)]
 struct RequestPayload {
@@ -36,12 +37,12 @@ async fn send_request(payload: RequestPayload) -> Result<ResponsePayload, String
 
     let method = payload.method.to_uppercase();
     let request = match method.as_str() {
-        "GET"    => client.get(&payload.url),
-        "POST"   => client.post(&payload.url),
-        "PUT"    => client.put(&payload.url),
-        "DELETE" => client.delete(&payload.url),
-        "PATCH"  => client.patch(&payload.url),
-        "HEAD"   => client.head(&payload.url),
+        "GET"     => client.get(&payload.url),
+        "POST"    => client.post(&payload.url),
+        "PUT"     => client.put(&payload.url),
+        "DELETE"  => client.delete(&payload.url),
+        "PATCH"   => client.patch(&payload.url),
+        "HEAD"    => client.head(&payload.url),
         "OPTIONS" => client.request(reqwest::Method::OPTIONS, &payload.url),
         _ => return Err(format!("Unsupported method: {method}")),
     };
@@ -78,8 +79,20 @@ async fn send_request(payload: RequestPayload) -> Result<ResponsePayload, String
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let migrations = vec![Migration {
+        version: 1,
+        description: "create_initial_tables",
+        sql: include_str!("../migrations/0001_init.sql"),
+        kind: MigrationKind::Up,
+    }];
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:docpoint.db", migrations)
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![send_request])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
