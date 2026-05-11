@@ -20,21 +20,29 @@ const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
+function extractPathParams(path: string): string[] {
+	return [...path.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+}
+
 function buildUrl(ep: Endpoint, env: EnvConfig, vals: Record<string, string> = {}) {
+	const path = ep.path.replace(/\{(\w+)\}/g, (_, name) => {
+		const v = (vals[`path:${name}`] ?? "").trim();
+		return v || `{${name}}`;
+	});
 	const qp: Record<string, string> = {};
 	for (const p of ep.queryParams ?? []) {
-		const v = (vals[p.name] ?? "").trim();
+		const v = (vals[`query:${p.name}`] ?? "").trim();
 		if (v) qp[p.name] = v;
 	}
 	const qs = new URLSearchParams(qp).toString();
-	return `${env.baseUrl}${ep.path}${qs ? "?" + qs : ""}`;
+	return `${env.baseUrl}${path}${qs ? "?" + qs : ""}`;
 }
 
 function buildBody(ep: Endpoint, vals: Record<string, string>): string | null {
 	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
 	const b: Record<string, string> = {};
 	for (const p of ep.bodyParams) {
-		const v = (vals[p.name] ?? "").trim();
+		const v = (vals[`body:${p.name}`] ?? "").trim();
 		if (v) b[p.name] = v;
 	}
 	return Object.keys(b).length ? JSON.stringify(b) : null;
@@ -97,6 +105,7 @@ export const TryItPanel = () => {
 	if (!doca) return;
 
 	const mc = METHOD_CFG[endpoint.method];
+	const pathParams = extractPathParams(endpoint.path);
 
 	useEffect(() => {
 		setVals({});
@@ -208,11 +217,31 @@ export const TryItPanel = () => {
 					</div>
 				)}
 
-				{endpoint?.queryParams?.length > 0 && (
+				{pathParams.length > 0 && (
 					<div className={s.fieldsGroup}>
-						<div className={s.fieldsLbl}>
-							{endpoint.method === "GET" ? "Parameters" : "Request body"}
-						</div>
+						<div className={s.fieldsLbl}>Path params</div>
+						{pathParams.map((name) => (
+							<div key={name} className={s.fieldRow}>
+								<label className={s.fieldLabel}>
+									<span className={s.fieldFname}>{name}</span>
+									<span className={s.fieldReq}>*</span>
+								</label>
+								<input
+									className={s.fieldInput}
+									placeholder={name}
+									value={vals[`path:${name}`] ?? ""}
+									onChange={(e) =>
+										setVals((v) => ({ ...v, [`path:${name}`]: e.target.value }))
+									}
+								/>
+							</div>
+						))}
+					</div>
+				)}
+
+				{endpoint.queryParams?.length > 0 && (
+					<div className={s.fieldsGroup}>
+						<div className={s.fieldsLbl}>Query params</div>
 						{endpoint.queryParams.map((p) => (
 							<div key={p.name} className={s.fieldRow}>
 								<label className={s.fieldLabel}>
@@ -223,9 +252,32 @@ export const TryItPanel = () => {
 								<input
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
-									value={vals[p.name] ?? ""}
+									value={vals[`query:${p.name}`] ?? ""}
 									onChange={(e) =>
-										setVals((v) => ({ ...v, [p.name]: e.target.value }))
+										setVals((v) => ({ ...v, [`query:${p.name}`]: e.target.value }))
+									}
+								/>
+							</div>
+						))}
+					</div>
+				)}
+
+				{endpoint.bodyParams?.length > 0 && endpoint.method !== "GET" && (
+					<div className={s.fieldsGroup}>
+						<div className={s.fieldsLbl}>Request body</div>
+						{endpoint.bodyParams.map((p) => (
+							<div key={p.name} className={s.fieldRow}>
+								<label className={s.fieldLabel}>
+									<span className={s.fieldFname}>{p.name}</span>
+									{p.required && <span className={s.fieldReq}>*</span>}
+									<span className={s.fieldFtype}>{p.type}</span>
+								</label>
+								<input
+									className={s.fieldInput}
+									placeholder={p.default ? `default: ${p.default}` : p.desc}
+									value={vals[`body:${p.name}`] ?? ""}
+									onChange={(e) =>
+										setVals((v) => ({ ...v, [`body:${p.name}`]: e.target.value }))
 									}
 								/>
 							</div>

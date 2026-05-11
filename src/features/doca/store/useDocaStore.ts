@@ -29,12 +29,15 @@ type DocaState = {
 	selectedEnvConfig: EnvConfig | null;
 	selectedGroup: Group | null;
 	selectedEndpoint: Endpoint | null;
+
+	accessToken: string | null;
 };
 
 type DocaActions = {
 	selectGroup: (groupId: string) => void;
 	selectEnvConfig: (envId: string) => void;
 	selectEndpoint: (endpointId: string) => void;
+	setAccessToken: (token: string | null) => void;
 	init: () => Promise<void>;
 };
 
@@ -47,6 +50,8 @@ const initialState: DocaState = {
 	selectedGroup: null,
 	selectedEnvConfig: null,
 	selectedEndpoint: null,
+
+	accessToken: null,
 };
 
 export type DocaStore = DocaState & DocaActions;
@@ -78,6 +83,8 @@ const createDocaSlice: StateCreator<DocaStore> = (set, get) => ({
 				.find((endpoint) => endpoint.id === endpointId),
 		});
 	},
+
+	setAccessToken: (token) => set({ accessToken: token }),
 
 	init: async () => {
 		try {

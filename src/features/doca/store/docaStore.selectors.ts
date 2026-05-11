@@ -9,3 +9,4 @@ export const selectSelectedEnvConfig = (state: DocaStore) =>
 export const selectSelectedEndpoint = (state: DocaStore) =>
 	state.selectedEndpoint;
 export const selectSchema = (state: DocaStore) => state.schema;
+export const selectAccessToken = (state: DocaStore) => state.accessToken;

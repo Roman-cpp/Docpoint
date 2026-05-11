@@ -1,20 +1,23 @@
 import { useState, type FC } from "react";
 import s from "./TokenModal.module.css";
+import { useDocaStore } from "@/features/doca";
+import { selectAccessToken } from "@/features/doca";
+import { actionSetAccessToken } from "@/features/doca";
 
 interface TokenModalProps {
-	current: string;
 	onClose: () => void;
-	onSave: (val: string) => void;
 }
 
 export const TokenModal: FC<TokenModalProps> = ({
-	current,
 	onClose,
-	onSave,
 }) => {
-	const [val, setVal] = useState(current);
+  const accessToken = useDocaStore(selectAccessToken);
+
+  const setAccessToken = useDocaStore(actionSetAccessToken);
+
+	const [val, setVal] = useState(accessToken ?? "");
 	const save = () => {
-		onSave(val.trim());
+		setAccessToken(val.trim());
 		onClose();
 	};
 	return (
@@ -54,11 +57,11 @@ export const TokenModal: FC<TokenModalProps> = ({
 						<button className={s.modalSave} onClick={save}>
 							Save token
 						</button>
-						{current && (
+						{accessToken && (
 							<button
 								className={s.modalClear}
 								onClick={() => {
-									onSave("");
+									setAccessToken("");
 									onClose();
 								}}
 							>

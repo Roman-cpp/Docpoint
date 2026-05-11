@@ -34,7 +34,6 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 	const selectedEnvConfig = useDocaStore(selectSelectedEnvConfig);
 	const selectEnvConfig = useDocaStore(actionSelectEnvConfig);
 
-	const [authToken, setToken] = useState("");
 	const [tokenModal, setModal] = useState(false);
 
 	return (
@@ -87,9 +86,7 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 			</div>
 			{tokenModal && (
 				<TokenModal
-					current={authToken}
 					onClose={() => setModal(false)}
-					onSave={setToken}
 				/>
 			)}
 		</nav>
