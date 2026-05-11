@@ -1,4 +1,13 @@
-import { useState, useEffect, type FC, type KeyboardEvent } from "react";
+import {
+	useState,
+	useRef,
+	useEffect,
+	useContext,
+	createContext,
+	useCallback,
+	type FC,
+	type KeyboardEvent,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type {
 	KVRow,
@@ -406,6 +415,7 @@ interface ResponsePanelProps {
 
 const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 	const [tab, setTab] = useState<"body" | "headers">("body");
+	const [viewMode, setViewMode] = useState<"json" | "html">("json");
 	const [copied, setCopied] = useState(false);
 
 	const copy = () => {
@@ -534,13 +544,31 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 							: `Headers (${Object.keys(response.headers ?? {}).length})`}
 					</button>
 				))}
+				{tab === "body" && (
+					<select
+						className={s.bodyTypeSelect}
+						style={{ margin: "auto 8px auto auto", padding: "3px 6px" }}
+						value={viewMode}
+						onChange={(e) => setViewMode(e.target.value as "json" | "html")}
+					>
+						<option value="json">JSON</option>
+						<option value="html">HTML</option>
+					</select>
+				)}
 			</div>
 
 			<div className={s.resBody}>
-				{tab === "body" && (
+				{tab === "body" && viewMode === "json" && (
 					<div
 						className={s.jsonPre}
 						dangerouslySetInnerHTML={{ __html: syntaxHighlight(response.body) }}
+					/>
+				)}
+				{tab === "body" && viewMode === "html" && (
+					<iframe
+						srcDoc={typeof response.body === "string" ? response.body : JSON.stringify(response.body, null, 2)}
+						sandbox="allow-same-origin"
+						style={{ width: "100%", height: "100%", border: "none", background: "#fff" }}
 					/>
 				)}
 				{tab === "headers" && (
@@ -566,6 +594,7 @@ interface SidebarProps {
 	activeId: number | null;
 	onSelect: (item: HistoryItem) => void;
 	onClear: () => void;
+	style?: React.CSSProperties;
 }
 
 const Sidebar: FC<SidebarProps> = ({
@@ -573,6 +602,7 @@ const Sidebar: FC<SidebarProps> = ({
 	activeId,
 	onSelect,
 	onClear,
+	style,
 }) => {
 	const [search, setSearch] = useState("");
 
@@ -624,7 +654,7 @@ const Sidebar: FC<SidebarProps> = ({
 	};
 
 	return (
-		<div className={s.sidebar}>
+		<div className={s.sidebar} style={style}>
 			<div className={s.sidebarHeader}>
 				<span className={s.sidebarTitle}>History</span>
 				<button className={s.sidebarClear} onClick={onClear}>
@@ -728,29 +758,6 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 			</div>
 			<div className={s.tweaksBody}>
 				<div className={s.tweakRow}>
-					<div className={s.tweakLabel}>Layout</div>
-					<div className={s.tweakOptions}>
-						{(["Horizontal", "Vertical"] as const).map((o) => (
-							<button
-								key={o}
-								className={`${s.tweakOpt}${tweaks.layout === o ? " " + s.active : ""}`}
-								onClick={() => setTweak("layout", o)}
-							>
-								{o}
-							</button>
-						))}
-					</div>
-				</div>
-				<div className={s.tweakRow}>
-					<div className={s.tweakToggleRow}>
-						<span className={s.tweakToggleLbl}>Show sidebar</span>
-						<button
-							className={`${s.toggleSw}${tweaks.showSidebar ? " " + s.on : ""}`}
-							onClick={() => setTweak("showSidebar", !tweaks.showSidebar)}
-						/>
-					</div>
-				</div>
-				<div className={s.tweakRow}>
 					<div className={s.tweakToggleRow}>
 						<span className={s.tweakToggleLbl}>Syntax highlight</span>
 						<button
@@ -792,6 +799,65 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 	);
 };
 
+/* ─── CONTEXT ────────────────────────────────── */
+interface HttpCtxT {
+	params: KVRow[];
+	setParams: (r: KVRow[]) => void;
+	headers: KVRow[];
+	setHeaders: (r: KVRow[]) => void;
+	body: string;
+	setBody: (v: string) => void;
+	bodyType: BodyType;
+	setBodyType: (v: BodyType) => void;
+	authType: AuthType;
+	setAuthType: (v: AuthType) => void;
+	authToken: string;
+	setAuthToken: (v: string) => void;
+	authUser: string;
+	setAuthUser: (v: string) => void;
+	authPass: string;
+	setAuthPass: (v: string) => void;
+	loading: boolean;
+	response: (MockResponse & { time: number }) | null;
+	history: HistoryItem[];
+	activeHistId: number | null;
+	onSelectHistory: (item: HistoryItem) => void;
+	onClearHistory: () => void;
+}
+
+const HttpCtx = createContext<HttpCtxT>(null!);
+
+const RequestPanelDoc: FC = () => {
+	const c = useContext(HttpCtx);
+	return (
+		<RequestPanel
+			params={c.params}
+			setParams={c.setParams}
+			headers={c.headers}
+			setHeaders={c.setHeaders}
+			body={c.body}
+			setBody={c.setBody}
+			bodyType={c.bodyType}
+			setBodyType={c.setBodyType}
+			authType={c.authType}
+			setAuthType={c.setAuthType}
+			authToken={c.authToken}
+			setAuthToken={c.setAuthToken}
+			authUser={c.authUser}
+			setAuthUser={c.setAuthUser}
+			authPass={c.authPass}
+			setAuthPass={c.setAuthPass}
+		/>
+	);
+};
+
+const ResponsePanelDoc: FC = () => {
+	const { loading, response } = useContext(HttpCtx);
+	return <ResponsePanel response={response} loading={loading} />;
+};
+
+
+
 /* ─── PAGE ───────────────────────────────────── */
 const TWEAK_DEFAULTS: Tweaks = {
 	layout: "Horizontal",
@@ -825,6 +891,50 @@ export const HttpClientPage: FC = () => {
 	const [activeHistId, setActiveHistId] = useState<number | null>(null);
 	const [tweaksVisible, setTweaksVisible] = useState(false);
 	const [tweaks, setTweaksState] = useState<Tweaks>(TWEAK_DEFAULTS);
+	const [sidebarWidth, setSidebarWidth] = useState(232);
+	const [reqPanelWidth, setReqPanelWidth] = useState<number | null>(null);
+	const contentSplitRef = useRef<HTMLDivElement>(null);
+
+	const startResize = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const startX = e.clientX;
+		const startWidth = sidebarWidth;
+		document.body.style.userSelect = "none";
+		document.body.style.cursor = "col-resize";
+		const onMove = (ev: MouseEvent) => {
+			setSidebarWidth(Math.max(160, Math.min(400, startWidth + ev.clientX - startX)));
+		};
+		const onUp = () => {
+			document.body.style.userSelect = "";
+			document.body.style.cursor = "";
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onUp);
+		};
+		document.addEventListener("mousemove", onMove);
+		document.addEventListener("mouseup", onUp);
+	}, [sidebarWidth]);
+
+	const startContentResize = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const container = contentSplitRef.current;
+		if (!container) return;
+		const startX = e.clientX;
+		const startWidth = reqPanelWidth ?? container.getBoundingClientRect().width / 2;
+		document.body.style.userSelect = "none";
+		document.body.style.cursor = "col-resize";
+		const onMove = (ev: MouseEvent) => {
+			const containerWidth = container.getBoundingClientRect().width;
+			setReqPanelWidth(Math.max(200, Math.min(containerWidth - 200, startWidth + ev.clientX - startX)));
+		};
+		const onUp = () => {
+			document.body.style.userSelect = "";
+			document.body.style.cursor = "";
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onUp);
+		};
+		document.addEventListener("mousemove", onMove);
+		document.addEventListener("mouseup", onUp);
+	}, [reqPanelWidth]);
 
 	const setTweak = <K extends keyof Tweaks>(key: K, val: Tweaks[K]) => {
 		setTweaksState((prev) => {
@@ -938,58 +1048,54 @@ export const HttpClientPage: FC = () => {
 		}
 	};
 
-	const loadHistory = (item: HistoryItem) => {
+	const onSelectHistory = useCallback((item: HistoryItem) => {
 		setMethod(item.method);
 		setUrl(item.url);
 		setActiveHistId(item.id);
 		setResponse(null);
-	};
+	}, []);
+
+	const onClearHistory = useCallback(() => setHistory([]), []);
 
 	const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
 	};
 
+	const ctxValue: HttpCtxT = {
+		params, setParams,
+		headers, setHeaders,
+		body, setBody,
+		bodyType, setBodyType,
+		authType, setAuthType,
+		authToken, setAuthToken,
+		authUser, setAuthUser,
+		authPass, setAuthPass,
+		loading,
+		response,
+		history,
+		activeHistId,
+		onSelectHistory,
+		onClearHistory,
+	};
+
 	return (
-		<div
-			className={`${s.wrapper}${tweaks.theme === "Dark" ? " " + s.dark : ""}`}
-			style={{ fontSize: fontSizePx }}
-		>
-			{/* NAV */}
-			{/* <nav className={s.nav}>
-				<div className={s.navBrand}>
-					Lesser Known Laravel
-					<div className={s.navSep} />
-					<span className={s.navSection}>HTTP Client</span>
-				</div>
-				<div className={s.navLinks}>
-					<a className={s.navLink} href="/docs">
-						API Docs
-					</a>
-					<a className={`${s.navLink} ${s.active}`} href="/http-client">
-						HTTP Client
-					</a>
-					<a className={s.navLink} href="/api-explorer">
-						API Explorer
-					</a>
-					<button className={`${s.navLink} ${s.navLinkCta}`}>
-						Get token →
-					</button>
-				</div>
-			</nav> */}
+		<HttpCtx.Provider value={ctxValue}>
+			<div
+				className={`${s.wrapper}${tweaks.theme === "Dark" ? " " + s.dark : ""}`}
+				style={{ fontSize: fontSizePx }}
+			>
+				<Header section="docs1" activeLink="docs" />
 
-			<Header section="docs1" activeLink="docs" />
-
-			<div className={s.shell}>
-				{tweaks.showSidebar && (
+				<div className={s.shell}>
 					<Sidebar
 						history={history}
 						activeId={activeHistId}
-						onSelect={loadHistory}
-						onClear={() => setHistory([])}
+						onSelect={onSelectHistory}
+						onClear={onClearHistory}
+						style={{ width: sidebarWidth }}
 					/>
-				)}
-
-				<div className={s.main}>
+					<div className={s.resizeHandle} onMouseDown={startResize} />
+					<div className={s.main}>
 					{/* URL BAR */}
 					<div className={s.urlBar}>
 						<div className={s.urlRow}>
@@ -1102,45 +1208,28 @@ export const HttpClientPage: FC = () => {
 						</div>
 					</div>
 
-					{/* CONTENT SPLIT */}
-					<div
-						className={s.contentSplit}
-						style={{
-							flexDirection: tweaks.layout === "Vertical" ? "column" : "row",
-						}}
-					>
-						<RequestPanel
-							params={params}
-							setParams={setParams}
-							headers={headers}
-							setHeaders={setHeaders}
-							body={body}
-							setBody={setBody}
-							bodyType={bodyType}
-							setBodyType={setBodyType}
-							authType={authType}
-							setAuthType={setAuthType}
-							authToken={authToken}
-							setAuthToken={setAuthToken}
-							authUser={authUser}
-							setAuthUser={setAuthUser}
-							authPass={authPass}
-							setAuthPass={setAuthPass}
-						/>
-						<ResponsePanel response={response} loading={loading} />
+					<div className={s.contentSplit} ref={contentSplitRef}>
+						<div style={reqPanelWidth != null ? { width: reqPanelWidth, flexShrink: 0, display: "flex", overflow: "hidden", minWidth: 0 } : { flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
+							<RequestPanelDoc />
+						</div>
+						<div className={s.contentResizeHandle} onMouseDown={startContentResize} />
+						<div style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
+							<ResponsePanelDoc />
+						</div>
+					</div>
 					</div>
 				</div>
-			</div>
 
-			<TweaksPanel
-				visible={tweaksVisible}
-				onClose={() => {
-					setTweaksVisible(false);
-					window.parent?.postMessage({ type: "__edit_mode_dismissed" }, "*");
-				}}
-				tweaks={tweaks}
-				setTweak={setTweak}
-			/>
-		</div>
+				<TweaksPanel
+					visible={tweaksVisible}
+					onClose={() => {
+						setTweaksVisible(false);
+						window.parent?.postMessage({ type: "__edit_mode_dismissed" }, "*");
+					}}
+					tweaks={tweaks}
+					setTweak={setTweak}
+				/>
+			</div>
+		</HttpCtx.Provider>
 	);
 };

@@ -146,6 +146,139 @@
 }
 
 /* ═══════════════ LAYOUT ═══════════════ */
+.mainArea {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	min-width: 0;
+}
+
+/* ─── rc-dock overrides ─── */
+.wrapper :global(.dock-layout) {
+	background: var(--bg);
+}
+
+.wrapper :global(.dock-layout > .dock-box) {
+	overflow: hidden;
+}
+
+.wrapper :global(.dock-panel) {
+	border: none;
+	border-radius: 0;
+	background: var(--bg);
+}
+
+.wrapper :global(.dock-bar) {
+	background: var(--bg);
+	border-bottom: 1px solid var(--border);
+	padding: 0 4px;
+	min-height: 36px;
+	flex-shrink: 0;
+}
+
+.wrapper :global(.dock-nav-wrap) {
+	display: flex;
+	align-items: flex-end;
+}
+
+.wrapper :global(.dock-tab) {
+	margin: 0;
+}
+
+.wrapper :global(.dock-tab > div) {
+	padding: 0;
+}
+
+.wrapper :global(.dock-tab-btn) {
+	padding: 8px 13px;
+	font-size: 12px;
+	color: var(--ink-low);
+	font-family: var(--font-sans);
+	line-height: 1;
+	border-bottom: 2px solid transparent;
+	transition: color 0.13s;
+}
+
+.wrapper :global(.dock-tab-active .dock-tab-btn),
+.wrapper :global(.dock-tab-active:hover .dock-tab-btn) {
+	color: var(--ink);
+	font-weight: 500;
+}
+
+.wrapper :global(.dock-ink-bar) {
+	background: var(--ink);
+	bottom: 0;
+	height: 2px;
+}
+
+.wrapper :global(.dock-content-holder) {
+	flex: 1;
+	overflow: hidden;
+}
+
+.wrapper :global(.dock-content) {
+	overflow: hidden;
+}
+
+.wrapper :global(.dock-tabpane) {
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.wrapper :global(.dock-tabpane-active) {
+	flex: 1;
+}
+
+.wrapper :global(.dock-divider) {
+	background: var(--border);
+	transition: background 0.15s;
+	z-index: 1;
+}
+
+.wrapper :global(.dock-hbox > .dock-divider) {
+	width: 4px;
+	cursor: col-resize;
+}
+
+.wrapper :global(.dock-vbox > .dock-divider) {
+	height: 4px;
+	cursor: row-resize;
+}
+
+.wrapper :global(.dock-divider:hover),
+.wrapper :global(.dock-divider.dragging) {
+	background: var(--border-h);
+}
+
+.wrapper :global(.dock-tab-close-btn) {
+	display: none;
+}
+
+.wrapper :global(.dock-extra-content) {
+	display: none;
+}
+
+.wrapper :global(.dock-drop-indicator) {
+	background: var(--blue-bg);
+	border: 2px solid var(--blue);
+	border-radius: 4px;
+	opacity: 0.6;
+}
+
+/* Dark theme overrides */
+.wrapper.dark :global(.dock-panel),
+.wrapper.dark :global(.dock-layout),
+.wrapper.dark :global(.dock-bar) {
+	background: var(--bg);
+}
+
+.wrapper.dark :global(.dock-divider) {
+	background: var(--border);
+}
+
+/* ─── legacy (kept for sidebar/main used by rc-dock-internal refs) ─── */
 .shell {
 	display: flex;
 	flex: 1;
@@ -154,13 +287,22 @@
 
 /* ═══════════════ SIDEBAR ═══════════════ */
 .sidebar {
-	width: 232px;
 	flex-shrink: 0;
 	background: var(--surface);
-	border-right: 1px solid var(--border);
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+}
+
+.resizeHandle {
+	width: 4px;
+	flex-shrink: 0;
+	cursor: col-resize;
+	background: var(--border);
+	transition: background 0.15s;
+}
+.resizeHandle:hover {
+	background: var(--border-h);
 }
 .sidebarHeader {
 	padding: 11px 14px 10px;
@@ -493,13 +635,24 @@
 	overflow: hidden;
 }
 
+/* ═══════════════ CONTENT RESIZE HANDLE ═══════════════ */
+.contentResizeHandle {
+	width: 4px;
+	flex-shrink: 0;
+	cursor: col-resize;
+	background: var(--border);
+	transition: background 0.15s;
+}
+.contentResizeHandle:hover {
+	background: var(--border-h);
+}
+
 /* ═══════════════ REQUEST PANEL ═══════════════ */
 .reqPanel {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	border-right: 1px solid var(--border);
 	min-width: 0;
 }
 .panelTabs {
