@@ -8,6 +8,7 @@ import {
 } from "@/features/doca";
 import { TokenModal } from "./TokenModal";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { Link } from "react-router";
 
 export type NavLink =
 	| "docs"
@@ -38,11 +39,13 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 
 	return (
 		<nav className={s.nav}>
-			<div className={s.navBrand}>
-				Lesser Known Laravel
-				<div className={s.navSep} />
-				<span className={s.navSection}>{section}</span>
-			</div>
+      <Link to="/" style={{ textDecoration: "none" }}>
+        <div className={s.navBrand}>
+          Lesser Known Laravel
+          <div className={s.navSep} />
+          <span className={s.navSection}>{section}</span>
+        </div>
+      </Link>
 
 			<div className={s.navEnv}>
 				{envConfigs.map((env) => (

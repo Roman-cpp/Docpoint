@@ -12,6 +12,43 @@ export const seedDoca: Doca = {
 };
 
 export const seedGroups: Group[] = [
+  {
+		id: "health",
+		label: "Health",
+		endpoints: [
+			{
+				id: "users-list",
+				method: "GET",
+				path: "/health",
+				name: "List all users",
+				description:
+					"Returns a paginated list of users. Results can be filtered, sorted, and searched. Requires an active Bearer token with the `users:read` scope.",
+				tags: ["paginated", "auth-required"],
+				auth: false,
+				bodyParams: [],
+				queryParams: [],
+				responses: {
+					"200": {
+						label: "200 OK",
+						schema: [
+							{ key: "data", type: "array", desc: "Array of user objects" },
+							{ key: "data[].id", type: "string", desc: "UUID of the user", example: '"3fa85f64-..."' },
+							{ key: "data[].name", type: "string", desc: "Display name", example: '"Alice Smith"' },
+							{ key: "data[].email", type: "string", desc: "Primary email address", example: '"alice@example.com"' },
+							{ key: "data[].role", type: "string", desc: "User role: admin · editor · viewer", example: '"editor"' },
+							{ key: "data[].created_at", type: "string", desc: "ISO 8601 timestamp", example: '"2025-03-14T10:22:00Z"' },
+							{ key: "meta.total", type: "integer", desc: "Total matching records", example: "142" },
+							{ key: "meta.page", type: "integer", desc: "Current page", example: "1" },
+							{ key: "meta.per_page", type: "integer", desc: "Items per page", example: "20" },
+							{ key: "meta.last_page", type: "integer", desc: "Last available page", example: "8" },
+						],
+						example: `{\n  "data": [\n    {\n      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",\n      "name": "Alice Smith",\n      "email": "alice@example.com",\n      "role": "editor",\n      "avatar_url": "https://cdn.example.com/avatars/alice.jpg",\n      "created_at": "2025-03-14T10:22:00Z"\n    }\n  ],\n  "meta": {\n    "total": 142,\n    "page": 1,\n    "per_page": 20,\n    "last_page": 8\n  }\n}`,
+
+					},
+				},
+			},
+		],
+	},
 	// ─── CENTRAL MANAGER (/api/v1) ───────────────────────────────────────────
 	{
 		id: "g-auth",
@@ -1946,6 +1983,6 @@ export const seedSchema: Schema[] = [
 
 export const seedEnvConfigs: EnvConfig[] = [
 	{ id: "1", env: "local", label: "Local", baseUrl: "http://localhost:8080" },
-	{ id: "2", env: "staging", label: "Staging", baseUrl: "https://staging.sleipnir.app" },
+	{ id: "2", env: "dev", label: "Dev", baseUrl: "http://92.101.122.46:80" },
 	{ id: "3", env: "prod", label: "Prod", baseUrl: "https://api.sleipnir.app" },
 ];

@@ -190,6 +190,7 @@ export const TryItPanel = () => {
 						<span className={s.urlText} title={url}>
 							{url}
 						</span>
+						<CopyBtn text={url} />
 					</div>
 				</div>
 
