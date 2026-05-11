@@ -119,8 +119,6 @@ export async function readGroups(db: Database, docaId: string): Promise<Group[]>
 				}));
 			responses[r.status_code] = {
 				label: r.label,
-				color: r.color,
-				dotColor: r.dot_color,
 				schema: fields,
 				example: r.example,
 			};
@@ -215,7 +213,6 @@ export async function readEnvConfigs(
 		id: r.id,
 		env: r.env,
 		label: r.label,
-		dot: r.dot,
 		baseUrl: r.base_url,
 	}));
 }

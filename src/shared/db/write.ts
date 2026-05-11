@@ -71,9 +71,9 @@ export async function writeGroups(
 
 			for (const [code, resp] of Object.entries(e.responses)) {
 				const result = await db.execute(
-					`INSERT INTO response (endpoint_id, status_code, label, color, dot_color, example)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-					[e.id, code, resp.label, resp.color, resp.dotColor, resp.example],
+					`INSERT INTO response (endpoint_id, status_code, label, example)
+           VALUES (?, ?, ?, ?)`,
+					[e.id, code, resp.label, resp.example],
 				);
 				const responseId = result.lastInsertId;
 
@@ -144,8 +144,8 @@ export async function writeEnvConfigs(
 	await db.execute("DELETE FROM env_config WHERE doca_id = ?", [docaId]);
 	for (const c of configs) {
 		await db.execute(
-			"INSERT INTO env_config (id, doca_id, env, label, dot, base_url) VALUES (?, ?, ?, ?, ?, ?)",
-			[c.id, docaId, c.env, c.label, c.dot, c.baseUrl],
+			"INSERT INTO env_config (id, doca_id, env, label, base_url) VALUES (?, ?, ?, ?, ?)",
+			[c.id, docaId, c.env, c.label, c.baseUrl],
 		);
 	}
 }

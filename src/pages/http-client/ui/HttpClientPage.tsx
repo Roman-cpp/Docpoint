@@ -1,4 +1,5 @@
 import { useState, useEffect, type FC, type KeyboardEvent } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type {
 	KVRow,
 	HistoryItem,
@@ -10,7 +11,6 @@ import type {
 } from "../model/types";
 import {
 	METHOD_CFG,
-	pickMockResponse,
 	INITIAL_HISTORY,
 	COLLECTIONS,
 } from "../data/httpClientData";
@@ -855,40 +855,87 @@ export const HttpClientPage: FC = () => {
 				: "14px";
 	const ms = METHOD_CFG[method] ?? {};
 
-	const send = () => {
+	const send = async () => {
 		if (!url.trim()) return;
 		setLoading(true);
 		setResponse(null);
-		const delay = 400 + Math.random() * 600;
-		setTimeout(() => {
-			const mock = pickMockResponse(method, url);
-			const resp = mock ?? {
-				status: 404,
-				time: 32,
-				size: "0.1 KB",
-				body: { error: "not_found" },
-				headers: {},
-			};
-			const jitter = Math.floor(Math.random() * 60) - 20;
-			setResponse({ ...resp, time: resp.time + jitter });
-			setLoading(false);
+
+		const qp = new URLSearchParams();
+		for (const p of params) {
+			if (p.enabled && p.key.trim()) qp.set(p.key.trim(), p.value);
+		}
+		const qs = qp.toString();
+		const fullUrl = url.trim() + (qs ? (url.includes("?") ? "&" : "?") + qs : "");
+
+		const headersMap: Record<string, string> = {};
+		for (const h of headers) {
+			if (h.enabled && h.key.trim()) headersMap[h.key.trim()] = h.value;
+		}
+
+		if (authType === "Bearer Token" && authToken)
+			headersMap["Authorization"] = `Bearer ${authToken}`;
+		else if (authType === "Basic Auth" && authUser)
+			headersMap["Authorization"] = `Basic ${btoa(`${authUser}:${authPass}`)}`;
+		else if (authType === "API Key" && authUser && authToken)
+			headersMap[authUser] = authToken;
+
+		let bodyStr: string | null = null;
+		if (method !== "GET" && method !== "HEAD" && bodyType !== "none") {
+			if (bodyType === "json" && body.trim()) {
+				headersMap["Content-Type"] = "application/json";
+				bodyStr = body;
+			} else if (bodyType === "form") {
+				const fd = new URLSearchParams();
+				for (const p of params) {
+					if (p.enabled && p.key.trim()) fd.set(p.key.trim(), p.value);
+				}
+				headersMap["Content-Type"] = "application/x-www-form-urlencoded";
+				bodyStr = fd.toString();
+			} else if (bodyType === "raw" && body.trim()) {
+				bodyStr = body;
+			}
+		}
+
+		try {
+			const res = await invoke<{
+				status: number;
+				status_text: string;
+				body: string;
+				headers: Record<string, string>;
+				duration_ms: number;
+			}>("send_request", {
+				payload: { method, url: fullUrl, headers: headersMap, body: bodyStr },
+			});
+
+			let parsedBody: unknown;
+			try { parsedBody = JSON.parse(res.body); }
+			catch { parsedBody = res.body; }
+
+			const sizeBytes = new TextEncoder().encode(res.body).length;
+			const sizeStr = sizeBytes < 1024
+				? `${sizeBytes} B`
+				: `${(sizeBytes / 1024).toFixed(1)} KB`;
+
+			setResponse({ status: res.status, time: res.duration_ms, size: sizeStr, body: parsedBody, headers: res.headers });
 
 			const now = new Date();
 			const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
 			const pathName = url.split("/").filter(Boolean).pop() ?? url;
 			const newEntry: HistoryItem = {
 				id: Date.now(),
-				name:
-					pathName.charAt(0).toUpperCase() +
-					pathName.slice(1).replace(/\?.*/, ""),
+				name: pathName.charAt(0).toUpperCase() + pathName.slice(1).replace(/\?.*/, ""),
 				method,
 				url,
-				status: resp.status,
+				status: res.status,
 				ts: timeStr,
 			};
 			setHistory((h) => [newEntry, ...h.slice(0, 19)]);
 			setActiveHistId(newEntry.id);
-		}, delay);
+		} catch (e) {
+			setResponse({ status: 0, time: 0, size: "0 B", body: { error: String(e) }, headers: {} });
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	const loadHistory = (item: HistoryItem) => {

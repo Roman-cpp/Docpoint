@@ -7,6 +7,7 @@ import {
 	useDocaStore,
 } from "@/features/doca";
 import { TokenModal } from "./TokenModal";
+import { getEnvDotColor } from "@/shared/lib/env-color";
 
 export type NavLink =
 	| "docs"
@@ -54,7 +55,9 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 							className={s.envDot}
 							style={{
 								background:
-									env.id === selectedEnvConfig?.id ? env.dot : "var(--border)",
+									env.id === selectedEnvConfig?.id
+										? getEnvDotColor(env.env)
+										: "var(--border)",
 							}}
 						/>
 						{env.label}

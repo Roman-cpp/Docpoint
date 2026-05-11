@@ -52,8 +52,6 @@ export interface DbResponse {
 	endpoint_id: string;
 	status_code: string;
 	label: string;
-	color: string;
-	dot_color: string;
 	example: string;
 }
 
@@ -107,6 +105,5 @@ export interface DbEnvConfig {
 	doca_id: string;
 	env: string;
 	label: string;
-	dot: string;
 	base_url: string;
 }

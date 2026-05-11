@@ -202,8 +202,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 		responses: {
 			"200": {
 				label: "200 OK",
-				color: "#1E7E52",
-				dotColor: "var(--green)",
 				schema: [
 					{ key: "data", type: "array", desc: "Array of user objects" },
 					{
@@ -265,8 +263,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 			},
 			"401": {
 				label: "401 Unauthorized",
-				color: "#9A2800",
-				dotColor: "var(--red)",
 				schema: [
 					{
 						key: "error",
@@ -285,8 +281,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 			},
 			"422": {
 				label: "422 Validation",
-				color: "#9A5F00",
-				dotColor: "var(--amber)",
 				schema: [
 					{
 						key: "error",
@@ -351,8 +345,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 		responses: {
 			"201": {
 				label: "201 Created",
-				color: "#1E7E52",
-				dotColor: "var(--green)",
 				schema: [
 					{
 						key: "data.id",
@@ -389,8 +381,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 			},
 			"409": {
 				label: "409 Conflict",
-				color: "#9A2800",
-				dotColor: "var(--red)",
 				schema: [
 					{
 						key: "error",
@@ -454,8 +444,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 		responses: {
 			"200": {
 				label: "200 OK",
-				color: "#1E7E52",
-				dotColor: "var(--green)",
 				schema: [
 					{ key: "data[].id", type: "string", desc: "Article UUID" },
 					{ key: "data[].title", type: "string", desc: "Article title" },
@@ -483,8 +471,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 			},
 			"400": {
 				label: "400 Bad Request",
-				color: "#9A5F00",
-				dotColor: "var(--amber)",
 				schema: [
 					{
 						key: "error",
@@ -532,8 +518,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 		responses: {
 			"200": {
 				label: "200 OK",
-				color: "#1E7E52",
-				dotColor: "var(--green)",
 				schema: [
 					{
 						key: "access_token",
@@ -564,8 +548,6 @@ export const ENDPOINT_DETAILS: Record<string, EndpointDetail> = {
 			},
 			"401": {
 				label: "401 Unauthorized",
-				color: "#9A2800",
-				dotColor: "var(--red)",
 				schema: [
 					{
 						key: "error",

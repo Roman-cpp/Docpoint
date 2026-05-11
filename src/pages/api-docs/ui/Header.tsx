@@ -2,6 +2,7 @@ import { useState, type FC } from "react";
 import s from "./ApiDocsPage.module.css";
 import type { EnvConfig, EnvKey } from "@/pages/api-explorer/model/types";
 import s2 from "./../../../pages/api-explorer/ui/ApiExplorerPage.module.css";
+import { getEnvDotColor } from "@/shared/lib/env-color";
 
 interface HeaderProps {
 	version: string;
@@ -11,15 +12,13 @@ interface HeaderProps {
 export const ENV_CONFIG: Record<EnvKey, EnvConfig> = {
 	prod: {
 		label: "Production",
-		dot: "#1E7E52",
 		baseUrl: "https://api.example.com",
 	},
 	staging: {
 		label: "Staging",
-		dot: "#9A5F00",
 		baseUrl: "https://staging.api.example.com",
 	},
-	local: { label: "Local", dot: "#1A5EA8", baseUrl: "http://localhost:8000" },
+	local: { label: "Local", baseUrl: "http://localhost:8000" },
 };
 
 export const Header: FC<HeaderProps> = ({ version }) => {
@@ -43,7 +42,7 @@ export const Header: FC<HeaderProps> = ({ version }) => {
 					>
 						<span
 							className={s2.envDot}
-							style={{ background: env === k ? cfg.dot : "var(--border)" }}
+							style={{ background: env === k ? getEnvDotColor(k) : "var(--border)" }}
 						/>
 						{cfg.label}
 					</button>

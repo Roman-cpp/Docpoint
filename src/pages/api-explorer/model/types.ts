@@ -3,7 +3,6 @@ export type EnvKey = "prod" | "staging" | "local";
 
 export interface EnvConfig {
 	label: string;
-	dot: string;
 	baseUrl: string;
 }
 

@@ -17,8 +17,6 @@ interface SchemaField {
 
 interface ResponseDef {
 	label: string;
-	color: string;
-	dotColor: string;
 	schema: SchemaField[];
 	example: string;
 }

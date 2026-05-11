@@ -1,4 +1,5 @@
 import { useState, useEffect, type FC } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { ExplorerApi, HttpMethod } from "../model/types";
 import s from "./ApiExplorerPage.module.css";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/features/doca";
 import type { Endpoint } from "@/entities/endpoint";
 import type { EnvConfig } from "@/entities/env-config";
+import { getEnvDotColor } from "@/shared/lib/env-color";
 
 const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -18,21 +20,24 @@ const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
-function buildUrl(ep: Endpoint, env: EnvConfig) {
-	let path = ep.path;
+function buildUrl(ep: Endpoint, env: EnvConfig, vals: Record<string, string> = {}) {
 	const qp: Record<string, string> = {};
+	for (const p of ep.queryParams ?? []) {
+		const v = (vals[p.name] ?? "").trim();
+		if (v) qp[p.name] = v;
+	}
 	const qs = new URLSearchParams(qp).toString();
-	return `${env.baseUrl}${path}${qs ? "?" + qs : ""}`;
+	return `${env.baseUrl}${ep.path}${qs ? "?" + qs : ""}`;
 }
 
-function buildBody(ep: Endpoint) {
-	// if (ep.method === "GET") return {};
-	// const b: Record<string, string> = {};
-	// for (const p of ep.p) {
-	// 	const v = (vals[p.name] ?? "").trim();
-	// 	if (v && !ep.path.includes(`{${p.name}}`)) b[p.name] = v;
-	// }
-	return ep.path;
+function buildBody(ep: Endpoint, vals: Record<string, string>): string | null {
+	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
+	const b: Record<string, string> = {};
+	for (const p of ep.bodyParams) {
+		const v = (vals[p.name] ?? "").trim();
+		if (v) b[p.name] = v;
+	}
+	return Object.keys(b).length ? JSON.stringify(b) : null;
 }
 
 const CopyBtn: FC<{ text: string }> = ({ text }) => {
@@ -100,42 +105,44 @@ export const TryItPanel = () => {
 
 	if (!selectedEnvConfig) return;
 
-	const url = buildUrl(endpoint, selectedEnvConfig);
+	const url = buildUrl(endpoint, selectedEnvConfig, vals);
 
 	const send = async () => {
 		setLoading(true);
 		setResp(null);
 
-		console.log(url);
-
 		const headers: Record<string, string> = { Accept: "application/json" };
 		if (endpoint.auth && authToken)
 			headers["Authorization"] = `Bearer ${authToken}`;
-		const body = buildBody(endpoint);
-		const hasBody = Object.keys(body).length > 0;
-		if (hasBody) headers["Content-Type"] = "application/json";
-		const opts: RequestInit = { method: endpoint.method, headers };
-		if (hasBody) opts.body = JSON.stringify(body);
-		const t0 = Date.now();
-		try {
-			const res = await fetch(url, opts);
-			const dur = Date.now() - t0;
+		const body = buildBody(endpoint, vals);
+		if (body !== null) headers["Content-Type"] = "application/json";
 
-			// let bodyStr: string;
-			// try {
-			// 	bodyStr = JSON.stringify(JSON.parse(txt), null, 2);
-			// } catch {
-			// 	bodyStr = txt || "(empty)";
-			// }
+		try {
+			const res = await invoke<{
+				status: number;
+				status_text: string;
+				body: string;
+				duration_ms: number;
+			}>("send_request", {
+				payload: { method: endpoint.method, url, headers, body },
+			});
+
+			let bodyStr: string;
+			try {
+				bodyStr = JSON.stringify(JSON.parse(res.body), null, 2);
+			} catch {
+				bodyStr = res.body || "(empty)";
+			}
+
 			setResp({
-				ok: res.ok,
+				ok: res.status < 300,
 				status: res.status,
-				statusText: res.statusText,
-				dur,
-				// body: bodyStr,
+				statusText: res.status_text,
+				dur: res.duration_ms,
+				body: bodyStr,
 			});
 		} catch (e) {
-			setResp({ error: (e as Error).message, dur: Date.now() - t0 });
+			setResp({ error: String(e), dur: 0 });
 		}
 		setLoading(false);
 	};
@@ -163,7 +170,7 @@ export const TryItPanel = () => {
 							width: 6,
 							height: 6,
 							borderRadius: "50%",
-							background: selectedEnvConfig.dot,
+							background: getEnvDotColor(selectedEnvConfig.env),
 							display: "inline-block",
 							flexShrink: 0,
 						}}

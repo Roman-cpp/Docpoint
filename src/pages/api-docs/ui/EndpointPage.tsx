@@ -3,6 +3,7 @@ import type { FC } from "react";
 import type { HttpMethod } from "../model/types";
 import s from "./ApiDocsPage.module.css";
 import type { Endpoint } from "@/entities/endpoint";
+import { getStatusDotColor } from "@/shared/lib/status-color";
 
 const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -154,7 +155,7 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 							>
 								<span
 									className={s.statusDot}
-									style={{ background: r.dotColor }}
+									style={{ background: getStatusDotColor(key) }}
 								/>
 								{r.label}
 							</button>
