@@ -1,70 +1,60 @@
+import { useRef, useCallback } from "react";
 import { Sidebar } from "@/pages/api-docs/ui/Sidebar";
 import { Header } from "@/widgets/header";
 import s from "@/pages/api-docs/ui/ApiDocsPage.module.css";
 import { type ReactNode } from "react";
+
+const SIDEBAR_INIT = 248;
+const SIDEBAR_MIN = 160;
+const SIDEBAR_MAX = 480;
 
 interface LayoutProps {
 	children?: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+	const sidebarRef = useRef<HTMLDivElement>(null);
+
+	const onSidebarDrag = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const startX = e.clientX;
+		const startW = sidebarRef.current?.offsetWidth ?? SIDEBAR_INIT;
+
+		const onMove = (ev: MouseEvent) => {
+			const w = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startW + ev.clientX - startX));
+			if (sidebarRef.current) sidebarRef.current.style.width = `${w}px`;
+		};
+		const onUp = () => {
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onUp);
+			document.body.style.cursor = "";
+			document.body.style.userSelect = "";
+		};
+
+		document.body.style.cursor = "col-resize";
+		document.body.style.userSelect = "none";
+		document.addEventListener("mousemove", onMove);
+		document.addEventListener("mouseup", onUp);
+	}, []);
+
 	return (
 		<div className={s.wrapper}>
 			<Header section="docs1" activeLink="docs" />
-			{/* <Header
-				version={tweaks.version}
-				onTweaksToggle={() => setTweaksVisible((v) => !v)}
-			/> */}
 
-			{/* SHELL */}
 			<div className={s.shell}>
-				<Sidebar />
+				<div
+					ref={sidebarRef}
+					style={{ width: SIDEBAR_INIT, flexShrink: 0, overflow: "hidden" }}
+				>
+					<Sidebar />
+				</div>
+
+				<div className={s.resizeHandle} onMouseDown={onSidebarDrag} />
 
 				<div className={s.main}>
 					{children}
-					{/* <div ref={panelRef} className={s.endpointPanel}>
-						{activeId === "overview" ? (
-							<OverviewPage apiData={API_DATA} />
-						) : activeDetail ? (
-							<EndpointPage detail={activeDetail} key={activeId} />
-						) : (
-							<div className={s.emptyState}>
-								<svg
-									width="40"
-									height="40"
-									viewBox="0 0 40 40"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-									strokeLinecap="round"
-								>
-									<rect x="8" y="6" width="24" height="28" rx="3" />
-									<path d="M14 14h12M14 19h12M14 24h8" />
-								</svg>
-								<span>Select an endpoint to view its documentation</span>
-							</div>
-						)}
-					</div>
-
-					{tweaks.showCode && activeDetail && selEp && selApi && (
-						<TryItPanel
-							ep={selEp}
-							api={selApi}
-							env={env}
-							authToken={authToken}
-							onTokenRequest={() => setModal(true)}
-						/>
-						// <CodePanel detail={activeDetail} key={activeId + "-code"} />
-					)} */}
 				</div>
 			</div>
-
-			{/* <TweaksPanel
-				visible={tweaksVisible}
-				onClose={() => setTweaksVisible(false)}
-				tweaks={tweaks}
-				setTweak={setTweak}
-			/> */}
 		</div>
 	);
 }

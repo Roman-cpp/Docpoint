@@ -700,13 +700,12 @@
 
 /* ═══════════════ TRY IT PANE ═══════════════ */
 .tryPane {
-	width: 348px;
-	flex-shrink: 0;
+	width: 100%;
 	background: var(--surface);
-	border-left: 1px solid var(--border);
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	height: 100%;
 }
 .tryHdr {
 	padding: 13px 18px 11px;

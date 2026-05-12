@@ -26,7 +26,7 @@ export const Header: FC<HeaderProps> = ({ version }) => {
 	return (
 		<nav className={s.nav}>
 			<div className={s.navBrand}>
-				Lesser Known Laravel
+				Docpoint
 				<div className={s.navBrandSep} />
 				<span className={s.navBrandSection}>API Reference</span>
 			</div>

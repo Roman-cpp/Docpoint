@@ -40,7 +40,7 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 		<nav className={s.nav}>
       <Link to="/" style={{ textDecoration: "none" }}>
         <div className={s.navBrand}>
-          Lesser Known Laravel
+          Docpoint
           <div className={s.navSep} />
           <span className={s.navSection}>{section}</span>
         </div>
