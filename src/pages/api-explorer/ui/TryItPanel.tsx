@@ -6,6 +6,8 @@ import {
 	selectDoca,
 	selectSelectedEndpoint,
 	selectSelectedEnvConfig,
+	selectAccessToken,
+	actionSetAccessToken,
 	useDocaStore,
 } from "@/features/doca";
 import type { Endpoint } from "@/entities/endpoint";
@@ -95,8 +97,11 @@ export const TryItPanel = () => {
 	const endpoint = useDocaStore(selectSelectedEndpoint);
 	const doca = useDocaStore(selectDoca);
 	const selectedEnvConfig = useDocaStore(selectSelectedEnvConfig);
+	const authToken = useDocaStore(selectAccessToken) ?? "";
+	const setAccessToken = useDocaStore(actionSetAccessToken);
 
-	const authToken = "";
+	const [tokenInput, setTokenInput] = useState("");
+	const [settingToken, setSettingToken] = useState(false);
 	const [vals, setVals] = useState<Record<string, string>>({});
 	const [loading, setLoading] = useState(false);
 	const [resp, setResp] = useState<RespState | null>(null);
@@ -211,8 +216,46 @@ export const TryItPanel = () => {
 								? "Authorized"
 								: "This endpoint requires a Bearer token"}
 						</span>
-						{!authToken && (
-							<button className={s.authNoticeBtn}>Set token</button>
+						{authToken ? (
+							<button
+								className={s.authNoticeBtn}
+								onClick={() => { setAccessToken(null); setSettingToken(false); }}
+							>
+								Clear
+							</button>
+						) : settingToken ? (
+							<form
+								style={{ display: "flex", gap: 4, flex: 1 }}
+								onSubmit={(e) => {
+									e.preventDefault();
+									if (tokenInput.trim()) {
+										setAccessToken(tokenInput.trim());
+										setSettingToken(false);
+										setTokenInput("");
+									}
+								}}
+							>
+								<input
+									autoFocus
+									className={s.fieldInput}
+									style={{ flex: 1, padding: "3px 8px", fontSize: 12 }}
+									placeholder="Bearer token…"
+									value={tokenInput}
+									onChange={(e) => setTokenInput(e.target.value)}
+								/>
+								<button className={s.authNoticeBtn} type="submit">Save</button>
+								<button
+									className={s.authNoticeBtn}
+									type="button"
+									onClick={() => { setSettingToken(false); setTokenInput(""); }}
+								>
+									Cancel
+								</button>
+							</form>
+						) : (
+							<button className={s.authNoticeBtn} onClick={() => setSettingToken(true)}>
+								Set token
+							</button>
 						)}
 					</div>
 				)}

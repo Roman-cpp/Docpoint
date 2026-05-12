@@ -357,6 +357,7 @@
 }
 .sidebarSearchInput {
 	width: 100%;
+	box-sizing: border-box;
 	padding: 6px 8px 6px 26px;
 	font-size: 12px;
 	font-family: var(--font-sans);
@@ -721,8 +722,8 @@
 }
 .kvHeader {
 	display: grid;
-	grid-template-columns: 28px 1fr 1fr 28px;
-	gap: 6px;
+	grid-template-columns: 20px 1fr 1fr 36px;
+	gap: 6px 8px;
 	padding: 0 2px;
 }
 .kvHeader span {
@@ -734,8 +735,8 @@
 }
 .kvRow {
 	display: grid;
-	grid-template-columns: 28px 1fr 1fr 28px;
-	gap: 6px;
+	grid-template-columns: 20px 1fr 1fr 36px;
+	gap: 6px 8px;
 	align-items: center;
 }
 .kvCheck {
@@ -745,6 +746,8 @@
 	cursor: pointer;
 }
 .kvInput {
+	width: 100%;
+	box-sizing: border-box;
 	padding: 7px 9px;
 	font-size: 12px;
 	font-family: var(--font-mono);
@@ -754,7 +757,6 @@
 	border-radius: 6px;
 	outline: none;
 	transition: border-color 0.15s;
-	width: 100%;
 }
 .kvInput:focus {
 	border-color: var(--border-h);
@@ -768,6 +770,7 @@
 .kvDel {
 	width: 26px;
 	height: 26px;
+	margin-left: 8px;
 	background: none;
 	border: none;
 	cursor: pointer;

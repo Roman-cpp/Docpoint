@@ -18,7 +18,7 @@ export type NavLink =
 	| "architecture";
 
 const NAV_LINKS: { id: NavLink; label: string; href: string }[] = [
-	{ id: "docs", label: "API Docs", href: "/docs" },
+	{ id: "docs", label: "API Docs", href: "/" },
 	{ id: "http-client", label: "HTTP Client", href: "/http-client" },
 	{ id: "schemas", label: "Schemas", href: "/api-schemas" },
 	{ id: "architecture", label: "Architecture", href: "/architecture" },
