@@ -222,7 +222,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 );
 
 /* ─── ApiSchemasPage ─── */
-export const ApiSchemasPage: FC = () => {
+export const SchemaPage: FC = () => {
 	const [activeId, setActiveId] = useState("user");
 	const [search, setSearch] = useState("");
 	const [tweaksVisible, setTweaksVisible] = useState(false);

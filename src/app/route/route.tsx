@@ -13,7 +13,7 @@ export const router = createBrowserRouter([
 			{
 				path: "/docs",
 				lazy: async () => ({
-					Component: (await import("@/pages/api-docs")).ApiDocsPage,
+					Component: (await import("@/pages/docs")).DocsPage,
 				}),
 			},
 			{
@@ -23,9 +23,9 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/api-schemas",
+				path: "/schema",
 				lazy: async () => ({
-					Component: (await import("@/pages/api-schemas")).ApiSchemasPage,
+					Component: (await import("@/pages/schema")).SchemaPage,
 				}),
 			},
 			{

@@ -1,7 +1,7 @@
 import { useRef, useCallback } from "react";
-import { Sidebar } from "@/pages/api-docs/ui/Sidebar";
+import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { Header } from "@/widgets/header";
-import s from "@/pages/api-docs/ui/ApiDocsPage.module.css";
+import s from "@/pages/docs/ui/ApiDocsPage.module.css";
 import { type ReactNode } from "react";
 
 const SIDEBAR_INIT = 248;

@@ -137,7 +137,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 );
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
-export const ApiDocsPage: FC = () => {
+export const DocsPage: FC = () => {
 	const [activeId] = useState("overview");
 	const [tweaksVisible, setTweaksVisible] = useState(false);
 	const [tweaks, setTweaksState] = useState<TweakSettings>(TWEAK_DEFAULTS);

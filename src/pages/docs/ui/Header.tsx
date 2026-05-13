@@ -1,6 +1,6 @@
 import { useState, type FC } from "react";
 import s from "./ApiDocsPage.module.css";
-import type { EnvConfig, EnvKey } from "@/pages/api-explorer/model/types";
+import type { EnvConfig, EnvKey } from "@/pages/endpoint/model/types";
 import s2 from "./../../../pages/api-explorer/ui/ApiExplorerPage.module.css";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 
