@@ -1,1 +1,1 @@
-export type { Endpoint } from "./model/type";
+export type { Endpoint, HttpMethod } from "./model/type";

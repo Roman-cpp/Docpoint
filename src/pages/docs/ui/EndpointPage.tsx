@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { FC } from "react";
-import type { HttpMethod } from "../model/types";
+
 import s from "./ApiDocsPage.module.css";
-import type { Endpoint } from "@/entities/endpoint";
+import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 
 const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
@@ -11,6 +11,7 @@ const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
 	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
 	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
 	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
+  HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
 const MethodBadge: FC<{ method: HttpMethod; size?: "sm" | "normal" }> = ({

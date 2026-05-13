@@ -1,6 +1,5 @@
 import { useState, useEffect, type FC } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { ExplorerApi, HttpMethod } from "../model/types";
 import s from "./ApiExplorerPage.module.css";
 import {
 	selectDoca,
@@ -10,7 +9,7 @@ import {
 	actionSetAccessToken,
 	useDocaStore,
 } from "@/features/doca";
-import type { Endpoint } from "@/entities/endpoint";
+import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import type { EnvConfig } from "@/entities/env-config";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 
@@ -20,6 +19,7 @@ const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
 	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
 	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
+  HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
 function extractPathParams(path: string): string[] {
@@ -77,12 +77,6 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 		</button>
 	);
 };
-
-export interface TryItPanelProps {
-	api: ExplorerApi;
-	authToken: string;
-	onTokenRequest: () => void;
-}
 
 interface RespState {
 	ok?: boolean;

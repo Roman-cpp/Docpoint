@@ -333,7 +333,7 @@ export const seedSchema: Schema[] = [
 ];
 
 export const seedEnvConfigs: EnvConfig[] = [
-	{ id: "1", env: "prod", label: "Prod", baseUrl: "https://api.example.com" },
-	{ id: "2", env: "staging", label: "Staging", baseUrl: "https://api.example.com" },
-	{ id: "3", env: "local", label: "Local", baseUrl: "https://api.example.com" },
+	{ id: "1", env: "prod", label: "Prod", baseUrl: "https://api.example.com", value: [] },
+	{ id: "2", env: "staging", label: "Staging", baseUrl: "https://api.example.com", value: [] },
+	{ id: "3", env: "local", label: "Local", baseUrl: "https://api.example.com", value: [] },
 ];

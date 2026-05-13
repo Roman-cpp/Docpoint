@@ -214,5 +214,6 @@ export async function readEnvConfigs(
 		env: r.env,
 		label: r.label,
 		baseUrl: r.base_url,
+    value: [],
 	}));
 }

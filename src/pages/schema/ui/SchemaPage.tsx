@@ -2,7 +2,7 @@ import { useState, useEffect, type FC } from "react";
 import s from "./ApiSchemasPage.module.css";
 import { Header } from "@/widgets/header";
 import type { SchemaTweaks } from "../model/types";
-import { selectSchema, useDocaStore } from "@/features/doca";
+import { selectSchemas, selectSelectedSchema, useDocaStore } from "@/features/doca";
 import type { Schema } from "@/entities/schema";
 import { Sidebar } from "./Sidebar";
 
@@ -35,17 +35,10 @@ const METHOD_CFG: Record<string, { color: string; bg: string }> = {
 /* ─── EntityDetail ─── */
 interface EntityDetailProps {
 	entity: Schema;
-	tweaks: SchemaTweaks;
 }
 
-const EntityDetail: FC<EntityDetailProps> = ({ entity, tweaks }) => {
+const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 	const enumFields = entity.fields.filter((f) => f.enum);
-	const fieldPad =
-		tweaks.fieldDensity === "Compact"
-			? "7px 16px"
-			: tweaks.fieldDensity === "Spacious"
-				? "16px 16px"
-				: "11px 16px";
 
 	return (
 		<div className={s.detailWrap}>
@@ -81,7 +74,6 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity, tweaks }) => {
 							<div
 								key={f.name}
 								className={`${s.fieldRow}${!f.req ? " " + s.fieldRowOptional : ""}`}
-								style={{ padding: fieldPad }}
 							>
 								<div className={s.fName}>
 									{f.name}
@@ -93,9 +85,6 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity, tweaks }) => {
 								</span>
 								<div>
 									<div className={s.fDesc}>{f.desc}</div>
-									{tweaks.showNotes && f.note && (
-										<div className={s.fDescNote}>{f.note}</div>
-									)}
 								</div>
 								<span className={s.fExample}>{f.example}</span>
 							</div>
@@ -223,7 +212,10 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 
 /* ─── ApiSchemasPage ─── */
 export const SchemaPage: FC = () => {
-	const [activeId, setActiveId] = useState("user");
+	// const [activeId, setActiveId] = useState("user");
+  const ENTITIES = useDocaStore(selectSchemas);
+  const activeEntity = useDocaStore(selectSelectedSchema);
+
 	const [search, setSearch] = useState("");
 	const [tweaksVisible, setTweaksVisible] = useState(false);
 	const [tweaks, setTweaksState] = useState<SchemaTweaks>(TWEAK_DEFAULTS);
@@ -252,7 +244,7 @@ export const SchemaPage: FC = () => {
 		return () => window.removeEventListener("message", handler);
 	}, []);
 
-	const ENTITIES = useDocaStore(selectSchema);
+
 
 	const filtered = search.trim()
 		? ENTITIES.filter(
@@ -262,7 +254,7 @@ export const SchemaPage: FC = () => {
 			)
 		: ENTITIES;
 
-	const activeEntity = ENTITIES.find((e) => e.id === activeId);
+	// const activeEntity = ENTITIES.find((e) => e.id === activeId);
 
 	return (
 		<div className={s.wrapper}>
@@ -271,10 +263,8 @@ export const SchemaPage: FC = () => {
 			<div className={s.shell}>
 				<Sidebar
 					filtered={filtered}
-					activeId={activeId}
 					search={search}
 					onSearch={setSearch}
-					onSelect={setActiveId}
 				/>
 
 				{/* MAIN */}
@@ -282,8 +272,6 @@ export const SchemaPage: FC = () => {
 					{activeEntity ? (
 						<EntityDetail
 							entity={activeEntity}
-							tweaks={tweaks}
-							key={activeId}
 						/>
 					) : (
 						<div className={s.emptyState}>

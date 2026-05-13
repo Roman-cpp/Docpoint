@@ -16,7 +16,6 @@ import type {
 	Tweaks,
 	AuthType,
 	BodyType,
-	HttpMethod,
 } from "../model/types";
 import {
 	METHOD_CFG,
@@ -25,6 +24,7 @@ import {
 } from "../data/httpClientData";
 import s from "./HttpClientPage.module.css";
 import { Header } from "@/widgets/header";
+import { HttpMethod } from "@/entities/endpoint";
 
 /* ─── HELPERS ────────────────────────────────── */
 function syntaxHighlight(obj: unknown): string {

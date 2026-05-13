@@ -23,12 +23,13 @@ import { seedDoca, seedGroups, seedSchema, seedEnvConfigs } from "@/features/doc
 type DocaState = {
 	doca: Doca | null;
 	groups: Group[] | null;
-	schema: Schema[];
+	schemas: Schema[];
 	envConfigs: EnvConfig[];
 
 	selectedEnvConfig: EnvConfig | null;
 	selectedGroup: Group | null;
 	selectedEndpoint: Endpoint | null;
+  selectedSchema: Schema | null;
 
 	accessToken: string | null;
 };
@@ -37,6 +38,7 @@ type DocaActions = {
 	selectGroup: (groupId: string) => void;
 	selectEnvConfig: (envId: string) => void;
 	selectEndpoint: (endpointId: string) => void;
+  selectSchema: (schemaId: string) => void;
 	setAccessToken: (token: string | null) => void;
 	init: () => Promise<void>;
 };
@@ -44,12 +46,13 @@ type DocaActions = {
 const initialState: DocaState = {
 	doca: seedDoca,
 	groups: seedGroups,
-	schema: seedSchema,
+	schemas: seedSchema,
 	envConfigs: seedEnvConfigs,
 
 	selectedGroup: null,
 	selectedEnvConfig: null,
 	selectedEndpoint: null,
+  selectedSchema: null,
 
 	accessToken: null,
 };
@@ -83,6 +86,15 @@ const createDocaSlice: StateCreator<DocaStore> = (set, get) => ({
 				.find((endpoint) => endpoint.id === endpointId),
 		});
 	},
+  selectSchema: (schemaId: string) => {
+    const { schemas } = get();
+
+		if (!schemas) return;
+		set({
+			selectedSchema: schemas
+				.find((endpoint) => endpoint.id === schemaId),
+		});
+  },
 
 	setAccessToken: (token) => set({ accessToken: token }),
 
@@ -92,21 +104,21 @@ const createDocaSlice: StateCreator<DocaStore> = (set, get) => ({
 			const ids = await readAllDocaIds(db);
 
 			if (ids.length === 0) {
-				const { doca, groups, schema, envConfigs } = get();
+				const { doca, groups, schemas, envConfigs } = get();
 				if (!doca || !groups) return;
 				await writeDoca(db, doca);
 				await writeGroups(db, doca.id, groups);
-				await writeSchemas(db, doca.id, schema);
+				await writeSchemas(db, doca.id, schemas);
 				await writeEnvConfigs(db, doca.id, envConfigs);
 			} else {
 				const docaId = ids[0];
-				const [doca, groups, schema, envConfigs] = await Promise.all([
+				const [doca, groups, schemas, envConfigs] = await Promise.all([
 					readDoca(db, docaId),
 					readGroups(db, docaId),
 					readSchemas(db, docaId),
 					readEnvConfigs(db, docaId),
 				]);
-				set({ doca, groups, schema, envConfigs });
+				set({ doca, groups, schemas, envConfigs });
 			}
 		} catch (e) {
 			console.error("[DocaStore] init failed:", e);

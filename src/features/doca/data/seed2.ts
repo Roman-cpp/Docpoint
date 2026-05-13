@@ -1982,7 +1982,7 @@ export const seedSchema: Schema[] = [
 ];
 
 export const seedEnvConfigs: EnvConfig[] = [
-	{ id: "1", env: "local", label: "Local", baseUrl: "http://localhost:8080" },
-	{ id: "2", env: "dev", label: "Dev", baseUrl: "http://92.101.122.46:80" },
-	{ id: "3", env: "prod", label: "Prod", baseUrl: "https://api.sleipnir.app" },
+	{ id: "1", env: "local", label: "Local", baseUrl: "http://localhost:8080", value: [] },
+	{ id: "2", env: "dev", label: "Dev", baseUrl: "http://92.101.122.46:80", value: [] },
+	{ id: "3", env: "prod", label: "Prod", baseUrl: "https://api.sleipnir.app", value: [] },
 ];

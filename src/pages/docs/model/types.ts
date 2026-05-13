@@ -1,4 +1,4 @@
-export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+import { HttpMethod } from "@/entities/endpoint";
 
 export interface EndpointMeta {
 	id: string;

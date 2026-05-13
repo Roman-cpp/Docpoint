@@ -4,6 +4,7 @@ export {
 	actionSelectEnvConfig,
 	actionSelectEndpoint,
   actionSetAccessToken,
+  actionSelecSchema
 } from "./store/docaStore.actions";
 export {
 	selectDoca,
@@ -12,6 +13,7 @@ export {
 	selectSelectedEnvConfig,
 	selectSelectedEndpoint,
 	selectSelectedGroup,
-	selectSchema,
+	selectSchemas,
   selectAccessToken,
+  selectSelectedSchema
 } from "./store/docaStore.selectors";

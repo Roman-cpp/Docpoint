@@ -1,4 +1,5 @@
-import type { HttpMethod, MockResponse, HistoryItem } from "../model/types";
+import { HttpMethod } from "@/entities/endpoint";
+import type { MockResponse, HistoryItem } from "../model/types";
 
 export const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -7,7 +8,6 @@ export const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
 	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
 	HEAD: { color: "var(--ink-mid)", bg: "var(--cat-bg)" },
-	OPTIONS: { color: "var(--ink-mid)", bg: "var(--cat-bg)" },
 };
 
 const MOCK: Record<string, MockResponse> = {

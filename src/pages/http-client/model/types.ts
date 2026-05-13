@@ -1,11 +1,5 @@
-export type HttpMethod =
-	| "GET"
-	| "POST"
-	| "PUT"
-	| "PATCH"
-	| "DELETE"
-	| "HEAD"
-	| "OPTIONS";
+import { HttpMethod } from "@/entities/endpoint";
+
 export type AuthType = "None" | "Bearer Token" | "Basic Auth" | "API Key";
 export type BodyType = "json" | "form" | "raw" | "none";
 export type ThemeOpt = "Light" | "Dark";
