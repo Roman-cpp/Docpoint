@@ -1,6 +1,6 @@
 import type { Doca } from "@/entities/doca";
 import type { Group } from "@/entities/group";
-import type { Schema } from "@/entities/schema";
+import type { Entity } from "@/entities/entity";
 import type { EnvConfig } from "@/entities/env-config";
 
 export const seedDoca: Doca = {
@@ -1609,7 +1609,7 @@ export const seedGroups: Group[] = [
 	},
 ];
 
-export const seedSchema: Schema[] = [
+export const seedSchema: Entity[] = [
 	{
 		id: "user",
 		name: "User",

@@ -14,16 +14,9 @@ export interface SchemaField {
 	enum?: EnumValue[];
 }
 
-export interface UsedByItem {
-	method: string;
-	path: string;
-	role: string;
-}
-
-export interface Schema {
+export interface Entity {
 	id: string;
 	name: string;
 	desc: string;
 	fields: SchemaField[];
-	usedBy: UsedByItem[];
 }

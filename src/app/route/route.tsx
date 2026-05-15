@@ -23,9 +23,9 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/schema",
+				path: "/entity",
 				lazy: async () => ({
-					Component: (await import("@/pages/schema")).SchemaPage,
+					Component: (await import("@/pages/entity")).EntityPage,
 				}),
 			},
 			{

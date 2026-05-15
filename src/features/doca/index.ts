@@ -3,17 +3,20 @@ export {
 	actionSelectGroup,
 	actionSelectEnvConfig,
 	actionSelectEndpoint,
-  actionSetAccessToken,
-  actionSelecSchema
+	actionSetAccessToken,
+	actionSelectEntity,
+	actionImportDoca,
+	actionDeleteDoca,
 } from "./store/docaStore.actions";
 export {
+	selectDocs,
 	selectDoca,
 	selectGroups,
 	selectEnvConfigs,
 	selectSelectedEnvConfig,
 	selectSelectedEndpoint,
 	selectSelectedGroup,
-	selectSchemas,
-  selectAccessToken,
-  selectSelectedSchema
+	selectEntities,
+	selectAccessToken,
+	selectSelectedEntity,
 } from "./store/docaStore.selectors";

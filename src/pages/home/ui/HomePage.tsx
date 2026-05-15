@@ -1,56 +1,39 @@
 import { type FC } from "react";
 import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";
-import type { Doca } from "@/entities/doca";
 import { Header } from "@/widgets/header";
 import { Link } from "react-router";
+import { actionDeleteDoca, selectDocs, useDocaStore } from "@/features/doca";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
-	const docs: Doca[] = [
-		{
-			id: "core",
-			name: "Core API",
-			version: "v2",
-			desc: "Main application API. Users, articles, tags, comments — the full content layer.",
-			tags: ["REST", "JSON", "Auth required"],
-		},
-		{
-			id: "core",
-			name: "Core API",
-			version: "v2",
-			desc: "Main application API. Users, articles, tags, comments — the full content layer.",
-			tags: ["REST", "JSON", "Auth required"],
-		},
-	];
+	const docs = useDocaStore(selectDocs);
+	const deleteDoca = useDocaStore(actionDeleteDoca);
+
+	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+		deleteDoca(id);
+	};
+
 	return (
 		<div className={s.overview}>
 			<div className={s.apiCardsGrid}>
 				{docs.map((a) => {
-					// const sc = statusColor(a.status);
 					return (
 						<Link to="docs" key={a.id} className={`${s.apiCard}`}>
 							<div className={s.acAccent} />
 							<div className={s.acTop}>
-								{/* <div className={s.acIcon}>
-									{a.icon}
-								</div> */}
-								{/* <span
-									className={s.acStatus}
-									// style={{ background: sc.bg, color: sc.color }}
+								<button
+									className={s.acDeleteBtn}
+									onClick={(e) => handleDelete(e, a.id, a.name)}
+									title="Delete"
 								>
-									<span
-										style={{
-											width: 6,
-											height: 6,
-											borderRadius: "50%",
-											background: sc.color,
-											display: "inline-block",
-											flexShrink: 0,
-										}}
-									/>
-									{sc.label}
-								</span> */}
+									<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+										<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
+									</svg>
+								</button>
 							</div>
 							<div className={s.acName}>{a.name}</div>
 							<div className={s.acDesc}>{a.desc}</div>

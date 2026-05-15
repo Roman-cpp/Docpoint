@@ -2,8 +2,8 @@ import { useState, useEffect, type FC } from "react";
 import s from "./ApiSchemasPage.module.css";
 import { Header } from "@/widgets/header";
 import type { SchemaTweaks } from "../model/types";
-import { selectSchemas, selectSelectedSchema, useDocaStore } from "@/features/doca";
-import type { Schema } from "@/entities/schema";
+import { selectEntities, selectSelectedEntity, useDocaStore } from "@/features/doca";
+import type { Entity } from "@/entities/entity";
 import { Sidebar } from "./Sidebar";
 
 /* ─── constants ─── */
@@ -34,7 +34,7 @@ const METHOD_CFG: Record<string, { color: string; bg: string }> = {
 
 /* ─── EntityDetail ─── */
 interface EntityDetailProps {
-	entity: Schema;
+	entity: Entity;
 }
 
 const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
@@ -112,7 +112,7 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 				{/* RIGHT */}
 				<div className={s.jsonCol}>
 					<div className={s.jsonColSticky}>
-						<div className={s.usedByWidget}>
+						{/* <div className={s.usedByWidget}>
 							<div className={s.widgetTitle}>
 								Used by {entity.usedBy.length} endpoints
 							</div>
@@ -131,7 +131,7 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 									</div>
 								);
 							})}
-						</div>
+						</div> */}
 					</div>
 				</div>
 			</div>
@@ -210,11 +210,11 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 	</div>
 );
 
-/* ─── ApiSchemasPage ─── */
-export const SchemaPage: FC = () => {
+/* ─── EntityPage ─── */
+export const EntityPage: FC = () => {
 	// const [activeId, setActiveId] = useState("user");
-  const ENTITIES = useDocaStore(selectSchemas);
-  const activeEntity = useDocaStore(selectSelectedSchema);
+  const ENTITIES = useDocaStore(selectEntities);
+  const activeEntity = useDocaStore(selectSelectedEntity);
 
 	const [search, setSearch] = useState("");
 	const [tweaksVisible, setTweaksVisible] = useState(false);
@@ -258,7 +258,7 @@ export const SchemaPage: FC = () => {
 
 	return (
 		<div className={s.wrapper}>
-			<Header section="API Schemas" activeLink="schemas" />
+			<Header section="API Schemas" activeLink="entity" />
 
 			<div className={s.shell}>
 				<Sidebar

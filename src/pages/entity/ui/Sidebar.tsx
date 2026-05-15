@@ -1,10 +1,10 @@
 import type { FC } from "react";
-import type { Schema } from "@/entities/schema";
+import type { Entity } from "@/entities/entity";
 import s from "./ApiSchemasPage.module.css";
-import { actionSelecSchema, selectSelectedSchema, useDocaStore } from "@/features/doca";
+import { actionSelectEntity, selectSelectedEntity, useDocaStore } from "@/features/doca";
 
 interface SidebarProps {
-	filtered: Schema[];
+	filtered: Entity[];
 	search: string;
 	onSearch: (value: string) => void;
 }
@@ -15,8 +15,8 @@ export const Sidebar: FC<SidebarProps> = ({
 	onSearch,
 }) => {
 
-  const selecSchema = useDocaStore(actionSelecSchema);
-  const activeEntity = useDocaStore(selectSelectedSchema);
+  const selectEntity = useDocaStore(actionSelectEntity);
+  const activeEntity = useDocaStore(selectSelectedEntity);
 
   return (
 	<div className={s.sidebar}>
@@ -46,7 +46,7 @@ export const Sidebar: FC<SidebarProps> = ({
 				<button
 					key={entity.id}
 					className={`${s.entityItem}${activeEntity?.id === entity.id ? " " + s.entityItemActive : ""}`}
-					onClick={() => selecSchema(entity.id)}
+					onClick={() => selectEntity(entity.id)}
 				>
 					<div className={s.entityItemIcon}>
 						{/* <img src={entity.icon} alt={entity.name} height={30} width={30} /> */}

@@ -1,6 +1,6 @@
 import type { Doca } from "@/entities/doca";
 import type { Group } from "@/entities/group";
-import type { Schema } from "@/entities/schema";
+import type { Entity } from "@/entities/entity";
 import type { EnvConfig } from "@/entities/env-config";
 
 export const seedDoca: Doca = {
@@ -190,7 +190,7 @@ export const seedGroups: Group[] = [
 	},
 ];
 
-export const seedSchema: Schema[] = [
+export const seedSchema: Entity[] = [
 	{
 		id: "user",
 		name: "User",
@@ -218,13 +218,6 @@ export const seedSchema: Schema[] = [
 			{ name: "email_verified", type: "boolean", req: true, nullable: false, desc: "Whether email has been verified", note: "", example: "true" },
 			{ name: "created_at", type: "datetime", req: true, nullable: false, desc: "ISO 8601 account creation timestamp", note: "UTC, read-only", example: '"2025-03-14T10:22:00Z"' },
 			{ name: "updated_at", type: "datetime", req: true, nullable: false, desc: "ISO 8601 last-modified timestamp", note: "UTC, read-only", example: '"2026-04-30T18:00:00Z"' },
-		],
-		usedBy: [
-			{ method: "GET", path: "/users", role: "response[]" },
-			{ method: "POST", path: "/users", role: "response" },
-			{ method: "GET", path: "/users/{id}", role: "response" },
-			{ method: "PUT", path: "/users/{id}", role: "response" },
-			{ method: "GET", path: "/articles", role: "author field" },
 		],
 	},
 	{
@@ -271,13 +264,6 @@ export const seedSchema: Schema[] = [
 			{ name: "published_at", type: "datetime", req: false, nullable: true, desc: "ISO 8601 publication timestamp", note: "null if still a draft", example: '"2026-03-14T10:00:00Z"' },
 			{ name: "updated_at", type: "datetime", req: true, nullable: false, desc: "ISO 8601 last-modified timestamp", note: "UTC, read-only", example: '"2026-04-30T18:00:00Z"' },
 		],
-		usedBy: [
-			{ method: "GET", path: "/articles", role: "response[]" },
-			{ method: "POST", path: "/articles", role: "response" },
-			{ method: "GET", path: "/articles/{id}", role: "response" },
-			{ method: "PATCH", path: "/articles/{id}", role: "response" },
-			{ method: "GET", path: "/articles/{id}/comments", role: "parent context" },
-		],
 	},
 	{
 		id: "tag",
@@ -289,12 +275,6 @@ export const seedSchema: Schema[] = [
 			{ name: "description", type: "string", req: false, nullable: true, desc: "Optional description of what the tag covers", note: "Max 240 chars", example: '"Methods rarely documented..."' },
 			{ name: "color", type: "string", req: false, nullable: true, desc: "Hex color for UI display", note: "6-digit hex with #", example: '"#1E7E52"' },
 			{ name: "article_count", type: "integer", req: true, nullable: false, desc: "Number of published articles with this tag", note: "Read-only counter", example: "14" },
-		],
-		usedBy: [
-			{ method: "GET", path: "/tags", role: "response[]" },
-			{ method: "GET", path: "/tags/{slug}", role: "response" },
-			{ method: "GET", path: "/articles", role: "tags field" },
-			{ method: "GET", path: "/search", role: "filter param" },
 		],
 	},
 	{
@@ -323,11 +303,6 @@ export const seedSchema: Schema[] = [
 			{ name: "upvotes", type: "integer", req: true, nullable: false, desc: "Number of community upvotes", note: "Read-only counter", example: "12" },
 			{ name: "created_at", type: "datetime", req: true, nullable: false, desc: "ISO 8601 creation timestamp", note: "UTC, read-only", example: '"2026-04-01T09:15:00Z"' },
 			{ name: "updated_at", type: "datetime", req: true, nullable: false, desc: "ISO 8601 last-edited timestamp", note: "UTC, read-only", example: '"2026-04-01T10:00:00Z"' },
-		],
-		usedBy: [
-			{ method: "GET", path: "/articles/{id}/comments", role: "response[]" },
-			{ method: "POST", path: "/articles/{id}/comments", role: "response" },
-			{ method: "DELETE", path: "/comments/{id}", role: "target" },
 		],
 	},
 ];

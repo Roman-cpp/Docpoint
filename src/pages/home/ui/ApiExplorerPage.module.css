@@ -205,6 +205,18 @@
 	padding: 3px 8px 4px;
 	display: block;
 }
+.sbApiRow {
+	display: flex;
+	align-items: center;
+	border-radius: 7px;
+	transition: background 0.12s;
+}
+.sbApiRow:hover {
+	background: var(--cat-bg);
+}
+.sbApiRow:hover .sbApiExportBtn {
+	opacity: 1;
+}
 .sbApiBtn {
 	display: flex;
 	align-items: center;
@@ -214,16 +226,31 @@
 	cursor: pointer;
 	border: none;
 	background: none;
-	width: 100%;
+	flex: 1;
+	min-width: 0;
 	text-align: left;
 	font-family: var(--font-sans);
-	transition: background 0.12s;
-}
-.sbApiBtn:hover {
-	background: var(--cat-bg);
 }
 .sbApiBtn.on {
 	background: var(--cat-bg);
+}
+.sbApiExportBtn {
+	flex-shrink: 0;
+	padding: 5px 7px;
+	border: none;
+	background: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	border-radius: 5px;
+	display: flex;
+	align-items: center;
+	opacity: 0;
+	transition: all 0.13s;
+	margin-right: 4px;
+}
+.sbApiExportBtn:hover {
+	color: var(--ink);
+	background: var(--border);
 }
 .sbApiIcon {
 	width: 26px;
@@ -250,6 +277,43 @@
 	height: 6px;
 	border-radius: 50%;
 	flex-shrink: 0;
+}
+
+.sbImport {
+	padding: 8px 10px;
+	border-top: 1px solid var(--border);
+	margin-top: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+.sbImportBtn {
+	width: 100%;
+	padding: 6px 10px;
+	font-size: 12px;
+	font-family: var(--font-sans);
+	color: var(--ink-mid);
+	background: none;
+	border: 1px dashed var(--border-h);
+	border-radius: 7px;
+	cursor: pointer;
+	transition: all 0.13s;
+	text-align: center;
+}
+.sbImportBtn:hover:not(:disabled) {
+	background: var(--cat-bg);
+	color: var(--ink);
+	border-style: solid;
+}
+.sbImportBtn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+.sbImportError {
+	font-size: 11px;
+	color: var(--red);
+	line-height: 1.4;
+	padding: 0 2px;
 }
 
 .sbSearch {
@@ -1088,7 +1152,30 @@
 .acTop {
 	display: flex;
 	align-items: flex-start;
-	justify-content: space-between;
+	justify-content: flex-end;
+}
+.acDeleteBtn {
+	opacity: 0;
+	transition: opacity 0.15s, background 0.13s, color 0.13s;
+	padding: 4px 6px;
+	border: none;
+	background: none;
+	color: var(--ink-low);
+	border-radius: 5px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+}
+.acDeleteBtn svg {
+	width: 13px;
+	height: 13px;
+}
+.acDeleteBtn:hover {
+	background: var(--red-bg);
+	color: var(--red);
+}
+.apiCard:hover .acDeleteBtn {
+	opacity: 1;
 }
 .acIcon {
 	width: 38px;

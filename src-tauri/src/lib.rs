@@ -1,99 +1,78 @@
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::str::FromStr;
-use tauri_plugin_sql::{Migration, MigrationKind};
-
-#[derive(Deserialize)]
-struct RequestPayload {
-    method: String,
-    url: String,
-    headers: HashMap<String, String>,
-    body: Option<String>,
-}
-
-#[derive(Serialize)]
-struct ResponsePayload {
-    status: u16,
-    status_text: String,
-    headers: HashMap<String, String>,
-    body: String,
-    duration_ms: u64,
-}
+mod state;
+mod http;
+mod doca;
+mod endpoint;
+mod entity;
+mod env_config;
 
 #[tauri::command]
-async fn send_request(payload: RequestPayload) -> Result<ResponsePayload, String> {
-    let client = reqwest::Client::new();
-
-    let mut header_map = HeaderMap::new();
-    for (key, value) in &payload.headers {
-        if key.is_empty() {
-            continue;
-        }
-        let name = HeaderName::from_str(key).map_err(|e| format!("Invalid header name '{key}': {e}"))?;
-        let val = HeaderValue::from_str(value).map_err(|e| format!("Invalid header value for '{key}': {e}"))?;
-        header_map.insert(name, val);
-    }
-
-    let method = payload.method.to_uppercase();
-    let request = match method.as_str() {
-        "GET"     => client.get(&payload.url),
-        "POST"    => client.post(&payload.url),
-        "PUT"     => client.put(&payload.url),
-        "DELETE"  => client.delete(&payload.url),
-        "PATCH"   => client.patch(&payload.url),
-        "HEAD"    => client.head(&payload.url),
-        "OPTIONS" => client.request(reqwest::Method::OPTIONS, &payload.url),
-        _ => return Err(format!("Unsupported method: {method}")),
-    };
-
-    let request = request.headers(header_map);
-    let request = if let Some(body) = payload.body {
-        if body.is_empty() { request } else { request.body(body) }
-    } else {
-        request
-    };
-
-    let start = std::time::Instant::now();
-    let response = request.send().await.map_err(|e| e.to_string())?;
-    let duration_ms = start.elapsed().as_millis() as u64;
-
-    let status = response.status();
-    let status_text = status.canonical_reason().unwrap_or("Unknown").to_string();
-
-    let mut resp_headers = HashMap::new();
-    for (name, value) in response.headers() {
-        resp_headers.insert(name.to_string(), value.to_str().unwrap_or("").to_string());
-    }
-
-    let body = response.text().await.map_err(|e| e.to_string())?;
-
-    Ok(ResponsePayload {
-        status: status.as_u16(),
-        status_text,
-        headers: resp_headers,
-        body,
-        duration_ms,
+async fn save_json_file(content: String, filename: String) -> Result<bool, String> {
+    let path = tokio::task::spawn_blocking(move || {
+        rfd::FileDialog::new()
+            .set_file_name(&filename)
+            .add_filter("JSON", &["json"])
+            .save_file()
     })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match path {
+        Some(p) => {
+            std::fs::write(&p, content).map_err(|e| e.to_string())?;
+            Ok(true)
+        }
+        None => Ok(false),
+    }
 }
+
+use state::AppState;
+use http::send_request;
+use doca::{db_list_doca_ids, db_read_doca, db_read_docs, db_write_doca, db_delete_doca};
+use endpoint::{db_read_groups, db_write_groups};
+use entity::{db_read_schemas, db_write_schemas};
+use env_config::{db_read_env_configs, db_write_env_configs};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let migrations = vec![Migration {
-        version: 1,
-        description: "create_initial_tables",
-        sql: include_str!("../migrations/0001_init.sql"),
-        kind: MigrationKind::Up,
-    }];
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(
-            tauri_plugin_sql::Builder::default()
-                .add_migrations("sqlite:docpoint.db", migrations)
-                .build(),
-        )
-        .invoke_handler(tauri::generate_handler![send_request])
+        .setup(|app| {
+            let app_dir = app.path().app_data_dir()?;
+            std::fs::create_dir_all(&app_dir)?;
+
+            let db_path = app_dir.join("docpoint.db");
+            let options = SqliteConnectOptions::new()
+                .filename(&db_path)
+                .create_if_missing(true);
+
+            let pool = tauri::async_runtime::block_on(async {
+                SqlitePool::connect_with(options).await
+            })?;
+
+            tauri::async_runtime::block_on(async {
+                sqlx::migrate!("./migrations").run(&pool).await
+            })?;
+
+            app.manage(AppState { db: pool });
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            save_json_file,
+            send_request,
+            db_read_docs,
+            db_list_doca_ids,
+            db_read_doca,
+            db_write_doca,
+            db_delete_doca,
+            db_read_groups,
+            db_write_groups,
+            db_read_schemas,
+            db_write_schemas,
+            db_read_env_configs,
+            db_write_env_configs,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

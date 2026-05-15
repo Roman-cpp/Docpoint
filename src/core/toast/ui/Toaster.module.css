@@ -1,0 +1,189 @@
+.viewport {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 320px;
+	max-width: calc(100vw - 40px);
+	z-index: 9999;
+	outline: none;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.root {
+	background: #ffffff;
+	border: 1px solid #e8e2d9;
+	border-radius: 9px;
+	box-shadow:
+		0 4px 16px rgba(0, 0, 0, 0.08),
+		0 1px 4px rgba(0, 0, 0, 0.04);
+	padding: 11px 12px 11px 16px;
+	font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+/* left accent bar */
+.root::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: #c8c0b4;
+	border-radius: 9px 0 0 9px;
+}
+
+.root[data-state="open"] {
+	animation: toastIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.root[data-state="closed"] {
+	animation: toastOut 0.16s ease-in forwards;
+}
+
+.root[data-swipe="move"] {
+	transform: translateX(var(--radix-toast-swipe-move-x));
+}
+
+.root[data-swipe="cancel"] {
+	transform: translateX(0);
+	transition: transform 0.2s ease-out;
+}
+
+.root[data-swipe="end"] {
+	animation: toastSwipeOut 0.12s ease-out forwards;
+}
+
+/* variants — accent bar color */
+.success::before { background: #1e7e52; }
+.error::before   { background: #9a2800; }
+.info::before    { background: #1a5ea8; }
+
+/* variant icon colors */
+.success .icon { color: #1e7e52; }
+.error .icon   { color: #9a2800; }
+.info .icon    { color: #1a5ea8; }
+
+.icon {
+	flex-shrink: 0;
+	width: 15px;
+	height: 15px;
+	color: #888888;
+	margin-top: 1px;
+}
+
+.icon svg {
+	width: 100%;
+	height: 100%;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.texts {
+	flex: 1;
+	min-width: 0;
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 500;
+	color: #1a1a1a;
+	line-height: 1.4;
+}
+
+.description {
+	font-size: 12px;
+	color: #555555;
+	line-height: 1.55;
+	margin-top: 2px;
+}
+
+.right {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.actionBtn {
+	height: 24px;
+	padding: 0 9px;
+	border-radius: 5px;
+	font-family: "DM Sans", sans-serif;
+	font-size: 11px;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid #e8e2d9;
+	background: #f0ede8;
+	color: #1a1a1a;
+	white-space: nowrap;
+	transition: background 0.12s, border-color 0.12s;
+}
+
+.actionBtn:hover {
+	background: #e8e2d9;
+	border-color: #c8c0b4;
+}
+
+.closeBtn {
+	width: 22px;
+	height: 22px;
+	border-radius: 5px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	color: #888888;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	transition: background 0.12s, color 0.12s;
+}
+
+.closeBtn:hover {
+	background: #f0ede8;
+	color: #1a1a1a;
+}
+
+.closeBtn svg {
+	width: 10px;
+	height: 10px;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 2;
+	stroke-linecap: round;
+}
+
+@keyframes toastIn {
+	from {
+		transform: translateX(calc(100% + 20px));
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes toastOut {
+	from { opacity: 1; transform: translateX(0); }
+	to   { opacity: 0; transform: translateX(6px); }
+}
+
+@keyframes toastSwipeOut {
+	from { transform: translateX(var(--radix-toast-swipe-end-x)); }
+	to   { transform: translateX(calc(100% + 20px)); }
+}

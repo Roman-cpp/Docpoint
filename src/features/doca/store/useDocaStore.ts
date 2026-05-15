@@ -5,11 +5,9 @@ import type { Doca } from "@/entities/doca";
 import type { EnvConfig } from "@/entities/env-config";
 import type { Group } from "@/entities/group";
 import type { Endpoint } from "@/entities/endpoint";
-import type { Schema } from "@/entities/schema";
+import type { Entity } from "@/entities/entity";
 import {
-	getDb,
-	readAllDocaIds,
-	readDoca,
+	readAllDocs,
 	readGroups,
 	readSchemas,
 	readEnvConfigs,
@@ -17,42 +15,54 @@ import {
 	writeGroups,
 	writeSchemas,
 	writeEnvConfigs,
+	deleteDoca,
 } from "@/shared/db";
 import { seedDoca, seedGroups, seedSchema, seedEnvConfigs } from "@/features/doca/data";
 
 type DocaState = {
+  docs: Doca[];
 	doca: Doca | null;
 	groups: Group[] | null;
-	schemas: Schema[];
+	entities: Entity[];
 	envConfigs: EnvConfig[];
 
 	selectedEnvConfig: EnvConfig | null;
 	selectedGroup: Group | null;
 	selectedEndpoint: Endpoint | null;
-  selectedSchema: Schema | null;
+  selectedEntity: Entity | null;
 
 	accessToken: string | null;
+};
+
+type ImportDocaPayload = {
+	doca: Doca;
+	groups: Group[];
+	entities: Entity[];
+	envConfigs: EnvConfig[];
 };
 
 type DocaActions = {
 	selectGroup: (groupId: string) => void;
 	selectEnvConfig: (envId: string) => void;
 	selectEndpoint: (endpointId: string) => void;
-  selectSchema: (schemaId: string) => void;
+  selectEntity: (entityId: string) => void;
 	setAccessToken: (token: string | null) => void;
 	init: () => Promise<void>;
+	importDoca: (payload: ImportDocaPayload) => Promise<void>;
+	deleteDoca: (id: string) => Promise<void>;
 };
 
 const initialState: DocaState = {
+  docs: [],
 	doca: seedDoca,
 	groups: seedGroups,
-	schemas: seedSchema,
+	entities: seedSchema,
 	envConfigs: seedEnvConfigs,
 
 	selectedGroup: null,
 	selectedEnvConfig: null,
 	selectedEndpoint: null,
-  selectedSchema: null,
+  selectedEntity: null,
 
 	accessToken: null,
 };
@@ -86,39 +96,73 @@ const createDocaSlice: StateCreator<DocaStore> = (set, get) => ({
 				.find((endpoint) => endpoint.id === endpointId),
 		});
 	},
-  selectSchema: (schemaId: string) => {
-    const { schemas } = get();
+  selectEntity: (entityId: string) => {
+    const { entities } = get();
 
-		if (!schemas) return;
+		if (!entities) return;
 		set({
-			selectedSchema: schemas
-				.find((endpoint) => endpoint.id === schemaId),
+			selectedEntity: entities
+				.find((endpoint) => endpoint.id === entityId),
 		});
   },
 
 	setAccessToken: (token) => set({ accessToken: token }),
 
+	deleteDoca: async (id: string) => {
+		try {
+			await deleteDoca(id);
+			const docs = await readAllDocs();
+			const next = docs[0] ?? null;
+			if (next) {
+				const [groups, entities, envConfigs] = await Promise.all([
+					readGroups(next.id),
+					readSchemas(next.id),
+					readEnvConfigs(next.id),
+				]);
+				set({ docs, doca: next, groups, entities, envConfigs, selectedEndpoint: null, selectedGroup: null, selectedEntity: null });
+			} else {
+				set({ docs: [], doca: null, groups: null, entities: [], envConfigs: [], selectedEndpoint: null, selectedGroup: null, selectedEntity: null });
+			}
+		} catch (e) {
+			console.error("[DocaStore] deleteDoca failed:", e);
+			throw e;
+		}
+	},
+
+	importDoca: async ({ doca, groups, entities, envConfigs }) => {
+		try {
+			await writeDoca(doca);
+			await writeGroups(doca.id, groups);
+			await writeSchemas(doca.id, entities);
+			await writeEnvConfigs(doca.id, envConfigs);
+			const docs = await readAllDocs();
+			set({ docs, doca, groups, entities, envConfigs });
+		} catch (e) {
+			console.error("[DocaStore] importDoca failed:", e);
+			throw e;
+		}
+	},
+
 	init: async () => {
 		try {
-			const db = await getDb();
-			const ids = await readAllDocaIds(db);
+			const docs = await readAllDocs();
 
-			if (ids.length === 0) {
-				const { doca, groups, schemas, envConfigs } = get();
+			if (docs.length === 0) {
+				const { doca, groups, entities, envConfigs } = get();
 				if (!doca || !groups) return;
-				await writeDoca(db, doca);
-				await writeGroups(db, doca.id, groups);
-				await writeSchemas(db, doca.id, schemas);
-				await writeEnvConfigs(db, doca.id, envConfigs);
+				await writeDoca(doca);
+				await writeGroups(doca.id, groups);
+				await writeSchemas(doca.id, entities);
+				await writeEnvConfigs(doca.id, envConfigs);
+				set({ docs: [doca] });
 			} else {
-				const docaId = ids[0];
-				const [doca, groups, schemas, envConfigs] = await Promise.all([
-					readDoca(db, docaId),
-					readGroups(db, docaId),
-					readSchemas(db, docaId),
-					readEnvConfigs(db, docaId),
+				const docaId = docs[0].id;
+				const [groups, entities, envConfigs] = await Promise.all([
+					readGroups(docaId),
+					readSchemas(docaId),
+					readEnvConfigs(docaId),
 				]);
-				set({ doca, groups, schemas, envConfigs });
+				set({ docs, doca: docs[0], groups, entities, envConfigs });
 			}
 		} catch (e) {
 			console.error("[DocaStore] init failed:", e);

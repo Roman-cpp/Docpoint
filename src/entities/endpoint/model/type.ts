@@ -1,6 +1,6 @@
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
 
-interface ParamDef {
+interface Param {
 	name: string;
 	type: string;
 	required: boolean;
@@ -15,7 +15,7 @@ interface SchemaField {
 	example?: string;
 }
 
-interface ResponseDef {
+interface Response {
 	label: string;
 	schema: SchemaField[];
 	example: string;
@@ -29,7 +29,7 @@ export interface Endpoint {
 	description: string;
 	tags: string[];
 	auth: boolean;
-	queryParams: ParamDef[];
-	bodyParams: ParamDef[];
-	responses: Record<string, ResponseDef>;
+	queryParams: Param[];
+	bodyParams: Param[];
+	responses: Record<string, Response>;
 }
