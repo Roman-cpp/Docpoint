@@ -3,12 +3,12 @@ import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";
 import { Header } from "@/widgets/header";
 import { Link } from "react-router";
-import { actionDeleteDoca, selectDocs, useDocaStore } from "@/features/doca";
+import { actionDeleteDoc, selectDocs, useDocStore } from "@/features/doc";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
-	const docs = useDocaStore(selectDocs);
-	const deleteDoca = useDocaStore(actionDeleteDoca);
+	const docs = useDocStore(selectDocs);
+	const deleteDoca = useDocStore(actionDeleteDoc);
 
 	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
 		e.preventDefault();

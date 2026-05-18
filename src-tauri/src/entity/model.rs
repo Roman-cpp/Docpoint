@@ -6,8 +6,6 @@ pub struct Entity {
     pub name: String,
     pub desc: String,
     pub fields: Vec<EntityField>,
-    #[serde(rename = "usedBy", default)]
-    pub used_by: Vec<UsedByItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,11 +26,4 @@ pub struct EntityField {
 pub struct EnumValue {
     pub val: String,
     pub desc: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UsedByItem {
-    pub method: String,
-    pub path: String,
-    pub role: String,
 }

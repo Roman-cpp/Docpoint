@@ -1,14 +1,14 @@
 import { useState, type FC } from "react";
 import s from "./Header.module.css";
 import {
-	actionSelectEnvConfig,
-	selectEnvConfigs,
-	selectSelectedEnvConfig,
-	useDocaStore,
-} from "@/features/doca";
+	actionSelectEnvironment,
+	selectSelectedEnvironment,
+	useDocStore,
+} from "@/features/doc";
 import { TokenModal } from "./TokenModal";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { Link } from "react-router";
+import { selectEnvironments } from "@/features/doc/store/docStore.selectors";
 
 export type NavLink =
 	| "docs"
@@ -30,9 +30,9 @@ interface HeaderProps {
 }
 
 export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
-	const envConfigs = useDocaStore(selectEnvConfigs);
-	const selectedEnvConfig = useDocaStore(selectSelectedEnvConfig);
-	const selectEnvConfig = useDocaStore(actionSelectEnvConfig);
+	const environments = useDocStore(selectEnvironments);
+	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
+	const selectEnvConfig = useDocStore(actionSelectEnvironment);
 
 	const [tokenModal, setModal] = useState(false);
 
@@ -47,7 +47,7 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
       </Link>
 
 			<div className={s.navEnv}>
-				{envConfigs.map((env) => (
+				{environments.map((env) => (
 					<button
 						key={env.id}
 						className={`${s.envBtn}${env.id === selectedEnvConfig?.id ? " " + s.envBtnActive : ""}`}

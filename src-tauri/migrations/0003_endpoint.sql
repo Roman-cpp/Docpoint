@@ -31,8 +31,6 @@ CREATE TABLE IF NOT EXISTS response (
     endpoint_id TEXT NOT NULL REFERENCES endpoint(id) ON DELETE CASCADE,
     status_code TEXT NOT NULL,
     label       TEXT NOT NULL,
-    color       TEXT NOT NULL DEFAULT '',
-    dot_color   TEXT NOT NULL DEFAULT '',
     example     TEXT NOT NULL DEFAULT ''
 );
 

@@ -3,8 +3,8 @@ import s from "./ApiDocsPage.module.css";
 import {
 	selectGroups,
 	selectSelectedEndpoint,
-	useDocaStore,
-} from "@/features/doca";
+	useDocStore,
+} from "@/features/doc";
 import { Link } from "react-router";
 
 const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
@@ -16,8 +16,8 @@ const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 };
 
 export const Sidebar = () => {
-	const groups = useDocaStore(selectGroups);
-	const selectedEndpoint = useDocaStore(selectSelectedEndpoint);
+	const groups = useDocStore(selectGroups);
+	const selectedEndpoint = useDocStore(selectSelectedEndpoint);
 	const [search, setSearch] = useState("");
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 

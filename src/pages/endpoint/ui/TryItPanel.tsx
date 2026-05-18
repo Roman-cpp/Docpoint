@@ -2,15 +2,15 @@ import { useState, useEffect, type FC } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import s from "./ApiExplorerPage.module.css";
 import {
-	selectDoca,
+	selectDoc,
 	selectSelectedEndpoint,
-	selectSelectedEnvConfig,
+	selectSelectedEnvironment,
 	selectAccessToken,
 	actionSetAccessToken,
-	useDocaStore,
-} from "@/features/doca";
+	useDocStore,
+} from "@/features/doc";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
-import type { EnvConfig } from "@/entities/env-config";
+import type { Environments } from "@/entities/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 
 const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
@@ -26,7 +26,7 @@ function extractPathParams(path: string): string[] {
 	return [...path.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 }
 
-function buildUrl(ep: Endpoint, env: EnvConfig, vals: Record<string, string> = {}) {
+function buildUrl(ep: Endpoint, env: Environments, vals: Record<string, string> = {}) {
 	const path = ep.path.replace(/\{(\w+)\}/g, (_, name) => {
 		const v = (vals[`path:${name}`] ?? "").trim();
 		return v || `{${name}}`;
@@ -88,11 +88,11 @@ interface RespState {
 }
 
 export const TryItPanel = () => {
-	const endpoint = useDocaStore(selectSelectedEndpoint);
-	const doca = useDocaStore(selectDoca);
-	const selectedEnvConfig = useDocaStore(selectSelectedEnvConfig);
-	const authToken = useDocaStore(selectAccessToken) ?? "";
-	const setAccessToken = useDocaStore(actionSetAccessToken);
+	const endpoint = useDocStore(selectSelectedEndpoint);
+	const doc = useDocStore(selectDoc);
+	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
+	const authToken = useDocStore(selectAccessToken) ?? "";
+	const setAccessToken = useDocStore(actionSetAccessToken);
 
 	const [tokenInput, setTokenInput] = useState("");
 	const [settingToken, setSettingToken] = useState(false);
@@ -101,7 +101,7 @@ export const TryItPanel = () => {
 	const [resp, setResp] = useState<RespState | null>(null);
 
 	if (!endpoint) return;
-	if (!doca) return;
+	if (!doc) return;
 
 	const mc = METHOD_CFG[endpoint.method];
 	const pathParams = extractPathParams(endpoint.path);

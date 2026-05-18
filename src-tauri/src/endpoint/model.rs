@@ -2,13 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Group {
-    pub id: String,
-    pub label: String,
-    pub endpoints: Vec<Endpoint>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Endpoint {
     pub id: String,
     pub method: String,

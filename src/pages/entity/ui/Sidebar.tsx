@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import type { Entity } from "@/entities/entity";
 import s from "./ApiSchemasPage.module.css";
-import { actionSelectEntity, selectSelectedEntity, useDocaStore } from "@/features/doca";
+import { actionSelectEntity, selectSelectedEntity, useDocStore } from "@/features/doc";
 
 interface SidebarProps {
 	filtered: Entity[];
@@ -15,8 +15,8 @@ export const Sidebar: FC<SidebarProps> = ({
 	onSearch,
 }) => {
 
-  const selectEntity = useDocaStore(actionSelectEntity);
-  const activeEntity = useDocaStore(selectSelectedEntity);
+  const selectEntity = useDocStore(actionSelectEntity);
+  const activeEntity = useDocStore(selectSelectedEntity);
 
   return (
 	<div className={s.sidebar}>

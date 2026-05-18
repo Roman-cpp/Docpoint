@@ -2,7 +2,7 @@ import { useState, useEffect, type FC } from "react";
 import s from "./ApiSchemasPage.module.css";
 import { Header } from "@/widgets/header";
 import type { SchemaTweaks } from "../model/types";
-import { selectEntities, selectSelectedEntity, useDocaStore } from "@/features/doca";
+import { selectEntities, selectSelectedEntity, useDocStore } from "@/features/doc";
 import type { Entity } from "@/entities/entity";
 import { Sidebar } from "./Sidebar";
 
@@ -213,8 +213,8 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 /* ─── EntityPage ─── */
 export const EntityPage: FC = () => {
 	// const [activeId, setActiveId] = useState("user");
-  const ENTITIES = useDocaStore(selectEntities);
-  const activeEntity = useDocaStore(selectSelectedEntity);
+  const ENTITIES = useDocStore(selectEntities);
+  const activeEntity = useDocStore(selectSelectedEntity);
 
 	const [search, setSearch] = useState("");
 	const [tweaksVisible, setTweaksVisible] = useState(false);

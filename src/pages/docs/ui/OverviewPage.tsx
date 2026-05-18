@@ -1,10 +1,10 @@
 import s from "./ApiDocsPage.module.css";
-import { selectDoca, useDocaStore } from "@/features/doca";
+import { selectDoc, useDocStore } from "@/features/doc";
 
 export const OverviewPage = () => {
-	const doca = useDocaStore(selectDoca);
+	const doc = useDocStore(selectDoc);
 
-	if (!doca) return null;
+	if (!doc) return null;
 
 	return (
 		<div>
@@ -22,22 +22,22 @@ export const OverviewPage = () => {
 						marginBottom: "10px",
 					}}
 				>
-					{doca.name}
+					{doc.name}
 				</h1>
-				<p className={s.endpointDesc}>{doca.desc}</p>
+				<p className={s.endpointDesc}>{doc.desc}</p>
 			</div>
 
 			<div className={s.overviewGrid}>
 				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Base URL</div>
 					<div className={s.overviewCardValue}>
-						<code>https://api.example.com/{doca.version}</code>
+						<code>https://api.example.com/{doc.version}</code>
 					</div>
 				</div>
 				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Version</div>
 					<div className={s.overviewCardValue}>
-						<code>{doca.version}</code>
+						<code>{doc.version}</code>
 					</div>
 				</div>
 				<div className={s.overviewCard}>

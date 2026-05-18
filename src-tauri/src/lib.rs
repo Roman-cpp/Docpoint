@@ -1,9 +1,10 @@
 mod state;
 mod http;
-mod doca;
+mod doc;
 mod endpoint;
+mod group;
 mod entity;
-mod env_config;
+mod environment;
 
 #[tauri::command]
 async fn save_json_file(content: String, filename: String) -> Result<bool, String> {
@@ -27,10 +28,10 @@ async fn save_json_file(content: String, filename: String) -> Result<bool, Strin
 
 use state::AppState;
 use http::send_request;
-use doca::{db_list_doca_ids, db_read_doca, db_read_docs, db_write_doca, db_delete_doca};
-use endpoint::{db_read_groups, db_write_groups};
-use entity::{db_read_schemas, db_write_schemas};
-use env_config::{db_read_env_configs, db_write_env_configs};
+use doc::{read_docs, read_doc, create_doc, delete_doc};
+use group::{read_groups, write_groups};
+use entity::{read_schemas, write_schemas};
+use environment::{read_environments, write_environments};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
 
@@ -61,17 +62,16 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             save_json_file,
             send_request,
-            db_read_docs,
-            db_list_doca_ids,
-            db_read_doca,
-            db_write_doca,
-            db_delete_doca,
-            db_read_groups,
-            db_write_groups,
-            db_read_schemas,
-            db_write_schemas,
-            db_read_env_configs,
-            db_write_env_configs,
+            read_docs,
+            read_doc,
+            create_doc,
+            delete_doc,
+            read_groups,
+            write_groups,
+            read_schemas,
+            write_schemas,
+            read_environments,
+            write_environments,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

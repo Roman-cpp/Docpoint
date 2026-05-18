@@ -8,9 +8,9 @@ import { TryItPanel } from "@/pages/endpoint/ui/TryItPanel";
 import {
 	actionSelectEndpoint,
 	selectSelectedEndpoint,
-	selectSelectedEnvConfig,
-	useDocaStore,
-} from "@/features/doca";
+	selectSelectedEnvironment,
+	useDocStore,
+} from "@/features/doc";
 
 const TRY_INIT = 348;
 const TRY_MIN = 240;
@@ -19,9 +19,9 @@ const TRY_MAX = 600;
 export const EndpointDetailPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 
-	const endpoint = useDocaStore(selectSelectedEndpoint);
-  const selectedEnvConfig = useDocaStore(selectSelectedEnvConfig);
-	const selectEndpoint = useDocaStore(actionSelectEndpoint);
+	const endpoint = useDocStore(selectSelectedEndpoint);
+  const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
+	const selectEndpoint = useDocStore(actionSelectEndpoint);
 
 	const tryPanelRef = useRef<HTMLDivElement>(null);
 

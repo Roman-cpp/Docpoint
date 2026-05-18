@@ -1,13 +1,16 @@
 import { useRef, useState } from "react";
 import s from "./ApiExplorerPage.module.css";
-import { actionImportDoca, selectDocs, useDocaStore } from "@/features/doca";
-import { readDoca, readGroups, readSchemas, readEnvConfigs } from "@/shared/db";
+import { actionImportDoc, selectDocs, useDocStore } from "@/features/doc";
+import { readDoc } from "@/entities/doc";
+import { readGroups } from "@/entities/group";
+import { readEntities } from "@/entities/entity";
+import { readEnvironments } from "@/entities/environment";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "@/core/toast";
 
 export const Sidebar = ({}) => {
-	const docs = useDocaStore(selectDocs);
-	const importDoca = useDocaStore(actionImportDoca);
+	const docs = useDocStore(selectDocs);
+	const importDoca = useDocStore(actionImportDoc);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [importing, setImporting] = useState(false);
 
@@ -18,11 +21,16 @@ export const Sidebar = ({}) => {
 		try {
 			const text = await file.text();
 			const json = JSON.parse(text);
-			if (!json.doca || !json.groups || !json.entities || !json.envConfigs) {
-				throw new Error("Неверный формат: ожидаются поля doca, groups, entities, envConfigs");
+			if (!json.doc || !json.groups || !json.entities || (!json.environments && !json.envConfigs)) {
+				throw new Error("Неверный формат: ожидаются поля doc, groups, entities, environments");
 			}
-			await importDoca(json);
-			toast({ variant: "success", title: "Импорт завершён", description: json.doca.name });
+			await importDoca({
+				doc: json.doc,
+				groups: json.groups,
+				entities: json.entities,
+				environments: json.environments ?? json.envConfigs,
+			});
+			toast({ variant: "success", title: "Импорт завершён", description: json.doc.name });
 		} catch (err) {
 			toast({ variant: "error", title: "Ошибка импорта", description: err instanceof Error ? err.message : String(err) });
 		} finally {
@@ -32,13 +40,13 @@ export const Sidebar = ({}) => {
 	};
 
 	const handleExport = async (docId: string, docName: string) => {
-		const [doca, groups, entities, envConfigs] = await Promise.all([
-			readDoca(docId),
+		const [doc, groups, entities, environments] = await Promise.all([
+			readDoc(docId),
 			readGroups(docId),
-			readSchemas(docId),
-			readEnvConfigs(docId),
+			readEntities(docId),
+			readEnvironments(docId),
 		]);
-		const content = JSON.stringify({ doca, groups, entities, envConfigs }, null, 2);
+		const content = JSON.stringify({ doc, groups, entities, environments }, null, 2);
 		const filename = `${docName.replace(/\s+/g, "_")}.json`;
 		await invoke("save_json_file", { content, filename });
 	};

@@ -1,12 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import { useDocaStore } from "@/features/doca/store/useDocaStore";
+import { useDocStore } from "@/features/doc/store/useDocStore";
 import { RouterProvider } from "react-router";
 import { router } from "./route";
 import { Toaster } from "@/core/toast";
 
-useDocaStore.getState().init();
+useDocStore.getState().init();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
