@@ -27,3 +27,10 @@ pub struct EnumValue {
     pub val: String,
     pub desc: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateEntity {
+    pub name: String,
+    pub desc: String,
+    pub fields: Vec<EntityField>,
+}

@@ -1,11 +1,11 @@
-use super::model::{CreateDocInput, Doca};
+use super::model::{CreateDoc, Doca};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
 pub trait DocRepository {
     async fn all(&self) -> Result<Vec<Doca>, String>;
     async fn find(&self, id: &str) -> Result<Option<Doca>, String>;
-    async fn create(&self, doc: &CreateDocInput) -> Result<String, String>;
+    async fn create(&self, doc: &CreateDoc) -> Result<String, String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
 }
 
@@ -91,7 +91,7 @@ impl DocRepository for DocRepo<'_> {
         }))
     }
 
-    async fn create(&self, doc: &CreateDocInput) -> Result<String, String> {
+    async fn create(&self, doc: &CreateDoc) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
 
         sqlx::query("INSERT INTO docs (id, name, version, desc) VALUES (?, ?, ?, ?)")

@@ -1,5 +1,6 @@
 use super::model::Endpoint;
-use sqlx::{Row, SqlitePool};
+use sqlx::{SqlitePool};
+use uuid::Uuid;
 
 pub struct EndpointRepo<'a> {
     pub db: &'a SqlitePool,
@@ -13,11 +14,13 @@ impl<'a> EndpointRepo<'a> {
     pub async fn create(&self, group_id: &str, endpoint: &Endpoint, sort_ord: usize) -> Result<(), String> {
         let db = self.db;
 
+        let endpoint_id = Uuid::new_v4().to_string();
+
         sqlx::query(
             "INSERT INTO endpoint (id, group_id, method, path, name, description, auth, sort_ord) \
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         )
-        .bind(&endpoint.id)
+        .bind(&endpoint_id)
         .bind(group_id)
         .bind(&endpoint.method)
         .bind(&endpoint.path)
@@ -31,7 +34,7 @@ impl<'a> EndpointRepo<'a> {
 
         for tag in &endpoint.tags {
             sqlx::query("INSERT INTO endpoint_tag (endpoint_id, tag) VALUES (?, ?)")
-                .bind(&endpoint.id)
+                .bind(&endpoint_id)
                 .bind(tag)
                 .execute(db)
                 .await
@@ -43,7 +46,7 @@ impl<'a> EndpointRepo<'a> {
                 "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
                  VALUES (?, 'query', ?, ?, ?, ?, ?, ?)",
             )
-            .bind(&endpoint.id)
+            .bind(&endpoint_id)
             .bind(&param.name)
             .bind(&param.type_)
             .bind(if param.required { 1i64 } else { 0i64 })
@@ -60,7 +63,7 @@ impl<'a> EndpointRepo<'a> {
                 "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
                  VALUES (?, 'body', ?, ?, ?, ?, ?, ?)",
             )
-            .bind(&endpoint.id)
+            .bind(&endpoint_id)
             .bind(&param.name)
             .bind(&param.type_)
             .bind(if param.required { 1i64 } else { 0i64 })
@@ -77,7 +80,7 @@ impl<'a> EndpointRepo<'a> {
                 "INSERT INTO response (endpoint_id, status_code, label, example) \
                  VALUES (?, ?, ?, ?)",
             )
-            .bind(&endpoint.id)
+            .bind(&endpoint_id)
             .bind(status_code)
             .bind(&resp.label)
             .bind(&resp.example)

@@ -7,6 +7,8 @@ export interface Environment {
   accessToken: string | null;
 }
 
+export type CreateEnvironmentDTO = Omit<Environment, "id">;
+
 interface Variables {
   value: string;
   name: string;

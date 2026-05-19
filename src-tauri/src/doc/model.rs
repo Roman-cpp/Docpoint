@@ -10,7 +10,7 @@ pub struct Doca {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CreateDocInput {
+pub struct CreateDoc {
     pub name: String,
     pub version: String,
     pub desc: String,

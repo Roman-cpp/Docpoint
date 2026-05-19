@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use super::model::{CreateDocInput, Doca};
+use super::model::{CreateDoc, Doca};
 use super::repository::{DocRepo, DocRepository};
 use tauri::State;
 
@@ -19,7 +19,7 @@ pub async fn read_doc(
 #[tauri::command]
 pub async fn create_doc(
     state: State<'_, AppState>,
-    doc: CreateDocInput,
+    doc: CreateDoc,
 ) -> Result<String, String> {
     DocRepo::new(&state.db).create(&doc).await
 }

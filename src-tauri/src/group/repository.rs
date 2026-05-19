@@ -3,6 +3,7 @@ use crate::endpoint::repository::EndpointRepo;
 use super::model::Group;
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 pub trait GroupRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Group>, String>;
@@ -219,10 +220,10 @@ impl GroupRepository for GroupRepo<'_> {
 
     async fn create(&self, doc_id: &str, groups: &[Group]) -> Result<(), String> {
         for (gi, group) in groups.iter().enumerate() {
-            self.insert_group(doc_id, group, gi).await?;
+            let group_id = self.insert_group(doc_id, group, gi).await?;
             let endpoint_repo = EndpointRepo::new(self.db);
             for (ei, endpoint) in group.endpoints.iter().enumerate() {
-                endpoint_repo.create(&group.id, endpoint, ei).await?;
+                endpoint_repo.create(&group_id, endpoint, ei).await?;
             }
         }
         Ok(())
@@ -230,11 +231,13 @@ impl GroupRepository for GroupRepo<'_> {
 }
 
 impl GroupRepo<'_> {
-    async fn insert_group(&self, doc_id: &str, group: &Group, sort_ord: usize) -> Result<(), String> {
+    async fn insert_group(&self, doc_id: &str, group: &Group, sort_ord: usize) -> Result<String, String> {
+        let group_id = Uuid::new_v4().to_string();
+
         sqlx::query(
             "INSERT INTO endpoint_group (id, doc_id, label, sort_ord) VALUES (?, ?, ?, ?)",
         )
-        .bind(&group.id)
+        .bind(&group_id)
         .bind(doc_id)
         .bind(&group.label)
         .bind(sort_ord as i64)
@@ -242,6 +245,6 @@ impl GroupRepo<'_> {
         .await
         .map_err(|e| e.to_string())?;
 
-        Ok(())
+        Ok(group_id)
     }
 }

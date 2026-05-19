@@ -33,3 +33,5 @@ export interface Endpoint {
 	bodyParams: Param[];
 	responses: Record<string, Response>;
 }
+
+export type CreateEndpointDTO = Omit<Endpoint, "id">;

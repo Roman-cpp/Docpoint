@@ -1,5 +1,6 @@
 use super::model::{Entity, EntityField, EnumValue};
 use sqlx::{Row, SqlitePool};
+use uuid::Uuid;
 
 pub trait EntityRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Entity>, String>;
@@ -119,8 +120,10 @@ async fn write_schemas(
     schemas: &[Entity],
 ) -> Result<(), String> {
     for schema in schemas {
+        let entity_id = Uuid::new_v4().to_string();
+
         sqlx::query("INSERT INTO entities (id, doc_id, name, desc) VALUES (?, ?, ?, ?)")
-            .bind(&schema.id)
+            .bind(&entity_id)
             .bind(doc_id)
             .bind(&schema.name)
             .bind(&schema.desc)
@@ -134,7 +137,7 @@ async fn write_schemas(
                  (entity_id, name, type, required, nullable, desc, note, example, sort_ord) \
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             )
-            .bind(&schema.id)
+            .bind(&entity_id)
             .bind(&field.name)
             .bind(&field.type_)
             .bind(if field.req { 1i64 } else { 0i64 })

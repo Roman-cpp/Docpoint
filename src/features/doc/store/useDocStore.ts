@@ -6,10 +6,14 @@ import type { Environment } from "@/entities/environment";
 import type { Group } from "@/entities/group";
 import type { Endpoint } from "@/entities/endpoint";
 import type { Entity } from "@/entities/entity";
-import { readAllDocs, writeDoc, deleteDoc } from "@/entities/doc";
+import { readAllDocs, writeDoc, deleteDoc, importDoc } from "@/entities/doc";
+import type { CreateDocDTO } from "@/entities/doc";
 import { readGroups, writeGroups } from "@/entities/group";
+import type { CreateGroupDTO } from "@/entities/group";
 import { readEntities, writeEntities } from "@/entities/entity";
+import type { CreateEntityDTO } from "@/entities/entity";
 import { readEnvironments, writeEnvironments } from "@/entities/environment";
+import type { CreateEnvironmentDTO } from "@/entities/environment";
 
 type DocState = {
   docs: Doc[];
@@ -27,10 +31,10 @@ type DocState = {
 };
 
 type ImportDocPayload = {
-	doc: Doc;
-	groups: Group[];
-	entities: Entity[];
-	environments: Environment[];
+	doc: CreateDocDTO;
+	groups: CreateGroupDTO[];
+	entities: CreateEntityDTO[];
+	environments: CreateEnvironmentDTO[];
 };
 
 type DocActions = {
@@ -123,12 +127,14 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 
 	importDoc: async ({ doc, groups, entities, environments }) => {
 		try {
-			const id = await writeDoc(doc);
-			await writeGroups(id, groups);
-			await writeEntities(id, entities);
-			await writeEnvironments(id, environments);
-			const docs = await readAllDocs();
-			set({ docs, doc: { ...doc, id }, groups, entities, environments });
+			const id = await importDoc({ doc, groups, entities, environments });
+			const [docs, savedGroups, savedEntities, savedEnvironments] = await Promise.all([
+				readAllDocs(),
+				readGroups(id),
+				readEntities(id),
+				readEnvironments(id),
+			]);
+			set({ docs, doc: { ...doc, id }, groups: savedGroups, entities: savedEntities, environments: savedEnvironments });
 		} catch (e) {
 			console.error("[DocStore] importDoc failed:", e);
 			throw e;

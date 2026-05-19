@@ -1,5 +1,6 @@
 use super::model::Environment;
 use sqlx::{Row, SqlitePool};
+use uuid::Uuid;
 
 pub async fn read_configs(db: &SqlitePool, doc_id: &str) -> Result<Vec<Environment>, String> {
     let rows = sqlx::query("SELECT * FROM environments WHERE doc_id = ?")
@@ -29,7 +30,7 @@ pub async fn write_configs(
         sqlx::query(
             "INSERT INTO environments (id, doc_id, env, label, base_url) VALUES (?, ?, ?, ?, ?)",
         )
-        .bind(&config.id)
+        .bind(Uuid::new_v4().to_string())
         .bind(doc_id)
         .bind(&config.env)
         .bind(&config.label)

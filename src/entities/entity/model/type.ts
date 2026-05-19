@@ -20,3 +20,5 @@ export interface Entity {
 	desc: string;
 	fields: SchemaField[];
 }
+
+export type CreateEntityDTO = Omit<Entity, "id">;

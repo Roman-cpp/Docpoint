@@ -28,7 +28,7 @@ async fn save_json_file(content: String, filename: String) -> Result<bool, Strin
 
 use state::AppState;
 use http::send_request;
-use doc::{read_docs, read_doc, create_doc, delete_doc};
+use doc::{read_docs, read_doc, create_doc, delete_doc, import_doc};
 use group::{read_groups, write_groups};
 use entity::{read_schemas, write_schemas};
 use environment::{read_environments, write_environments};
@@ -66,6 +66,7 @@ pub fn run() {
             read_doc,
             create_doc,
             delete_doc,
+            import_doc,
             read_groups,
             write_groups,
             read_schemas,

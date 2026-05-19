@@ -44,3 +44,18 @@ pub struct ResponseSchemaField {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub example: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateEndpoint {
+    pub method: String,
+    pub path: String,
+    pub name: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub auth: bool,
+    #[serde(rename = "queryParams")]
+    pub query_params: Vec<ParamDef>,
+    #[serde(rename = "bodyParams")]
+    pub body_params: Vec<ParamDef>,
+    pub responses: HashMap<String, ResponseDef>,
+}
