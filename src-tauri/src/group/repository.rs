@@ -24,7 +24,7 @@ impl GroupRepository for GroupRepo<'_> {
     async fn all(&self, doc_id: &str) -> Result<Vec<Group>, String> {
         let db = self.db;
         let group_rows = sqlx::query(
-            "SELECT * FROM endpoint_group WHERE doc_id = ? ORDER BY sort_ord",
+            r#"SELECT * FROM "group" WHERE doc_id = ? ORDER BY sort_ord"#,
         )
         .bind(doc_id)
         .fetch_all(db)
@@ -235,7 +235,7 @@ impl GroupRepo<'_> {
         let group_id = Uuid::new_v4().to_string();
 
         sqlx::query(
-            "INSERT INTO endpoint_group (id, doc_id, label, sort_ord) VALUES (?, ?, ?, ?)",
+            r#"INSERT INTO "group" (id, doc_id, label, sort_ord) VALUES (?, ?, ?, ?)"#,
         )
         .bind(&group_id)
         .bind(doc_id)
