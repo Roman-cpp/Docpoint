@@ -40,6 +40,12 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/endpoint")).EndpointDetailPage,
 				}),
 			},
+			{
+				path: "/environments",
+				lazy: async () => ({
+					Component: (await import("@/pages/environment")).EnvironmentPage,
+				}),
+			},
 		],
 	},
 ]);

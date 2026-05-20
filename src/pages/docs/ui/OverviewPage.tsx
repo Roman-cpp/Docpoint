@@ -1,8 +1,13 @@
 import s from "./ApiDocsPage.module.css";
-import { selectDoc, useDocStore } from "@/features/doc";
+import { selectDoc, selectEntities, selectGroups, useDocStore } from "@/features/doc";
 
 export const OverviewPage = () => {
 	const doc = useDocStore(selectDoc);
+	const groups = useDocStore(selectGroups);
+	const entities = useDocStore(selectEntities);
+
+	const endpointCount = groups?.reduce((sum, g) => sum + g.endpoints.length, 0) ?? 0;
+	const resourceCount = entities.length;
 
 	if (!doc) return null;
 
@@ -43,7 +48,7 @@ export const OverviewPage = () => {
 				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Endpoints</div>
 					<div className={s.overviewCardValue}>
-						55 endpoints across 5 resources
+						{endpointCount} endpoints across {resourceCount} resources
 					</div>
 				</div>
 				{/* <div className={s.overviewCard}>

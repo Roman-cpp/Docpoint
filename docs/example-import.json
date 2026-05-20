@@ -369,6 +369,7 @@
       "env": "prod",
       "label": "Production",
       "baseUrl": "https://api.example.com",
+      "prefix": "",
       "value": [
         { "name": "API_KEY", "value": "prod-api-key-here" }
       ],
@@ -378,6 +379,7 @@
       "env": "staging",
       "label": "Staging",
       "baseUrl": "https://staging.api.example.com",
+      "prefix": "",
       "value": [
         { "name": "API_KEY", "value": "staging-api-key-here" }
       ],
@@ -387,6 +389,7 @@
       "env": "local",
       "label": "Local",
       "baseUrl": "http://localhost:3000",
+      "prefix": "",
       "value": [
         { "name": "API_KEY", "value": "dev-key" }
       ],

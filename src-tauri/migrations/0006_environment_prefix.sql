@@ -1,0 +1,1 @@
+ALTER TABLE environments ADD COLUMN prefix TEXT NOT NULL DEFAULT '';

@@ -7,6 +7,10 @@ export {
 	actionSelectEntity,
 	actionImportDoc,
 	actionSelectEnvironment,
+	actionUpdateEnvironment,
+	actionAddVariableToEnv,
+	actionUpdateVariableInEnv,
+	actionDeleteVariableFromEnv,
 } from "./store/docStore.actions";
 export {
 	selectDocs,

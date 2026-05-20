@@ -13,7 +13,7 @@ import type { CreateGroupDTO } from "@/entities/group";
 import { readEntities, writeEntities } from "@/entities/entity";
 import type { CreateEntityDTO } from "@/entities/entity";
 import { readEnvironments, writeEnvironments } from "@/entities/environment";
-import type { CreateEnvironmentDTO } from "@/entities/environment";
+import type { CreateEnvironmentDTO, UpdateEnvironmentDTO, Variable } from "@/entities/environment";
 
 type DocState = {
   docs: Doc[];
@@ -43,6 +43,10 @@ type DocActions = {
 	selectEndpoint: (endpointId: string) => void;
   selectEntity: (entityId: string) => void;
 	setAccessToken: (token: string | null) => void;
+	updateEnvironment: (dto: UpdateEnvironmentDTO) => void;
+	addVariableToEnv: (environmentId: string, variable: Variable) => void;
+	updateVariableInEnv: (variable: Variable) => void;
+	deleteVariableFromEnv: (variableId: string) => void;
 	init: () => Promise<void>;
 	importDoc: (payload: ImportDocPayload) => Promise<void>;
 	deleteDoc: (id: string) => Promise<void>;
@@ -103,6 +107,63 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
   },
 
 	setAccessToken: (token) => set({ accessToken: token }),
+
+	updateEnvironment: (dto) =>
+		set((state) => {
+			const updated = state.environments.map((env) =>
+				env.id === dto.id
+					? { ...env, label: dto.label, baseUrl: dto.baseUrl, prefix: dto.prefix }
+					: env,
+			);
+			const updatedSelected =
+				state.selectedEnvironment?.id === dto.id
+					? { ...state.selectedEnvironment, label: dto.label, baseUrl: dto.baseUrl, prefix: dto.prefix }
+					: state.selectedEnvironment;
+			return { environments: updated, selectedEnvironment: updatedSelected };
+		}),
+
+	addVariableToEnv: (environmentId, variable) =>
+		set((state) => ({
+			environments: state.environments.map((env) =>
+				env.id === environmentId
+					? { ...env, value: [...env.value, variable] }
+					: env,
+			),
+			selectedEnvironment:
+				state.selectedEnvironment?.id === environmentId
+					? { ...state.selectedEnvironment, value: [...state.selectedEnvironment.value, variable] }
+					: state.selectedEnvironment,
+		})),
+
+	updateVariableInEnv: (variable) =>
+		set((state) => ({
+			environments: state.environments.map((env) => ({
+				...env,
+				value: env.value.map((v) => (v.id === variable.id ? variable : v)),
+			})),
+			selectedEnvironment: state.selectedEnvironment
+				? {
+						...state.selectedEnvironment,
+						value: state.selectedEnvironment.value.map((v) =>
+							v.id === variable.id ? variable : v,
+						),
+					}
+				: null,
+		})),
+
+	deleteVariableFromEnv: (variableId) =>
+		set((state) => ({
+			environments: state.environments.map((env) => ({
+				...env,
+				value: env.value.filter((v) => v.id !== variableId),
+			})),
+			selectedEnvironment: state.selectedEnvironment
+				? {
+						...state.selectedEnvironment,
+						value: state.selectedEnvironment.value.filter((v) => v.id !== variableId),
+					}
+				: null,
+		})),
 
 	deleteDoc: async (id: string) => {
 		try {

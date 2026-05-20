@@ -31,7 +31,7 @@ use http::send_request;
 use doc::{read_docs, read_doc, create_doc, delete_doc, import_doc};
 use group::{read_groups, write_groups};
 use entity::{read_schemas, write_schemas};
-use environment::{read_environments, write_environments};
+use environment::{read_environments, write_environments, update_environment, create_variable, update_variable, delete_variable};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
 
@@ -73,6 +73,10 @@ pub fn run() {
             write_schemas,
             read_environments,
             write_environments,
+            update_environment,
+            create_variable,
+            update_variable,
+            delete_variable,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
