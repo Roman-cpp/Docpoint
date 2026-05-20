@@ -1,4 +1,4 @@
-use super::model::Endpoint;
+use super::model::CreateEndpoint;
 use sqlx::{SqlitePool};
 use uuid::Uuid;
 
@@ -11,7 +11,7 @@ impl<'a> EndpointRepo<'a> {
         Self { db }
     }
 
-    pub async fn create(&self, group_id: &str, endpoint: &Endpoint, sort_ord: usize) -> Result<(), String> {
+    pub async fn create(&self, group_id: &str, endpoint: &CreateEndpoint, sort_ord: usize) -> Result<(), String> {
         let db = self.db;
 
         let endpoint_id = Uuid::new_v4().to_string();

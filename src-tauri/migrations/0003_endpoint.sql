@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS endpoint (
     id          TEXT    PRIMARY KEY,
-    group_id    TEXT    NOT NULL REFERENCES endpoint_group(id) ON DELETE CASCADE,
+    group_id    TEXT    NOT NULL REFERENCES "group"(id) ON DELETE CASCADE,
     method      TEXT    NOT NULL CHECK(method IN ('GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS')),
     path        TEXT    NOT NULL,
     name        TEXT    NOT NULL,

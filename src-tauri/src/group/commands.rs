@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use super::model::Group;
+use super::model::{CreateGroup, Group};
 use super::repository::{GroupRepo, GroupRepository};
 use tauri::State;
 
@@ -15,7 +15,7 @@ pub async fn read_groups(
 pub async fn write_groups(
     state: State<'_, AppState>,
     doc_id: String,
-    groups: Vec<Group>,
+    groups: Vec<CreateGroup>,
 ) -> Result<(), String> {
     GroupRepo::new(&state.db).create(&doc_id, &groups).await
 }

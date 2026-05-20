@@ -1,4 +1,4 @@
-use super::model::Environment;
+use super::model::{CreateEnvironment, Environment};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
@@ -24,7 +24,7 @@ pub async fn read_configs(db: &SqlitePool, doc_id: &str) -> Result<Vec<Environme
 pub async fn write_configs(
     db: &SqlitePool,
     doc_id: &str,
-    configs: &[Environment],
+    configs: &[CreateEnvironment],
 ) -> Result<(), String> {
     for config in configs {
         sqlx::query(

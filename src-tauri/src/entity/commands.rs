@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use super::model::Entity;
+use super::model::{CreateEntity, Entity};
 use super::repository::{EntityRepo, EntityRepository};
 use tauri::State;
 
@@ -15,7 +15,7 @@ pub async fn read_schemas(
 pub async fn write_schemas(
     state: State<'_, AppState>,
     doc_id: String,
-    schemas: Vec<Entity>,
+    schemas: Vec<CreateEntity>,
 ) -> Result<(), String> {
     EntityRepo::new(&state.db).create(&doc_id, &schemas).await
 }

@@ -1,10 +1,10 @@
-use super::model::{Entity, EntityField, EnumValue};
+use super::model::{CreateEntity, Entity, EntityField, EnumValue};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
 pub trait EntityRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Entity>, String>;
-    async fn create(&self, doc_id: &str, schemas: &[Entity]) -> Result<(), String>;
+    async fn create(&self, doc_id: &str, schemas: &[CreateEntity]) -> Result<(), String>;
 }
 
 pub struct EntityRepo<'a> {
@@ -22,7 +22,7 @@ impl EntityRepository for EntityRepo<'_> {
         read_schemas(self.db, doc_id).await
     }
 
-    async fn create(&self, doc_id: &str, schemas: &[Entity]) -> Result<(), String> {
+    async fn create(&self, doc_id: &str, schemas: &[CreateEntity]) -> Result<(), String> {
         write_schemas(self.db, doc_id, schemas).await
     }
 }
@@ -117,7 +117,7 @@ async fn read_schemas(db: &SqlitePool, doc_id: &str) -> Result<Vec<Entity>, Stri
 async fn write_schemas(
     db: &SqlitePool,
     doc_id: &str,
-    schemas: &[Entity],
+    schemas: &[CreateEntity],
 ) -> Result<(), String> {
     for schema in schemas {
         let entity_id = Uuid::new_v4().to_string();

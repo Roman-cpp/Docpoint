@@ -1,13 +1,13 @@
 use crate::endpoint::model::{Endpoint, ParamDef, ResponseDef, ResponseSchemaField};
 use crate::endpoint::repository::EndpointRepo;
-use super::model::Group;
+use super::model::{CreateGroup, Group};
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
 use uuid::Uuid;
 
 pub trait GroupRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Group>, String>;
-    async fn create(&self, doc_id: &str, groups: &[Group]) -> Result<(), String>;
+    async fn create(&self, doc_id: &str, groups: &[CreateGroup]) -> Result<(), String>;
 }
 
 pub struct GroupRepo<'a> {
@@ -218,7 +218,7 @@ impl GroupRepository for GroupRepo<'_> {
         Ok(groups)
     }
 
-    async fn create(&self, doc_id: &str, groups: &[Group]) -> Result<(), String> {
+    async fn create(&self, doc_id: &str, groups: &[CreateGroup]) -> Result<(), String> {
         for (gi, group) in groups.iter().enumerate() {
             let group_id = self.insert_group(doc_id, group, gi).await?;
             let endpoint_repo = EndpointRepo::new(self.db);
@@ -231,7 +231,7 @@ impl GroupRepository for GroupRepo<'_> {
 }
 
 impl GroupRepo<'_> {
-    async fn insert_group(&self, doc_id: &str, group: &Group, sort_ord: usize) -> Result<String, String> {
+    async fn insert_group(&self, doc_id: &str, group: &CreateGroup, sort_ord: usize) -> Result<String, String> {
         let group_id = Uuid::new_v4().to_string();
 
         sqlx::query(
