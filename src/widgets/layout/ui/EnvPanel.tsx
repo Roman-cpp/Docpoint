@@ -1,0 +1,78 @@
+import { useState, type FC } from "react";
+import s from "./EnvPanel.module.css";
+import { useDocStore } from "@/features/doc";
+import { selectSelectedEnvironment } from "@/features/doc";
+import { getEnvDotColor } from "@/shared/lib/env-color";
+
+export const EnvPanel: FC = () => {
+	const [open, setOpen] = useState(false);
+	const env = useDocStore(selectSelectedEnvironment);
+
+	const dotColor = env ? getEnvDotColor(env.env) : "var(--border)";
+
+	return (
+		<>
+			{open && env && (
+				<div className={s.panel}>
+					<div className={s.panelHdr}>
+						<div className={s.panelTitle}>
+							<span className={s.panelDot} style={{ background: dotColor }} />
+							{env.label}
+						</div>
+						<button className={s.panelClose} onClick={() => setOpen(false)}>
+							<svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+								<path d="M1.5 1.5l8 8M9.5 1.5l-8 8" />
+							</svg>
+						</button>
+					</div>
+
+					<div className={s.metaBlock}>
+						<div className={s.metaRow}>
+							<span className={s.metaKey}>Base URL</span>
+							<span className={s.metaVal}>{env.baseUrl || "—"}</span>
+						</div>
+						{env.prefix && (
+							<div className={s.metaRow}>
+								<span className={s.metaKey}>Prefix</span>
+								<span className={s.metaVal}>{env.prefix}</span>
+							</div>
+						)}
+					</div>
+
+					<div className={s.varSection}>
+						<div className={s.varSectionLabel}>Variables</div>
+						{env.value.length === 0 ? (
+							<div className={s.empty}>No variables</div>
+						) : (
+							env.value.map((v) => (
+								<div key={v.id} className={s.varRow}>
+									<span className={s.varName}>{v.name}</span>
+									<span className={s.varEq}>=</span>
+									<span className={s.varVal}>{v.value}</span>
+								</div>
+							))
+						)}
+					</div>
+				</div>
+			)}
+
+			<button
+				className={`${s.toggleBtn}${open ? ` ${s.open}` : ""}`}
+				onClick={() => setOpen((v) => !v)}
+				title="Environment variables"
+			>
+				<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+					<path d="M2 4l3 3-3 3M7 10h5" />
+				</svg>
+				{env ? (
+					<>
+						<span className={s.toggleDot} style={{ background: dotColor }} />
+						{env.label}
+					</>
+				) : (
+					"No env"
+				)}
+			</button>
+		</>
+	);
+};

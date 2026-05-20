@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { Header } from "@/widgets/header";
+import { EnvPanel } from "./EnvPanel";
 import s from "@/pages/docs/ui/ApiDocsPage.module.css";
 import { type ReactNode } from "react";
 
@@ -55,6 +56,8 @@ export function Layout({ children }: LayoutProps) {
 					{children}
 				</div>
 			</div>
+
+			<EnvPanel />
 		</div>
 	);
 }
