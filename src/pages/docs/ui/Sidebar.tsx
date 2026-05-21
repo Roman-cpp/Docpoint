@@ -1,139 +1,98 @@
-import { useState } from "react";
-import s from "@/shared/styles/apiDocs.module.css";
-import {
-	selectGroups,
-	selectSelectedEndpoint,
-	useDocStore,
-} from "@/features/doc";
-import { Link } from "react-router";
+import { useRef, useState } from "react";
+import s from "./ApiExplorerPage.module.css";
+import { actionImportDoc, selectDocs, useDocStore } from "@/features/doc";
+import { readDoc } from "@/entities/doc";
+import { readGroups } from "@/entities/group";
+import { readEntities } from "@/entities/entity";
+import { readEnvironments } from "@/entities/environment";
+import { invoke } from "@tauri-apps/api/core";
+import { toast } from "@/core/toast";
 
-const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
-	GET: { color: "var(--get)", bg: "var(--get-bg)" },
-	POST: { color: "var(--post)", bg: "var(--post-bg)" },
-	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
-	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
-	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
-};
+export const Sidebar = ({}) => {
+	const docs = useDocStore(selectDocs);
+	const importDoca = useDocStore(actionImportDoc);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [importing, setImporting] = useState(false);
 
-export const Sidebar = () => {
-	const groups = useDocStore(selectGroups);
-	const selectedEndpoint = useDocStore(selectSelectedEndpoint);
-	const [search, setSearch] = useState("");
-	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		setImporting(true);
+		try {
+			const text = await file.text();
+			const json = JSON.parse(text);
+			if (!json.doc || !json.groups || !json.entities || (!json.environments && !json.envConfigs)) {
+				throw new Error("Неверный формат: ожидаются поля doc, groups, entities, environments");
+			}
+			await importDoca({
+				doc: json.doc,
+				groups: json.groups,
+				entities: json.entities,
+				environments: json.environments ?? json.envConfigs,
+			});
+			toast({ variant: "success", title: "Импорт завершён", description: json.doc.name });
+		} catch (err) {
+			toast({ variant: "error", title: "Ошибка импорта", description: err instanceof Error ? err.message : String(err) });
+		} finally {
+			setImporting(false);
+			if (fileInputRef.current) fileInputRef.current.value = "";
+		}
+	};
 
-	if (!groups) return;
+	const handleExport = async (docId: string, docName: string) => {
+		const [doc, groups, entities, environments] = await Promise.all([
+			readDoc(docId),
+			readGroups(docId),
+			readEntities(docId),
+			readEnvironments(docId),
+		]);
+		const content = JSON.stringify({ doc, groups, entities, environments }, null, 2);
+		const filename = `${docName.replace(/\s+/g, "_")}.json`;
+		await invoke("save_json_file", { content, filename });
+	};
 
 	return (
-		<div className={s.sidebar}>
-			<div className={s.sidebarSearch}>
-				<div className={s.searchInputWrap}>
-					<svg
-						viewBox="0 0 16 16"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="1.5"
-						strokeLinecap="round"
-					>
-						<circle cx="6.5" cy="6.5" r="4.5" />
-						<path d="M10 10l3.5 3.5" />
-					</svg>
-					<input
-						className={s.searchInput}
-						placeholder="Search endpoints…"
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-					/>
-				</div>
-			</div>
-
-			<div className={s.sidebarScroll}>
-				<div style={{ padding: "4px 8px 2px" }}>
-					<Link
-						to="/docs"
-						className={`${s.sidebarItem} ${selectedEndpoint?.id === "overview" ? s.active : ""}`}
-					>
-						<span
-							style={{
-								width: "44px",
-								display: "flex",
-								justifyContent: "center",
-							}}
-						>
-							<svg
-								width="13"
-								height="13"
-								viewBox="0 0 13 13"
-								fill="none"
-								stroke="var(--ink-low)"
-								strokeWidth="1.5"
-								strokeLinecap="round"
-							>
-								<rect x="1" y="1" width="4.5" height="4.5" rx="1" />
-								<rect x="7.5" y="1" width="4.5" height="4.5" rx="1" />
-								<rect x="1" y="7.5" width="4.5" height="4.5" rx="1" />
-								<rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1" />
-							</svg>
-						</span>
-						<span
-							className={s.sidebarItemName}
-							style={{ fontFamily: "var(--font-sans)", fontSize: "13px" }}
-						>
-							Overview
-						</span>
-					</Link>
-				</div>
-
-				{groups.map((group) => {
-					const isOpen = !collapsed[group.id];
+		<aside className={s.sidebar}>
+			<div className={s.sbApis}>
+				<span className={s.sbSecLbl}>APIs</span>
+				{docs.map((a) => {
 					return (
-						<div className={s.sidebarGroup} key={group.id}>
-							<div
-								className={s.sidebarGroupHeader}
-								onClick={() =>
-									setCollapsed((prev) => ({
-										...prev,
-										[group.id]: !prev[group.id],
-									}))
-								}
+						<div key={a.id} className={s.sbApiRow}>
+							<button className={`${s.sbApiBtn}`}>
+								<span className={s.sbApiName}>{a.name}</span>
+								<div className={s.sbApiDot} />
+							</button>
+							<button
+								className={s.sbApiExportBtn}
+								title="Скачать как JSON"
+								onClick={() => handleExport(a.id, a.name)}
 							>
-								<span className={s.sidebarGroupLabel}>{group.label}</span>
-								<svg
-									className={`${s.sidebarGroupChevron} ${isOpen ? s.open : ""}`}
-									viewBox="0 0 12 12"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-									strokeLinecap="round"
-								>
-									<path d="M3 4.5l3 3 3-3" />
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+									<polyline points="7 10 12 15 17 10"/>
+									<line x1="12" y1="15" x2="12" y2="3"/>
 								</svg>
-							</div>
-							{isOpen && (
-								<div className={s.sidebarItems}>
-									{group.endpoints.map((ep) => {
-										const ms = METHOD_STYLES[ep.method];
-										return (
-											<Link
-												key={ep.id}
-												to={`/endpoint/${ep.id}`}
-												className={`${s.sidebarItem} ${selectedEndpoint?.id === ep.id ? s.active : ""}`}
-											>
-												<span
-													className={s.sidebarItemMethod}
-													style={{ color: ms.color, background: ms.bg }}
-												>
-													{ep.method}
-												</span>
-												<span className={s.sidebarItemName}>{ep.path}</span>
-											</Link>
-										);
-									})}
-								</div>
-							)}
+							</button>
 						</div>
 					);
 				})}
 			</div>
-		</div>
+			<div className={s.sbImport}>
+				<input
+					ref={fileInputRef}
+					type="file"
+					accept=".json"
+					style={{ display: "none" }}
+					onChange={handleFileChange}
+				/>
+				<button
+					className={s.sbImportBtn}
+					onClick={() => fileInputRef.current?.click()}
+					disabled={importing}
+				>
+					{importing ? "Импорт..." : "+ Import JSON"}
+				</button>
+			</div>
+		</aside>
 	);
 };

@@ -1,190 +1,68 @@
-import { useState, useRef, useEffect } from "react";
-import type { FC } from "react";
-import type { TweakSettings } from "../model/types";
-import s from "@/shared/styles/apiDocs.module.css";
-import { OverviewPage } from "../../overview/ui/OverviewPage";
-import { Layout } from "@/widgets/layout/ui/Layout";
+import { type FC } from "react";
+import s from "./ApiExplorerPage.module.css";
+import { Sidebar } from "./Sidebar";
+import { Header } from "@/widgets/header";
+import { Link } from "react-router";
+import { actionDeleteDoc, selectDocs, useDocStore } from "@/features/doc";
 
-/* ═══════════════ CONSTANTS ═══════════════ */
-const TWEAK_DEFAULTS: TweakSettings = {
-	density: "Default",
-	showCode: true,
-	showTry: true,
-	version: "v2",
-	theme: "Light",
-};
+/* ═══════════════ OVERVIEW ═══════════════ */
+const Overview = () => {
+	const docs = useDocStore(selectDocs);
+	const deleteDoca = useDocStore(actionDeleteDoc);
 
-const DARK_TOKENS: Record<string, string> = {
-	"--bg": "#141210",
-	"--surface": "#1C1917",
-	"--ink": "#F0EDE8",
-	"--ink-mid": "#A09890",
-	"--ink-low": "#706860",
-	"--border": "#2E2A26",
-	"--border-h": "#403830",
-	"--cat-bg": "#252018",
-	"--cat-ink": "#C0B8A8",
-	"--code-bg": "#1A1612",
-	"--code-ink": "#D0C8B8",
-};
+	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+		deleteDoca(id);
+	};
 
-const LIGHT_TOKENS: Record<string, string> = {
-	"--bg": "#FAF7F2",
-	"--surface": "#FFFFFF",
-	"--ink": "#1A1A1A",
-	"--ink-mid": "#555555",
-	"--ink-low": "#888888",
-	"--border": "#E8E2D9",
-	"--border-h": "#C8C0B4",
-	"--cat-bg": "#F0EDE8",
-	"--cat-ink": "#4A4540",
-	"--code-bg": "#F4F1EC",
-	"--code-ink": "#3D2B1F",
-};
-
-/* ═══════════════ TWEAKS PANEL ═══════════════ */
-interface TweaksPanelProps {
-	visible: boolean;
-	onClose: () => void;
-	tweaks: TweakSettings;
-	setTweak: (
-		key: keyof TweakSettings,
-		val: TweakSettings[keyof TweakSettings],
-	) => void;
-}
-
-const TweaksPanel: FC<TweaksPanelProps> = ({
-	visible,
-	onClose,
-	tweaks,
-	setTweak,
-}) => (
-	<div className={`${s.tweaksPanel} ${visible ? s.visible : ""}`}>
-		<div className={s.tweaksPanelHeader}>
-			<span className={s.tweaksPanelTitle}>Tweaks</span>
-			<button className={s.tweaksPanelClose} onClick={onClose}>
-				<svg
-					viewBox="0 0 12 12"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="1.5"
-					strokeLinecap="round"
-				>
-					<path d="M2 2l8 8M10 2l-8 8" />
-				</svg>
-			</button>
-		</div>
-		<div className={s.tweaksBody}>
-			<div className={s.tweakRow}>
-				<div className={s.tweakLabel}>Layout density</div>
-				<div className={s.tweakOptions}>
-					{(["Compact", "Default", "Spacious"] as const).map((o) => (
-						<button
-							key={o}
-							className={`${s.tweakOpt} ${tweaks.density === o ? s.active : ""}`}
-							onClick={() => setTweak("density", o)}
-						>
-							{o}
-						</button>
-					))}
-				</div>
-			</div>
-			<div className={s.tweakRow}>
-				<div className={s.tweakToggle}>
-					<span className={s.tweakToggleLabel}>Show code panel</span>
-					<button
-						className={`${s.toggleSwitch} ${tweaks.showCode ? s.on : ""}`}
-						onClick={() => setTweak("showCode", !tweaks.showCode)}
-					/>
-				</div>
-			</div>
-			<div className={s.tweakRow}>
-				<div className={s.tweakToggle}>
-					<span className={s.tweakToggleLabel}>Show Try it out</span>
-					<button
-						className={`${s.toggleSwitch} ${tweaks.showTry ? s.on : ""}`}
-						onClick={() => setTweak("showTry", !tweaks.showTry)}
-					/>
-				</div>
-			</div>
-			<div className={s.tweakRow}>
-				<div className={s.tweakLabel}>API version</div>
-				<select
-					className={s.versionSelect}
-					value={tweaks.version}
-					onChange={(e) => setTweak("version", e.target.value)}
-				>
-					<option value="v2">v2 (current)</option>
-					<option value="v1">v1 (deprecated)</option>
-				</select>
-			</div>
-			<div className={s.tweakRow}>
-				<div className={s.tweakLabel}>Theme</div>
-				<div className={s.tweakOptions}>
-					{(["Light", "Dark"] as const).map((o) => (
-						<button
-							key={o}
-							className={`${s.tweakOpt} ${tweaks.theme === o ? s.active : ""}`}
-							onClick={() => setTweak("theme", o)}
-						>
-							{o}
-						</button>
-					))}
-				</div>
+	return (
+		<div className={s.overview}>
+			<div className={s.apiCardsGrid}>
+				{docs.map((a) => {
+					return (
+						<Link to={`/doc-show/${a.id}`} key={a.id} className={`${s.apiCard}`}>
+							<div className={s.acAccent} />
+							<div className={s.acTop}>
+								<button
+									className={s.acDeleteBtn}
+									onClick={(e) => handleDelete(e, a.id, a.name)}
+									title="Delete"
+								>
+									<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+										<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
+									</svg>
+								</button>
+							</div>
+							<div className={s.acName}>{a.name}</div>
+							<div className={s.acDesc}>{a.desc}</div>
+							<div className={s.acFooter}>
+								{a.tags.map((t) => (
+									<span key={t} className={s.acTag}>
+										{t}
+									</span>
+								))}
+								<span className={s.acCount}> endpoints →</span>
+							</div>
+						</Link>
+					);
+				})}
 			</div>
 		</div>
-	</div>
-);
+	);
+};
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const DocsPage: FC = () => {
-	const [activeId] = useState("overview");
-	const [tweaksVisible, setTweaksVisible] = useState(false);
-	const [tweaks, setTweaksState] = useState<TweakSettings>(TWEAK_DEFAULTS);
-	const wrapperRef = useRef<HTMLDivElement>(null);
-	const panelRef = useRef<HTMLDivElement>(null);
-
-	const setTweak = (
-		key: keyof TweakSettings,
-		val: TweakSettings[keyof TweakSettings],
-	) => setTweaksState((p) => ({ ...p, [key]: val }) as TweakSettings);
-
-	useEffect(() => {
-		const el = wrapperRef.current;
-		if (!el) return;
-		const tokens = tweaks.theme === "Dark" ? DARK_TOKENS : LIGHT_TOKENS;
-		Object.entries(tokens).forEach(([k, v]) => el.style.setProperty(k, v));
-	}, [tweaks.theme]);
-
-	useEffect(() => {
-		const el = panelRef.current;
-		if (!el) return;
-		const pad =
-			tweaks.density === "Compact"
-				? "20px 28px 40px"
-				: tweaks.density === "Spacious"
-					? "48px 56px 80px"
-					: "32px 40px 60px";
-		el.style.padding = pad;
-	}, [tweaks.density, activeId]);
-
 	return (
-		<Layout>
-			{/* SHELL */}
-			<div className={s.shell}>
-				<div className={s.main}>
-					<div ref={panelRef} className={s.endpointPanel}>
-						<OverviewPage />
-					</div>
-				</div>
-			</div>
+		<div className={s.wrapper}>
+			<Header section="docs1" activeLink="docs" />
 
-			<TweaksPanel
-				visible={tweaksVisible}
-				onClose={() => setTweaksVisible(false)}
-				tweaks={tweaks}
-				setTweak={setTweak}
-			/>
-		</Layout>
+			<div className={s.shell}>
+				<Sidebar />
+				<Overview />
+			</div>
+		</div>
 	);
 };

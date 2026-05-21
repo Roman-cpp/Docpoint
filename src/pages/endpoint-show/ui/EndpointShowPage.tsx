@@ -1,10 +1,10 @@
 import { useRef, useCallback } from "react";
 import { useParams } from "react-router";
 import { type FC } from "react";
-import { EndpointPage } from "@/pages/endpoint/ui/EndpointPage";
+import { EndpointPage } from "@/pages/endpoint-show/ui/EndpointPage";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Layout } from "@/widgets/layout";
-import { TryItPanel } from "@/pages/endpoint/ui/TryItPanel";
+import { TryItPanel } from "@/pages/endpoint-show/ui/TryItPanel";
 import {
 	actionSelectEndpoint,
 	selectSelectedEndpoint,
@@ -16,7 +16,7 @@ const TRY_INIT = 348;
 const TRY_MIN = 240;
 const TRY_MAX = 600;
 
-export const EndpointDetailPage: FC = () => {
+export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 
 	const endpoint = useDocStore(selectSelectedEndpoint);

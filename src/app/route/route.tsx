@@ -7,13 +7,13 @@ export const router = createBrowserRouter([
 			{
 				path: "/",
 				lazy: async () => ({
-					Component: (await import("@/pages/home")).ApiExplorerPage,
+					Component: (await import("@/pages/docs")).DocsPage,
 				}),
 			},
 			{
-				path: "/docs",
+				path: "/doc-show/:id",
 				lazy: async () => ({
-					Component: (await import("@/pages/docs")).DocsPage,
+					Component: (await import("@/pages/doc-show")).DocShowPage,
 				}),
 			},
 			{
@@ -35,9 +35,9 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/endpoint/:id",
+				path: "/endpoint-show/:id",
 				lazy: async () => ({
-					Component: (await import("@/pages/endpoint")).EndpointDetailPage,
+					Component: (await import("@/pages/endpoint-show")).EndpointShowPage,
 				}),
 			},
 			{

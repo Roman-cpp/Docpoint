@@ -1,5 +1,5 @@
 import { useRef, useCallback } from "react";
-import { Sidebar } from "@/pages/docs/ui/Sidebar";
+import { Sidebar } from "@/widgets/layout/ui/Sidebar";
 import { Header } from "@/widgets/header";
 import { EnvPanel } from "./EnvPanel";
 import s from "@/shared/styles/apiDocs.module.css";
