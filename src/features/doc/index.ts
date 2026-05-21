@@ -1,19 +1,20 @@
 export { useDocStore } from "./store/useDocStore";
 export {
 	actionSelectGroup,
-	actionDeleteDoc,
 	actionSelectEndpoint,
 	actionSetAccessToken,
 	actionSelectEntity,
 	actionImportDoc,
+	actionLoadDoc,
 	actionSelectEnvironment,
+	actionAddEnvironment,
 	actionUpdateEnvironment,
+	actionDeleteEnvironment,
 	actionAddVariableToEnv,
 	actionUpdateVariableInEnv,
 	actionDeleteVariableFromEnv,
 } from "./store/docStore.actions";
 export {
-	selectDocs,
 	selectDoc,
 	selectGroups,
 	selectEnvironments,

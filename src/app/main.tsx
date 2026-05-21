@@ -1,16 +1,18 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@/shared/styles/index.css";
-import { useDocStore } from "@/features/doc/store/useDocStore";
 import { RouterProvider } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router } from "./route";
 import { Toaster } from "@/core/toast";
 
-useDocStore.getState().init();
+const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
-    <Toaster />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <Toaster />
+    </QueryClientProvider>
   </React.StrictMode>,
 );

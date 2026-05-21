@@ -1004,6 +1004,16 @@
 	overflow-y: auto;
 	padding: 36px 44px 60px;
 }
+@media (max-width: 900px) {
+	.overview {
+		padding: 24px 20px 48px;
+	}
+}
+@media (max-width: 480px) {
+	.overview {
+		padding: 18px 14px 40px;
+	}
+}
 .overview::-webkit-scrollbar {
 	width: 4px;
 }
@@ -1075,6 +1085,17 @@
 	grid-template-columns: repeat(3, 1fr);
 	gap: 16px;
 }
+@media (max-width: 960px) {
+	.apiCardsGrid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+@media (max-width: 640px) {
+	.apiCardsGrid {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+}
 .apiCard {
 	text-decoration: none;
 	background: var(--surface);
@@ -1135,6 +1156,23 @@
 }
 .apiCard:hover .acDeleteBtn {
 	opacity: 1;
+}
+@media (hover: none) {
+	.acDeleteBtn {
+		opacity: 1;
+	}
+}
+@media (max-width: 480px) {
+	.apiCard {
+		padding: 16px 16px;
+		border-radius: 10px;
+	}
+	.acName {
+		font-size: 16px;
+	}
+	.acDesc {
+		font-size: 12.5px;
+	}
 }
 .acIcon {
 	width: 38px;

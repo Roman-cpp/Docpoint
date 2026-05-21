@@ -75,6 +75,57 @@ pub async fn write_configs(
     Ok(())
 }
 
+pub async fn create_environment(
+    db: &SqlitePool,
+    doc_id: &str,
+    env: &CreateEnvironment,
+) -> Result<Environment, String> {
+    let env_id = Uuid::new_v4().to_string();
+
+    sqlx::query(
+        "INSERT INTO environments (id, doc_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
+    )
+    .bind(&env_id)
+    .bind(doc_id)
+    .bind(&env.env)
+    .bind(&env.label)
+    .bind(&env.base_url)
+    .bind(&env.prefix)
+    .execute(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut values = Vec::new();
+    for var in &env.value {
+        let var_id = Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO variables (id, environments_id, key, value) VALUES (?, ?, ?, ?)",
+        )
+        .bind(&var_id)
+        .bind(&env_id)
+        .bind(&var.name)
+        .bind(&var.value)
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        values.push(EnvValue {
+            id: var_id,
+            name: var.name.clone(),
+            value: var.value.clone(),
+        });
+    }
+
+    Ok(Environment {
+        id: env_id,
+        env: env.env.clone(),
+        label: env.label.clone(),
+        base_url: env.base_url.clone(),
+        prefix: env.prefix.clone(),
+        value: values,
+    })
+}
+
 pub async fn update_environment(db: &SqlitePool, env: &UpdateEnvironment) -> Result<(), String> {
     sqlx::query("UPDATE environments SET label = ?, base_url = ?, prefix = ? WHERE id = ?")
         .bind(&env.label)
@@ -129,6 +180,23 @@ pub async fn delete_variable(db: &SqlitePool, id: &str) -> Result<(), String> {
     sqlx::query("DELETE FROM variables WHERE id = ?")
         .bind(id)
         .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn delete_environment(db: &SqlitePool, id: &str) -> Result<(), String> {
+    let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
+
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("DELETE FROM environments WHERE id = ?")
+        .bind(id)
+        .execute(&mut *conn)
         .await
         .map_err(|e| e.to_string())?;
 

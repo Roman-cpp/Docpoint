@@ -1,10 +1,10 @@
 import { useRef, useCallback } from "react";
 import { useParams } from "react-router";
 import { type FC } from "react";
-import { EndpointPage } from "@/pages/endpoint-show/ui/EndpointPage";
+import { EndpointPage } from "./EndpointPage";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Layout } from "@/widgets/layout";
-import { TryItPanel } from "@/pages/endpoint-show/ui/TryItPanel";
+import { TryItPanel } from "./TryItPanel";
 import {
 	actionSelectEndpoint,
 	selectSelectedEndpoint,

@@ -1,6 +1,5 @@
 import type { DocStore } from "./useDocStore";
 
-export const selectDocs = (state: DocStore) => state.docs;
 export const selectDoc = (state: DocStore) => state.doc;
 export const selectGroups = (state: DocStore) => state.groups;
 export const selectEnvironments = (state: DocStore) => state.environments;

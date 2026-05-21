@@ -29,6 +29,10 @@
 	padding: 14px 16px 10px;
 	border-bottom: 1px solid var(--border);
 	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
 }
 
 .sidebarTitle {
@@ -37,6 +41,28 @@
 	letter-spacing: 0.9px;
 	text-transform: uppercase;
 	color: var(--ink-low);
+}
+
+.sidebarAdd {
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: none;
+	border-radius: 6px;
+	cursor: pointer;
+	color: var(--ink-low);
+	font-size: 16px;
+	line-height: 1;
+	font-family: var(--font-sans);
+	transition: background 0.13s, color 0.13s;
+}
+
+.sidebarAdd:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
 }
 
 .envList {
@@ -93,6 +119,31 @@
 	color: var(--ink-low);
 	font-family: var(--font-mono);
 	flex-shrink: 0;
+}
+
+.envDeleteBtn {
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: none;
+	border-radius: 6px;
+	cursor: pointer;
+	color: var(--ink-low);
+	flex-shrink: 0;
+	opacity: 0;
+	transition: opacity 0.13s, background 0.13s, color 0.13s;
+}
+
+.envItem:hover .envDeleteBtn {
+	opacity: 1;
+}
+
+.envDeleteBtn:hover {
+	background: var(--red-bg);
+	color: var(--red);
 }
 
 /* ═══════════════ MAIN ═══════════════ */

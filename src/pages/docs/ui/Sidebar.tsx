@@ -1,15 +1,15 @@
 import { useRef, useState } from "react";
 import s from "./ApiExplorerPage.module.css";
-import { actionImportDoc, selectDocs, useDocStore } from "@/features/doc";
-import { readDoc } from "@/entities/doc";
+import { actionImportDoc, useDocStore } from "@/features/doc";
+import { readDoc, useDocsStore } from "@/entities/doc";
 import { readGroups } from "@/entities/group";
 import { readEntities } from "@/entities/entity";
 import { readEnvironments } from "@/entities/environment";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "@/core/toast";
 
-export const Sidebar = ({}) => {
-	const docs = useDocStore(selectDocs);
+export const Sidebar = () => {
+  const { docs } = useDocsStore();
 	const importDoca = useDocStore(actionImportDoc);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [importing, setImporting] = useState(false);

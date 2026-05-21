@@ -1,11 +1,12 @@
 import { useState } from "react";
 import s from "@/shared/styles/apiDocs.module.css";
 import {
+  selectDoc,
 	selectGroups,
 	selectSelectedEndpoint,
 	useDocStore,
 } from "@/features/doc";
-import { Link } from "react-router";
+import { Link, useMatch } from "react-router";
 
 const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -16,11 +17,12 @@ const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 };
 
 export const Sidebar = () => {
+  const doc = useDocStore(selectDoc);
 	const groups = useDocStore(selectGroups);
 	const selectedEndpoint = useDocStore(selectSelectedEndpoint);
+	const isOverviewActive = !!useMatch("/doc-show/:id");
 	const [search, setSearch] = useState("");
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const a = "";
 
 	if (!groups) return;
 
@@ -50,8 +52,8 @@ export const Sidebar = () => {
 			<div className={s.sidebarScroll}>
 				<div style={{ padding: "4px 8px 2px" }}>
 					<Link
-						to={`/doc-show/${a}`}
-						className={`${s.sidebarItem} ${selectedEndpoint?.id === "overview" ? s.active : ""}`}
+						to={`/doc-show/${doc?.id}`}
+						className={`${s.sidebarItem} ${isOverviewActive ? s.active : ""}`}
 					>
 						<span
 							style={{

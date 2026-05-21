@@ -1,20 +1,19 @@
 import { type FC } from "react";
 import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";
-import { Header } from "@/widgets/header";
+import { HeaderDocs } from "@/widgets/header";
 import { Link } from "react-router";
-import { actionDeleteDoc, selectDocs, useDocStore } from "@/features/doc";
+import { useDocsStore } from "@/entities/doc";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
-	const docs = useDocStore(selectDocs);
-	const deleteDoca = useDocStore(actionDeleteDoc);
+	const { docs, deleteDoc } = useDocsStore();
 
 	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
 		e.preventDefault();
 		e.stopPropagation();
 		if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-		deleteDoca(id);
+		deleteDoc(id);
 	};
 
 	return (
@@ -57,7 +56,7 @@ const Overview = () => {
 export const DocsPage: FC = () => {
 	return (
 		<div className={s.wrapper}>
-			<Header section="docs1" activeLink="docs" />
+			<HeaderDocs section="docs" activeLink="docs" />
 
 			<div className={s.shell}>
 				<Sidebar />

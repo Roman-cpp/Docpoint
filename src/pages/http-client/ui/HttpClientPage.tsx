@@ -23,8 +23,8 @@ import {
 	COLLECTIONS,
 } from "../data/httpClientData";
 import s from "./HttpClientPage.module.css";
-import { Header } from "@/widgets/header";
 import { HttpMethod } from "@/entities/endpoint";
+import { HeaderDocs } from "@/widgets/header";
 
 /* ─── HELPERS ────────────────────────────────── */
 function syntaxHighlight(obj: unknown): string {
@@ -1084,7 +1084,7 @@ export const HttpClientPage: FC = () => {
 				className={`${s.wrapper}${tweaks.theme === "Dark" ? " dark" : ""}`}
 				style={{ fontSize: fontSizePx }}
 			>
-				<Header section="docs1" activeLink="docs" />
+        <HeaderDocs section="http-client" activeLink="http-client" />
 
 				<div className={s.shell}>
 					<Sidebar

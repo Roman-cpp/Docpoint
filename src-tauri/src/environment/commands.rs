@@ -29,6 +29,15 @@ pub async fn write_environments(
 }
 
 #[tauri::command]
+pub async fn create_environment(
+    state: State<'_, AppState>,
+    doc_id: String,
+    environment: CreateEnvironment,
+) -> Result<Environment, String> {
+    repository::create_environment(&state.db, &doc_id, &environment).await
+}
+
+#[tauri::command]
 pub async fn update_environment(
     state: State<'_, AppState>,
     environment: UpdateEnvironment,
@@ -51,4 +60,12 @@ pub async fn update_variable(
     variable: UpdateVariable,
 ) -> Result<(), String> {
     repository::update_variable(&state.db, &variable).await
+}
+
+#[tauri::command]
+pub async fn delete_environment(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), String> {
+    repository::delete_environment(&state.db, &id).await
 }
