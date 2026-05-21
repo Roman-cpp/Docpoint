@@ -471,3 +471,111 @@
 	background: var(--red-bg);
 	color: var(--red);
 }
+
+/* ═══════════════ AUTH ═══════════════ */
+.authTextarea {
+	box-sizing: border-box;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--ink);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	padding: 6px 10px;
+	outline: none;
+	width: 100%;
+	min-width: 0;
+	min-height: 80px;
+	resize: vertical;
+	transition: border-color 0.15s, background 0.15s;
+}
+
+.authTextarea:hover {
+	border-color: var(--border);
+	background: var(--bg);
+}
+
+.authTextarea:focus {
+	border-color: var(--border-h);
+	background: var(--bg);
+}
+
+.authMethodSelect {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--ink);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 6px 10px;
+	outline: none;
+	cursor: pointer;
+}
+
+.authActions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 16px;
+	border-top: 1px solid var(--border);
+	background: var(--bg);
+	flex-wrap: wrap;
+}
+
+.authActionBtn {
+	padding: 7px 14px;
+	font-size: 12px;
+	font-weight: 500;
+	font-family: var(--font-sans);
+	background: var(--ink);
+	color: #fff;
+	border: none;
+	border-radius: 7px;
+	cursor: pointer;
+	transition: background 0.15s;
+}
+
+.authActionBtn:hover:not(:disabled) {
+	background: #333;
+}
+
+.authActionBtn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.authClearBtn {
+	padding: 7px 12px;
+	font-size: 12px;
+	color: var(--ink-mid);
+	background: none;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	cursor: pointer;
+	font-family: var(--font-sans);
+	transition: border-color 0.15s, color 0.15s;
+}
+
+.authClearBtn:hover {
+	border-color: var(--border-h);
+	color: var(--ink);
+}
+
+.tokenStatus {
+	font-size: 12px;
+	color: var(--ink-mid);
+	font-family: var(--font-mono);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	flex: 1;
+	min-width: 0;
+}
+
+.tokenStatusOk {
+	color: var(--green);
+}
+
+.tokenStatusErr {
+	color: var(--red);
+}

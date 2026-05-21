@@ -5,6 +5,7 @@ mod endpoint;
 mod group;
 mod entity;
 mod environment;
+mod environment_auth;
 
 #[tauri::command]
 async fn save_json_file(content: String, filename: String) -> Result<bool, String> {
@@ -33,6 +34,7 @@ use endpoint::update_param_value;
 use group::{read_groups, write_groups};
 use entity::{read_schemas, write_schemas};
 use environment::{read_environments, write_environments, create_environment, update_environment, delete_environment, create_variable, update_variable, delete_variable};
+use environment_auth::{update_environment_auth, set_environment_access_token};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
 
@@ -81,6 +83,8 @@ pub fn run() {
             create_variable,
             update_variable,
             delete_variable,
+            update_environment_auth,
+            set_environment_access_token,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

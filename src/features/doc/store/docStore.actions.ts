@@ -15,4 +15,6 @@ export const actionAddVariableToEnv = (state: DocStore) => state.addVariableToEn
 export const actionUpdateVariableInEnv = (state: DocStore) => state.updateVariableInEnv;
 export const actionDeleteVariableFromEnv = (state: DocStore) => state.deleteVariableFromEnv;
 export const actionUpdateEndpointParamValue = (state: DocStore) => state.updateEndpointParamValue;
+export const actionPatchEnvironmentAuth = (state: DocStore) => state.patchEnvironmentAuth;
+export const actionPatchEnvironmentAccessToken = (state: DocStore) => state.patchEnvironmentAccessToken;
 

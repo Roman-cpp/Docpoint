@@ -15,6 +15,7 @@ import { readEntities } from "@/entities/entity";
 import type { CreateEntityDTO } from "@/entities/entity";
 import { readEnvironments } from "@/entities/environment";
 import type { CreateEnvironmentDTO, UpdateEnvironmentDTO, Variable } from "@/entities/environment";
+import type { UpdateEnvironmentAuthDTO } from "@/entities/environment-auth";
 
 type DocState = {
 	doc: Doc | null;
@@ -50,6 +51,8 @@ type DocActions = {
 	updateVariableInEnv: (variable: Variable) => void;
 	deleteVariableFromEnv: (variableId: string) => void;
 	updateEndpointParamValue: (endpointId: string, kind: "query" | "body", name: string, value: string) => Promise<void>;
+	patchEnvironmentAuth: (dto: UpdateEnvironmentAuthDTO) => void;
+	patchEnvironmentAccessToken: (id: string, token: string | null) => void;
 	importDoc: (payload: ImportDocPayload) => Promise<void>;
 	loadDoc: (id: string) => Promise<void>;
 };
@@ -178,6 +181,41 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 					}
 				: null,
 		})),
+
+	patchEnvironmentAuth: (dto) =>
+		set((state) => {
+			const apply = (e: Environment): Environment =>
+				e.id === dto.environmentId
+					? {
+							...e,
+							auth: {
+								...e.auth,
+								url: dto.url,
+								method: dto.method,
+								body: dto.body,
+								tokenPath: dto.tokenPath,
+							},
+						}
+					: e;
+			return {
+				environments: state.environments.map(apply),
+				selectedEnvironment: state.selectedEnvironment
+					? apply(state.selectedEnvironment)
+					: state.selectedEnvironment,
+			};
+		}),
+
+	patchEnvironmentAccessToken: (id, token) =>
+		set((state) => {
+			const apply = (e: Environment): Environment =>
+				e.id === id ? { ...e, auth: { ...e.auth, accessToken: token } } : e;
+			return {
+				environments: state.environments.map(apply),
+				selectedEnvironment: state.selectedEnvironment
+					? apply(state.selectedEnvironment)
+					: state.selectedEnvironment,
+			};
+		}),
 
 	updateEndpointParamValue: async (endpointId, kind, name, value) => {
 		await updateParamValue(endpointId, kind, name, value);

@@ -14,6 +14,8 @@ export {
 	actionUpdateVariableInEnv,
 	actionDeleteVariableFromEnv,
 	actionUpdateEndpointParamValue,
+	actionPatchEnvironmentAuth,
+	actionPatchEnvironmentAccessToken,
 } from "./store/docStore.actions";
 export {
 	selectDoc,

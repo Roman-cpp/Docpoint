@@ -32,9 +32,8 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 				baseUrl: baseUrl.trim(),
 				prefix: prefix.trim(),
 				value: [],
-				accessToken: null,
 			});
-			onCreated({ ...created, accessToken: null });
+			onCreated(created);
 			onClose();
 		} finally {
 			setLoading(false);
