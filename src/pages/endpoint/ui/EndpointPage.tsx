@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FC } from "react";
 
-import s from "./ApiDocsPage.module.css";
+import s from "@/shared/styles/apiDocs.module.css";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 

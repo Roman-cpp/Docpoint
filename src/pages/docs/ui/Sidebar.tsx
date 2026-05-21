@@ -1,5 +1,5 @@
 import { useState } from "react";
-import s from "./ApiDocsPage.module.css";
+import s from "@/shared/styles/apiDocs.module.css";
 import {
 	selectGroups,
 	selectSelectedEndpoint,

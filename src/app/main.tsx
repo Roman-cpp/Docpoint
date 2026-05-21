@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
+import "@/shared/styles/index.css";
 import { useDocStore } from "@/features/doc/store/useDocStore";
 import { RouterProvider } from "react-router";
 import { router } from "./route";

@@ -7,14 +7,14 @@
 	padding: 0 24px;
 	height: 52px;
 	flex-shrink: 0;
-	z-index: 100;
+	z-index: var(--z-nav);
 	gap: 12px;
 }
 
 .navBrand {
 	font-family: var(--font-serif);
-	font-size: 16px;
-	font-weight: 400;
+	font-size: var(--fs-16);
+	font-weight: var(--fw-regular);
 	color: var(--ink);
 	letter-spacing: -0.2px;
 	display: flex;
@@ -33,9 +33,9 @@
 
 .navSection {
 	font-family: var(--font-sans);
-	font-size: 12px;
+	font-size: var(--fs-12);
 	color: var(--ink-low);
-	font-weight: 400;
+	font-weight: var(--fw-regular);
 }
 
 .navEnv {
@@ -43,7 +43,7 @@
 	align-items: center;
 	background: var(--bg);
 	border: 1px solid var(--border);
-	border-radius: 7px;
+	border-radius: var(--r-md);
 	padding: 3px;
 	margin: 0 auto;
 	flex-shrink: 0;
@@ -51,14 +51,14 @@
 
 .envBtn {
 	padding: 4px 12px;
-	font-size: 12px;
-	border-radius: 5px;
+	font-size: var(--fs-12);
+	border-radius: var(--r-sm);
 	border: none;
 	background: none;
 	color: var(--ink-mid);
 	cursor: pointer;
 	font-family: var(--font-sans);
-	transition: all 0.15s;
+	transition: all var(--t-base);
 	display: flex;
 	align-items: center;
 	gap: 5px;
@@ -72,14 +72,14 @@
 .envBtnActive {
 	background: var(--surface);
 	color: var(--ink);
-	font-weight: 500;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+	font-weight: var(--fw-medium);
+	box-shadow: var(--shadow-xs);
 }
 
 .envDot {
 	width: 6px;
 	height: 6px;
-	border-radius: 50%;
+	border-radius: var(--r-circle);
 	flex-shrink: 0;
 }
 
@@ -91,13 +91,11 @@
 
 .navLink {
 	padding: 5px 11px;
-	font-size: 13px;
+	font-size: var(--fs-13);
 	color: var(--ink-mid);
-	border-radius: 6px;
+	border-radius: var(--r-sm);
 	cursor: pointer;
-	transition:
-		background 0.15s,
-		color 0.15s;
+	transition: background var(--t-base), color var(--t-base);
 	text-decoration: none;
 	background: none;
 	border: none;
@@ -112,15 +110,15 @@
 
 .navLinkActive {
 	color: var(--ink);
-	font-weight: 500;
+	font-weight: var(--fw-medium);
 }
 
 .navLinkCta {
 	background: var(--ink);
-	color: #fff;
+	color: var(--surface);
 }
 
 .navLinkCta:hover {
 	background: #333;
-	color: #fff;
+	color: var(--surface);
 }

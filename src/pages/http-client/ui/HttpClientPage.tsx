@@ -1081,7 +1081,7 @@ export const HttpClientPage: FC = () => {
 	return (
 		<HttpCtx.Provider value={ctxValue}>
 			<div
-				className={`${s.wrapper}${tweaks.theme === "Dark" ? " " + s.dark : ""}`}
+				className={`${s.wrapper}${tweaks.theme === "Dark" ? " dark" : ""}`}
 				style={{ fontSize: fontSizePx }}
 			>
 				<Header section="docs1" activeLink="docs" />

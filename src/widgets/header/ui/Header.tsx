@@ -15,14 +15,14 @@ export type NavLink =
 	| "explorer"
 	| "http-client"
 	| "entity"
-	| "architecture"
+	// | "architecture"
 	| "environments";
 
 const NAV_LINKS: { id: NavLink; label: string; href: string }[] = [
 	{ id: "docs", label: "API Docs", href: "/" },
 	{ id: "http-client", label: "HTTP Client", href: "/http-client" },
 	{ id: "entity", label: "Entities", href: "/entity" },
-	{ id: "architecture", label: "Architecture", href: "/architecture" },
+	// { id: "architecture", label: "Architecture", href: "/architecture" },
 	{ id: "environments", label: "Environments", href: "/environments" },
 ];
 

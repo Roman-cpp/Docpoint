@@ -1,4 +1,4 @@
-import s from "./ApiDocsPage.module.css";
+import s from "@/shared/styles/apiDocs.module.css";
 import { selectDoc, selectEntities, selectGroups, useDocStore } from "@/features/doc";
 
 export const OverviewPage = () => {

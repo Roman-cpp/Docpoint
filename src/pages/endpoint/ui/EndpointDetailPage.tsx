@@ -1,8 +1,8 @@
 import { useRef, useCallback } from "react";
 import { useParams } from "react-router";
 import { type FC } from "react";
-import { EndpointPage } from "@/pages/docs/ui/EndpointPage";
-import s from "@/pages/docs/ui/ApiDocsPage.module.css";
+import { EndpointPage } from "@/pages/endpoint/ui/EndpointPage";
+import s from "@/shared/styles/apiDocs.module.css";
 import { Layout } from "@/widgets/layout";
 import { TryItPanel } from "@/pages/endpoint/ui/TryItPanel";
 import {

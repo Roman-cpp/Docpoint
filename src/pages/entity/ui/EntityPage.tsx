@@ -48,7 +48,7 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 					<div className={s.entityHeader}>
 						<div className={s.entityEyebrow}>
 							<span>Schema</span>
-							<span style={{ color: "var(--border-hover)" }}>·</span>
+							<span style={{ color: "var(--border-h)" }}>·</span>
 							<span style={{ color: "var(--ink)" }}>{entity.name}</span>
 						</div>
 						<div className={s.entityTitleRow}>

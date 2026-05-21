@@ -26,6 +26,8 @@ pub struct ParamDef {
     pub desc: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default: Option<String>,
+    #[serde(default)]
+    pub value: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

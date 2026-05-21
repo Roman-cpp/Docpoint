@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════════════════════════
+   Docpoint — Global Design Tokens
+   Single source of truth for colors, type, spacing, motion, etc.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+	/* ─── Typography ─── */
+	--font-serif: "Lora", Georgia, "Times New Roman", serif;
+	--font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--font-mono: "Menlo", "SF Mono", "Courier New", monospace;
+
+	/* Font size scale */
+	--fs-9: 9px;
+	--fs-10: 10px;
+	--fs-11: 11px;
+	--fs-12: 12px;
+	--fs-13: 13px;
+	--fs-14: 14px;
+	--fs-15: 15px;
+	--fs-16: 16px;
+	--fs-17: 17px;
+	--fs-20: 20px;
+	--fs-22: 22px;
+	--fs-24: 24px;
+	--fs-28: 28px;
+	--fs-30: 30px;
+
+	/* Line heights */
+	--lh-tight: 1.2;
+	--lh-snug: 1.4;
+	--lh-normal: 1.55;
+	--lh-body: 1.6;
+	--lh-relaxed: 1.75;
+
+	/* Font weights */
+	--fw-regular: 400;
+	--fw-medium: 500;
+	--fw-semibold: 600;
+
+	/* ─── Neutral palette ─── */
+	--bg: #faf7f2;
+	--surface: #ffffff;
+	--ink: #1a1a1a;
+	--ink-mid: #555555;
+	--ink-low: #888888;
+	--border: #e8e2d9;
+	--border-h: #c8c0b4;
+	--cat-bg: #f0ede8;
+	--cat-ink: #4a4540;
+
+	/* Code surface */
+	--code-bg: #f4f1ec;
+	--code-ink: #3d2b1f;
+
+	/* ─── Semantic palette ─── */
+	--green: #1e7e52;
+	--green-bg: #eaf5ef;
+	--red: #9a2800;
+	--red-bg: #fff0ec;
+	--amber: #9a5f00;
+	--amber-bg: #fff3dc;
+	--blue: #1a5ea8;
+	--blue-bg: #eaf1fb;
+	--purple: #7a4f9a;
+	--purple-bg: #f3eafb;
+
+	/* ─── HTTP method colors ─── */
+	--get: var(--green);
+	--get-bg: var(--green-bg);
+	--post: var(--blue);
+	--post-bg: var(--blue-bg);
+	--put: var(--amber);
+	--put-bg: var(--amber-bg);
+	--patch: var(--purple);
+	--patch-bg: var(--purple-bg);
+	--delete: var(--red);
+	--delete-bg: var(--red-bg);
+
+	/* ─── Radius scale ─── */
+	--r-xs: 4px;   /* tiny chips, icon-btn corners */
+	--r-sm: 6px;   /* small controls, nav links */
+	--r-md: 7px;   /* inputs, buttons */
+	--r-lg: 10px;  /* cards, tables */
+	--r-xl: 12px;  /* surfaces */
+	--r-2xl: 13px; /* modals */
+	--r-pill: 100px;
+	--r-circle: 50%;
+
+	/* ─── Motion ─── */
+	--t-fast: 0.12s;
+	--t-base: 0.15s;
+	--t-slow: 0.2s;
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+	/* ─── Elevation ─── */
+	--shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.07);
+	--shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.08);
+	--shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+	--shadow-xl: 0 16px 56px rgba(0, 0, 0, 0.14);
+	--shadow-popover: 0 2px 14px rgba(0, 0, 0, 0.18);
+
+	/* ─── Z-index scale ─── */
+	--z-nav: 100;
+	--z-overlay: 500;
+	--z-panel-toggle: 900;
+	--z-panel: 901;
+	--z-dock-overflow: 1000;
+	--z-toast: 9999;
+
+	/* ─── Backdrop ─── */
+	--backdrop: rgba(0, 0, 0, 0.22);
+}
+
+/* ─── Dark theme — opt-in by adding .dark on any ancestor ─── */
+.dark {
+	--bg: #141210;
+	--surface: #1c1917;
+	--ink: #f0ede8;
+	--ink-mid: #a09890;
+	--ink-low: #706860;
+	--border: #2e2a26;
+	--border-h: #403830;
+	--cat-bg: #252018;
+	--cat-ink: #c0b8a8;
+	--code-bg: #1a1612;
+	--code-ink: #d0c8b8;
+}

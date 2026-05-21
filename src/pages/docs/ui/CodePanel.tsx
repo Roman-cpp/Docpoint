@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FC } from "react";
 import type { EndpointDetail } from "../model/types";
-import s from "./ApiDocsPage.module.css";
+import s from "@/shared/styles/apiDocs.module.css";
 
 const CodeSnippet: FC<{ lang: string; code: string }> = ({ lang, code }) => {
 	const [copied, setCopied] = useState(false);

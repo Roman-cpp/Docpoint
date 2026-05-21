@@ -10,8 +10,15 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
-import type { Environments } from "@/entities/environment";
+import type { Environment } from "@/entities/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+
+function resolveEnvVars(value: string, env: Environment): string {
+	return value.replace(/\{\{(\w+)\}\}/g, (_, name) => {
+		const found = env.value.find((v) => v.name === name);
+		return found ? found.value : "";
+	});
+}
 
 const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -26,25 +33,28 @@ function extractPathParams(path: string): string[] {
 	return [...path.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 }
 
-function buildUrl(ep: Endpoint, env: Environments, vals: Record<string, string> = {}) {
+function buildUrl(ep: Endpoint, env: Environment, vals: Record<string, string> = {}) {
 	const path = ep.path.replace(/\{(\w+)\}/g, (_, name) => {
-		const v = (vals[`path:${name}`] ?? "").trim();
+		const raw = (vals[`path:${name}`] ?? "").trim();
+		const v = resolveEnvVars(raw, env);
 		return v || `{${name}}`;
 	});
 	const qp: Record<string, string> = {};
 	for (const p of ep.queryParams ?? []) {
-		const v = (vals[`query:${p.name}`] ?? "").trim();
+		const raw = (vals[`query:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")).trim();
+		const v = resolveEnvVars(raw, env);
 		if (v) qp[p.name] = v;
 	}
 	const qs = new URLSearchParams(qp).toString();
-	return `${env.baseUrl}${path}${qs ? "?" + qs : ""}`;
+	return `${env.baseUrl}${env.prefix}${path}${qs ? "?" + qs : ""}`;
 }
 
-function buildBody(ep: Endpoint, vals: Record<string, string>): string | null {
+function buildBody(ep: Endpoint, env: Environment, vals: Record<string, string>): string | null {
 	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
 	const b: Record<string, string> = {};
 	for (const p of ep.bodyParams) {
-		const v = (vals[`body:${p.name}`] ?? "").trim();
+		const raw = (vals[`body:${p.name}`] ?? p.value ?? "").trim();
+		const v = resolveEnvVars(raw, env);
 		if (v) b[p.name] = v;
 	}
 	return Object.keys(b).length ? JSON.stringify(b) : null;
@@ -122,7 +132,7 @@ export const TryItPanel = () => {
 		const headers: Record<string, string> = { Accept: "application/json" };
 		if (endpoint.auth && authToken)
 			headers["Authorization"] = `Bearer ${authToken}`;
-		const body = buildBody(endpoint, vals);
+		const body = buildBody(endpoint, selectedEnvConfig, vals);
 		if (body !== null) headers["Content-Type"] = "application/json";
 
 		try {
@@ -289,7 +299,8 @@ export const TryItPanel = () => {
 								<input
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
-									value={vals[`query:${p.name}`] ?? ""}
+									readOnly={!!p.value}
+									value={p.value ? `{{${p.value}}}` : (vals[`query:${p.name}`] ?? "")}
 									onChange={(e) =>
 										setVals((v) => ({ ...v, [`query:${p.name}`]: e.target.value }))
 									}
@@ -312,7 +323,8 @@ export const TryItPanel = () => {
 								<input
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
-									value={vals[`body:${p.name}`] ?? ""}
+									readOnly={!!p.value}
+									value={p.value ? `{{${p.value}}}` : (vals[`body:${p.name}`] ?? "")}
 									onChange={(e) =>
 										setVals((v) => ({ ...v, [`body:${p.name}`]: e.target.value }))
 									}

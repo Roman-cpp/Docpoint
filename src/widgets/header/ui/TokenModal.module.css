@@ -1,8 +1,8 @@
 .modalOverlay {
 	position: fixed;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.22);
-	z-index: 500;
+	background: var(--backdrop);
+	z-index: var(--z-overlay);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -10,9 +10,9 @@
 .modalBox {
 	background: var(--surface);
 	border: 1px solid var(--border);
-	border-radius: 13px;
+	border-radius: var(--r-2xl);
 	width: 392px;
-	box-shadow: 0 16px 56px rgba(0, 0, 0, 0.14);
+	box-shadow: var(--shadow-xl);
 	overflow: hidden;
 }
 .modalHdr {
@@ -23,8 +23,8 @@
 	border-bottom: 1px solid var(--border);
 }
 .modalTitle {
-	font-size: 13px;
-	font-weight: 600;
+	font-size: var(--fs-13);
+	font-weight: var(--fw-semibold);
 	color: var(--ink);
 	letter-spacing: -0.1px;
 }
@@ -38,8 +38,8 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	border-radius: 4px;
-	transition: background 0.13s;
+	border-radius: var(--r-xs);
+	transition: background var(--t-fast);
 }
 .modalX:hover {
 	background: var(--cat-bg);
@@ -52,13 +52,13 @@
 	gap: 13px;
 }
 .modalDesc {
-	font-size: 13px;
+	font-size: var(--fs-13);
 	color: var(--ink-mid);
 	line-height: 1.65;
 }
 .ic {
 	font-family: var(--font-mono);
-	font-size: 11px;
+	font-size: var(--fs-11);
 	background: var(--code-bg);
 	color: var(--code-ink);
 	padding: 1px 5px;
@@ -68,15 +68,15 @@
 .modalInput {
 	box-sizing: border-box;
 	padding: 9px 12px;
-	font-size: 13px;
+	font-size: var(--fs-13);
 	font-family: var(--font-mono);
 	color: var(--ink);
 	background: var(--bg);
 	border: 1px solid var(--border);
-	border-radius: 7px;
+	border-radius: var(--r-md);
 	outline: none;
 	width: 100%;
-	transition: border-color 0.15s;
+	transition: border-color var(--t-base);
 }
 .modalInput:focus {
 	border-color: var(--border-h);
@@ -88,21 +88,21 @@
 }
 .modalSave {
 	padding: 8px 22px;
-	font-size: 13px;
-	font-weight: 500;
+	font-size: var(--fs-13);
+	font-weight: var(--fw-medium);
 	font-family: var(--font-sans);
 	background: var(--ink);
-	color: #fff;
+	color: var(--surface);
 	border: none;
-	border-radius: 7px;
+	border-radius: var(--r-md);
 	cursor: pointer;
-	transition: background 0.15s;
+	transition: background var(--t-base);
 }
 .modalSave:hover {
 	background: #333;
 }
 .modalClear {
-	font-size: 12px;
+	font-size: var(--fs-12);
 	color: var(--red);
 	background: none;
 	border: none;

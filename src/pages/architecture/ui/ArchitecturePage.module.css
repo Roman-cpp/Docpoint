@@ -1,27 +1,9 @@
+/* Tokens live in /src/shared/styles/tokens.css */
 .wrapper {
-	--font-serif: "Lora", Georgia, "Times New Roman", serif;
-	--font-sans:
-		"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-	--font-mono: "Menlo", "SF Mono", "Courier New", monospace;
-
-	--bg: #faf7f2;
-	--surface: #ffffff;
-	--ink: #1a1a1a;
-	--ink-mid: #555555;
-	--ink-low: #888888;
-	--border: #e8e2d9;
-	--code-bg: #f4f1ec;
-	--code-ink: #3d2b1f;
-
 	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
-	font-family: var(--font-sans);
-	font-size: 15px;
-	line-height: 1.6;
-	color: var(--ink);
-	background: var(--bg);
-	-webkit-font-smoothing: antialiased;
+	font-size: var(--fs-15);
 }
 
 .shell {

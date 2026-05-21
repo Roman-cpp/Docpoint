@@ -1,65 +1,11 @@
-/* ═══════════════ DESIGN TOKENS ═══════════════ */
+/* Tokens live in /src/shared/styles/tokens.css
+   Dark theme: add the global `.dark` class on any ancestor. */
 .wrapper {
-	--font-serif: "Lora", Georgia, serif;
-	--font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-	--font-mono: "Menlo", "SF Mono", "Courier New", monospace;
-
-	--bg: #faf7f2;
-	--surface: #ffffff;
-	--ink: #1a1a1a;
-	--ink-mid: #555555;
-	--ink-low: #888888;
-	--border: #e8e2d9;
-	--border-h: #c8c0b4;
-	--green: #1e7e52;
-	--green-bg: #eaf5ef;
-	--amber: #9a5f00;
-	--amber-bg: #fff3dc;
-	--red: #9a2800;
-	--red-bg: #fff0ec;
-	--blue: #1a5ea8;
-	--blue-bg: #eaf1fb;
-	--cat-bg: #f0ede8;
-	--cat-ink: #4a4540;
-	--code-bg: #f4f1ec;
-	--code-ink: #3d2b1f;
-
-	--get: #1e7e52;
-	--get-bg: #eaf5ef;
-	--post: #1a5ea8;
-	--post-bg: #eaf1fb;
-	--put: #9a5f00;
-	--put-bg: #fff3dc;
-	--patch: #7a4f9a;
-	--patch-bg: #f3eafb;
-	--delete: #9a2800;
-	--delete-bg: #fff0ec;
-
 	height: 100vh;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	font-family: var(--font-sans);
-	font-size: 14px;
-	line-height: 1.6;
-	color: var(--ink);
-	background: var(--bg);
-	-webkit-font-smoothing: antialiased;
-}
-
-/* Dark theme */
-.wrapper.dark {
-	--bg: #141210;
-	--surface: #1c1917;
-	--ink: #f0ede8;
-	--ink-mid: #a09890;
-	--ink-low: #706860;
-	--border: #2e2a26;
-	--border-h: #403830;
-	--cat-bg: #252018;
-	--cat-ink: #c0b8a8;
-	--code-bg: #1a1612;
-	--code-ink: #d0c8b8;
+	font-size: var(--fs-14);
 }
 
 /* Reset headings inside wrapper */

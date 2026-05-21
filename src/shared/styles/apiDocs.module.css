@@ -1,51 +1,10 @@
-/* ═══════════════ DESIGN TOKENS ═══════════════ */
+/* Tokens live in /src/shared/styles/tokens.css */
 .wrapper {
-	--font-serif: "Lora", Georgia, "Times New Roman", serif;
-	--font-sans:
-		"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-	--font-mono: "Menlo", "SF Mono", "Courier New", monospace;
-
-	--bg: #faf7f2;
-	--surface: #ffffff;
-	--ink: #1a1a1a;
-	--ink-mid: #555555;
-	--ink-low: #888888;
-	--border: #e8e2d9;
-	--border-hover: #c8c0b4;
-	--green: #1e7e52;
-	--green-bg: #eaf5ef;
-	--amber: #9a5f00;
-	--amber-bg: #fff3dc;
-	--red: #9a2800;
-	--red-bg: #fff0ec;
-	--cat-bg: #f0ede8;
-	--cat-ink: #4a4540;
-	--blue: #1a5ea8;
-	--blue-bg: #eaf1fb;
-	--code-bg: #f4f1ec;
-	--code-ink: #3d2b1f;
-
-	--get: #1e7e52;
-	--get-bg: #eaf5ef;
-	--post: #1a5ea8;
-	--post-bg: #eaf1fb;
-	--put: #9a5f00;
-	--put-bg: #fff3dc;
-	--patch: #7a4f9a;
-	--patch-bg: #f3eafb;
-	--delete: #9a2800;
-	--delete-bg: #fff0ec;
-
 	height: 100vh;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	font-family: var(--font-sans);
-	font-size: 15px;
-	line-height: 1.6;
-	color: var(--ink);
-	background: var(--bg);
-	-webkit-font-smoothing: antialiased;
+	font-size: var(--fs-15);
 }
 
 /* reset headings inside the page */
@@ -185,7 +144,7 @@
 .resizeHandle:hover::after {
 	left: 1px;
 	width: 3px;
-	background: var(--border-hover);
+	background: var(--border-h);
 }
 .sidebarSearch {
 	padding: 12px 14px;
@@ -219,7 +178,7 @@
 	transition: border-color 0.15s;
 }
 .searchInput:focus {
-	border-color: var(--border-hover);
+	border-color: var(--border-h);
 }
 .searchInput::placeholder {
 	color: var(--ink-low);
@@ -259,7 +218,7 @@
 .sidebarGroupChevron {
 	width: 12px;
 	height: 12px;
-	color: var(--border-hover);
+	color: var(--border-h);
 	transition: transform 0.2s;
 }
 .sidebarGroupChevron.open {
@@ -662,7 +621,7 @@
 	transition: border-color 0.15s;
 }
 .tryInput:focus {
-	border-color: var(--border-hover);
+	border-color: var(--border-h);
 	background: var(--surface);
 }
 .tryTextarea {
@@ -680,7 +639,7 @@
 	line-height: 1.6;
 }
 .tryTextarea:focus {
-	border-color: var(--border-hover);
+	border-color: var(--border-h);
 	background: var(--surface);
 }
 
@@ -728,7 +687,7 @@
 	transition: all 0.15s;
 }
 .btnGhost:hover {
-	border-color: var(--border-hover);
+	border-color: var(--border-h);
 	color: var(--ink);
 }
 
@@ -1001,7 +960,7 @@
 }
 .bcSep {
 	font-size: 12px;
-	color: var(--border-hover);
+	color: var(--border-h);
 }
 .bcCurrent {
 	font-size: 13px;
@@ -1158,7 +1117,7 @@
 	transition: all 0.13s;
 }
 .tweakOpt:hover {
-	border-color: var(--border-hover);
+	border-color: var(--border-h);
 	color: var(--ink);
 }
 .tweakOpt.active {

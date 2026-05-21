@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS param (
     required    INTEGER NOT NULL DEFAULT 0,
     desc        TEXT    NOT NULL DEFAULT '',
     default_val TEXT,
+    value       TEXT    NOT NULL DEFAULT '',
     sort_ord    INTEGER NOT NULL DEFAULT 0
 );
 

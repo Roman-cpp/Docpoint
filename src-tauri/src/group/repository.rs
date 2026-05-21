@@ -138,6 +138,7 @@ impl GroupRepository for GroupRepo<'_> {
                         required: p.get::<i64, _>("required") != 0,
                         desc: p.get("desc"),
                         default: p.get("default_val"),
+                        value: p.get("value"),
                     })
                     .collect();
 
@@ -153,6 +154,7 @@ impl GroupRepository for GroupRepo<'_> {
                         required: p.get::<i64, _>("required") != 0,
                         desc: p.get("desc"),
                         default: p.get("default_val"),
+                        value: p.get("value"),
                     })
                     .collect();
 

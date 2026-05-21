@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import type { FC } from "react";
 import type { TweakSettings } from "../model/types";
-import s from "./ApiDocsPage.module.css";
-import { OverviewPage } from "./OverviewPage";
+import s from "@/shared/styles/apiDocs.module.css";
+import { OverviewPage } from "../../overview/ui/OverviewPage";
 import { Layout } from "@/widgets/layout/ui/Layout";
 
 /* ═══════════════ CONSTANTS ═══════════════ */
@@ -21,7 +21,7 @@ const DARK_TOKENS: Record<string, string> = {
 	"--ink-mid": "#A09890",
 	"--ink-low": "#706860",
 	"--border": "#2E2A26",
-	"--border-hover": "#403830",
+	"--border-h": "#403830",
 	"--cat-bg": "#252018",
 	"--cat-ink": "#C0B8A8",
 	"--code-bg": "#1A1612",
@@ -35,7 +35,7 @@ const LIGHT_TOKENS: Record<string, string> = {
 	"--ink-mid": "#555555",
 	"--ink-low": "#888888",
 	"--border": "#E8E2D9",
-	"--border-hover": "#C8C0B4",
+	"--border-h": "#C8C0B4",
 	"--cat-bg": "#F0EDE8",
 	"--cat-ink": "#4A4540",
 	"--code-bg": "#F4F1EC",

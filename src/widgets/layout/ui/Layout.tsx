@@ -2,7 +2,7 @@ import { useRef, useCallback } from "react";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { Header } from "@/widgets/header";
 import { EnvPanel } from "./EnvPanel";
-import s from "@/pages/docs/ui/ApiDocsPage.module.css";
+import s from "@/shared/styles/apiDocs.module.css";
 import { type ReactNode } from "react";
 
 const SIDEBAR_INIT = 248;
