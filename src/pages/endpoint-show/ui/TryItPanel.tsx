@@ -1,18 +1,18 @@
-import { useState, useEffect, type FC } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import s from "./ApiExplorerPage.module.css";
+import { type FC, useEffect, useState } from "react";
+import type { Endpoint, HttpMethod } from "@/entities/endpoint";
+import type { Environment } from "@/entities/environment";
 import {
+	actionSetAccessToken,
+	actionUpdateEndpointParamValue,
+	selectAccessToken,
 	selectDoc,
 	selectSelectedEndpoint,
 	selectSelectedEnvironment,
-	selectAccessToken,
-	actionSetAccessToken,
-	actionUpdateEndpointParamValue,
 	useDocStore,
 } from "@/features/doc";
-import type { Endpoint, HttpMethod } from "@/entities/endpoint";
-import type { Environment } from "@/entities/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import s from "./ApiExplorerPage.module.css";
 
 function resolveEnvVars(value: string, env: Environment): string {
 	return value.replace(/\{\{(\w+)\}\}/g, (_, name) => {
@@ -27,14 +27,18 @@ const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
 	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
 	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
-  HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
+	HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
 function extractPathParams(path: string): string[] {
 	return [...path.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 }
 
-function buildUrl(ep: Endpoint, env: Environment, vals: Record<string, string> = {}) {
+function buildUrl(
+	ep: Endpoint,
+	env: Environment,
+	vals: Record<string, string> = {},
+) {
 	const path = ep.path.replace(/\{(\w+)\}/g, (_, name) => {
 		const raw = (vals[`path:${name}`] ?? "").trim();
 		const v = resolveEnvVars(raw, env);
@@ -42,7 +46,9 @@ function buildUrl(ep: Endpoint, env: Environment, vals: Record<string, string> =
 	});
 	const qp: Record<string, string> = {};
 	for (const p of ep.queryParams ?? []) {
-		const raw = (vals[`query:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")).trim();
+		const raw = (
+			vals[`query:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
+		).trim();
 		const v = resolveEnvVars(raw, env);
 		if (v) qp[p.name] = v;
 	}
@@ -50,7 +56,11 @@ function buildUrl(ep: Endpoint, env: Environment, vals: Record<string, string> =
 	return `${env.baseUrl}${env.prefix}${path}${qs ? "?" + qs : ""}`;
 }
 
-function buildBody(ep: Endpoint, env: Environment, vals: Record<string, string>): string | null {
+function buildBody(
+	ep: Endpoint,
+	env: Environment,
+	vals: Record<string, string>,
+): string | null {
 	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
 	const b: Record<string, string> = {};
 	for (const p of ep.bodyParams) {
@@ -137,12 +147,18 @@ export const TryItPanel = () => {
 			for (const p of endpoint.queryParams ?? []) {
 				if (p.value) continue;
 				const m = (vals[`query:${p.name}`] ?? "").trim().match(varRefRe);
-				if (m) tasks.push(updateEndpointParamValue(endpoint.id, "query", p.name, m[1]));
+				if (m)
+					tasks.push(
+						updateEndpointParamValue(endpoint.id, "query", p.name, m[1]),
+					);
 			}
 			for (const p of endpoint.bodyParams ?? []) {
 				if (p.value) continue;
 				const m = (vals[`body:${p.name}`] ?? "").trim().match(varRefRe);
-				if (m) tasks.push(updateEndpointParamValue(endpoint.id, "body", p.name, m[1]));
+				if (m)
+					tasks.push(
+						updateEndpointParamValue(endpoint.id, "body", p.name, m[1]),
+					);
 			}
 			await Promise.all(tasks);
 		};
@@ -246,7 +262,10 @@ export const TryItPanel = () => {
 						{authToken ? (
 							<button
 								className={s.authNoticeBtn}
-								onClick={() => { setAccessToken(null); setSettingToken(false); }}
+								onClick={() => {
+									setAccessToken(null);
+									setSettingToken(false);
+								}}
 							>
 								Clear
 							</button>
@@ -270,17 +289,25 @@ export const TryItPanel = () => {
 									value={tokenInput}
 									onChange={(e) => setTokenInput(e.target.value)}
 								/>
-								<button className={s.authNoticeBtn} type="submit">Save</button>
+								<button className={s.authNoticeBtn} type="submit">
+									Save
+								</button>
 								<button
 									className={s.authNoticeBtn}
 									type="button"
-									onClick={() => { setSettingToken(false); setTokenInput(""); }}
+									onClick={() => {
+										setSettingToken(false);
+										setTokenInput("");
+									}}
 								>
 									Cancel
 								</button>
 							</form>
 						) : (
-							<button className={s.authNoticeBtn} onClick={() => setSettingToken(true)}>
+							<button
+								className={s.authNoticeBtn}
+								onClick={() => setSettingToken(true)}
+							>
 								Set token
 							</button>
 						)}
@@ -323,9 +350,14 @@ export const TryItPanel = () => {
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
 									readOnly={!!p.value}
-									value={p.value ? `{{${p.value}}}` : (vals[`query:${p.name}`] ?? "")}
+									value={
+										p.value ? `{{${p.value}}}` : (vals[`query:${p.name}`] ?? "")
+									}
 									onChange={(e) =>
-										setVals((v) => ({ ...v, [`query:${p.name}`]: e.target.value }))
+										setVals((v) => ({
+											...v,
+											[`query:${p.name}`]: e.target.value,
+										}))
 									}
 								/>
 							</div>
@@ -347,9 +379,14 @@ export const TryItPanel = () => {
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
 									readOnly={!!p.value}
-									value={p.value ? `{{${p.value}}}` : (vals[`body:${p.name}`] ?? "")}
+									value={
+										p.value ? `{{${p.value}}}` : (vals[`body:${p.name}`] ?? "")
+									}
 									onChange={(e) =>
-										setVals((v) => ({ ...v, [`body:${p.name}`]: e.target.value }))
+										setVals((v) => ({
+											...v,
+											[`body:${p.name}`]: e.target.value,
+										}))
 									}
 								/>
 							</div>

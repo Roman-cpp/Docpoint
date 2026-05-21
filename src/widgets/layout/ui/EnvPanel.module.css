@@ -16,8 +16,11 @@
 	font-family: var(--font-sans);
 	color: var(--ink-mid);
 	box-shadow: var(--shadow-sm);
-	transition: background var(--t-fast), color var(--t-fast),
-		border-color var(--t-fast), box-shadow var(--t-fast);
+	transition:
+		background var(--t-fast),
+		color var(--t-fast),
+		border-color var(--t-fast),
+		box-shadow var(--t-fast);
 	user-select: none;
 }
 .toggleBtn:hover {
@@ -108,7 +111,9 @@
 	cursor: pointer;
 	color: var(--ink-low);
 	border-radius: var(--r-xs);
-	transition: background var(--t-fast), color var(--t-fast);
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
 }
 .panelClose:hover {
 	background: var(--cat-bg);

@@ -1,6 +1,6 @@
 import type { FC } from "react";
-import s from "./Header.module.css";
 import { Link } from "react-router";
+import s from "./Header.module.css";
 
 export type NavLink =
 	| "docs"
@@ -20,16 +20,15 @@ interface HeaderProps {
 }
 
 export const HeaderDocs: FC<HeaderProps> = ({ section, activeLink }) => {
-
 	return (
 		<nav className={s.nav}>
-      <Link to="/" style={{ textDecoration: "none" }}>
-        <div className={s.navBrand}>
-          Docpoint
-          <div className={s.navSep} />
-          <span className={s.navSection}>{section}</span>
-        </div>
-      </Link>
+			<Link to="/" style={{ textDecoration: "none" }}>
+				<div className={s.navBrand}>
+					Docpoint
+					<div className={s.navSep} />
+					<span className={s.navSection}>{section}</span>
+				</div>
+			</Link>
 
 			<div className={s.navLinks}>
 				{NAV_LINKS.map(({ id, label, href }) => (

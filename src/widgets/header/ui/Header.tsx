@@ -1,14 +1,14 @@
-import { useState, type FC } from "react";
-import s from "./Header.module.css";
+import { type FC, useState } from "react";
+import { Link } from "react-router";
 import {
 	actionSelectEnvironment,
 	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
-import { TokenModal } from "./TokenModal";
-import { getEnvDotColor } from "@/shared/lib/env-color";
-import { Link } from "react-router";
 import { selectEnvironments } from "@/features/doc/store/docStore.selectors";
+import { getEnvDotColor } from "@/shared/lib/env-color";
+import s from "./Header.module.css";
+import { TokenModal } from "./TokenModal";
 
 export type NavLink =
 	| "docs"
@@ -40,13 +40,13 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 
 	return (
 		<nav className={s.nav}>
-      <Link to="/" style={{ textDecoration: "none" }}>
-        <div className={s.navBrand}>
-          Docpoint
-          <div className={s.navSep} />
-          <span className={s.navSection}>{section}</span>
-        </div>
-      </Link>
+			<Link to="/" style={{ textDecoration: "none" }}>
+				<div className={s.navBrand}>
+					Docpoint
+					<div className={s.navSep} />
+					<span className={s.navSection}>{section}</span>
+				</div>
+			</Link>
 
 			<div className={s.navEnv}>
 				{environments.map((env) => (
@@ -86,11 +86,7 @@ export const Header: FC<HeaderProps> = ({ section, activeLink }) => {
 					Get token →
 				</button>
 			</div>
-			{tokenModal && (
-				<TokenModal
-					onClose={() => setModal(false)}
-				/>
-			)}
+			{tokenModal && <TokenModal onClose={() => setModal(false)} />}
 		</nav>
 	);
 };

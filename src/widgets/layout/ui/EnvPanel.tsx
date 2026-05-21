@@ -1,8 +1,7 @@
-import { useState, type FC } from "react";
-import s from "./EnvPanel.module.css";
-import { useDocStore } from "@/features/doc";
-import { selectSelectedEnvironment } from "@/features/doc";
+import { type FC, useState } from "react";
+import { selectSelectedEnvironment, useDocStore } from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import s from "./EnvPanel.module.css";
 
 export const EnvPanel: FC = () => {
 	const [open, setOpen] = useState(false);
@@ -20,7 +19,13 @@ export const EnvPanel: FC = () => {
 							{env.label}
 						</div>
 						<button className={s.panelClose} onClick={() => setOpen(false)}>
-							<svg viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+							<svg
+								viewBox="0 0 11 11"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+							>
 								<path d="M1.5 1.5l8 8M9.5 1.5l-8 8" />
 							</svg>
 						</button>
@@ -61,7 +66,14 @@ export const EnvPanel: FC = () => {
 				onClick={() => setOpen((v) => !v)}
 				title="Environment variables"
 			>
-				<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+				<svg
+					viewBox="0 0 14 14"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.4"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
 					<path d="M2 4l3 3-3 3M7 10h5" />
 				</svg>
 				{env ? (

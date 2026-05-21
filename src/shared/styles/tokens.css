@@ -6,7 +6,8 @@
 :root {
 	/* ─── Typography ─── */
 	--font-serif: "Lora", Georgia, "Times New Roman", serif;
-	--font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--font-sans:
+		"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--font-mono: "Menlo", "SF Mono", "Courier New", monospace;
 
 	/* Font size scale */
@@ -77,11 +78,11 @@
 	--delete-bg: var(--red-bg);
 
 	/* ─── Radius scale ─── */
-	--r-xs: 4px;   /* tiny chips, icon-btn corners */
-	--r-sm: 6px;   /* small controls, nav links */
-	--r-md: 7px;   /* inputs, buttons */
-	--r-lg: 10px;  /* cards, tables */
-	--r-xl: 12px;  /* surfaces */
+	--r-xs: 4px; /* tiny chips, icon-btn corners */
+	--r-sm: 6px; /* small controls, nav links */
+	--r-md: 7px; /* inputs, buttons */
+	--r-lg: 10px; /* cards, tables */
+	--r-xl: 12px; /* surfaces */
 	--r-2xl: 13px; /* modals */
 	--r-pill: 100px;
 	--r-circle: 50%;

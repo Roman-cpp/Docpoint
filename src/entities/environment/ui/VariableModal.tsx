@@ -1,7 +1,7 @@
-import { useState, type FC } from "react";
-import s from "./VariableModal.module.css";
+import { type FC, useState } from "react";
 import { createVariable, updateVariable } from "../api";
 import type { Variable } from "../model/type";
+import s from "./VariableModal.module.css";
 
 interface VariableModalProps {
 	environmentId: string;
@@ -27,10 +27,17 @@ export const VariableModal: FC<VariableModalProps> = ({
 		setLoading(true);
 		try {
 			if (isEdit && variable) {
-				await updateVariable({ id: variable.id, name: trimmedName, value: value.trim() });
+				await updateVariable({
+					id: variable.id,
+					name: trimmedName,
+					value: value.trim(),
+				});
 				onSave({ ...variable, name: trimmedName, value: value.trim() });
 			} else {
-				const created = await createVariable(environmentId, { name: trimmedName, value: value.trim() });
+				const created = await createVariable(environmentId, {
+					name: trimmedName,
+					value: value.trim(),
+				});
 				onSave(created);
 			}
 			onClose();
@@ -48,7 +55,9 @@ export const VariableModal: FC<VariableModalProps> = ({
 		<div className={s.modalOverlay} onClick={onClose}>
 			<div className={s.modalBox} onClick={(e) => e.stopPropagation()}>
 				<div className={s.modalHdr}>
-					<span className={s.modalTitle}>{isEdit ? "Edit variable" : "New variable"}</span>
+					<span className={s.modalTitle}>
+						{isEdit ? "Edit variable" : "New variable"}
+					</span>
 					<button className={s.modalX} onClick={onClose}>
 						<svg
 							viewBox="0 0 11 11"

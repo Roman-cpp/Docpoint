@@ -1,7 +1,7 @@
-import { useState, type FC } from "react";
-import s from "./VariableModal.module.css";
+import { type FC, useState } from "react";
 import { createEnvironment } from "../api";
 import type { Environment } from "../model/type";
+import s from "./VariableModal.module.css";
 
 interface EnvironmentModalProps {
 	docId: string;

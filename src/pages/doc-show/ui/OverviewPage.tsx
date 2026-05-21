@@ -1,12 +1,18 @@
+import {
+	selectDoc,
+	selectEntities,
+	selectGroups,
+	useDocStore,
+} from "@/features/doc";
 import s from "@/shared/styles/apiDocs.module.css";
-import { selectDoc, selectEntities, selectGroups, useDocStore } from "@/features/doc";
 
 export const OverviewPage = () => {
 	const doc = useDocStore(selectDoc);
 	const groups = useDocStore(selectGroups);
 	const entities = useDocStore(selectEntities);
 
-	const endpointCount = groups?.reduce((sum, g) => sum + g.endpoints.length, 0) ?? 0;
+	const endpointCount =
+		groups?.reduce((sum, g) => sum + g.endpoints.length, 0) ?? 0;
 	const resourceCount = entities.length;
 
 	if (!doc) return null;

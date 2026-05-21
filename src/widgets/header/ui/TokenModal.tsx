@@ -1,19 +1,19 @@
-import { useState, type FC } from "react";
+import { type FC, useState } from "react";
+import {
+	actionSetAccessToken,
+	selectAccessToken,
+	useDocStore,
+} from "@/features/doc";
 import s from "./TokenModal.module.css";
-import { useDocStore } from "@/features/doc";
-import { selectAccessToken } from "@/features/doc";
-import { actionSetAccessToken } from "@/features/doc";
 
 interface TokenModalProps {
 	onClose: () => void;
 }
 
-export const TokenModal: FC<TokenModalProps> = ({
-	onClose,
-}) => {
-  const accessToken = useDocStore(selectAccessToken);
+export const TokenModal: FC<TokenModalProps> = ({ onClose }) => {
+	const accessToken = useDocStore(selectAccessToken);
 
-  const setAccessToken = useDocStore(actionSetAccessToken);
+	const setAccessToken = useDocStore(actionSetAccessToken);
 
 	const [val, setVal] = useState(accessToken ?? "");
 	const save = () => {

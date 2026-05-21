@@ -1,9 +1,13 @@
-import { useState, useEffect, type FC } from "react";
-import s from "./ApiSchemasPage.module.css";
+import { type FC, useEffect, useState } from "react";
+import type { Entity } from "@/entities/entity";
+import {
+	selectEntities,
+	selectSelectedEntity,
+	useDocStore,
+} from "@/features/doc";
 import { Header } from "@/widgets/header";
 import type { SchemaTweaks } from "../model/types";
-import { selectEntities, selectSelectedEntity, useDocStore } from "@/features/doc";
-import type { Entity } from "@/entities/entity";
+import s from "./ApiSchemasPage.module.css";
 import { Sidebar } from "./Sidebar";
 
 /* ─── constants ─── */
@@ -213,8 +217,8 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 /* ─── EntityPage ─── */
 export const EntityPage: FC = () => {
 	// const [activeId, setActiveId] = useState("user");
-  const ENTITIES = useDocStore(selectEntities);
-  const activeEntity = useDocStore(selectSelectedEntity);
+	const ENTITIES = useDocStore(selectEntities);
+	const activeEntity = useDocStore(selectSelectedEntity);
 
 	const [search, setSearch] = useState("");
 	const [tweaksVisible, setTweaksVisible] = useState(false);
@@ -244,8 +248,6 @@ export const EntityPage: FC = () => {
 		return () => window.removeEventListener("message", handler);
 	}, []);
 
-
-
 	const filtered = search.trim()
 		? ENTITIES.filter(
 				(e) =>
@@ -261,18 +263,12 @@ export const EntityPage: FC = () => {
 			<Header section="API Schemas" activeLink="entity" />
 
 			<div className={s.shell}>
-				<Sidebar
-					filtered={filtered}
-					search={search}
-					onSearch={setSearch}
-				/>
+				<Sidebar filtered={filtered} search={search} onSearch={setSearch} />
 
 				{/* MAIN */}
 				<div className={s.main}>
 					{activeEntity ? (
-						<EntityDetail
-							entity={activeEntity}
-						/>
+						<EntityDetail entity={activeEntity} />
 					) : (
 						<div className={s.emptyState}>
 							<svg

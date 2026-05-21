@@ -1,12 +1,12 @@
 import { useState } from "react";
-import s from "@/shared/styles/apiDocs.module.css";
+import { Link, useMatch } from "react-router";
 import {
-  selectDoc,
+	selectDoc,
 	selectGroups,
 	selectSelectedEndpoint,
 	useDocStore,
 } from "@/features/doc";
-import { Link, useMatch } from "react-router";
+import s from "@/shared/styles/apiDocs.module.css";
 
 const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -17,7 +17,7 @@ const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 };
 
 export const Sidebar = () => {
-  const doc = useDocStore(selectDoc);
+	const doc = useDocStore(selectDoc);
 	const groups = useDocStore(selectGroups);
 	const selectedEndpoint = useDocStore(selectSelectedEndpoint);
 	const isOverviewActive = !!useMatch("/doc-show/:id");

@@ -139,7 +139,10 @@
 	left: 2px;
 	width: 1px;
 	background: var(--border);
-	transition: background 0.15s, width 0.15s, left 0.15s;
+	transition:
+		background 0.15s,
+		width 0.15s,
+		left 0.15s;
 }
 .resizeHandle:hover::after {
 	left: 1px;

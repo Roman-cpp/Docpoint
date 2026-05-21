@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import type { CreateGroupDTO } from "@/entities/group";
 import type { CreateEntityDTO } from "@/entities/entity";
 import type { CreateEnvironmentDTO } from "@/entities/environment";
+import type { CreateGroupDTO } from "@/entities/group";
 import {
 	deleteDoc as deleteDocApi,
 	importDoc as importDocApi,

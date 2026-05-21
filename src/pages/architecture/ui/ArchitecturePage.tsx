@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import content from "../../../../docs/architecture.md?raw";
 import { Header } from "@/widgets/header";
+import content from "../../../../docs/architecture.md?raw";
 import s from "./ArchitecturePage.module.css";
 
 export const ArchitecturePage = () => {

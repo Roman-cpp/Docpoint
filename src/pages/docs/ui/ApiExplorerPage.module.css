@@ -1136,7 +1136,10 @@
 }
 .acDeleteBtn {
 	opacity: 0;
-	transition: opacity 0.15s, background 0.13s, color 0.13s;
+	transition:
+		opacity 0.15s,
+		background 0.13s,
+		color 0.13s;
 	padding: 4px 6px;
 	border: none;
 	background: none;

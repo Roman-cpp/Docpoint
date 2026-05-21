@@ -95,7 +95,9 @@
 	color: var(--ink-mid);
 	border-radius: var(--r-sm);
 	cursor: pointer;
-	transition: background var(--t-base), color var(--t-base);
+	transition:
+		background var(--t-base),
+		color var(--t-base);
 	text-decoration: none;
 	background: none;
 	border: none;

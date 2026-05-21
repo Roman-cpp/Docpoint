@@ -1,16 +1,15 @@
-import { useRef, useCallback } from "react";
+import { type FC, useCallback, useRef } from "react";
 import { useParams } from "react-router";
-import { type FC } from "react";
-import { EndpointPage } from "./EndpointPage";
-import s from "@/shared/styles/apiDocs.module.css";
-import { Layout } from "@/widgets/layout";
-import { TryItPanel } from "./TryItPanel";
 import {
 	actionSelectEndpoint,
 	selectSelectedEndpoint,
 	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
+import s from "@/shared/styles/apiDocs.module.css";
+import { Layout } from "@/widgets/layout";
+import { EndpointPage } from "./EndpointPage";
+import { TryItPanel } from "./TryItPanel";
 
 const TRY_INIT = 348;
 const TRY_MIN = 240;
@@ -20,7 +19,7 @@ export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 
 	const endpoint = useDocStore(selectSelectedEndpoint);
-  const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
+	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
 	const selectEndpoint = useDocStore(actionSelectEndpoint);
 
 	const tryPanelRef = useRef<HTMLDivElement>(null);
@@ -31,7 +30,10 @@ export const EndpointShowPage: FC = () => {
 		const startW = tryPanelRef.current?.offsetWidth ?? TRY_INIT;
 
 		const onMove = (ev: MouseEvent) => {
-			const w = Math.max(TRY_MIN, Math.min(TRY_MAX, startW - (ev.clientX - startX)));
+			const w = Math.max(
+				TRY_MIN,
+				Math.min(TRY_MAX, startW - (ev.clientX - startX)),
+			);
 			if (tryPanelRef.current) tryPanelRef.current.style.width = `${w}px`;
 		};
 		const onUp = () => {
@@ -87,14 +89,14 @@ export const EndpointShowPage: FC = () => {
 
 			<div className={s.resizeHandle} onMouseDown={onTryPanelDrag} />
 
-      {selectedEnvConfig && (
-        <div
-				ref={tryPanelRef}
-				style={{ width: TRY_INIT, flexShrink: 0, overflow: "hidden" }}
-			>
-				<TryItPanel />
-			</div>
-      )}
+			{selectedEnvConfig && (
+				<div
+					ref={tryPanelRef}
+					style={{ width: TRY_INIT, flexShrink: 0, overflow: "hidden" }}
+				>
+					<TryItPanel />
+				</div>
+			)}
 		</Layout>
 	);
 };

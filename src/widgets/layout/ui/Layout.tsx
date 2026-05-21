@@ -1,9 +1,8 @@
-import { useRef, useCallback } from "react";
-import { Sidebar } from "@/widgets/layout/ui/Sidebar";
-import { Header } from "@/widgets/header";
-import { EnvPanel } from "./EnvPanel";
+import { type ReactNode, useCallback, useRef } from "react";
 import s from "@/shared/styles/apiDocs.module.css";
-import { type ReactNode } from "react";
+import { Header } from "@/widgets/header";
+import { Sidebar } from "@/widgets/layout/ui/Sidebar";
+import { EnvPanel } from "./EnvPanel";
 
 const SIDEBAR_INIT = 248;
 const SIDEBAR_MIN = 160;
@@ -22,7 +21,10 @@ export function Layout({ children }: LayoutProps) {
 		const startW = sidebarRef.current?.offsetWidth ?? SIDEBAR_INIT;
 
 		const onMove = (ev: MouseEvent) => {
-			const w = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startW + ev.clientX - startX));
+			const w = Math.max(
+				SIDEBAR_MIN,
+				Math.min(SIDEBAR_MAX, startW + ev.clientX - startX),
+			);
 			if (sidebarRef.current) sidebarRef.current.style.width = `${w}px`;
 		};
 		const onUp = () => {
@@ -52,9 +54,7 @@ export function Layout({ children }: LayoutProps) {
 
 				<div className={s.resizeHandle} onMouseDown={onSidebarDrag} />
 
-				<div className={s.main}>
-					{children}
-				</div>
+				<div className={s.main}>{children}</div>
 			</div>
 
 			<EnvPanel />

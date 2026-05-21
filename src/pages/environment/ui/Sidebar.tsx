@@ -1,17 +1,17 @@
-import { useState, type FC } from "react";
-import s from "./EnvironmentPage.module.css";
+import { type FC, useState } from "react";
+import { toast } from "@/core/toast";
+import { deleteEnvironment, EnvironmentModal } from "@/entities/environment";
 import {
+	actionAddEnvironment,
+	actionDeleteEnvironment,
+	actionSelectEnvironment,
 	selectDoc,
 	selectEnvironments,
 	selectSelectedEnvironment,
-	actionSelectEnvironment,
-	actionAddEnvironment,
-	actionDeleteEnvironment,
 	useDocStore,
 } from "@/features/doc";
-import { EnvironmentModal, deleteEnvironment } from "@/entities/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
-import { toast } from "@/core/toast";
+import s from "./EnvironmentPage.module.css";
 
 export const Sidebar: FC = () => {
 	const doc = useDocStore(selectDoc);
@@ -23,14 +23,22 @@ export const Sidebar: FC = () => {
 
 	const [modalOpen, setModalOpen] = useState(false);
 
-	const handleDelete = async (e: React.MouseEvent, id: string, label: string) => {
+	const handleDelete = async (
+		e: React.MouseEvent,
+		id: string,
+		label: string,
+	) => {
 		e.stopPropagation();
 		if (!confirm(`Delete environment "${label}"?`)) return;
 		try {
 			await deleteEnvironment(id);
 			removeEnvironment(id);
 		} catch {
-			toast({ variant: "error", title: "Error", description: "Failed to delete environment" });
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to delete environment",
+			});
 		}
 	};
 
@@ -43,7 +51,11 @@ export const Sidebar: FC = () => {
 					title="New environment"
 					onClick={() => {
 						if (!doc) {
-							toast({ variant: "error", title: "Error", description: "No document loaded" });
+							toast({
+								variant: "error",
+								title: "Error",
+								description: "No document loaded",
+							});
 							return;
 						}
 						setModalOpen(true);
@@ -72,7 +84,15 @@ export const Sidebar: FC = () => {
 							title="Delete environment"
 							onClick={(e) => handleDelete(e, env.id, env.label)}
 						>
-							<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" width="12" height="12">
+							<svg
+								viewBox="0 0 14 14"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+								width="12"
+								height="12"
+							>
 								<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
 							</svg>
 						</button>

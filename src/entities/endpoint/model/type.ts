@@ -6,7 +6,7 @@ interface Param {
 	required: boolean;
 	desc: string;
 	default?: string;
-  value: string | null;
+	value: string | null;
 }
 
 interface SchemaField {

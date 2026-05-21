@@ -1,30 +1,30 @@
+import { invoke } from "@tauri-apps/api/core";
 import {
-	useState,
-	useRef,
-	useEffect,
-	useContext,
 	createContext,
-	useCallback,
 	type FC,
 	type KeyboardEvent,
+	useCallback,
+	useContext,
+	useEffect,
+	useRef,
+	useState,
 } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import type { HttpMethod } from "@/entities/endpoint";
+import { HeaderDocs } from "@/widgets/header";
+import {
+	COLLECTIONS,
+	INITIAL_HISTORY,
+	METHOD_CFG,
+} from "../data/httpClientData";
 import type {
-	KVRow,
-	HistoryItem,
-	MockResponse,
-	Tweaks,
 	AuthType,
 	BodyType,
+	HistoryItem,
+	KVRow,
+	MockResponse,
+	Tweaks,
 } from "../model/types";
-import {
-	METHOD_CFG,
-	INITIAL_HISTORY,
-	COLLECTIONS,
-} from "../data/httpClientData";
 import s from "./HttpClientPage.module.css";
-import { HttpMethod } from "@/entities/endpoint";
-import { HeaderDocs } from "@/widgets/header";
 
 /* ─── HELPERS ────────────────────────────────── */
 function syntaxHighlight(obj: unknown): string {
@@ -34,7 +34,7 @@ function syntaxHighlight(obj: unknown): string {
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;")
 		.replace(
-			/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+			/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
 			(match) => {
 				let color = "#9A2800";
 				if (/^"/.test(match)) {
@@ -566,9 +566,18 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 				)}
 				{tab === "body" && viewMode === "html" && (
 					<iframe
-						srcDoc={typeof response.body === "string" ? response.body : JSON.stringify(response.body, null, 2)}
+						srcDoc={
+							typeof response.body === "string"
+								? response.body
+								: JSON.stringify(response.body, null, 2)
+						}
 						sandbox="allow-same-origin"
-						style={{ width: "100%", height: "100%", border: "none", background: "#fff" }}
+						style={{
+							width: "100%",
+							height: "100%",
+							border: "none",
+							background: "#fff",
+						}}
 					/>
 				)}
 				{tab === "headers" && (
@@ -856,8 +865,6 @@ const ResponsePanelDoc: FC = () => {
 	return <ResponsePanel response={response} loading={loading} />;
 };
 
-
-
 /* ─── PAGE ───────────────────────────────────── */
 const TWEAK_DEFAULTS: Tweaks = {
 	layout: "Horizontal",
@@ -895,46 +902,60 @@ export const HttpClientPage: FC = () => {
 	const [reqPanelWidth, setReqPanelWidth] = useState<number | null>(null);
 	const contentSplitRef = useRef<HTMLDivElement>(null);
 
-	const startResize = useCallback((e: React.MouseEvent) => {
-		e.preventDefault();
-		const startX = e.clientX;
-		const startWidth = sidebarWidth;
-		document.body.style.userSelect = "none";
-		document.body.style.cursor = "col-resize";
-		const onMove = (ev: MouseEvent) => {
-			setSidebarWidth(Math.max(160, Math.min(400, startWidth + ev.clientX - startX)));
-		};
-		const onUp = () => {
-			document.body.style.userSelect = "";
-			document.body.style.cursor = "";
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-		};
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
-	}, [sidebarWidth]);
+	const startResize = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			const startX = e.clientX;
+			const startWidth = sidebarWidth;
+			document.body.style.userSelect = "none";
+			document.body.style.cursor = "col-resize";
+			const onMove = (ev: MouseEvent) => {
+				setSidebarWidth(
+					Math.max(160, Math.min(400, startWidth + ev.clientX - startX)),
+				);
+			};
+			const onUp = () => {
+				document.body.style.userSelect = "";
+				document.body.style.cursor = "";
+				document.removeEventListener("mousemove", onMove);
+				document.removeEventListener("mouseup", onUp);
+			};
+			document.addEventListener("mousemove", onMove);
+			document.addEventListener("mouseup", onUp);
+		},
+		[sidebarWidth],
+	);
 
-	const startContentResize = useCallback((e: React.MouseEvent) => {
-		e.preventDefault();
-		const container = contentSplitRef.current;
-		if (!container) return;
-		const startX = e.clientX;
-		const startWidth = reqPanelWidth ?? container.getBoundingClientRect().width / 2;
-		document.body.style.userSelect = "none";
-		document.body.style.cursor = "col-resize";
-		const onMove = (ev: MouseEvent) => {
-			const containerWidth = container.getBoundingClientRect().width;
-			setReqPanelWidth(Math.max(200, Math.min(containerWidth - 200, startWidth + ev.clientX - startX)));
-		};
-		const onUp = () => {
-			document.body.style.userSelect = "";
-			document.body.style.cursor = "";
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-		};
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
-	}, [reqPanelWidth]);
+	const startContentResize = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			const container = contentSplitRef.current;
+			if (!container) return;
+			const startX = e.clientX;
+			const startWidth =
+				reqPanelWidth ?? container.getBoundingClientRect().width / 2;
+			document.body.style.userSelect = "none";
+			document.body.style.cursor = "col-resize";
+			const onMove = (ev: MouseEvent) => {
+				const containerWidth = container.getBoundingClientRect().width;
+				setReqPanelWidth(
+					Math.max(
+						200,
+						Math.min(containerWidth - 200, startWidth + ev.clientX - startX),
+					),
+				);
+			};
+			const onUp = () => {
+				document.body.style.userSelect = "";
+				document.body.style.cursor = "";
+				document.removeEventListener("mousemove", onMove);
+				document.removeEventListener("mouseup", onUp);
+			};
+			document.addEventListener("mousemove", onMove);
+			document.addEventListener("mouseup", onUp);
+		},
+		[reqPanelWidth],
+	);
 
 	const setTweak = <K extends keyof Tweaks>(key: K, val: Tweaks[K]) => {
 		setTweaksState((prev) => {
@@ -975,7 +996,8 @@ export const HttpClientPage: FC = () => {
 			if (p.enabled && p.key.trim()) qp.set(p.key.trim(), p.value);
 		}
 		const qs = qp.toString();
-		const fullUrl = url.trim() + (qs ? (url.includes("?") ? "&" : "?") + qs : "");
+		const fullUrl =
+			url.trim() + (qs ? (url.includes("?") ? "&" : "?") + qs : "");
 
 		const headersMap: Record<string, string> = {};
 		for (const h of headers) {
@@ -1018,22 +1040,34 @@ export const HttpClientPage: FC = () => {
 			});
 
 			let parsedBody: unknown;
-			try { parsedBody = JSON.parse(res.body); }
-			catch { parsedBody = res.body; }
+			try {
+				parsedBody = JSON.parse(res.body);
+			} catch {
+				parsedBody = res.body;
+			}
 
 			const sizeBytes = new TextEncoder().encode(res.body).length;
-			const sizeStr = sizeBytes < 1024
-				? `${sizeBytes} B`
-				: `${(sizeBytes / 1024).toFixed(1)} KB`;
+			const sizeStr =
+				sizeBytes < 1024
+					? `${sizeBytes} B`
+					: `${(sizeBytes / 1024).toFixed(1)} KB`;
 
-			setResponse({ status: res.status, time: res.duration_ms, size: sizeStr, body: parsedBody, headers: res.headers });
+			setResponse({
+				status: res.status,
+				time: res.duration_ms,
+				size: sizeStr,
+				body: parsedBody,
+				headers: res.headers,
+			});
 
 			const now = new Date();
 			const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
 			const pathName = url.split("/").filter(Boolean).pop() ?? url;
 			const newEntry: HistoryItem = {
 				id: Date.now(),
-				name: pathName.charAt(0).toUpperCase() + pathName.slice(1).replace(/\?.*/, ""),
+				name:
+					pathName.charAt(0).toUpperCase() +
+					pathName.slice(1).replace(/\?.*/, ""),
 				method,
 				url,
 				status: res.status,
@@ -1042,7 +1076,13 @@ export const HttpClientPage: FC = () => {
 			setHistory((h) => [newEntry, ...h.slice(0, 19)]);
 			setActiveHistId(newEntry.id);
 		} catch (e) {
-			setResponse({ status: 0, time: 0, size: "0 B", body: { error: String(e) }, headers: {} });
+			setResponse({
+				status: 0,
+				time: 0,
+				size: "0 B",
+				body: { error: String(e) },
+				headers: {},
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -1062,14 +1102,22 @@ export const HttpClientPage: FC = () => {
 	};
 
 	const ctxValue: HttpCtxT = {
-		params, setParams,
-		headers, setHeaders,
-		body, setBody,
-		bodyType, setBodyType,
-		authType, setAuthType,
-		authToken, setAuthToken,
-		authUser, setAuthUser,
-		authPass, setAuthPass,
+		params,
+		setParams,
+		headers,
+		setHeaders,
+		body,
+		setBody,
+		bodyType,
+		setBodyType,
+		authType,
+		setAuthType,
+		authToken,
+		setAuthToken,
+		authUser,
+		setAuthUser,
+		authPass,
+		setAuthPass,
 		loading,
 		response,
 		history,
@@ -1084,7 +1132,7 @@ export const HttpClientPage: FC = () => {
 				className={`${s.wrapper}${tweaks.theme === "Dark" ? " dark" : ""}`}
 				style={{ fontSize: fontSizePx }}
 			>
-        <HeaderDocs section="http-client" activeLink="http-client" />
+				<HeaderDocs section="http-client" activeLink="http-client" />
 
 				<div className={s.shell}>
 					<Sidebar
@@ -1096,127 +1144,157 @@ export const HttpClientPage: FC = () => {
 					/>
 					<div className={s.resizeHandle} onMouseDown={startResize} />
 					<div className={s.main}>
-					{/* URL BAR */}
-					<div className={s.urlBar}>
-						<div className={s.urlRow}>
-							<div className={s.methodSelectWrap}>
-								<select
-									className={s.methodSelect}
-									value={method}
-									onChange={(e) => setMethod(e.target.value as HttpMethod)}
+						{/* URL BAR */}
+						<div className={s.urlBar}>
+							<div className={s.urlRow}>
+								<div className={s.methodSelectWrap}>
+									<select
+										className={s.methodSelect}
+										value={method}
+										onChange={(e) => setMethod(e.target.value as HttpMethod)}
+										style={{
+											color: ms.color,
+											borderColor:
+												ms.bg === "var(--cat-bg)" ? "var(--border)" : ms.bg,
+										}}
+									>
+										{(Object.keys(METHOD_CFG) as HttpMethod[]).map((m) => (
+											<option key={m} value={m}>
+												{m}
+											</option>
+										))}
+									</select>
+									<svg
+										className={s.methodSelectChevron}
+										viewBox="0 0 10 10"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.5"
+										strokeLinecap="round"
+									>
+										<path d="M2 4l3 3 3-3" />
+									</svg>
+								</div>
+
+								<input
+									className={s.urlInput}
+									placeholder="https://api.example.com/v2/…"
+									value={url}
+									onChange={(e) => setUrl(e.target.value)}
+									onKeyDown={handleKey}
+								/>
+
+								<button
+									className={s.sendBtn}
+									onClick={send}
+									disabled={loading || !url.trim()}
+								>
+									{loading ? (
+										<>
+											<div className={s.btnSpinner} /> Sending
+										</>
+									) : (
+										<>
+											<svg
+												width="12"
+												height="12"
+												viewBox="0 0 12 12"
+												fill="currentColor"
+											>
+												<polygon points="2,1.5 11,6 2,10.5" />
+											</svg>
+											Send
+										</>
+									)}
+								</button>
+							</div>
+
+							<div className={s.urlMeta}>
+								<div className={s.urlMetaItem}>
+									<svg
+										viewBox="0 0 11 11"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.2"
+										strokeLinecap="round"
+									>
+										<circle cx="5.5" cy="5.5" r="4.5" />
+										<path d="M5.5 2v2M5.5 7v2M2 5.5h2M7 5.5h2" />
+									</svg>
+									<span className={s.ic} style={{ fontSize: 10 }}>
+										api.example.com
+									</span>
+								</div>
+								<div className={s.urlMetaItem}>
+									<svg
+										viewBox="0 0 11 11"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.2"
+										strokeLinecap="round"
+									>
+										<rect x="2" y="5" width="7" height="5" rx="1" />
+										<path d="M3.5 5V3.5a2 2 0 014 0V5" />
+									</svg>
+									HTTPS
+								</div>
+								<span
+									className={s.urlMetaTag}
 									style={{
-										color: ms.color,
-										borderColor:
-											ms.bg === "var(--cat-bg)" ? "var(--border)" : ms.bg,
+										background: "var(--green-bg)",
+										color: "var(--green)",
 									}}
 								>
-									{(Object.keys(METHOD_CFG) as HttpMethod[]).map((m) => (
-										<option key={m} value={m}>
-											{m}
-										</option>
-									))}
-								</select>
-								<svg
-									className={s.methodSelectChevron}
-									viewBox="0 0 10 10"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-									strokeLinecap="round"
+									v2
+								</span>
+								<div
+									style={{
+										marginLeft: "auto",
+										fontSize: 11,
+										color: "var(--ink-low)",
+									}}
 								>
-									<path d="M2 4l3 3 3-3" />
-								</svg>
+									⌘ + Enter to send
+								</div>
 							</div>
-
-							<input
-								className={s.urlInput}
-								placeholder="https://api.example.com/v2/…"
-								value={url}
-								onChange={(e) => setUrl(e.target.value)}
-								onKeyDown={handleKey}
-							/>
-
-							<button
-								className={s.sendBtn}
-								onClick={send}
-								disabled={loading || !url.trim()}
-							>
-								{loading ? (
-									<>
-										<div className={s.btnSpinner} /> Sending
-									</>
-								) : (
-									<>
-										<svg
-											width="12"
-											height="12"
-											viewBox="0 0 12 12"
-											fill="currentColor"
-										>
-											<polygon points="2,1.5 11,6 2,10.5" />
-										</svg>
-										Send
-									</>
-								)}
-							</button>
 						</div>
 
-						<div className={s.urlMeta}>
-							<div className={s.urlMetaItem}>
-								<svg
-									viewBox="0 0 11 11"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.2"
-									strokeLinecap="round"
-								>
-									<circle cx="5.5" cy="5.5" r="4.5" />
-									<path d="M5.5 2v2M5.5 7v2M2 5.5h2M7 5.5h2" />
-								</svg>
-								<span className={s.ic} style={{ fontSize: 10 }}>
-									api.example.com
-								</span>
-							</div>
-							<div className={s.urlMetaItem}>
-								<svg
-									viewBox="0 0 11 11"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.2"
-									strokeLinecap="round"
-								>
-									<rect x="2" y="5" width="7" height="5" rx="1" />
-									<path d="M3.5 5V3.5a2 2 0 014 0V5" />
-								</svg>
-								HTTPS
-							</div>
-							<span
-								className={s.urlMetaTag}
-								style={{ background: "var(--green-bg)", color: "var(--green)" }}
+						<div className={s.contentSplit} ref={contentSplitRef}>
+							<div
+								style={
+									reqPanelWidth != null
+										? {
+												width: reqPanelWidth,
+												flexShrink: 0,
+												display: "flex",
+												overflow: "hidden",
+												minWidth: 0,
+											}
+										: {
+												flex: 1,
+												display: "flex",
+												overflow: "hidden",
+												minWidth: 0,
+											}
+								}
 							>
-								v2
-							</span>
+								<RequestPanelDoc />
+							</div>
+							<div
+								className={s.contentResizeHandle}
+								onMouseDown={startContentResize}
+							/>
 							<div
 								style={{
-									marginLeft: "auto",
-									fontSize: 11,
-									color: "var(--ink-low)",
+									flex: 1,
+									display: "flex",
+									overflow: "hidden",
+									minWidth: 0,
 								}}
 							>
-								⌘ + Enter to send
+								<ResponsePanelDoc />
 							</div>
 						</div>
-					</div>
-
-					<div className={s.contentSplit} ref={contentSplitRef}>
-						<div style={reqPanelWidth != null ? { width: reqPanelWidth, flexShrink: 0, display: "flex", overflow: "hidden", minWidth: 0 } : { flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
-							<RequestPanelDoc />
-						</div>
-						<div className={s.contentResizeHandle} onMouseDown={startContentResize} />
-						<div style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
-							<ResponsePanelDoc />
-						</div>
-					</div>
 					</div>
 				</div>
 

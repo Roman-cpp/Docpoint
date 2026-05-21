@@ -1,4 +1,4 @@
-import { HttpMethod } from "@/entities/endpoint";
+import type { HttpMethod } from "@/entities/endpoint";
 
 export type AuthType = "None" | "Bearer Token" | "Basic Auth" | "API Key";
 export type BodyType = "json" | "form" | "raw" | "none";

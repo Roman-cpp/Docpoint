@@ -1,4 +1,4 @@
-import type { Endpoint, CreateEndpointDTO } from "@/entities/endpoint";
+import type { CreateEndpointDTO, Endpoint } from "@/entities/endpoint";
 
 export interface Group {
 	id: string;

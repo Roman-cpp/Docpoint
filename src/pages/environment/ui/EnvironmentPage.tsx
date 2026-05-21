@@ -1,36 +1,46 @@
-import { useState, useEffect, type FC } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import s from "./EnvironmentPage.module.css";
-import { Header } from "@/widgets/header";
+import { type FC, useEffect, useState } from "react";
+import { toast } from "@/core/toast";
+import type { Variable } from "@/entities/environment";
 import {
-	selectSelectedEnvironment,
-	actionUpdateEnvironment,
-	actionAddVariableToEnv,
-	actionUpdateVariableInEnv,
-	actionDeleteVariableFromEnv,
-	actionPatchEnvironmentAuth,
-	actionPatchEnvironmentAccessToken,
-	useDocStore,
-} from "@/features/doc";
-import {
-	VariableModal,
 	deleteVariable,
 	updateEnvironment,
+	VariableModal,
 } from "@/entities/environment";
-import type { Variable } from "@/entities/environment";
-import { updateEnvironmentAuth, setEnvironmentAccessToken } from "@/entities/environment-auth";
+import {
+	setEnvironmentAccessToken,
+	updateEnvironmentAuth,
+} from "@/entities/environment-auth";
+import {
+	actionAddVariableToEnv,
+	actionDeleteVariableFromEnv,
+	actionPatchEnvironmentAccessToken,
+	actionPatchEnvironmentAuth,
+	actionUpdateEnvironment,
+	actionUpdateVariableInEnv,
+	selectSelectedEnvironment,
+	useDocStore,
+} from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
-import { toast } from "@/core/toast";
+import { Header } from "@/widgets/header";
+import s from "./EnvironmentPage.module.css";
 import { Sidebar } from "./Sidebar";
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 function extractByPath(obj: unknown, path: string): string | null {
 	if (!path.trim()) return null;
-	const parts = path.split(".").map((p) => p.trim()).filter(Boolean);
+	const parts = path
+		.split(".")
+		.map((p) => p.trim())
+		.filter(Boolean);
 	let cur: unknown = obj;
 	for (const key of parts) {
-		if (cur && typeof cur === "object" && key in (cur as Record<string, unknown>)) {
+		if (
+			cur &&
+			typeof cur === "object" &&
+			key in (cur as Record<string, unknown>)
+		) {
 			cur = (cur as Record<string, unknown>)[key];
 		} else {
 			return null;
@@ -87,7 +97,11 @@ export const EnvironmentPage: FC = () => {
 			patchEnvironment({ id: selectedEnv.id, label, baseUrl, prefix });
 			toast({ variant: "success", title: "Saved" });
 		} catch {
-			toast({ variant: "error", title: "Error", description: "Failed to save environment" });
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to save environment",
+			});
 		} finally {
 			setSaving(false);
 		}
@@ -115,7 +129,11 @@ export const EnvironmentPage: FC = () => {
 			patchAuth(dto);
 			toast({ variant: "success", title: "Auth config saved" });
 		} catch {
-			toast({ variant: "error", title: "Error", description: "Failed to save auth config" });
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to save auth config",
+			});
 		} finally {
 			setSavingAuth(false);
 		}
@@ -127,7 +145,8 @@ export const EnvironmentPage: FC = () => {
 		try {
 			const headers: Record<string, string> = { Accept: "application/json" };
 			const trimmedBody = authBody.trim();
-			const sendBody = authMethod === "GET" || !trimmedBody ? null : trimmedBody;
+			const sendBody =
+				authMethod === "GET" || !trimmedBody ? null : trimmedBody;
 			if (sendBody !== null) headers["Content-Type"] = "application/json";
 
 			const res = await invoke<{
@@ -136,7 +155,12 @@ export const EnvironmentPage: FC = () => {
 				body: string;
 				duration_ms: number;
 			}>("send_request", {
-				payload: { method: authMethod, url: authUrl.trim(), headers, body: sendBody },
+				payload: {
+					method: authMethod,
+					url: authUrl.trim(),
+					headers,
+					body: sendBody,
+				},
 			});
 
 			if (res.status >= 300) {
@@ -190,7 +214,11 @@ export const EnvironmentPage: FC = () => {
 			await setEnvironmentAccessToken(selectedEnv.id, null);
 			patchToken(selectedEnv.id, null);
 		} catch {
-			toast({ variant: "error", title: "Error", description: "Failed to clear token" });
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to clear token",
+			});
 		}
 	};
 
@@ -199,7 +227,11 @@ export const EnvironmentPage: FC = () => {
 			await deleteVariable(variable.id);
 			removeVariable(variable.id);
 		} catch {
-			toast({ variant: "error", title: "Error", description: "Failed to delete variable" });
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to delete variable",
+			});
 		}
 	};
 
@@ -387,7 +419,10 @@ export const EnvironmentPage: FC = () => {
 												: "No token yet"}
 										</span>
 										{selectedEnv.auth.accessToken && (
-											<button className={s.authClearBtn} onClick={handleClearToken}>
+											<button
+												className={s.authClearBtn}
+												onClick={handleClearToken}
+											>
 												Clear
 											</button>
 										)}
@@ -401,7 +436,10 @@ export const EnvironmentPage: FC = () => {
 							<div className={s.section}>
 								<div className={s.sectionHdr}>
 									<span className={s.sectionTitle}>Variables</span>
-									<button className={s.addBtn} onClick={() => setModal("create")}>
+									<button
+										className={s.addBtn}
+										onClick={() => setModal("create")}
+									>
 										+ Add variable
 									</button>
 								</div>
@@ -409,7 +447,10 @@ export const EnvironmentPage: FC = () => {
 								{selectedEnv.value.length === 0 ? (
 									<div className={s.empty}>
 										No variables yet.{" "}
-										<button className={s.emptyLink} onClick={() => setModal("create")}>
+										<button
+											className={s.emptyLink}
+											onClick={() => setModal("create")}
+										>
 											Add one
 										</button>
 									</div>
@@ -432,7 +473,16 @@ export const EnvironmentPage: FC = () => {
 														title="Edit"
 														onClick={() => setModal(v)}
 													>
-														<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+														<svg
+															viewBox="0 0 14 14"
+															fill="none"
+															stroke="currentColor"
+															strokeWidth="1.5"
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															width="13"
+															height="13"
+														>
 															<path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" />
 														</svg>
 													</button>
@@ -441,7 +491,15 @@ export const EnvironmentPage: FC = () => {
 														title="Delete"
 														onClick={() => handleDelete(v)}
 													>
-														<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" width="13" height="13">
+														<svg
+															viewBox="0 0 14 14"
+															fill="none"
+															stroke="currentColor"
+															strokeWidth="1.5"
+															strokeLinecap="round"
+															width="13"
+															height="13"
+														>
 															<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
 														</svg>
 													</button>

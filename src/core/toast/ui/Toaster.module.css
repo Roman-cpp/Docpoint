@@ -62,14 +62,26 @@
 }
 
 /* variants — accent bar color */
-.success::before { background: var(--green); }
-.error::before   { background: var(--red); }
-.info::before    { background: var(--blue); }
+.success::before {
+	background: var(--green);
+}
+.error::before {
+	background: var(--red);
+}
+.info::before {
+	background: var(--blue);
+}
 
 /* variant icon colors */
-.success .icon { color: var(--green); }
-.error .icon   { color: var(--red); }
-.info .icon    { color: var(--blue); }
+.success .icon {
+	color: var(--green);
+}
+.error .icon {
+	color: var(--red);
+}
+.info .icon {
+	color: var(--blue);
+}
 
 .icon {
 	flex-shrink: 0;
@@ -128,7 +140,9 @@
 	background: var(--cat-bg);
 	color: var(--ink);
 	white-space: nowrap;
-	transition: background var(--t-fast), border-color var(--t-fast);
+	transition:
+		background var(--t-fast),
+		border-color var(--t-fast);
 }
 
 .actionBtn:hover {
@@ -148,7 +162,9 @@
 	align-items: center;
 	justify-content: center;
 	padding: 0;
-	transition: background var(--t-fast), color var(--t-fast);
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
 }
 
 .closeBtn:hover {
@@ -177,11 +193,21 @@
 }
 
 @keyframes toastOut {
-	from { opacity: 1; transform: translateX(0); }
-	to   { opacity: 0; transform: translateX(6px); }
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(6px);
+	}
 }
 
 @keyframes toastSwipeOut {
-	from { transform: translateX(var(--radix-toast-swipe-end-x)); }
-	to   { transform: translateX(calc(100% + 20px)); }
+	from {
+		transform: translateX(var(--radix-toast-swipe-end-x));
+	}
+	to {
+		transform: translateX(calc(100% + 20px));
+	}
 }

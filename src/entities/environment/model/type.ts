@@ -1,9 +1,9 @@
 import type { EnvironmentAuth } from "@/entities/environment-auth";
 
 export interface Variable {
-  id: string;
-  name: string;
-  value: string;
+	id: string;
+	name: string;
+	value: string;
 }
 
 export interface Environment {
@@ -11,23 +11,23 @@ export interface Environment {
 	env: string;
 	label: string;
 	baseUrl: string;
-  prefix: string;
-  value: Variable[];
-  auth: EnvironmentAuth;
+	prefix: string;
+	value: Variable[];
+	auth: EnvironmentAuth;
 }
 
 export type CreateEnvironmentDTO = Omit<Environment, "id" | "auth">;
 
 export type UpdateEnvironmentDTO = {
-  id: string;
-  label: string;
-  baseUrl: string;
-  prefix: string;
+	id: string;
+	label: string;
+	baseUrl: string;
+	prefix: string;
 };
 
 export type CreateVariableDTO = {
-  name: string;
-  value: string;
+	name: string;
+	value: string;
 };
 
 export type UpdateVariableDTO = Variable;

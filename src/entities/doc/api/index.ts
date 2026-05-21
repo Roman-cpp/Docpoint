@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Doc, CreateDocDTO } from "../model/type";
-import type { CreateGroupDTO } from "@/entities/group";
 import type { CreateEntityDTO } from "@/entities/entity";
 import type { CreateEnvironmentDTO } from "@/entities/environment";
+import type { CreateGroupDTO } from "@/entities/group";
+import type { CreateDocDTO, Doc } from "../model/type";
 
 export function readAllDocs(): Promise<Doc[]> {
 	return invoke("read_docs");

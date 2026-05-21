@@ -1,25 +1,36 @@
-import { createPortal } from "react-dom";
 import * as T from "@radix-ui/react-toast";
-import { useToastStore } from "../store/useToastStore";
+import { createPortal } from "react-dom";
 import type { ToastVariant } from "../store/useToastStore";
+import { useToastStore } from "../store/useToastStore";
 import s from "./Toaster.module.css";
 
 function ToastIcon({ variant }: { variant?: ToastVariant }) {
-	if (variant === "success") return (
-		<span className={s.icon}>
-			<svg viewBox="0 0 16 16"><polyline points="2.5 8.5 6 12 13.5 4" /></svg>
-		</span>
-	);
-	if (variant === "error") return (
-		<span className={s.icon}>
-			<svg viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12" /><line x1="12" y1="4" x2="4" y2="12" /></svg>
-		</span>
-	);
-	if (variant === "info") return (
-		<span className={s.icon}>
-			<svg viewBox="0 0 16 16"><line x1="8" y1="7" x2="8" y2="12" /><circle cx="8" cy="4.5" r="0.75" fill="currentColor" stroke="none" /></svg>
-		</span>
-	);
+	if (variant === "success")
+		return (
+			<span className={s.icon}>
+				<svg viewBox="0 0 16 16">
+					<polyline points="2.5 8.5 6 12 13.5 4" />
+				</svg>
+			</span>
+		);
+	if (variant === "error")
+		return (
+			<span className={s.icon}>
+				<svg viewBox="0 0 16 16">
+					<line x1="4" y1="4" x2="12" y2="12" />
+					<line x1="12" y1="4" x2="4" y2="12" />
+				</svg>
+			</span>
+		);
+	if (variant === "info")
+		return (
+			<span className={s.icon}>
+				<svg viewBox="0 0 16 16">
+					<line x1="8" y1="7" x2="8" y2="12" />
+					<circle cx="8" cy="4.5" r="0.75" fill="currentColor" stroke="none" />
+				</svg>
+			</span>
+		);
 	return null;
 }
 

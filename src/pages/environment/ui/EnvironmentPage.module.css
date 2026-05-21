@@ -57,7 +57,9 @@
 	font-size: 16px;
 	line-height: 1;
 	font-family: var(--font-sans);
-	transition: background 0.13s, color 0.13s;
+	transition:
+		background 0.13s,
+		color 0.13s;
 }
 
 .sidebarAdd:hover {
@@ -134,7 +136,10 @@
 	color: var(--ink-low);
 	flex-shrink: 0;
 	opacity: 0;
-	transition: opacity 0.13s, background 0.13s, color 0.13s;
+	transition:
+		opacity 0.13s,
+		background 0.13s,
+		color 0.13s;
 }
 
 .envItem:hover .envDeleteBtn {
@@ -205,7 +210,6 @@
 	border-radius: 4px;
 }
 
-
 /* ═══════════════ FIELDS CARD ═══════════════ */
 .fieldsCard {
 	background: var(--surface);
@@ -243,7 +247,9 @@
 	outline: none;
 	width: 100%;
 	min-width: 0;
-	transition: border-color 0.15s, background 0.15s;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
 }
 
 .fieldInput:hover {
@@ -459,7 +465,9 @@
 	border-radius: 6px;
 	cursor: pointer;
 	color: var(--ink-low);
-	transition: background 0.13s, color 0.13s;
+	transition:
+		background 0.13s,
+		color 0.13s;
 }
 
 .iconBtn:hover {
@@ -487,7 +495,9 @@
 	min-width: 0;
 	min-height: 80px;
 	resize: vertical;
-	transition: border-color 0.15s, background 0.15s;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
 }
 
 .authTextarea:hover {
@@ -553,7 +563,9 @@
 	border-radius: 7px;
 	cursor: pointer;
 	font-family: var(--font-sans);
-	transition: border-color 0.15s, color 0.15s;
+	transition:
+		border-color 0.15s,
+		color 0.15s;
 }
 
 .authClearBtn:hover {
