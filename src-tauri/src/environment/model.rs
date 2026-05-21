@@ -1,4 +1,3 @@
-use crate::environment_auth::model::EnvironmentAuth;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -10,7 +9,8 @@ pub struct Environment {
     pub base_url: String,
     pub prefix: String,
     pub value: Vec<EnvValue>,
-    pub auth: EnvironmentAuth,
+    #[serde(rename = "accessToken")]
+    pub access_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

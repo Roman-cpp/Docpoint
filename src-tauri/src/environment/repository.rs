@@ -1,5 +1,4 @@
 use super::model::{CreateEnvironment, CreateVariable, EnvValue, Environment, UpdateEnvironment, UpdateVariable};
-use crate::environment_auth::repository as auth_repo;
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
@@ -20,7 +19,7 @@ pub async fn read_configs(db: &SqlitePool, doc_id: &str) -> Result<Vec<Environme
                 .await
                 .map_err(|e| e.to_string())?;
 
-        let auth = auth_repo::ensure_row(db, &id).await?;
+        // let auth = auth_repo::ensure_row(db, &id).await?;
 
         environments.push(Environment {
             id,
@@ -36,7 +35,7 @@ pub async fn read_configs(db: &SqlitePool, doc_id: &str) -> Result<Vec<Environme
                     value: v.get("value"),
                 })
                 .collect(),
-            auth,
+            access_token: "".to_string(),
         });
     }
 
@@ -120,7 +119,7 @@ pub async fn create_environment(
         });
     }
 
-    let auth = auth_repo::ensure_row(db, &env_id).await?;
+    // let auth = auth_repo::ensure_row(db, &env_id).await?;
 
     Ok(Environment {
         id: env_id,
@@ -129,7 +128,7 @@ pub async fn create_environment(
         base_url: env.base_url.clone(),
         prefix: env.prefix.clone(),
         value: values,
-        auth,
+        access_token: "".to_string(),
     })
 }
 

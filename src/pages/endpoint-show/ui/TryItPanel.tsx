@@ -3,10 +3,10 @@ import { type FC, useEffect, useState } from "react";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import type { Environment } from "@/entities/environment";
 import {
-	actionSetAccessToken,
 	actionUpdateEndpointParamValue,
-	selectAccessToken,
+	actionUpdateEnvironmentToken,
 	selectDoc,
+	selectEnvironmentToken,
 	selectSelectedEndpoint,
 	selectSelectedEnvironment,
 	useDocStore,
@@ -64,7 +64,9 @@ function buildBody(
 	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
 	const b: Record<string, string> = {};
 	for (const p of ep.bodyParams) {
-		const raw = (vals[`body:${p.name}`] ?? p.value ?? "").trim();
+		const raw = (
+			vals[`body:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
+		).trim();
 		const v = resolveEnvVars(raw, env);
 		if (v) b[p.name] = v;
 	}
@@ -79,7 +81,7 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 		setTimeout(() => setDone(false), 1400);
 	};
 	return (
-		<button className={s.copyBtn} onClick={go}>
+		<button className={s.copyBtn} onClick={go} type="button">
 			<svg
 				viewBox="0 0 10 10"
 				fill="none"
@@ -112,8 +114,8 @@ export const TryItPanel = () => {
 	const endpoint = useDocStore(selectSelectedEndpoint);
 	const doc = useDocStore(selectDoc);
 	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
-	const authToken = useDocStore(selectAccessToken) ?? "";
-	const setAccessToken = useDocStore(actionSetAccessToken);
+	const authToken = useDocStore(selectEnvironmentToken) ?? "";
+	const setAccessToken = useDocStore(actionUpdateEnvironmentToken);
 	const updateEndpointParamValue = useDocStore(actionUpdateEndpointParamValue);
 
 	const [tokenInput, setTokenInput] = useState("");
@@ -261,6 +263,7 @@ export const TryItPanel = () => {
 						</span>
 						{authToken ? (
 							<button
+								type="button"
 								className={s.authNoticeBtn}
 								onClick={() => {
 									setAccessToken(null);
@@ -305,6 +308,7 @@ export const TryItPanel = () => {
 							</form>
 						) : (
 							<button
+								type="button"
 								className={s.authNoticeBtn}
 								onClick={() => setSettingToken(true)}
 							>
@@ -349,9 +353,8 @@ export const TryItPanel = () => {
 								<input
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
-									readOnly={!!p.value}
 									value={
-										p.value ? `{{${p.value}}}` : (vals[`query:${p.name}`] ?? "")
+										vals[`query:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
 									}
 									onChange={(e) =>
 										setVals((v) => ({
@@ -378,9 +381,8 @@ export const TryItPanel = () => {
 								<input
 									className={s.fieldInput}
 									placeholder={p.default ? `default: ${p.default}` : p.desc}
-									readOnly={!!p.value}
 									value={
-										p.value ? `{{${p.value}}}` : (vals[`body:${p.name}`] ?? "")
+										vals[`body:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
 									}
 									onChange={(e) =>
 										setVals((v) => ({
@@ -394,7 +396,12 @@ export const TryItPanel = () => {
 					</div>
 				)}
 
-				<button className={s.sendBtn} disabled={loading} onClick={send}>
+				<button
+					className={s.sendBtn}
+					disabled={loading}
+					onClick={send}
+					type="button"
+				>
 					{loading ? (
 						<>
 							<span className={s.spin} />

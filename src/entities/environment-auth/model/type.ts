@@ -5,7 +5,6 @@ export interface EnvironmentAuth {
 	method: string;
 	body: string;
 	tokenPath: string;
-	accessToken: string | null;
 }
 
 export type UpdateEnvironmentAuthDTO = {

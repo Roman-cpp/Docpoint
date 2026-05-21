@@ -16,12 +16,12 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/doc-show")).DocShowPage,
 				}),
 			},
-			{
-				path: "/architecture",
-				lazy: async () => ({
-					Component: (await import("@/pages/architecture")).ArchitecturePage,
-				}),
-			},
+			// {
+			// 	path: "/architecture",
+			// 	lazy: async () => ({
+			// 		Component: (await import("@/pages/architecture")).ArchitecturePage,
+			// 	}),
+			// },
 			{
 				path: "/entity",
 				lazy: async () => ({

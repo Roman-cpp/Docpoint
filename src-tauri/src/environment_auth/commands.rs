@@ -1,7 +1,15 @@
 use crate::state::AppState;
-use super::model::UpdateEnvironmentAuth;
+use super::model::{EnvironmentAuth, UpdateEnvironmentAuth};
 use super::repository;
 use tauri::State;
+
+#[tauri::command]
+pub async fn read_environment_auth(
+    state: State<'_, AppState>,
+    environment_id: String,
+) -> Result<EnvironmentAuth, String> {
+    repository::ensure_row(&state.db, &environment_id).await
+}
 
 #[tauri::command]
 pub async fn update_environment_auth(

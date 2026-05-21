@@ -6,35 +6,17 @@ mod group;
 mod entity;
 mod environment;
 mod environment_auth;
-
-#[tauri::command]
-async fn save_json_file(content: String, filename: String) -> Result<bool, String> {
-    let path = tokio::task::spawn_blocking(move || {
-        rfd::FileDialog::new()
-            .set_file_name(&filename)
-            .add_filter("JSON", &["json"])
-            .save_file()
-    })
-    .await
-    .map_err(|e| e.to_string())?;
-
-    match path {
-        Some(p) => {
-            std::fs::write(&p, content).map_err(|e| e.to_string())?;
-            Ok(true)
-        }
-        None => Ok(false),
-    }
-}
+mod usecase;
 
 use state::AppState;
 use http::send_request;
-use doc::{read_docs, read_doc, create_doc, delete_doc, import_doc};
+use usecase::{import_doc, save_json_file};
+use doc::{read_docs, read_doc, create_doc, delete_doc};
 use endpoint::update_param_value;
 use group::{read_groups, write_groups};
 use entity::{read_schemas, write_schemas};
 use environment::{read_environments, write_environments, create_environment, update_environment, delete_environment, create_variable, update_variable, delete_variable};
-use environment_auth::{update_environment_auth, set_environment_access_token};
+use environment_auth::{read_environment_auth, update_environment_auth, set_environment_access_token};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
 
@@ -83,6 +65,7 @@ pub fn run() {
             create_variable,
             update_variable,
             delete_variable,
+            read_environment_auth,
             update_environment_auth,
             set_environment_access_token,
         ])

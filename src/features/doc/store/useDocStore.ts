@@ -1,21 +1,22 @@
 import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import type { CreateDocDTO, Doc } from "@/entities/doc";
-import { importDoc, readDoc } from "@/entities/doc";
+import type { Doc } from "@/entities/doc";
+import { readDoc } from "@/entities/doc";
 import type { Endpoint } from "@/entities/endpoint";
 import { updateParamValue } from "@/entities/endpoint";
-import type { CreateEntityDTO, Entity } from "@/entities/entity";
+import type { Entity } from "@/entities/entity";
 import { readEntities } from "@/entities/entity";
 import type {
-	CreateEnvironmentDTO,
 	Environment,
 	UpdateEnvironmentDTO,
 	Variable,
 } from "@/entities/environment";
-import { readEnvironments } from "@/entities/environment";
-import type { UpdateEnvironmentAuthDTO } from "@/entities/environment-auth";
-import type { CreateGroupDTO, Group } from "@/entities/group";
+import {
+	readEnvironments,
+	updateEnvironmentToken as updateEnvironmentTokenApi,
+} from "@/entities/environment";
+import type { Group } from "@/entities/group";
 import { readGroups } from "@/entities/group";
 
 type DocState = {
@@ -30,34 +31,29 @@ type DocState = {
 	selectedEntity: Entity | null;
 };
 
-type ImportDocPayload = {
-	doc: CreateDocDTO;
-	groups: CreateGroupDTO[];
-	entities: CreateEntityDTO[];
-	environments: CreateEnvironmentDTO[];
-};
-
 type DocActions = {
+	fetchDoc: (id: string) => Promise<void>;
+
 	selectGroup: (groupId: string) => void;
 	selectEnvironment: (envId: string) => void;
 	selectEndpoint: (endpointId: string) => void;
 	selectEntity: (entityId: string) => void;
+
 	addEnvironment: (env: Environment) => void;
 	updateEnvironment: (dto: UpdateEnvironmentDTO) => void;
+	updateEnvironmentToken: (token: string | null) => Promise<void>;
 	deleteEnvironment: (id: string) => void;
-	addVariableToEnv: (environmentId: string, variable: Variable) => void;
-	updateVariableInEnv: (variable: Variable) => void;
-	deleteVariableFromEnv: (variableId: string) => void;
+
+	addVariableToEnvironment: (environmentId: string, variable: Variable) => void;
+	updateVariableInEnvironment: (variable: Variable) => void;
+	deleteVariableFromEnvironment: (variableId: string) => void;
+
 	updateEndpointParamValue: (
 		endpointId: string,
 		kind: "query" | "body",
 		name: string,
 		value: string,
 	) => Promise<void>;
-	patchEnvironmentAuth: (dto: UpdateEnvironmentAuthDTO) => void;
-	patchEnvironmentAccessToken: (id: string, token: string | null) => void;
-	importDoc: (payload: ImportDocPayload) => Promise<void>;
-	loadDoc: (id: string) => Promise<void>;
 };
 
 const initialState: DocState = {
@@ -146,7 +142,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 				state.selectedEnvironment?.id === id ? null : state.selectedEnvironment,
 		})),
 
-	addVariableToEnv: (environmentId, variable) =>
+	addVariableToEnvironment: (environmentId, variable) =>
 		set((state) => ({
 			environments: state.environments.map((env) =>
 				env.id === environmentId
@@ -162,7 +158,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 					: state.selectedEnvironment,
 		})),
 
-	updateVariableInEnv: (variable) =>
+	updateVariableInEnvironment: (variable) =>
 		set((state) => ({
 			environments: state.environments.map((env) => ({
 				...env,
@@ -178,7 +174,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 				: null,
 		})),
 
-	deleteVariableFromEnv: (variableId) =>
+	deleteVariableFromEnvironment: (variableId) =>
 		set((state) => ({
 			environments: state.environments.map((env) => ({
 				...env,
@@ -193,41 +189,23 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 					}
 				: null,
 		})),
+	updateEnvironmentToken: async (token) => {
+		const { environments, selectedEnvironment } = get();
 
-	patchEnvironmentAuth: (dto) =>
-		set((state) => {
-			const apply = (e: Environment): Environment =>
-				e.id === dto.environmentId
-					? {
-							...e,
-							auth: {
-								...e.auth,
-								url: dto.url,
-								method: dto.method,
-								body: dto.body,
-								tokenPath: dto.tokenPath,
-							},
-						}
-					: e;
-			return {
-				environments: state.environments.map(apply),
-				selectedEnvironment: state.selectedEnvironment
-					? apply(state.selectedEnvironment)
-					: state.selectedEnvironment,
-			};
-		}),
+		if (!selectedEnvironment) return;
+		await updateEnvironmentTokenApi(selectedEnvironment.id, token);
 
-	patchEnvironmentAccessToken: (id, token) =>
-		set((state) => {
+		set(() => {
 			const apply = (e: Environment): Environment =>
-				e.id === id ? { ...e, auth: { ...e.auth, accessToken: token } } : e;
+				e.id === selectedEnvironment.id ? { ...e, accessToken: token } : e;
 			return {
-				environments: state.environments.map(apply),
-				selectedEnvironment: state.selectedEnvironment
-					? apply(state.selectedEnvironment)
-					: state.selectedEnvironment,
+				environments: environments.map(apply),
+				selectedEnvironment: selectedEnvironment
+					? apply(selectedEnvironment)
+					: selectedEnvironment,
 			};
-		}),
+		});
+	},
 
 	updateEndpointParamValue: async (endpointId, kind, name, value) => {
 		await updateParamValue(endpointId, kind, name, value);
@@ -254,25 +232,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 		});
 	},
 
-	importDoc: async ({ doc, groups, entities, environments }) => {
-		try {
-			const id = await importDoc({ doc, groups, entities, environments });
-			const [savedGroups, savedEntities, savedEnvironments] = await Promise.all(
-				[readGroups(id), readEntities(id), readEnvironments(id)],
-			);
-			set({
-				doc: { ...doc, id },
-				groups: savedGroups,
-				entities: savedEntities,
-				environments: savedEnvironments,
-			});
-		} catch (e) {
-			console.error("[DocStore] importDoc failed:", e);
-			throw e;
-		}
-	},
-
-	loadDoc: async (id) => {
+	fetchDoc: async (id) => {
 		try {
 			const [doc, groups, entities, environments] = await Promise.all([
 				readDoc(id),
@@ -282,7 +242,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 			]);
 			set({ doc, groups, entities, environments });
 		} catch (e) {
-			console.error("[DocStore] loadDoc failed:", e);
+			console.error("[DocStore] fetchDoc failed:", e);
 			throw e;
 		}
 	},

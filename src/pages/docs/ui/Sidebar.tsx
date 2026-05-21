@@ -5,12 +5,10 @@ import { readDoc, useDocsStore } from "@/entities/doc";
 import { readEntities } from "@/entities/entity";
 import { readEnvironments } from "@/entities/environment";
 import { readGroups } from "@/entities/group";
-import { actionImportDoc, useDocStore } from "@/features/doc";
 import s from "./ApiExplorerPage.module.css";
 
 export const Sidebar = () => {
-	const { docs } = useDocsStore();
-	const importDoca = useDocStore(actionImportDoc);
+	const { docs, importDoc } = useDocsStore();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [importing, setImporting] = useState(false);
 
@@ -31,7 +29,7 @@ export const Sidebar = () => {
 					"Неверный формат: ожидаются поля doc, groups, entities, environments",
 				);
 			}
-			await importDoca({
+			await importDoc({
 				doc: json.doc,
 				groups: json.groups,
 				entities: json.entities,
@@ -77,11 +75,12 @@ export const Sidebar = () => {
 				{docs.map((a) => {
 					return (
 						<div key={a.id} className={s.sbApiRow}>
-							<button className={`${s.sbApiBtn}`}>
+							<button className={`${s.sbApiBtn}`} type="button">
 								<span className={s.sbApiName}>{a.name}</span>
 								<div className={s.sbApiDot} />
 							</button>
 							<button
+								type="button"
 								className={s.sbApiExportBtn}
 								title="Скачать как JSON"
 								onClick={() => handleExport(a.id, a.name)}
@@ -114,6 +113,7 @@ export const Sidebar = () => {
 					onChange={handleFileChange}
 				/>
 				<button
+					type="button"
 					className={s.sbImportBtn}
 					onClick={() => fileInputRef.current?.click()}
 					disabled={importing}

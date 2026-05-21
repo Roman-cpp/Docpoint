@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from "react";
+import { type FC, useState } from "react";
 import type { Entity } from "@/entities/entity";
 import {
 	selectEntities,
@@ -6,16 +6,9 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import { Header } from "@/widgets/header";
-import type { SchemaTweaks } from "../model/types";
 import s from "./ApiSchemasPage.module.css";
 import { Sidebar } from "./Sidebar";
 
-/* ─── constants ─── */
-const TWEAK_DEFAULTS: SchemaTweaks = {
-	showNotes: true,
-	compactJson: false,
-	fieldDensity: "Default",
-};
 
 const TYPE_CLASS: Record<string, string> = {
 	string: s.typeString,
@@ -26,14 +19,6 @@ const TYPE_CLASS: Record<string, string> = {
 	uuid: s.typeUuid,
 	datetime: s.typeDatetime,
 	enum: s.typeEnum,
-};
-
-const METHOD_CFG: Record<string, { color: string; bg: string }> = {
-	GET: { color: "var(--get)", bg: "var(--get-bg)" },
-	POST: { color: "var(--post)", bg: "var(--post-bg)" },
-	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
-	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
-	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
 /* ─── EntityDetail ─── */
@@ -143,110 +128,12 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 	);
 };
 
-/* ─── TweaksPanel ─── */
-interface TweaksPanelProps {
-	visible: boolean;
-	onClose: () => void;
-	tweaks: SchemaTweaks;
-	setTweak: <K extends keyof SchemaTweaks>(
-		key: K,
-		val: SchemaTweaks[K],
-	) => void;
-}
-
-const TweaksPanel: FC<TweaksPanelProps> = ({
-	visible,
-	onClose,
-	tweaks,
-	setTweak,
-}) => (
-	<div
-		className={`${s.tweaksPanel}${visible ? " " + s.tweaksPanelVisible : ""}`}
-	>
-		<div className={s.tweaksHdr}>
-			<span className={s.tweaksTitle}>Tweaks</span>
-			<button className={s.tweaksClose} onClick={onClose}>
-				<svg
-					viewBox="0 0 11 11"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="1.5"
-					strokeLinecap="round"
-				>
-					<path d="M1.5 1.5l8 8M9.5 1.5l-8 8" />
-				</svg>
-			</button>
-		</div>
-		<div className={s.tweaksBody}>
-			<div className={s.tweakRow}>
-				<div className={s.tweakToggleRow}>
-					<span className={s.tweakToggleLbl}>Show field notes</span>
-					<button
-						className={`${s.toggleSw}${tweaks.showNotes ? " " + s.toggleSwOn : ""}`}
-						onClick={() => setTweak("showNotes", !tweaks.showNotes)}
-					/>
-				</div>
-			</div>
-			<div className={s.tweakRow}>
-				<div className={s.tweakToggleRow}>
-					<span className={s.tweakToggleLbl}>Compact JSON example</span>
-					<button
-						className={`${s.toggleSw}${tweaks.compactJson ? " " + s.toggleSwOn : ""}`}
-						onClick={() => setTweak("compactJson", !tweaks.compactJson)}
-					/>
-				</div>
-			</div>
-			<div className={s.tweakRow}>
-				<div className={s.tweakLbl}>Field row density</div>
-				<div className={s.tweakOpts}>
-					{(["Compact", "Default", "Spacious"] as const).map((o) => (
-						<button
-							key={o}
-							className={`${s.tweakOpt}${tweaks.fieldDensity === o ? " " + s.tweakOptActive : ""}`}
-							onClick={() => setTweak("fieldDensity", o)}
-						>
-							{o}
-						</button>
-					))}
-				</div>
-			</div>
-		</div>
-	</div>
-);
-
 /* ─── EntityPage ─── */
 export const EntityPage: FC = () => {
-	// const [activeId, setActiveId] = useState("user");
 	const ENTITIES = useDocStore(selectEntities);
 	const activeEntity = useDocStore(selectSelectedEntity);
 
 	const [search, setSearch] = useState("");
-	const [tweaksVisible, setTweaksVisible] = useState(false);
-	const [tweaks, setTweaksState] = useState<SchemaTweaks>(TWEAK_DEFAULTS);
-
-	const setTweak = <K extends keyof SchemaTweaks>(
-		key: K,
-		val: SchemaTweaks[K],
-	) => {
-		setTweaksState((p) => {
-			const next = { ...p, [key]: val };
-			window.parent?.postMessage(
-				{ type: "__edit_mode_set_keys", edits: next },
-				"*",
-			);
-			return next;
-		});
-	};
-
-	useEffect(() => {
-		const handler = (e: MessageEvent) => {
-			if (e.data?.type === "__activate_edit_mode") setTweaksVisible(true);
-			if (e.data?.type === "__deactivate_edit_mode") setTweaksVisible(false);
-		};
-		window.addEventListener("message", handler);
-		window.parent?.postMessage({ type: "__edit_mode_available" }, "*");
-		return () => window.removeEventListener("message", handler);
-	}, []);
 
 	const filtered = search.trim()
 		? ENTITIES.filter(
@@ -291,15 +178,6 @@ export const EntityPage: FC = () => {
 				</div>
 			</div>
 
-			<TweaksPanel
-				visible={tweaksVisible}
-				onClose={() => {
-					setTweaksVisible(false);
-					window.parent?.postMessage({ type: "__edit_mode_dismissed" }, "*");
-				}}
-				tweaks={tweaks}
-				setTweak={setTweak}
-			/>
 		</div>
 	);
 };

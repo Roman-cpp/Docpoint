@@ -1,2 +1,6 @@
-export { setEnvironmentAccessToken, updateEnvironmentAuth } from "./api";
+export {
+	readEnvironmentAuth,
+	setEnvironmentAccessToken,
+	updateEnvironmentAuth,
+} from "./api";
 export type { EnvironmentAuth, UpdateEnvironmentAuthDTO } from "./model/type";

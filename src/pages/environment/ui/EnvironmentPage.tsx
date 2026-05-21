@@ -8,16 +8,16 @@ import {
 	VariableModal,
 } from "@/entities/environment";
 import {
+	readEnvironmentAuth,
 	setEnvironmentAccessToken,
 	updateEnvironmentAuth,
 } from "@/entities/environment-auth";
 import {
-	actionAddVariableToEnv,
-	actionDeleteVariableFromEnv,
-	actionPatchEnvironmentAccessToken,
-	actionPatchEnvironmentAuth,
+	actionaddVariableToEnvironment,
+	actiondeleteVariableFromEnvironment,
 	actionUpdateEnvironment,
-	actionUpdateVariableInEnv,
+	actionUpdateEnvironmentToken,
+	actionupdateVariableInEnvironment,
 	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
@@ -52,11 +52,10 @@ function extractByPath(obj: unknown, path: string): string | null {
 export const EnvironmentPage: FC = () => {
 	const selectedEnv = useDocStore(selectSelectedEnvironment);
 	const patchEnvironment = useDocStore(actionUpdateEnvironment);
-	const addVariable = useDocStore(actionAddVariableToEnv);
-	const updateVariable = useDocStore(actionUpdateVariableInEnv);
-	const removeVariable = useDocStore(actionDeleteVariableFromEnv);
-	const patchAuth = useDocStore(actionPatchEnvironmentAuth);
-	const patchToken = useDocStore(actionPatchEnvironmentAccessToken);
+	const addVariable = useDocStore(actionaddVariableToEnvironment);
+	const updateVariable = useDocStore(actionupdateVariableInEnvironment);
+	const removeVariable = useDocStore(actiondeleteVariableFromEnvironment);
+	const patchToken = useDocStore(actionUpdateEnvironmentToken);
 
 	const [label, setLabel] = useState("");
 	const [baseUrl, setBaseUrl] = useState("");
@@ -68,19 +67,39 @@ export const EnvironmentPage: FC = () => {
 	const [authMethod, setAuthMethod] = useState<string>("POST");
 	const [authBody, setAuthBody] = useState("");
 	const [authTokenPath, setAuthTokenPath] = useState("");
+	const [loadedAuth, setLoadedAuth] = useState<{
+		url: string;
+		method: string;
+		body: string;
+		tokenPath: string;
+	} | null>(null);
 	const [savingAuth, setSavingAuth] = useState(false);
 	const [fetchingToken, setFetchingToken] = useState(false);
 
 	useEffect(() => {
-		if (selectedEnv) {
-			setLabel(selectedEnv.label);
-			setBaseUrl(selectedEnv.baseUrl);
-			setPrefix(selectedEnv.prefix);
-			setAuthUrl(selectedEnv.auth.url);
-			setAuthMethod(selectedEnv.auth.method || "POST");
-			setAuthBody(selectedEnv.auth.body);
-			setAuthTokenPath(selectedEnv.auth.tokenPath);
-		}
+		if (!selectedEnv) return;
+		setLabel(selectedEnv.label);
+		setBaseUrl(selectedEnv.baseUrl);
+		setPrefix(selectedEnv.prefix);
+
+		let cancelled = false;
+		readEnvironmentAuth(selectedEnv.id).then((auth) => {
+			if (cancelled) return;
+			const method = auth.method || "POST";
+			setAuthUrl(auth.url);
+			setAuthMethod(method);
+			setAuthBody(auth.body);
+			setAuthTokenPath(auth.tokenPath);
+			setLoadedAuth({
+				url: auth.url,
+				method,
+				body: auth.body,
+				tokenPath: auth.tokenPath,
+			});
+		});
+		return () => {
+			cancelled = true;
+		};
 	}, [selectedEnv?.id]);
 
 	const isDirty =
@@ -108,11 +127,11 @@ export const EnvironmentPage: FC = () => {
 	};
 
 	const isAuthDirty =
-		selectedEnv !== null &&
-		(authUrl !== selectedEnv.auth.url ||
-			authMethod !== (selectedEnv.auth.method || "POST") ||
-			authBody !== selectedEnv.auth.body ||
-			authTokenPath !== selectedEnv.auth.tokenPath);
+		loadedAuth !== null &&
+		(authUrl !== loadedAuth.url ||
+			authMethod !== loadedAuth.method ||
+			authBody !== loadedAuth.body ||
+			authTokenPath !== loadedAuth.tokenPath);
 
 	const handleSaveAuth = async () => {
 		if (!selectedEnv) return;
@@ -126,7 +145,13 @@ export const EnvironmentPage: FC = () => {
 				tokenPath: authTokenPath.trim(),
 			};
 			await updateEnvironmentAuth(dto);
-			patchAuth(dto);
+			patchToken(dto.tokenPath);
+			setLoadedAuth({
+				url: dto.url,
+				method: dto.method,
+				body: dto.body,
+				tokenPath: dto.tokenPath,
+			});
 			toast({ variant: "success", title: "Auth config saved" });
 		} catch {
 			toast({
@@ -195,7 +220,7 @@ export const EnvironmentPage: FC = () => {
 			}
 
 			await setEnvironmentAccessToken(selectedEnv.id, token);
-			patchToken(selectedEnv.id, token);
+			patchToken(token);
 			toast({ variant: "success", title: "Token fetched" });
 		} catch (e) {
 			toast({
@@ -212,7 +237,7 @@ export const EnvironmentPage: FC = () => {
 		if (!selectedEnv) return;
 		try {
 			await setEnvironmentAccessToken(selectedEnv.id, null);
-			patchToken(selectedEnv.id, null);
+			patchToken(null);
 		} catch {
 			toast({
 				variant: "error",
@@ -293,6 +318,7 @@ export const EnvironmentPage: FC = () => {
 								{isDirty && (
 									<div className={s.saveBar}>
 										<button
+											type="button"
 											className={s.saveBtn}
 											onClick={handleSave}
 											disabled={saving}
@@ -300,6 +326,7 @@ export const EnvironmentPage: FC = () => {
 											{saving ? "Saving…" : "Save changes"}
 										</button>
 										<button
+											type="button"
 											className={s.cancelBtn}
 											onClick={() => {
 												setLabel(selectedEnv.label);
@@ -370,6 +397,7 @@ export const EnvironmentPage: FC = () => {
 									{isAuthDirty && (
 										<div className={s.saveBar}>
 											<button
+												type="button"
 												className={s.saveBtn}
 												onClick={handleSaveAuth}
 												disabled={savingAuth}
@@ -377,12 +405,14 @@ export const EnvironmentPage: FC = () => {
 												{savingAuth ? "Saving…" : "Save auth config"}
 											</button>
 											<button
+												type="button"
 												className={s.cancelBtn}
 												onClick={() => {
-													setAuthUrl(selectedEnv.auth.url);
-													setAuthMethod(selectedEnv.auth.method || "POST");
-													setAuthBody(selectedEnv.auth.body);
-													setAuthTokenPath(selectedEnv.auth.tokenPath);
+													if (!loadedAuth) return;
+													setAuthUrl(loadedAuth.url);
+													setAuthMethod(loadedAuth.method);
+													setAuthBody(loadedAuth.body);
+													setAuthTokenPath(loadedAuth.tokenPath);
 												}}
 											>
 												Cancel
@@ -392,6 +422,7 @@ export const EnvironmentPage: FC = () => {
 
 									<div className={s.authActions}>
 										<button
+											type="button"
 											className={s.authActionBtn}
 											onClick={handleFetchToken}
 											disabled={
@@ -411,15 +442,16 @@ export const EnvironmentPage: FC = () => {
 											{fetchingToken ? "Fetching…" : "Fetch token"}
 										</button>
 										<span
-											className={`${s.tokenStatus} ${selectedEnv.auth.accessToken ? s.tokenStatusOk : ""}`}
-											title={selectedEnv.auth.accessToken ?? ""}
+											className={`${s.tokenStatus} ${selectedEnv.accessToken ? s.tokenStatusOk : ""}`}
+											title={selectedEnv.accessToken ?? ""}
 										>
-											{selectedEnv.auth.accessToken
-												? `Token: ${selectedEnv.auth.accessToken.slice(0, 24)}${selectedEnv.auth.accessToken.length > 24 ? "…" : ""}`
+											{selectedEnv.accessToken
+												? `Token: ${selectedEnv.accessToken.slice(0, 24)}${selectedEnv.accessToken.length > 24 ? "…" : ""}`
 												: "No token yet"}
 										</span>
-										{selectedEnv.auth.accessToken && (
+										{selectedEnv.accessToken && (
 											<button
+												type="button"
 												className={s.authClearBtn}
 												onClick={handleClearToken}
 											>
@@ -437,6 +469,7 @@ export const EnvironmentPage: FC = () => {
 								<div className={s.sectionHdr}>
 									<span className={s.sectionTitle}>Variables</span>
 									<button
+										type="button"
 										className={s.addBtn}
 										onClick={() => setModal("create")}
 									>
@@ -448,6 +481,7 @@ export const EnvironmentPage: FC = () => {
 									<div className={s.empty}>
 										No variables yet.{" "}
 										<button
+											type="button"
 											className={s.emptyLink}
 											onClick={() => setModal("create")}
 										>
@@ -469,6 +503,7 @@ export const EnvironmentPage: FC = () => {
 												</code>
 												<div className={s.rowActions}>
 													<button
+														type="button"
 														className={s.iconBtn}
 														title="Edit"
 														onClick={() => setModal(v)}
@@ -487,6 +522,7 @@ export const EnvironmentPage: FC = () => {
 														</svg>
 													</button>
 													<button
+														type="button"
 														className={`${s.iconBtn} ${s.iconBtnDanger}`}
 														title="Delete"
 														onClick={() => handleDelete(v)}

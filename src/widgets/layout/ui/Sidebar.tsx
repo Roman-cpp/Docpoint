@@ -87,7 +87,12 @@ export const Sidebar = () => {
 				</div>
 
 				{groups.map((group) => {
-					const isOpen = !collapsed[group.id];
+					const q = search.trim().toLowerCase();
+					const endpoints = q
+						? group.endpoints.filter((ep) => ep.path.toLowerCase().includes(q))
+						: group.endpoints;
+					if (q && endpoints.length === 0) return null;
+					const isOpen = q ? true : !collapsed[group.id];
 					return (
 						<div className={s.sidebarGroup} key={group.id}>
 							<div
@@ -113,7 +118,7 @@ export const Sidebar = () => {
 							</div>
 							{isOpen && (
 								<div className={s.sidebarItems}>
-									{group.endpoints.map((ep) => {
+									{endpoints.map((ep) => {
 										const ms = METHOD_STYLES[ep.method];
 										return (
 											<Link

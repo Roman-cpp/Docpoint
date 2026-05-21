@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { useParams } from "react-router";
-import { actionLoadDoc } from "@/features/doc/store/docStore.actions";
+import { actionfetchDoc } from "@/features/doc/store/docStore.actions";
 import { useDocStore } from "@/features/doc/store/useDocStore";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Layout } from "@/widgets/layout/ui/Layout";
@@ -10,11 +10,11 @@ import { OverviewPage } from "./OverviewPage";
 export const DocShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 
-	const loadDoc = useDocStore(actionLoadDoc);
+	const fetchDoc = useDocStore(actionfetchDoc);
 
 	if (!id) return;
 
-	loadDoc(id);
+	fetchDoc(id);
 
 	return (
 		<Layout>

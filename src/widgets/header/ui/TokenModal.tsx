@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import {
-	actionSetAccessToken,
-	selectAccessToken,
+	actionUpdateEnvironmentToken,
+	selectEnvironmentToken,
 	useDocStore,
 } from "@/features/doc";
 import s from "./TokenModal.module.css";
@@ -11,9 +11,9 @@ interface TokenModalProps {
 }
 
 export const TokenModal: FC<TokenModalProps> = ({ onClose }) => {
-	const accessToken = useDocStore(selectAccessToken);
+	const accessToken = useDocStore(selectEnvironmentToken);
 
-	const setAccessToken = useDocStore(actionSetAccessToken);
+	const setAccessToken = useDocStore(actionUpdateEnvironmentToken);
 
 	const [val, setVal] = useState(accessToken ?? "");
 	const save = () => {
@@ -25,7 +25,7 @@ export const TokenModal: FC<TokenModalProps> = ({ onClose }) => {
 			<div className={s.modalBox} onClick={(e) => e.stopPropagation()}>
 				<div className={s.modalHdr}>
 					<span className={s.modalTitle}>Bearer token</span>
-					<button className={s.modalX} onClick={onClose}>
+					<button className={s.modalX} onClick={onClose} type="button">
 						<svg
 							viewBox="0 0 11 11"
 							fill="none"
@@ -54,11 +54,12 @@ export const TokenModal: FC<TokenModalProps> = ({ onClose }) => {
 						autoFocus
 					/>
 					<div className={s.modalActions}>
-						<button className={s.modalSave} onClick={save}>
+						<button className={s.modalSave} onClick={save} type="button">
 							Save token
 						</button>
 						{accessToken && (
 							<button
+								type="button"
 								className={s.modalClear}
 								onClick={() => {
 									setAccessToken("");
