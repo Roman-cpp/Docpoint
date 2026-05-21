@@ -14,4 +14,5 @@ export const actionDeleteEnvironment = (state: DocStore) => state.deleteEnvironm
 export const actionAddVariableToEnv = (state: DocStore) => state.addVariableToEnv;
 export const actionUpdateVariableInEnv = (state: DocStore) => state.updateVariableInEnv;
 export const actionDeleteVariableFromEnv = (state: DocStore) => state.deleteVariableFromEnv;
+export const actionUpdateEndpointParamValue = (state: DocStore) => state.updateEndpointParamValue;
 

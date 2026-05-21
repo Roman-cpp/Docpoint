@@ -10,6 +10,7 @@ import { importDoc, readDoc } from "@/entities/doc";
 import type { CreateDocDTO } from "@/entities/doc";
 import { readGroups } from "@/entities/group";
 import type { CreateGroupDTO } from "@/entities/group";
+import { updateParamValue } from "@/entities/endpoint";
 import { readEntities } from "@/entities/entity";
 import type { CreateEntityDTO } from "@/entities/entity";
 import { readEnvironments } from "@/entities/environment";
@@ -48,6 +49,7 @@ type DocActions = {
 	addVariableToEnv: (environmentId: string, variable: Variable) => void;
 	updateVariableInEnv: (variable: Variable) => void;
 	deleteVariableFromEnv: (variableId: string) => void;
+	updateEndpointParamValue: (endpointId: string, kind: "query" | "body", name: string, value: string) => Promise<void>;
 	importDoc: (payload: ImportDocPayload) => Promise<void>;
 	loadDoc: (id: string) => Promise<void>;
 };
@@ -176,6 +178,31 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 					}
 				: null,
 		})),
+
+	updateEndpointParamValue: async (endpointId, kind, name, value) => {
+		await updateParamValue(endpointId, kind, name, value);
+		set((state) => {
+			const patchEndpoint = (ep: Endpoint): Endpoint => {
+				if (ep.id !== endpointId) return ep;
+				const key = kind === "query" ? "queryParams" : "bodyParams";
+				return {
+					...ep,
+					[key]: ep[key].map((p) => (p.name === name ? { ...p, value } : p)),
+				};
+			};
+			return {
+				groups: state.groups
+					? state.groups.map((g) => ({
+							...g,
+							endpoints: g.endpoints.map(patchEndpoint),
+						}))
+					: state.groups,
+				selectedEndpoint: state.selectedEndpoint
+					? patchEndpoint(state.selectedEndpoint)
+					: state.selectedEndpoint,
+			};
+		});
+	},
 
 	importDoc: async ({ doc, groups, entities, environments }) => {
 		try {

@@ -13,6 +13,7 @@ export {
 	actionAddVariableToEnv,
 	actionUpdateVariableInEnv,
 	actionDeleteVariableFromEnv,
+	actionUpdateEndpointParamValue,
 } from "./store/docStore.actions";
 export {
 	selectDoc,

@@ -7,6 +7,7 @@ import {
 	selectSelectedEnvironment,
 	selectAccessToken,
 	actionSetAccessToken,
+	actionUpdateEndpointParamValue,
 	useDocStore,
 } from "@/features/doc";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
@@ -103,6 +104,7 @@ export const TryItPanel = () => {
 	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
 	const authToken = useDocStore(selectAccessToken) ?? "";
 	const setAccessToken = useDocStore(actionSetAccessToken);
+	const updateEndpointParamValue = useDocStore(actionUpdateEndpointParamValue);
 
 	const [tokenInput, setTokenInput] = useState("");
 	const [settingToken, setSettingToken] = useState(false);
@@ -128,6 +130,27 @@ export const TryItPanel = () => {
 	const send = async () => {
 		setLoading(true);
 		setResp(null);
+
+		const varRefRe = /^\{\{(\w+)\}\}$/;
+		const persistVarRefs = async () => {
+			const tasks: Promise<void>[] = [];
+			for (const p of endpoint.queryParams ?? []) {
+				if (p.value) continue;
+				const m = (vals[`query:${p.name}`] ?? "").trim().match(varRefRe);
+				if (m) tasks.push(updateEndpointParamValue(endpoint.id, "query", p.name, m[1]));
+			}
+			for (const p of endpoint.bodyParams ?? []) {
+				if (p.value) continue;
+				const m = (vals[`body:${p.name}`] ?? "").trim().match(varRefRe);
+				if (m) tasks.push(updateEndpointParamValue(endpoint.id, "body", p.name, m[1]));
+			}
+			await Promise.all(tasks);
+		};
+		try {
+			await persistVarRefs();
+		} catch (e) {
+			console.error("[TryItPanel] failed to persist param values:", e);
+		}
 
 		const headers: Record<string, string> = { Accept: "application/json" };
 		if (endpoint.auth && authToken)
