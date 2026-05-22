@@ -5,7 +5,7 @@
 
 .csFrame {
 	min-height: 100vh;
-	background: var(--bg);
+	background: var(--surface);
 	color: var(--ink);
 	font-family: var(--font-sans);
 }
@@ -14,6 +14,9 @@
 	max-width: 1120px;
 	margin: 0 auto;
 	padding: 56px 56px 80px;
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 
 /* ─── Header ─── */

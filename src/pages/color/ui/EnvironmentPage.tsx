@@ -550,67 +550,11 @@ export const EnvironmentPage: FC = () => (
 				</div>
 			</section>
 
-			{/* ─── 04 · HTTP methods ─── */}
+			{/* ─── 04 · Usage ─── */}
 			<section className={s.csSection}>
 				<div className={s.csSectionHdr}>
 					<h2 className={s.csSectionH}>
-						<span className={s.num}>04</span>HTTP-методы
-					</h2>
-					<div className={s.csSectionSub}>
-						Метод-бэйджи — это семантические пары, переиспользованные с
-						понятными человеку названиями.
-					</div>
-				</div>
-
-				<div className={s.csMethods}>
-					<CsMethod
-						method="GET"
-						fg="#1e7e52"
-						bg="#eaf5ef"
-						fgHex="#1e7e52"
-						bgHex="#eaf5ef"
-						aka="--get + --get-bg"
-					/>
-					<CsMethod
-						method="POST"
-						fg="#1a5ea8"
-						bg="#eaf1fb"
-						fgHex="#1a5ea8"
-						bgHex="#eaf1fb"
-						aka="--post + --post-bg"
-					/>
-					<CsMethod
-						method="PUT"
-						fg="#9a5f00"
-						bg="#fff3dc"
-						fgHex="#9a5f00"
-						bgHex="#fff3dc"
-						aka="--put + --put-bg"
-					/>
-					<CsMethod
-						method="PATCH"
-						fg="#7a4f9a"
-						bg="#f3eafb"
-						fgHex="#7a4f9a"
-						bgHex="#f3eafb"
-						aka="--patch + --patch-bg"
-					/>
-					<CsMethod
-						method="DELETE"
-						fg="#9a2800"
-						bg="#fff0ec"
-						fgHex="#9a2800"
-						bgHex="#fff0ec"
-						aka="--delete + --delete-bg"
-					/>
-				</div>
-			</section>
-
-			{/* ─── 05 · Usage ─── */}
-			<section className={s.csSection}>
-				<div className={s.csSectionHdr}>
-					<h2 className={s.csSectionH}>
-						<span className={s.num}>05</span>Применение в компонентах
+						<span className={s.num}>04</span>Применение в компонентах
 					</h2>
 					<div className={s.csSectionSub}>
 						Как палитра ведёт себя в живых элементах интерфейса.
