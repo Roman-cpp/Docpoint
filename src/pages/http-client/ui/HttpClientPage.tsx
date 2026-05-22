@@ -10,7 +10,7 @@ import {
 	useState,
 } from "react";
 import type { HttpMethod } from "@/entities/endpoint";
-import { HeaderDocs } from "@/widgets/header";
+import { Header } from "@/widgets/header";
 import {
 	COLLECTIONS,
 	INITIAL_HISTORY,
@@ -1132,7 +1132,7 @@ export const HttpClientPage: FC = () => {
 				className={`${s.wrapper}${tweaks.theme === "Dark" ? " dark" : ""}`}
 				style={{ fontSize: fontSizePx }}
 			>
-				<HeaderDocs section="http-client" activeLink="http-client" />
+				<Header section="http-client" activeLink="http-client" />
 
 				<div className={s.shell}>
 					<Sidebar

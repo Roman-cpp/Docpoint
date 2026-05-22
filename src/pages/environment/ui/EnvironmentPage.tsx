@@ -24,10 +24,10 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { Header } from "../../../widgets/header/ui/Header/Header";
 import { AuthRequestSection } from "./AuthRequestSection";
 import { EndpointSection } from "./EndpointSection";
 import s from "./EnvironmentPage.module.css";
-import { Header } from "./Header";
 import { IdentificationSection } from "./IdentificationSection";
 import { type AuthMethod, BoltIcon, HTTP_METHODS, TrashIcon } from "./parts";
 import { Sidebar } from "./Sidebar";
@@ -404,7 +404,7 @@ export const EnvironmentPage: FC = () => {
 
 	return (
 		<div className={s.envFrame}>
-			<Header />
+			<Header section="Environments" />
 
 			<div className={s.shell}>
 				<Sidebar />

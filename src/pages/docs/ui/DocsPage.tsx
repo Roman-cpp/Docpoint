@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { Link } from "react-router";
 import { useDocsStore } from "@/entities/doc";
-import { HeaderDocs } from "@/widgets/header";
+import { Header } from "@/widgets/header";
 import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";
 
@@ -66,7 +66,7 @@ const Overview = () => {
 export const DocsPage: FC = () => {
 	return (
 		<div className={s.wrapper}>
-			<HeaderDocs section="docs" activeLink="docs" />
+			<Header section="docs" activeLink="docs" />
 
 			<div className={s.shell}>
 				<Sidebar />

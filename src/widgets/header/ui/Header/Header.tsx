@@ -7,8 +7,8 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
-import s from "./EnvironmentPage.module.css";
-import { ChevronIcon } from "./parts";
+import { ChevronIcon } from "../../../../pages/environment/ui/parts";
+import s from "./Header.module.css";
 
 const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
 	{ label: "API Docs", href: "/" },
@@ -17,7 +17,12 @@ const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
 	{ label: "Environments", href: "/environments", active: true },
 ];
 
-export const Header: FC = () => {
+interface HeaderProps {
+	section: string;
+	activeLink?: string;
+}
+
+export const Header: FC<HeaderProps> = ({ section }) => {
 	const environments = useDocStore(selectEnvironments);
 	const selectedEnv = useDocStore(selectSelectedEnvironment);
 	const selectEnv = useDocStore(actionSelectEnvironment);
@@ -28,7 +33,7 @@ export const Header: FC = () => {
 				<div className={s.pfNavBrand}>
 					Docpoint
 					<span className={s.pfNavSep} />
-					<span className={s.pfNavSection}>Environments</span>
+					<span className={s.pfNavSection}>{section}</span>
 				</div>
 			</Link>
 
@@ -66,11 +71,13 @@ export const Header: FC = () => {
 						{link.label}
 					</Link>
 				))}
-				<div className={s.pfNavUser}>
-					<span className={s.pfNavUserAvatar}>ИП</span>
-					<span className={s.pfNavUserName}>Иван П.</span>
-					<ChevronIcon />
-				</div>
+				{false && (
+					<div className={s.pfNavUser}>
+						<span className={s.pfNavUserAvatar}>ИП</span>
+						<span className={s.pfNavUserName}>Иван П.</span>
+						<ChevronIcon />
+					</div>
+				)}
 			</div>
 		</nav>
 	);
