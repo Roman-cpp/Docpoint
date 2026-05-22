@@ -13,6 +13,7 @@ import {
 } from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./ApiExplorerPage.module.css";
+import { ResponseCard, type RespState } from "./ResponseCard";
 
 function resolveEnvVars(value: string, env: Environment): string {
 	return value.replace(/\{\{(\w+)\}\}/g, (_, name) => {
@@ -100,15 +101,6 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 		</button>
 	);
 };
-
-interface RespState {
-	ok?: boolean;
-	status?: number;
-	statusText?: string;
-	dur: number;
-	body?: string;
-	error?: string;
-}
 
 export const TryItPanel = () => {
 	const endpoint = useDocStore(selectSelectedEndpoint);
@@ -205,19 +197,6 @@ export const TryItPanel = () => {
 		}
 		setLoading(false);
 	};
-
-	const sBg = (status: number) =>
-		status < 300
-			? "var(--green-bg)"
-			: status < 500
-				? "var(--amber-bg)"
-				: "var(--red-bg)";
-	const sClr = (status: number) =>
-		status < 300
-			? "var(--green)"
-			: status < 500
-				? "var(--amber)"
-				: "var(--red)";
 
 	return (
 		<div className={s.tryPane}>
@@ -413,37 +392,10 @@ export const TryItPanel = () => {
 				</button>
 
 				{resp && (
-					<div className={s.respCard}>
-						<div className={s.respCardHdr}>
-							{resp.error ? (
-								<span
-									className={s.respStatusBadge}
-									style={{ background: "var(--red-bg)", color: "var(--red)" }}
-								>
-									Error
-								</span>
-							) : (
-								<span
-									className={s.respStatusBadge}
-									style={{
-										background: sBg(resp.status!),
-										color: sClr(resp.status!),
-									}}
-								>
-									{resp.status} {resp.statusText}
-								</span>
-							)}
-							<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-								<span className={s.respDur}>{resp.dur}ms</span>
-								{!resp.error && <CopyBtn text={resp.body!} />}
-							</div>
-						</div>
-						{resp.error ? (
-							<div className={s.respError}>Network error: {resp.error}</div>
-						) : (
-							<pre className={s.respPre}>{resp.body}</pre>
-						)}
-					</div>
+					<ResponseCard
+						resp={resp}
+						renderCopyBtn={(text) => <CopyBtn text={text} />}
+					/>
 				)}
 			</div>
 		</div>

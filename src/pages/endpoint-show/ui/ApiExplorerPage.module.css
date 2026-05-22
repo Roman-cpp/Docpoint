@@ -912,7 +912,7 @@
 	line-height: 1.72;
 	color: var(--code-ink);
 	padding: 11px 13px;
-	max-height: 300px;
+	max-height: 600px;
 	overflow-y: auto;
 	white-space: pre;
 	background: var(--code-bg);
@@ -924,6 +924,83 @@
 .respPre::-webkit-scrollbar-thumb {
 	background: var(--border);
 	border-radius: 2px;
+}
+.jsonKey {
+	color: var(--purple);
+}
+.jsonString {
+	color: var(--green);
+}
+.jsonNumber {
+	color: var(--blue);
+}
+.jsonBool {
+	color: var(--amber);
+}
+.jsonNull {
+	color: var(--ink-low);
+	font-style: italic;
+}
+.jsonRoot {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.72;
+	color: var(--code-ink);
+	padding: 11px 13px;
+	max-height: 300px;
+	overflow: auto;
+	background: var(--code-bg);
+	white-space: nowrap;
+}
+.jsonRoot::-webkit-scrollbar {
+	width: 3px;
+	height: 3px;
+}
+.jsonRoot::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 2px;
+}
+.jsonRow {
+	display: flex;
+	align-items: flex-start;
+	min-height: 1.72em;
+}
+.jsonGutter {
+	display: inline-block;
+	width: 14px;
+	flex-shrink: 0;
+}
+.jsonToggle {
+	width: 14px;
+	height: 1.72em;
+	padding: 0;
+	margin: 0;
+	background: none;
+	border: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.jsonToggle:hover {
+	color: var(--ink);
+}
+.jsonChev {
+	transition: transform 0.12s;
+}
+.jsonChevOpen {
+	transition: transform 0.12s;
+	transform: rotate(90deg);
+}
+.jsonChildren {
+	padding-left: 16px;
+}
+.jsonPreview {
+	color: var(--ink-low);
+	font-style: italic;
+	padding: 0 4px;
 }
 .respError {
 	font-size: 12px;
