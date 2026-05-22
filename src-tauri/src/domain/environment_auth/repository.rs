@@ -1,4 +1,4 @@
-use super::model::{EnvironmentAuthDTO, UpdateEnvironmentAuth};
+use super::model::{EnvironmentAuthDTO, UpdateEnvironmentAuthDTO};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
@@ -46,7 +46,7 @@ pub async fn read_by_env_id(
     }))
 }
 
-pub async fn upsert(db: &SqlitePool, dto: &UpdateEnvironmentAuth) -> Result<(), String> {
+pub async fn upsert(db: &SqlitePool, dto: &UpdateEnvironmentAuthDTO) -> Result<(), String> {
     ensure_row(db, &dto.environment_id).await?;
     sqlx::query(
         "UPDATE environment_auth SET url = ?, method = ?, body = ?, token_path = ? WHERE environment_id = ?",

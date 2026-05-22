@@ -15,7 +15,7 @@ pub struct EnvironmentAuthDTO {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateEnvironmentAuth {
+pub struct UpdateEnvironmentAuthDTO {
     #[serde(rename = "environmentId")]
     pub environment_id: String,
     pub url: String,

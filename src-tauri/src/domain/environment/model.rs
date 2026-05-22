@@ -37,7 +37,7 @@ pub struct CreateEnvironmentDTO {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateEnvironment {
+pub struct UpdateEnvironmentDTO {
     pub id: String,
     pub label: String,
     #[serde(rename = "baseUrl")]
@@ -52,7 +52,7 @@ pub struct CreateVariableDTO {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateVariable {
+pub struct UpdateVariableDTO {
     pub id: String,
     pub name: String,
     pub value: String,

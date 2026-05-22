@@ -1,4 +1,4 @@
-use super::model::{CreateEnvironmentDTO, CreateVariableDTO, EnvValue, Environment, UpdateEnvironment, UpdateVariable};
+use super::model::{CreateEnvironmentDTO, CreateVariableDTO, EnvValue, Environment, UpdateEnvironmentDTO, UpdateVariableDTO};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
@@ -132,7 +132,7 @@ pub async fn create_environment(
     })
 }
 
-pub async fn update_environment(db: &SqlitePool, env: &UpdateEnvironment) -> Result<(), String> {
+pub async fn update_environment(db: &SqlitePool, env: &UpdateEnvironmentDTO) -> Result<(), String> {
     sqlx::query("UPDATE environments SET label = ?, base_url = ?, prefix = ? WHERE id = ?")
         .bind(&env.label)
         .bind(&env.base_url)
@@ -170,7 +170,7 @@ pub async fn create_variable(
     })
 }
 
-pub async fn update_variable(db: &SqlitePool, variable: &UpdateVariable) -> Result<(), String> {
+pub async fn update_variable(db: &SqlitePool, variable: &UpdateVariableDTO) -> Result<(), String> {
     sqlx::query("UPDATE variables SET key = ?, value = ? WHERE id = ?")
         .bind(&variable.name)
         .bind(&variable.value)
