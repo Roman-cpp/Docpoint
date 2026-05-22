@@ -9,7 +9,6 @@ import { Header } from "@/widgets/header";
 import s from "./ApiSchemasPage.module.css";
 import { Sidebar } from "./Sidebar";
 
-
 const TYPE_CLASS: Record<string, string> = {
 	string: s.typeString,
 	integer: s.typeInteger,
@@ -177,7 +176,6 @@ export const EntityPage: FC = () => {
 					)}
 				</div>
 			</div>
-
 		</div>
 	);
 };

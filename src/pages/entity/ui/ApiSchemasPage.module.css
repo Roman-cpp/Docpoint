@@ -647,28 +647,28 @@
 
 /* ═══════════════ TYPE COLORS ═══════════════ */
 .typeString {
-	color: #9a5f00;
+	color: var(--amber);
 }
 .typeInteger {
-	color: #9a2800;
+	color: var(--red);
 }
 .typeBoolean {
-	color: #1e7e52;
+	color: var(--green);
 }
 .typeArray {
-	color: #7a4f9a;
+	color: var(--purple);
 }
 .typeObject {
-	color: #1a5ea8;
+	color: var(--blue);
 }
 .typeUuid {
-	color: #555;
+	color: var(--ink-mid);
 }
 .typeDatetime {
-	color: #555;
+	color: var(--ink-mid);
 }
 .typeEnum {
-	color: #9a2800;
+	color: var(--red);
 }
 
 /* ═══════════════ INLINE CODE ═══════════════ */

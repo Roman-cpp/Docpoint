@@ -36,11 +36,11 @@ function syntaxHighlight(obj: unknown): string {
 		.replace(
 			/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
 			(match) => {
-				let color = "#9A2800";
+				let color = "#9B3B36";
 				if (/^"/.test(match)) {
-					color = /:$/.test(match) ? "#1A5EA8" : "#9A5F00";
+					color = /:$/.test(match) ? "#3A5A78" : "#75591A";
 				} else if (/true|false/.test(match)) {
-					color = "#1E7E52";
+					color = "#3F6B4A";
 				} else if (/null/.test(match)) {
 					color = "#888";
 				}
@@ -233,12 +233,12 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 									cx="7"
 									cy="7"
 									r="5.5"
-									stroke="#1A5EA8"
+									stroke="#3A5A78"
 									strokeWidth="1.2"
 								/>
 								<path
 									d="M7 6.5v3.5M7 5V5.5"
-									stroke="#1A5EA8"
+									stroke="#3A5A78"
 									strokeWidth="1.2"
 									strokeLinecap="round"
 								/>
@@ -388,7 +388,7 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 								<svg className={s.calloutIcon} viewBox="0 0 14 14" fill="none">
 									<path
 										d="M7 1.5l5.5 10H1.5L7 1.5zm0 4v3m0 1.5v.5"
-										stroke="#9A5F00"
+										stroke="#75591A"
 										strokeWidth="1.2"
 										strokeLinecap="round"
 										strokeLinejoin="round"

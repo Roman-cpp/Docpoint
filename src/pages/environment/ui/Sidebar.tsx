@@ -1,9 +1,8 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
-import { deleteEnvironment, EnvironmentModal } from "@/entities/environment";
+import { EnvironmentModal } from "@/entities/environment";
 import {
 	actionAddEnvironment,
-	actionDeleteEnvironment,
 	actionSelectEnvironment,
 	selectDoc,
 	selectEnvironments,
@@ -12,6 +11,7 @@ import {
 } from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./EnvironmentPage.module.css";
+import { PlusIcon } from "./parts";
 
 export const Sidebar: FC = () => {
 	const doc = useDocStore(selectDoc);
@@ -19,85 +19,67 @@ export const Sidebar: FC = () => {
 	const selectedEnv = useDocStore(selectSelectedEnvironment);
 	const selectEnv = useDocStore(actionSelectEnvironment);
 	const addEnvironment = useDocStore(actionAddEnvironment);
-	const removeEnvironment = useDocStore(actionDeleteEnvironment);
 
 	const [modalOpen, setModalOpen] = useState(false);
 
-	const handleDelete = async (
-		e: React.MouseEvent,
-		id: string,
-		label: string,
-	) => {
-		e.stopPropagation();
-		if (!confirm(`Delete environment "${label}"?`)) return;
-		try {
-			await deleteEnvironment(id);
-			removeEnvironment(id);
-		} catch {
+	const handleCreate = () => {
+		if (!doc) {
 			toast({
 				variant: "error",
 				title: "Error",
-				description: "Failed to delete environment",
+				description: "No document loaded",
 			});
+			return;
 		}
+		setModalOpen(true);
 	};
 
 	return (
-		<aside className={s.sidebar}>
-			<div className={s.sidebarHdr}>
-				<span className={s.sidebarTitle}>Environments</span>
+		<aside className={s.envSb}>
+			<div className={s.envSbH}>
+				<span className={s.envSbHTitle}>Окружения · {environments.length}</span>
 				<button
-					className={s.sidebarAdd}
-					title="New environment"
-					onClick={() => {
-						if (!doc) {
-							toast({
-								variant: "error",
-								title: "Error",
-								description: "No document loaded",
-							});
-							return;
-						}
-						setModalOpen(true);
-					}}
+					type="button"
+					className={s.envSbHAdd}
+					aria-label="Создать окружение"
+					title="Создать"
+					onClick={handleCreate}
 				>
-					+
+					<PlusIcon />
 				</button>
 			</div>
-			<div className={s.envList}>
-				{environments.map((env) => (
-					<div
-						key={env.id}
-						className={`${s.envItem}${selectedEnv?.id === env.id ? " " + s.envItemActive : ""}`}
-						onClick={() => selectEnv(env.id)}
-						role="button"
-						tabIndex={0}
-					>
-						<span
-							className={s.envDot}
-							style={{ background: getEnvDotColor(env.env) }}
-						/>
-						<span className={s.envLabel}>{env.label}</span>
-						<span className={s.envTag}>{env.env}</span>
+			<div className={s.envSbList}>
+				{environments.length === 0 ? (
+					<div className={s.envSbEmpty}>
+						Окружений ещё нет.{" "}
 						<button
-							className={s.envDeleteBtn}
-							title="Delete environment"
-							onClick={(e) => handleDelete(e, env.id, env.label)}
+							type="button"
+							className={s.envSbEmptyLink}
+							onClick={handleCreate}
 						>
-							<svg
-								viewBox="0 0 14 14"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.5"
-								strokeLinecap="round"
-								width="12"
-								height="12"
-							>
-								<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
-							</svg>
+							Создать
 						</button>
 					</div>
-				))}
+				) : (
+					environments.map((env) => {
+						const isActive = env.id === selectedEnv?.id;
+						return (
+							<button
+								key={env.id}
+								type="button"
+								className={`${s.envSbItem} ${isActive ? s.active : ""}`}
+								onClick={() => selectEnv(env.id)}
+							>
+								<span
+									className={s.envSbItemDot}
+									style={{ background: getEnvDotColor(env.env) }}
+								/>
+								<span>{env.label}</span>
+								<span className={s.envSbItemTag}>{env.env}</span>
+							</button>
+						);
+					})
+				)}
 			</div>
 
 			{modalOpen && doc && (

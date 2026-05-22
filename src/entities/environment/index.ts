@@ -17,5 +17,6 @@ export type {
 	UpdateVariableDTO,
 	Variable,
 } from "./model/type";
+export { DeleteVariableModal } from "./ui/DeleteVariableModal";
 export { EnvironmentModal } from "./ui/EnvironmentModal";
 export { VariableModal } from "./ui/VariableModal";

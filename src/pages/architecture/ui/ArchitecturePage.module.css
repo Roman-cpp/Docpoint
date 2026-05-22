@@ -60,7 +60,7 @@
 }
 
 .prose a {
-	color: #1a5ea8;
+	color: var(--blue);
 	text-decoration: none;
 }
 

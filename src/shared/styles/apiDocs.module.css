@@ -547,10 +547,10 @@
 	white-space: pre;
 }
 .hlK {
-	color: #1e7e52;
+	color: var(--green);
 }
 .hlS {
-	color: #9a5f00;
+	color: var(--amber);
 }
 
 /* ═══════════════ TRY IT OUT ═══════════════ */

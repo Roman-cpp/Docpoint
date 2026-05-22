@@ -55,10 +55,22 @@ export const VariableModal: FC<VariableModalProps> = ({
 		<div className={s.modalOverlay} onClick={onClose}>
 			<div className={s.modalBox} onClick={(e) => e.stopPropagation()}>
 				<div className={s.modalHdr}>
-					<span className={s.modalTitle}>
-						{isEdit ? "Edit variable" : "New variable"}
-					</span>
-					<button className={s.modalX} onClick={onClose}>
+					<div className={s.modalHdrText}>
+						<span className={s.modalTitle}>
+							{isEdit ? "Редактировать переменную" : "Новая переменная"}
+						</span>
+						<span className={s.modalSubtitle}>
+							{isEdit
+								? "Изменения применятся ко всем запросам этого окружения"
+								: "Подставляется в URL, headers и body как {{NAME}}"}
+						</span>
+					</div>
+					<button
+						type="button"
+						className={s.modalX}
+						onClick={onClose}
+						aria-label="Закрыть"
+					>
 						<svg
 							viewBox="0 0 11 11"
 							fill="none"
@@ -95,15 +107,16 @@ export const VariableModal: FC<VariableModalProps> = ({
 						/>
 					</div>
 					<div className={s.modalActions}>
+						<button type="button" className={s.modalCancel} onClick={onClose}>
+							Отмена
+						</button>
 						<button
+							type="button"
 							className={s.modalSave}
 							onClick={save}
 							disabled={loading || !name.trim()}
 						>
-							{loading ? "Saving…" : isEdit ? "Save" : "Create"}
-						</button>
-						<button className={s.modalCancel} onClick={onClose}>
-							Cancel
+							{loading ? "Сохраняем…" : isEdit ? "Сохранить" : "Создать"}
 						</button>
 					</div>
 				</div>

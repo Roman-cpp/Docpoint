@@ -49,8 +49,18 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 		<div className={s.modalOverlay} onClick={onClose}>
 			<div className={s.modalBox} onClick={(e) => e.stopPropagation()}>
 				<div className={s.modalHdr}>
-					<span className={s.modalTitle}>New environment</span>
-					<button className={s.modalX} onClick={onClose}>
+					<div className={s.modalHdrText}>
+						<span className={s.modalTitle}>Новое окружение</span>
+						<span className={s.modalSubtitle}>
+							Базовый URL и тег для группы запросов
+						</span>
+					</div>
+					<button
+						type="button"
+						className={s.modalX}
+						onClick={onClose}
+						aria-label="Закрыть"
+					>
 						<svg
 							viewBox="0 0 11 11"
 							fill="none"
@@ -107,15 +117,16 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 						/>
 					</div>
 					<div className={s.modalActions}>
+						<button type="button" className={s.modalCancel} onClick={onClose}>
+							Отмена
+						</button>
 						<button
+							type="button"
 							className={s.modalSave}
 							onClick={save}
 							disabled={loading || !label.trim() || !env.trim()}
 						>
-							{loading ? "Creating…" : "Create"}
-						</button>
-						<button className={s.modalCancel} onClick={onClose}>
-							Cancel
+							{loading ? "Создаём…" : "Создать"}
 						</button>
 					</div>
 				</div>

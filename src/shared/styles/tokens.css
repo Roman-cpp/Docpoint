@@ -53,17 +53,22 @@
 	--code-bg: #f4f1ec;
 	--code-ink: #3d2b1f;
 
-	/* ─── Semantic palette ─── */
-	--green: #1e7e52;
-	--green-bg: #eaf5ef;
-	--red: #9a2800;
-	--red-bg: #fff0ec;
-	--amber: #9a5f00;
-	--amber-bg: #fff3dc;
-	--blue: #1a5ea8;
-	--blue-bg: #eaf1fb;
+	/* ─── Semantic palette — earthy & restrained ─── */
+	--green: #3f6b4a;
+	--green-bg: #eaf0e9;
+	--green-border: #c9d8c7;
+	--red: #9b3b36;
+	--red-bg: #f4e4e2;
+	--red-border: #e3c3bf;
+	--amber: #75591a;
+	--amber-bg: #f5edd9;
+	--amber-border: #e2d2a6;
+	--blue: #3a5a78;
+	--blue-bg: #e6ecf1;
+	--blue-border: #c4d2de;
 	--purple: #7a4f9a;
 	--purple-bg: #f3eafb;
+	--purple-border: #dbc7eb;
 
 	/* ─── HTTP method colors ─── */
 	--get: var(--green);

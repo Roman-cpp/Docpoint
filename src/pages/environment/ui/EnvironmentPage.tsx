@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
 import type { Variable } from "@/entities/environment";
 import {
-	deleteVariable,
+	DeleteVariableModal,
+	deleteEnvironment,
 	updateEnvironment,
 	VariableModal,
 } from "@/entities/environment";
@@ -14,6 +15,7 @@ import {
 } from "@/entities/environment-auth";
 import {
 	actionaddVariableToEnvironment,
+	actionDeleteEnvironment,
 	actiondeleteVariableFromEnvironment,
 	actionUpdateEnvironment,
 	actionUpdateEnvironmentToken,
@@ -22,11 +24,14 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import { getEnvDotColor } from "@/shared/lib/env-color";
-import { Header } from "@/widgets/header";
+import { AuthRequestSection } from "./AuthRequestSection";
+import { EndpointSection } from "./EndpointSection";
 import s from "./EnvironmentPage.module.css";
+import { Header } from "./Header";
+import { IdentificationSection } from "./IdentificationSection";
+import { type AuthMethod, BoltIcon, HTTP_METHODS, TrashIcon } from "./parts";
 import { Sidebar } from "./Sidebar";
-
-const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+import { VariablesSection } from "./VariablesSection";
 
 function extractByPath(obj: unknown, path: string): string | null {
 	if (!path.trim()) return null;
@@ -49,123 +54,175 @@ function extractByPath(obj: unknown, path: string): string | null {
 	return typeof cur === "string" ? cur : cur != null ? String(cur) : null;
 }
 
+const asMethod = (value: string): AuthMethod => {
+	const upper = value.toUpperCase();
+	return (HTTP_METHODS as readonly string[]).includes(upper)
+		? (upper as AuthMethod)
+		: "POST";
+};
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
 export const EnvironmentPage: FC = () => {
 	const selectedEnv = useDocStore(selectSelectedEnvironment);
 	const patchEnvironment = useDocStore(actionUpdateEnvironment);
+	const removeEnvironment = useDocStore(actionDeleteEnvironment);
 	const addVariable = useDocStore(actionaddVariableToEnvironment);
-	const updateVariable = useDocStore(actionupdateVariableInEnvironment);
+	const updateVariableInStore = useDocStore(actionupdateVariableInEnvironment);
 	const removeVariable = useDocStore(actiondeleteVariableFromEnvironment);
 	const patchToken = useDocStore(actionUpdateEnvironmentToken);
 
+	// Environment basics
 	const [label, setLabel] = useState("");
 	const [baseUrl, setBaseUrl] = useState("");
 	const [prefix, setPrefix] = useState("");
-	const [saving, setSaving] = useState(false);
-	const [modal, setModal] = useState<"create" | Variable | null>(null);
+	const [envStatus, setEnvStatus] = useState<SaveStatus>("idle");
 
+	// Auth config
 	const [authUrl, setAuthUrl] = useState("");
-	const [authMethod, setAuthMethod] = useState<string>("POST");
+	const [authMethod, setAuthMethod] = useState<AuthMethod>("POST");
 	const [authBody, setAuthBody] = useState("");
 	const [authTokenPath, setAuthTokenPath] = useState("");
-	const [loadedAuth, setLoadedAuth] = useState<{
+	const [authStatus, setAuthStatus] = useState<SaveStatus>("idle");
+	const [fetchingToken, setFetchingToken] = useState(false);
+	const loadedAuthRef = useRef<{
 		url: string;
-		method: string;
+		method: AuthMethod;
 		body: string;
 		tokenPath: string;
 	} | null>(null);
-	const [savingAuth, setSavingAuth] = useState(false);
-	const [fetchingToken, setFetchingToken] = useState(false);
+
+	// Variable modal
+	const [modal, setModal] = useState<"create" | Variable | null>(null);
+	const [variableToDelete, setVariableToDelete] = useState<Variable | null>(
+		null,
+	);
+
+	const envSnapshotRef = useRef(selectedEnv);
+	envSnapshotRef.current = selectedEnv;
+	const envId = selectedEnv?.id ?? null;
 
 	useEffect(() => {
-		if (!selectedEnv) return;
-		setLabel(selectedEnv.label);
-		setBaseUrl(selectedEnv.baseUrl);
-		setPrefix(selectedEnv.prefix);
+		if (!envId) {
+			loadedAuthRef.current = null;
+			return;
+		}
+		const env = envSnapshotRef.current;
+		if (!env || env.id !== envId) return;
+		setLabel(env.label);
+		setBaseUrl(env.baseUrl);
+		setPrefix(env.prefix);
+		setEnvStatus("idle");
 
 		let cancelled = false;
-		readEnvironmentAuth(selectedEnv.id).then((auth) => {
+		readEnvironmentAuth(envId).then((auth) => {
 			if (cancelled) return;
-			const method = auth.method || "POST";
+			const method = asMethod(auth.method || "POST");
 			setAuthUrl(auth.url);
 			setAuthMethod(method);
 			setAuthBody(auth.body);
 			setAuthTokenPath(auth.tokenPath);
-			setLoadedAuth({
+			setAuthStatus("idle");
+			loadedAuthRef.current = {
 				url: auth.url,
 				method,
 				body: auth.body,
 				tokenPath: auth.tokenPath,
-			});
+			};
 		});
 		return () => {
 			cancelled = true;
 		};
-	}, [selectedEnv?.id]);
+	}, [envId]);
 
-	const isDirty =
-		selectedEnv !== null &&
-		(label !== selectedEnv.label ||
-			baseUrl !== selectedEnv.baseUrl ||
-			prefix !== selectedEnv.prefix);
-
-	const handleSave = async () => {
+	const saveEnvironment = async (overrides?: {
+		label?: string;
+		baseUrl?: string;
+		prefix?: string;
+	}) => {
 		if (!selectedEnv) return;
-		setSaving(true);
+		const next = {
+			label: overrides?.label ?? label,
+			baseUrl: overrides?.baseUrl ?? baseUrl,
+			prefix: overrides?.prefix ?? prefix,
+		};
+		if (
+			next.label === selectedEnv.label &&
+			next.baseUrl === selectedEnv.baseUrl &&
+			next.prefix === selectedEnv.prefix
+		) {
+			return;
+		}
+		setEnvStatus("saving");
 		try {
-			await updateEnvironment({ id: selectedEnv.id, label, baseUrl, prefix });
-			patchEnvironment({ id: selectedEnv.id, label, baseUrl, prefix });
-			toast({ variant: "success", title: "Saved" });
+			const dto = { id: selectedEnv.id, ...next };
+			await updateEnvironment(dto);
+			patchEnvironment(dto);
+			setEnvStatus("saved");
+			setTimeout(
+				() => setEnvStatus((status) => (status === "saved" ? "idle" : status)),
+				1500,
+			);
 		} catch {
+			setEnvStatus("error");
 			toast({
 				variant: "error",
 				title: "Error",
 				description: "Failed to save environment",
 			});
-		} finally {
-			setSaving(false);
 		}
 	};
 
-	const isAuthDirty =
-		loadedAuth !== null &&
-		(authUrl !== loadedAuth.url ||
-			authMethod !== loadedAuth.method ||
-			authBody !== loadedAuth.body ||
-			authTokenPath !== loadedAuth.tokenPath);
-
-	const handleSaveAuth = async () => {
+	const saveAuth = async (overrides?: {
+		url?: string;
+		method?: AuthMethod;
+		body?: string;
+		tokenPath?: string;
+	}) => {
 		if (!selectedEnv) return;
-		setSavingAuth(true);
+		const loaded = loadedAuthRef.current;
+		const next = {
+			url: (overrides?.url ?? authUrl).trim(),
+			method: overrides?.method ?? authMethod,
+			body: overrides?.body ?? authBody,
+			tokenPath: (overrides?.tokenPath ?? authTokenPath).trim(),
+		};
+		if (
+			loaded &&
+			next.url === loaded.url &&
+			next.method === loaded.method &&
+			next.body === loaded.body &&
+			next.tokenPath === loaded.tokenPath
+		) {
+			return;
+		}
+		setAuthStatus("saving");
 		try {
-			const dto = {
+			await updateEnvironmentAuth({
 				environmentId: selectedEnv.id,
-				url: authUrl.trim(),
-				method: authMethod,
-				body: authBody,
-				tokenPath: authTokenPath.trim(),
-			};
-			await updateEnvironmentAuth(dto);
-			patchToken(dto.tokenPath);
-			setLoadedAuth({
-				url: dto.url,
-				method: dto.method,
-				body: dto.body,
-				tokenPath: dto.tokenPath,
+				...next,
 			});
-			toast({ variant: "success", title: "Auth config saved" });
+			patchToken(next.tokenPath);
+			loadedAuthRef.current = next;
+			setAuthStatus("saved");
+			setTimeout(
+				() => setAuthStatus((status) => (status === "saved" ? "idle" : status)),
+				1500,
+			);
 		} catch {
+			setAuthStatus("error");
 			toast({
 				variant: "error",
 				title: "Error",
 				description: "Failed to save auth config",
 			});
-		} finally {
-			setSavingAuth(false);
 		}
 	};
 
 	const handleFetchToken = async () => {
 		if (!selectedEnv || !authUrl.trim()) return;
+		// Make sure latest auth config is persisted before firing the request.
+		await saveAuth();
 		setFetchingToken(true);
 		try {
 			const headers: Record<string, string> = { Accept: "application/json" };
@@ -247,309 +304,182 @@ export const EnvironmentPage: FC = () => {
 		}
 	};
 
-	const handleDelete = async (variable: Variable) => {
+	const handleDeleteEnvironment = async () => {
+		if (!selectedEnv) return;
+		if (!confirm(`Удалить окружение «${selectedEnv.label}»?`)) return;
 		try {
-			await deleteVariable(variable.id);
-			removeVariable(variable.id);
+			await deleteEnvironment(selectedEnv.id);
+			removeEnvironment(selectedEnv.id);
 		} catch {
 			toast({
 				variant: "error",
 				title: "Error",
-				description: "Failed to delete variable",
+				description: "Failed to delete environment",
 			});
 		}
 	};
 
+	const handleDeleteVariable = (variable: Variable) => {
+		setVariableToDelete(variable);
+	};
+
+	const statusHint = (status: SaveStatus) => {
+		switch (status) {
+			case "saving":
+				return "сохраняем…";
+			case "saved":
+				return "сохранено";
+			case "error":
+				return "не сохранено";
+			default:
+				return "авто-сохранение";
+		}
+	};
+
+	const renderHero = () => {
+		if (!selectedEnv) return null;
+		const accent = getEnvDotColor(selectedEnv.env);
+		const finalUrl =
+			`${baseUrl.replace(/\/+$/, "")}${prefix.startsWith("/") || !prefix ? prefix : `/${prefix}`}` ||
+			"—";
+		const tokenInfo = selectedEnv.accessToken
+			? {
+					variant: "ok" as const,
+					label: `Токен · ${selectedEnv.accessToken.slice(0, 12)}${selectedEnv.accessToken.length > 12 ? "…" : ""}`,
+				}
+			: {
+					variant: "warn" as const,
+					label: "Токен не получен",
+				};
+
+		return (
+			<div className={s.envHero}>
+				<span className={s.envHeroMark} style={{ background: accent }} />
+				<div className={s.envHeroText}>
+					<h1 className={s.envHeroName}>
+						{label || selectedEnv.label}
+						<span className={s.envHeroNameTag}>{selectedEnv.env}</span>
+					</h1>
+					<div className={s.envHeroMeta}>
+						<span>{finalUrl || "—"}</span>
+						<span className={s.sep}>·</span>
+						<span>{selectedEnv.value.length} переменных</span>
+						<span className={s.sep}>·</span>
+						<span
+							className={`${s.envTokenPill} ${tokenInfo.variant === "warn" ? s.warn : ""}`}
+							title={selectedEnv.accessToken ?? "Нет токена"}
+						>
+							<span className={s.dot} />
+							{tokenInfo.label}
+						</span>
+					</div>
+				</div>
+				<div className={s.envHeroActions}>
+					<button
+						type="button"
+						className={`${s.envBtn} ${s.envBtnDanger}`}
+						onClick={handleDeleteEnvironment}
+					>
+						<TrashIcon />
+						Удалить
+					</button>
+					<button
+						type="button"
+						className={`${s.envBtn} ${s.envBtnPrimary}`}
+						onClick={handleFetchToken}
+						disabled={fetchingToken || !authUrl.trim() || !authTokenPath.trim()}
+						title={
+							!authUrl.trim() || !authTokenPath.trim()
+								? "Заполните URL и token path в разделе авторизации"
+								: ""
+						}
+					>
+						<BoltIcon />
+						{fetchingToken ? "Получаем…" : "Получить токен"}
+					</button>
+				</div>
+			</div>
+		);
+	};
+
 	return (
-		<div className={s.wrapper}>
-			<Header section="environments" activeLink="environments" />
+		<div className={s.envFrame}>
+			<Header />
 
 			<div className={s.shell}>
 				<Sidebar />
 
-				{/* Content */}
-				<main className={s.main}>
+				<div className={s.envPage}>
 					{selectedEnv ? (
 						<>
-							{/* Environment header */}
-							<div className={s.envHeader}>
-								<div className={s.envTitle}>
-									<span
-										className={s.envTitleDot}
-										style={{ background: getEnvDotColor(selectedEnv.env) }}
-									/>
-									{label || selectedEnv.label}
+							{renderHero()}
+							<div className={s.envPageBody}>
+								<IdentificationSection
+									label={label}
+									onLabelChange={setLabel}
+									onLabelBlur={() => saveEnvironment()}
+									envTag={selectedEnv.env}
+									accentColor={getEnvDotColor(selectedEnv.env)}
+									statusHint={statusHint(envStatus)}
+								/>
+								<EndpointSection
+									baseUrl={baseUrl}
+									onBaseUrlChange={setBaseUrl}
+									onBaseUrlBlur={() => saveEnvironment()}
+									prefix={prefix}
+									onPrefixChange={setPrefix}
+									onPrefixBlur={() => saveEnvironment()}
+								/>
+								<AuthRequestSection
+									method={authMethod}
+									onMethodChange={(m) => {
+										setAuthMethod(m);
+										saveAuth({ method: m });
+									}}
+									url={authUrl}
+									onUrlChange={setAuthUrl}
+									onUrlBlur={() => saveAuth()}
+									body={authBody}
+									onBodyChange={setAuthBody}
+									onBodyBlur={() => saveAuth()}
+									tokenPath={authTokenPath}
+									onTokenPathChange={setAuthTokenPath}
+									onTokenPathBlur={() => saveAuth()}
+									onFetchToken={handleFetchToken}
+									onClearToken={handleClearToken}
+									fetchingToken={fetchingToken}
+									accessToken={selectedEnv.accessToken}
+									tokenPillVariant={selectedEnv.accessToken ? "muted" : "warn"}
+									tokenPillLabel={
+										authStatus === "saving"
+											? "сохраняем…"
+											: authStatus === "saved"
+												? "сохранено"
+												: undefined
+									}
+								/>
+								<VariablesSection
+									variables={selectedEnv.value}
+									onAdd={() => setModal("create")}
+									onEdit={(v) => setModal(v)}
+									onDelete={handleDeleteVariable}
+								/>
+
+								<div className={s.envFoot}>
+									<span>id: {selectedEnv.id}</span>
+									<span>все изменения сохраняются автоматически</span>
 								</div>
-								<span className={s.envTitleTag}>{selectedEnv.env}</span>
-							</div>
-
-							{/* Editable fields */}
-							<div className={s.fieldsCard}>
-								<div className={s.fieldRow}>
-									<label className={s.fieldLabel}>Label</label>
-									<input
-										className={s.fieldInput}
-										value={label}
-										onChange={(e) => setLabel(e.target.value)}
-										placeholder="Production"
-									/>
-								</div>
-								<div className={s.fieldDivider} />
-								<div className={s.fieldRow}>
-									<label className={s.fieldLabel}>Base URL</label>
-									<input
-										className={s.fieldInput}
-										value={baseUrl}
-										onChange={(e) => setBaseUrl(e.target.value)}
-										placeholder="https://api.example.com"
-									/>
-								</div>
-								<div className={s.fieldDivider} />
-								<div className={s.fieldRow}>
-									<label className={s.fieldLabel}>Prefix</label>
-									<input
-										className={s.fieldInput}
-										value={prefix}
-										onChange={(e) => setPrefix(e.target.value)}
-										placeholder="/api/v1"
-									/>
-								</div>
-
-								{isDirty && (
-									<div className={s.saveBar}>
-										<button
-											type="button"
-											className={s.saveBtn}
-											onClick={handleSave}
-											disabled={saving}
-										>
-											{saving ? "Saving…" : "Save changes"}
-										</button>
-										<button
-											type="button"
-											className={s.cancelBtn}
-											onClick={() => {
-												setLabel(selectedEnv.label);
-												setBaseUrl(selectedEnv.baseUrl);
-												setPrefix(selectedEnv.prefix);
-											}}
-										>
-											Cancel
-										</button>
-									</div>
-								)}
-							</div>
-
-							<div className={s.divider} />
-
-							{/* Auth request */}
-							<div className={s.section} style={{ marginBottom: 24 }}>
-								<div className={s.sectionHdr}>
-									<span className={s.sectionTitle}>Authorization request</span>
-								</div>
-								<div className={s.fieldsCard}>
-									<div className={s.fieldRow}>
-										<label className={s.fieldLabel}>Method</label>
-										<select
-											className={s.authMethodSelect}
-											value={authMethod}
-											onChange={(e) => setAuthMethod(e.target.value)}
-										>
-											{HTTP_METHODS.map((m) => (
-												<option key={m} value={m}>
-													{m}
-												</option>
-											))}
-										</select>
-									</div>
-									<div className={s.fieldDivider} />
-									<div className={s.fieldRow}>
-										<label className={s.fieldLabel}>URL</label>
-										<input
-											className={s.fieldInput}
-											value={authUrl}
-											onChange={(e) => setAuthUrl(e.target.value)}
-											placeholder="https://api.example.com/auth/login"
-										/>
-									</div>
-									<div className={s.fieldDivider} />
-									<div className={s.fieldRow}>
-										<label className={s.fieldLabel}>Body</label>
-										<textarea
-											className={s.authTextarea}
-											value={authBody}
-											onChange={(e) => setAuthBody(e.target.value)}
-											placeholder='{"email":"…","password":"…"}'
-											disabled={authMethod === "GET"}
-										/>
-									</div>
-									<div className={s.fieldDivider} />
-									<div className={s.fieldRow}>
-										<label className={s.fieldLabel}>Token path</label>
-										<input
-											className={s.fieldInput}
-											value={authTokenPath}
-											onChange={(e) => setAuthTokenPath(e.target.value)}
-											placeholder="data.accessToken"
-										/>
-									</div>
-
-									{isAuthDirty && (
-										<div className={s.saveBar}>
-											<button
-												type="button"
-												className={s.saveBtn}
-												onClick={handleSaveAuth}
-												disabled={savingAuth}
-											>
-												{savingAuth ? "Saving…" : "Save auth config"}
-											</button>
-											<button
-												type="button"
-												className={s.cancelBtn}
-												onClick={() => {
-													if (!loadedAuth) return;
-													setAuthUrl(loadedAuth.url);
-													setAuthMethod(loadedAuth.method);
-													setAuthBody(loadedAuth.body);
-													setAuthTokenPath(loadedAuth.tokenPath);
-												}}
-											>
-												Cancel
-											</button>
-										</div>
-									)}
-
-									<div className={s.authActions}>
-										<button
-											type="button"
-											className={s.authActionBtn}
-											onClick={handleFetchToken}
-											disabled={
-												fetchingToken ||
-												isAuthDirty ||
-												!authUrl.trim() ||
-												!authTokenPath.trim()
-											}
-											title={
-												isAuthDirty
-													? "Save auth config first"
-													: !authUrl.trim() || !authTokenPath.trim()
-														? "Fill URL and token path"
-														: ""
-											}
-										>
-											{fetchingToken ? "Fetching…" : "Fetch token"}
-										</button>
-										<span
-											className={`${s.tokenStatus} ${selectedEnv.accessToken ? s.tokenStatusOk : ""}`}
-											title={selectedEnv.accessToken ?? ""}
-										>
-											{selectedEnv.accessToken
-												? `Token: ${selectedEnv.accessToken.slice(0, 24)}${selectedEnv.accessToken.length > 24 ? "…" : ""}`
-												: "No token yet"}
-										</span>
-										{selectedEnv.accessToken && (
-											<button
-												type="button"
-												className={s.authClearBtn}
-												onClick={handleClearToken}
-											>
-												Clear
-											</button>
-										)}
-									</div>
-								</div>
-							</div>
-
-							<div className={s.divider} />
-
-							{/* Variables */}
-							<div className={s.section}>
-								<div className={s.sectionHdr}>
-									<span className={s.sectionTitle}>Variables</span>
-									<button
-										type="button"
-										className={s.addBtn}
-										onClick={() => setModal("create")}
-									>
-										+ Add variable
-									</button>
-								</div>
-
-								{selectedEnv.value.length === 0 ? (
-									<div className={s.empty}>
-										No variables yet.{" "}
-										<button
-											type="button"
-											className={s.emptyLink}
-											onClick={() => setModal("create")}
-										>
-											Add one
-										</button>
-									</div>
-								) : (
-									<div className={s.table}>
-										<div className={s.tableHead}>
-											<span>Name</span>
-											<span>Value</span>
-											<span />
-										</div>
-										{selectedEnv.value.map((v) => (
-											<div key={v.id} className={s.tableRow}>
-												<code className={s.varName}>{v.name}</code>
-												<code className={s.varValue}>
-													{v.value || <span className={s.varEmpty}>empty</span>}
-												</code>
-												<div className={s.rowActions}>
-													<button
-														type="button"
-														className={s.iconBtn}
-														title="Edit"
-														onClick={() => setModal(v)}
-													>
-														<svg
-															viewBox="0 0 14 14"
-															fill="none"
-															stroke="currentColor"
-															strokeWidth="1.5"
-															strokeLinecap="round"
-															strokeLinejoin="round"
-															width="13"
-															height="13"
-														>
-															<path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" />
-														</svg>
-													</button>
-													<button
-														type="button"
-														className={`${s.iconBtn} ${s.iconBtnDanger}`}
-														title="Delete"
-														onClick={() => handleDelete(v)}
-													>
-														<svg
-															viewBox="0 0 14 14"
-															fill="none"
-															stroke="currentColor"
-															strokeWidth="1.5"
-															strokeLinecap="round"
-															width="13"
-															height="13"
-														>
-															<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
-														</svg>
-													</button>
-												</div>
-											</div>
-										))}
-									</div>
-								)}
 							</div>
 						</>
 					) : (
-						<div className={s.placeholder}>Select an environment</div>
+						<div className={s.envPlaceholder}>
+							<div className={s.envPlaceholderTitle}>Выберите окружение</div>
+							<div className={s.envPlaceholderSub}>
+								Или создайте новое в сайдбаре слева.
+							</div>
+						</div>
 					)}
-				</main>
+				</div>
 			</div>
 
 			{modal === "create" && selectedEnv && (
@@ -564,7 +494,14 @@ export const EnvironmentPage: FC = () => {
 					environmentId={selectedEnv.id}
 					variable={modal}
 					onClose={() => setModal(null)}
-					onSave={(v) => updateVariable(v)}
+					onSave={(v) => updateVariableInStore(v)}
+				/>
+			)}
+			{variableToDelete && (
+				<DeleteVariableModal
+					variable={variableToDelete}
+					onClose={() => setVariableToDelete(null)}
+					onDeleted={(id) => removeVariable(id)}
 				/>
 			)}
 		</div>

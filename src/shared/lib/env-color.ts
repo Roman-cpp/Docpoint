@@ -1,7 +1,7 @@
 const ENV_DOT_COLORS: Record<string, string> = {
-	prod: "#1E7E52",
-	staging: "#2a1ad6",
-	local: "#dd9716",
+	prod: "#3F6B4A",
+	staging: "#3A5A78",
+	local: "#75591A",
 };
 
 const ENV_DOT_COLOR_FALLBACK = "var(--border)";

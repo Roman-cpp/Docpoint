@@ -1,0 +1,913 @@
+/* ═══════════════════════════════════════════════════════════════
+   COLORS — справочная страница цветовой системы Docpoint
+   Editorial reference в стиле type-specimen / printed manual.
+   ═══════════════════════════════════════════════════════════════ */
+
+.csFrame {
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font-sans);
+}
+
+.csPage {
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 56px 56px 80px;
+}
+
+/* ─── Header ─── */
+.csEyebrow {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 1.4px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin: 0 0 24px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.csEyebrow::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--border);
+	max-width: 80px;
+}
+
+.csH1 {
+	font-family: var(--font-serif);
+	font-size: 72px;
+	font-weight: 400;
+	letter-spacing: -1.8px;
+	line-height: 1;
+	color: var(--ink);
+	margin: 0 0 22px;
+}
+.csH1 .accent {
+	font-style: italic;
+	color: #888888;
+}
+
+.csLede {
+	font-family: var(--font-serif);
+	font-size: 19px;
+	line-height: 1.5;
+	color: var(--ink-mid);
+	margin: 0 0 18px;
+	max-width: 640px;
+}
+
+.csMeta {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--ink-low);
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 16px 0 0;
+	border-top: 1px solid var(--border);
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 16px;
+	margin: 28px 0 56px;
+}
+.csMeta .sep {
+	color: var(--border-h);
+}
+
+/* ─── Section header ─── */
+.csSection {
+	margin-bottom: 64px;
+}
+.csSectionHdr {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 22px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--border);
+}
+.csSectionH {
+	font-family: var(--font-serif);
+	font-size: 30px;
+	font-weight: 400;
+	letter-spacing: -0.4px;
+	color: var(--ink);
+	margin: 0;
+}
+.csSectionH .num {
+	font-family: var(--font-mono);
+	font-size: 13px;
+	font-weight: 400;
+	color: var(--ink-low);
+	letter-spacing: 0;
+	margin-right: 16px;
+	vertical-align: super;
+	font-style: normal;
+}
+.csSectionSub {
+	font-family: var(--font-sans);
+	font-size: 12.5px;
+	color: var(--ink-low);
+	max-width: 380px;
+	text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SWATCH GRID — карточки цветов
+   ═══════════════════════════════════════════════════════════════ */
+.csSwatches {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 14px;
+}
+.csSwatches.wide {
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.csSw {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	transition:
+		border-color var(--t-base),
+		transform var(--t-base);
+}
+.csSw:hover {
+	border-color: var(--border-h);
+	transform: translateY(-2px);
+}
+.csSwColor {
+	height: 96px;
+	position: relative;
+	display: flex;
+	align-items: flex-end;
+	justify-content: flex-end;
+	padding: 10px;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+}
+.csSwColor .labelOn {
+	background: rgba(0, 0, 0, 0.5);
+	color: #fff;
+	padding: 2px 7px;
+	border-radius: 100px;
+	font-weight: 500;
+}
+.csSwColor .labelOn.dark {
+	background: rgba(255, 255, 255, 0.85);
+	color: var(--ink);
+}
+.csSwColor.bordered {
+	border-bottom: 1px solid var(--border);
+}
+.csSwInfo {
+	padding: 13px 14px 14px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.csSwName {
+	font-family: var(--font-serif);
+	font-size: 16px;
+	font-weight: 400;
+	color: var(--ink);
+	letter-spacing: -0.1px;
+	line-height: 1.2;
+}
+.csSwToken {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--code-ink);
+	background: var(--code-bg);
+	padding: 2px 6px;
+	border-radius: 3px;
+	align-self: flex-start;
+	border: 1px solid var(--border);
+}
+.csSwHex {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+	text-transform: uppercase;
+}
+.csSwDesc {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--ink-mid);
+	line-height: 1.55;
+	margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCALE — горизонтальная полоса соседних оттенков
+   ═══════════════════════════════════════════════════════════════ */
+.csScale {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 0;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: var(--shadow-sm);
+}
+.csScaleStep {
+	display: flex;
+	flex-direction: column;
+	min-height: 200px;
+	position: relative;
+}
+.csScaleBand {
+	flex: 1;
+	min-height: 120px;
+}
+.csScaleInfo {
+	padding: 12px 14px 14px;
+	background: var(--surface);
+	border-top: 1px solid var(--border);
+}
+.csScaleInfo .num {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--ink-low);
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	display: block;
+	margin-bottom: 2px;
+}
+.csScaleInfo .token {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink);
+	display: block;
+	margin-bottom: 2px;
+}
+.csScaleInfo .hex {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--ink-low);
+	text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEMANTIC PAIR — bg + text pair
+   ═══════════════════════════════════════════════════════════════ */
+.csSem {
+	display: grid;
+	grid-template-columns: 1.2fr 1fr;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+}
+.csSemPreview {
+	padding: 22px 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-height: 140px;
+}
+.csSemPreview .sample {
+	font-family: var(--font-serif);
+	font-size: 28px;
+	font-weight: 400;
+	letter-spacing: -0.3px;
+	line-height: 1.05;
+}
+.csSemPreview .sampleSm {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 500;
+}
+.csSemPreview .sampleCode {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	align-self: flex-start;
+	padding: 3px 8px;
+	border-radius: 4px;
+}
+.csSemInfo {
+	background: var(--surface);
+	border-left: 1px solid var(--border);
+	padding: 14px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.csSemInfoRow {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	font-size: 11px;
+}
+.csSemInfoChip {
+	width: 14px;
+	height: 14px;
+	border-radius: 4px;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	flex-shrink: 0;
+}
+.csSemInfoToken {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--ink);
+	flex: 1;
+}
+.csSemInfoHex {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	color: var(--ink-low);
+	text-transform: uppercase;
+}
+.csSemName {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	font-weight: 400;
+	margin-bottom: 4px;
+	letter-spacing: -0.2px;
+}
+.csSemDesc {
+	font-size: 11.5px;
+	color: var(--ink-mid);
+	line-height: 1.55;
+	margin-top: auto;
+	padding-top: 6px;
+	border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HTTP METHODS — горизонтальная плашка
+   ═══════════════════════════════════════════════════════════════ */
+.csMethods {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 10px;
+}
+.csMethodCard {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 18px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	text-align: center;
+}
+.csMethodBadge {
+	display: inline-flex;
+	align-self: center;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.4px;
+	padding: 6px 16px;
+	border-radius: 5px;
+	margin-bottom: 4px;
+}
+.csMethodBadge.get {
+	color: var(--get);
+	background: var(--get-bg);
+}
+.csMethodBadge.post {
+	color: var(--post);
+	background: var(--post-bg);
+}
+.csMethodBadge.put {
+	color: var(--put);
+	background: var(--put-bg);
+}
+.csMethodBadge.patch {
+	color: var(--patch);
+	background: var(--patch-bg);
+}
+.csMethodBadge.delete {
+	color: var(--delete);
+	background: var(--delete-bg);
+}
+.csMethodInfo {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	color: var(--ink-low);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.csMethodInfo .hex {
+	text-transform: uppercase;
+}
+.csMethodAka {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	color: var(--ink-mid);
+	margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   USAGE — примеры применения
+   ═══════════════════════════════════════════════════════════════ */
+.csUsageGrid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 24px;
+}
+.csUsageCard {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 20px 22px;
+}
+.csUsageH {
+	font-family: var(--font-serif);
+	font-size: 16px;
+	font-weight: 400;
+	letter-spacing: -0.1px;
+	color: var(--ink);
+	margin: 0 0 4px;
+}
+.csUsageSub {
+	font-size: 11.5px;
+	color: var(--ink-low);
+	margin: 0 0 14px;
+}
+.csUsageRow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	padding: 10px 0;
+	border-top: 1px dashed var(--border);
+}
+.csUsageRow:first-of-type {
+	border-top: none;
+	padding-top: 0;
+}
+.csUsageRow .lbl {
+	font-size: 11px;
+	color: var(--ink-low);
+	width: 80px;
+	flex-shrink: 0;
+	font-family: var(--font-mono);
+}
+
+/* ─── Sample components ─── */
+.csSampleBtn {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 500;
+	padding: 8px 16px;
+	border-radius: 7px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	border: 1px solid transparent;
+}
+.csSampleBtn.primary {
+	background: var(--ink);
+	color: var(--surface);
+	border-color: var(--ink);
+}
+.csSampleBtn.ghost {
+	background: var(--surface);
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+.csSampleBtn.danger {
+	background: #9b3b36;
+	color: #fff;
+	border-color: #9b3b36;
+}
+
+.csSampleBadge {
+	font-family: var(--font-sans);
+	font-size: 10.5px;
+	font-weight: 500;
+	letter-spacing: 0.3px;
+	padding: 3px 9px;
+	border-radius: 4px;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	border: 1px solid transparent;
+}
+.csSampleBadge.success {
+	color: #3f6b4a;
+	background: #eaf0e9;
+	border-color: #c9d8c7;
+}
+.csSampleBadge.warning {
+	color: #75591a;
+	background: #f5edd9;
+	border-color: #e2d2a6;
+}
+.csSampleBadge.error {
+	color: #9b3b36;
+	background: #f4e4e2;
+	border-color: #e3c3bf;
+}
+.csSampleBadge.info {
+	color: #3a5a78;
+	background: #e6ecf1;
+	border-color: #c4d2de;
+}
+.csSampleBadge .dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.csSampleCallout {
+	border-radius: 8px;
+	padding: 11px 14px;
+	font-size: 13px;
+	line-height: 1.6;
+	width: 100%;
+	border-left-width: 3px;
+	border-left-style: solid;
+}
+.csSampleCallout.success {
+	background: #eaf0e9;
+	border-left-color: #3f6b4a;
+	color: #3f6b4a;
+}
+.csSampleCallout.warning {
+	background: #f5edd9;
+	border-left-color: #75591a;
+	color: #75591a;
+}
+.csSampleCallout.error {
+	background: #f4e4e2;
+	border-left-color: #9b3b36;
+	color: #9b3b36;
+}
+.csSampleCallout.info {
+	background: #e6ecf1;
+	border-left-color: #3a5a78;
+	color: #3a5a78;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRINCIPLES — крупные текстовые карточки
+   ═══════════════════════════════════════════════════════════════ */
+.csPrinciples {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 22px;
+}
+.csPrinciple {
+	padding: 22px 24px 24px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+}
+.csPrincipleNo {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+	letter-spacing: 0.5px;
+	margin-bottom: 14px;
+}
+.csPrincipleT {
+	font-family: var(--font-serif);
+	font-size: 22px;
+	font-weight: 400;
+	letter-spacing: -0.3px;
+	color: var(--ink);
+	line-height: 1.15;
+	margin: 0 0 10px;
+}
+.csPrincipleP {
+	font-size: 13px;
+	color: var(--ink-mid);
+	line-height: 1.6;
+	margin: 0;
+}
+
+/* ─── Семантические TRIAD — fg + bg + border ─── */
+.csSemTriad {
+	display: grid;
+	grid-template-columns: 1fr;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(60, 50, 40, 0.04);
+}
+
+.csTriadPreview {
+	padding: 22px 22px 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-height: 180px;
+	border-bottom: 1px solid;
+	position: relative;
+}
+.csTriadPreview .sample {
+	font-family: var(--font-serif);
+	font-size: 32px;
+	font-weight: 400;
+	letter-spacing: -0.5px;
+	line-height: 1.05;
+}
+.csTriadPreview .sampleChip {
+	align-self: flex-start;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	padding: 5px 12px;
+	border-radius: 100px;
+	border: 1px solid;
+}
+.csTriadPreview .sampleCallout {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	line-height: 1.55;
+	border-left: 3px solid;
+	padding: 9px 12px;
+	border-radius: 8px;
+	margin-top: auto;
+}
+.csTriadPreview .sampleCallout b {
+	font-weight: 500;
+}
+
+.csTriadInfo {
+	padding: 16px 20px 18px;
+	background: var(--surface);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.csTriadName {
+	font-family: var(--font-serif);
+	font-size: 19px;
+	font-weight: 400;
+	letter-spacing: -0.2px;
+	color: var(--ink);
+	margin: 0;
+	line-height: 1.2;
+}
+.csTriadAka {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--ink-low);
+	margin: 0 0 8px;
+}
+.csTriadRows {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	margin-bottom: 6px;
+}
+.csTriadRow {
+	display: grid;
+	grid-template-columns: 16px 1fr auto auto;
+	gap: 10px;
+	align-items: center;
+	padding: 5px 0;
+	border-bottom: 1px dashed var(--border);
+}
+.csTriadRow:last-child {
+	border-bottom: none;
+}
+.csTriadChip {
+	width: 14px;
+	height: 14px;
+	border-radius: 4px;
+	border: 1px solid rgba(0, 0, 0, 0.07);
+}
+.csTriadToken {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--ink);
+}
+.csTriadRgb {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	color: var(--ink-low);
+}
+.csTriadHex {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-mid);
+	text-transform: uppercase;
+}
+.csTriadMeta {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 11.5px;
+	color: var(--ink-low);
+	margin-top: 4px;
+	padding-top: 8px;
+	border-top: 1px solid var(--border);
+}
+.csTriadMeta .ratio {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	font-weight: 500;
+	padding: 2px 7px;
+	border-radius: 4px;
+	background: var(--code-bg);
+	color: var(--ink);
+	border: 1px solid var(--border);
+}
+.csTriadDesc {
+	font-size: 12.5px;
+	color: var(--ink-mid);
+	line-height: 1.6;
+	margin: 6px 0 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BRAND BLOCK — большой презентационный блок основного цвета
+   ═══════════════════════════════════════════════════════════════ */
+.csBrand {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin-bottom: 30px;
+}
+.csBrandHero {
+	background: var(--ink);
+	color: var(--surface);
+	border-radius: 12px;
+	padding: 56px 56px 36px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 40px;
+	min-height: 240px;
+	position: relative;
+	overflow: hidden;
+}
+.csBrandHero::after {
+	/* субтильная watermark — большая буква D в углу */
+	content: "D";
+	position: absolute;
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 420px;
+	line-height: 0.78;
+	color: rgba(255, 255, 255, 0.04);
+	bottom: -110px;
+	right: -60px;
+	pointer-events: none;
+}
+.csBrandHeroLeft {
+	position: relative;
+	z-index: 1;
+}
+.csBrandMark {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 72px;
+	letter-spacing: -1.8px;
+	line-height: 1;
+	color: var(--surface);
+	margin: 0;
+}
+.csBrandMark .dot {
+	color: var(--surface);
+}
+.csBrandTag {
+	font-family: var(--font-serif);
+	font-size: 17px;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.7);
+	margin: 16px 0 0;
+	max-width: 380px;
+	font-style: italic;
+}
+.csBrandHeroRight {
+	position: relative;
+	z-index: 1;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.55);
+	text-align: right;
+	line-height: 1.7;
+}
+.csBrandHeroRight .lbl {
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.35);
+}
+.csBrandHeroRight b {
+	color: rgba(255, 255, 255, 0.85);
+	font-weight: 400;
+}
+
+/* Brand colors — row of 3 cards */
+.csBrandRow {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 14px;
+}
+.csBrandCard {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+.csBrandCardColor {
+	height: 120px;
+	border-bottom: 1px solid var(--border);
+	position: relative;
+	display: flex;
+	align-items: flex-end;
+	padding: 14px 18px;
+}
+.csBrandCardColor .badge {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	padding: 3px 8px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.5);
+	color: #fff;
+	font-weight: 500;
+}
+.csBrandCardColor.dark .badge {
+	background: rgba(255, 255, 255, 0.85);
+	color: var(--ink);
+}
+.csBrandCardInfo {
+	padding: 18px 20px 20px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.csBrandCardName {
+	font-family: var(--font-serif);
+	font-size: 22px;
+	font-weight: 400;
+	letter-spacing: -0.3px;
+	color: var(--ink);
+	margin: 0;
+	line-height: 1.15;
+}
+.csBrandCardName .en {
+	font-style: italic;
+	color: var(--ink-low);
+	font-size: 18px;
+}
+.csBrandCardVals {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+.csBrandCardVal {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink);
+	background: var(--code-bg);
+	padding: 2px 7px;
+	border-radius: 4px;
+	border: 1px solid var(--border);
+}
+.csBrandCardVal.muted {
+	color: var(--ink-low);
+}
+.csBrandCardDesc {
+	font-size: 12.5px;
+	color: var(--ink-mid);
+	line-height: 1.6;
+	margin: 0;
+	padding-top: 10px;
+	border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   END BRAND
+   ═══════════════════════════════════════════════════════════════ */
+
+.csFoot {
+	margin-top: 64px;
+	padding-top: 22px;
+	border-top: 1px solid var(--border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+.csFoot a {
+	color: var(--ink-mid);
+	text-decoration: none;
+	border-bottom: 1px solid var(--border-h);
+}
+.csFoot a:hover {
+	border-bottom-color: var(--ink);
+	color: var(--ink);
+}
