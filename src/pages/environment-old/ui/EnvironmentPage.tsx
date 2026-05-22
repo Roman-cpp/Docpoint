@@ -3,14 +3,14 @@ import { type FC, useEffect, useState } from "react";
 import { toast } from "@/core/toast";
 import type { Variable } from "@/entities/environment";
 import {
-	deleteVariable,
-	updateEnvironment,
+	deleteVariableApi,
+	updateEnvironmentApi,
 	VariableModal,
 } from "@/entities/environment";
 import {
-	readEnvironmentAuth,
-	setEnvironmentAccessToken,
-	updateEnvironmentAuth,
+	readEnvironmentAuthApi,
+	setEnvironmentAccessTokenApi,
+	updateEnvironmentAuthApi,
 } from "@/entities/environment-auth";
 import {
 	actionaddVariableToEnvironment,
@@ -83,7 +83,7 @@ export const EnvironmentPage: FC = () => {
 		setPrefix(selectedEnv.prefix);
 
 		let cancelled = false;
-		readEnvironmentAuth(selectedEnv.id).then((auth) => {
+		readEnvironmentAuthApi(selectedEnv.id).then((auth) => {
 			if (cancelled) return;
 			const method = auth.method || "POST";
 			setAuthUrl(auth.url);
@@ -112,7 +112,7 @@ export const EnvironmentPage: FC = () => {
 		if (!selectedEnv) return;
 		setSaving(true);
 		try {
-			await updateEnvironment({ id: selectedEnv.id, label, baseUrl, prefix });
+			await updateEnvironmentApi({ id: selectedEnv.id, label, baseUrl, prefix });
 			patchEnvironment({ id: selectedEnv.id, label, baseUrl, prefix });
 			toast({ variant: "success", title: "Saved" });
 		} catch {
@@ -144,7 +144,7 @@ export const EnvironmentPage: FC = () => {
 				body: authBody,
 				tokenPath: authTokenPath.trim(),
 			};
-			await updateEnvironmentAuth(dto);
+			await updateEnvironmentAuthApi(dto);
 			patchToken(dto.tokenPath);
 			setLoadedAuth({
 				url: dto.url,
@@ -219,7 +219,7 @@ export const EnvironmentPage: FC = () => {
 				return;
 			}
 
-			await setEnvironmentAccessToken(selectedEnv.id, token);
+			await setEnvironmentAccessTokenApi(selectedEnv.id, token);
 			patchToken(token);
 			toast({ variant: "success", title: "Token fetched" });
 		} catch (e) {
@@ -236,7 +236,7 @@ export const EnvironmentPage: FC = () => {
 	const handleClearToken = async () => {
 		if (!selectedEnv) return;
 		try {
-			await setEnvironmentAccessToken(selectedEnv.id, null);
+			await setEnvironmentAccessTokenApi(selectedEnv.id, null);
 			patchToken(null);
 		} catch {
 			toast({
@@ -249,7 +249,7 @@ export const EnvironmentPage: FC = () => {
 
 	const handleDelete = async (variable: Variable) => {
 		try {
-			await deleteVariable(variable.id);
+			await deleteVariableApi(variable.id);
 			removeVariable(variable.id);
 		} catch {
 			toast({

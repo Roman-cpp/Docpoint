@@ -1,5 +1,5 @@
 import { type FC, useState } from "react";
-import { createEnvironment } from "../api";
+import { createEnvironmentApi } from "../api/createEnvironmentApi";
 import type { Environment } from "../model/type";
 import s from "./VariableModal.module.css";
 
@@ -26,7 +26,7 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 		if (!trimmedLabel || !trimmedEnv) return;
 		setLoading(true);
 		try {
-			const created = await createEnvironment(docId, {
+			const created = await createEnvironmentApi(docId, {
 				env: trimmedEnv,
 				label: trimmedLabel,
 				baseUrl: baseUrl.trim(),

@@ -2,22 +2,22 @@ import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Doc } from "@/entities/doc";
-import { readDoc } from "@/entities/doc";
+import { readDocApi } from "@/entities/doc";
 import type { Endpoint } from "@/entities/endpoint";
-import { updateParamValue } from "@/entities/endpoint";
+import { updateParamValueApi } from "@/entities/endpoint";
 import type { Entity } from "@/entities/entity";
-import { readEntities } from "@/entities/entity";
+import { readEntitiesApi } from "@/entities/entity";
 import type {
 	Environment,
 	UpdateEnvironmentDTO,
 	Variable,
 } from "@/entities/environment";
 import {
-	readEnvironments,
-	updateEnvironmentToken as updateEnvironmentTokenApi,
+	readEnvironmentsApi,
+	updateEnvironmentTokenApi,
 } from "@/entities/environment";
 import type { Group } from "@/entities/group";
-import { readGroups } from "@/entities/group";
+import { readGroupsApi } from "@/entities/group";
 
 type DocState = {
 	doc: Doc | null;
@@ -208,7 +208,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 	},
 
 	updateEndpointParamValue: async (endpointId, kind, name, value) => {
-		await updateParamValue(endpointId, kind, name, value);
+		await updateParamValueApi(endpointId, kind, name, value);
 		set((state) => {
 			const patchEndpoint = (ep: Endpoint): Endpoint => {
 				if (ep.id !== endpointId) return ep;
@@ -235,10 +235,10 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 	fetchDoc: async (id) => {
 		try {
 			const [doc, groups, entities, environments] = await Promise.all([
-				readDoc(id),
-				readGroups(id),
-				readEntities(id),
-				readEnvironments(id),
+				readDocApi(id),
+				readGroupsApi(id),
+				readEntitiesApi(id),
+				readEnvironmentsApi(id),
 			]);
 			set({ doc, groups, entities, environments });
 		} catch (e) {

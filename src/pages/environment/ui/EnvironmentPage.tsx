@@ -4,14 +4,14 @@ import { toast } from "@/core/toast";
 import type { Variable } from "@/entities/environment";
 import {
 	DeleteVariableModal,
-	deleteEnvironment,
-	updateEnvironment,
+	deleteEnvironmentApi,
+	updateEnvironmentApi,
 	VariableModal,
 } from "@/entities/environment";
 import {
-	readEnvironmentAuth,
-	setEnvironmentAccessToken,
-	updateEnvironmentAuth,
+	readEnvironmentAuthApi,
+	setEnvironmentAccessTokenApi,
+	updateEnvironmentAuthApi,
 } from "@/entities/environment-auth";
 import {
 	actionaddVariableToEnvironment,
@@ -115,7 +115,7 @@ export const EnvironmentPage: FC = () => {
 		setEnvStatus("idle");
 
 		let cancelled = false;
-		readEnvironmentAuth(envId).then((auth) => {
+		readEnvironmentAuthApi(envId).then((auth) => {
 			if (cancelled) return;
 			const method = asMethod(auth.method || "POST");
 			setAuthUrl(auth.url);
@@ -156,7 +156,7 @@ export const EnvironmentPage: FC = () => {
 		setEnvStatus("saving");
 		try {
 			const dto = { id: selectedEnv.id, ...next };
-			await updateEnvironment(dto);
+			await updateEnvironmentApi(dto);
 			patchEnvironment(dto);
 			setEnvStatus("saved");
 			setTimeout(
@@ -198,7 +198,7 @@ export const EnvironmentPage: FC = () => {
 		}
 		setAuthStatus("saving");
 		try {
-			await updateEnvironmentAuth({
+			await updateEnvironmentAuthApi({
 				environmentId: selectedEnv.id,
 				...next,
 			});
@@ -276,7 +276,7 @@ export const EnvironmentPage: FC = () => {
 				return;
 			}
 
-			await setEnvironmentAccessToken(selectedEnv.id, token);
+			await setEnvironmentAccessTokenApi(selectedEnv.id, token);
 			patchToken(token);
 			toast({ variant: "success", title: "Token fetched" });
 		} catch (e) {
@@ -293,7 +293,7 @@ export const EnvironmentPage: FC = () => {
 	const handleClearToken = async () => {
 		if (!selectedEnv) return;
 		try {
-			await setEnvironmentAccessToken(selectedEnv.id, null);
+			await setEnvironmentAccessTokenApi(selectedEnv.id, null);
 			patchToken(null);
 		} catch {
 			toast({
@@ -308,7 +308,7 @@ export const EnvironmentPage: FC = () => {
 		if (!selectedEnv) return;
 		if (!confirm(`Удалить окружение «${selectedEnv.label}»?`)) return;
 		try {
-			await deleteEnvironment(selectedEnv.id);
+			await deleteEnvironmentApi(selectedEnv.id);
 			removeEnvironment(selectedEnv.id);
 		} catch {
 			toast({

@@ -1,5 +1,5 @@
 import { type FC, useState } from "react";
-import { deleteVariable } from "../api";
+import { deleteVariableApi } from "../api/deleteVariableApi";
 import type { Variable } from "../model/type";
 import s from "./VariableModal.module.css";
 
@@ -19,7 +19,7 @@ export const DeleteVariableModal: FC<DeleteVariableModalProps> = ({
 	const confirm = async () => {
 		setLoading(true);
 		try {
-			await deleteVariable(variable.id);
+			await deleteVariableApi(variable.id);
 			onDeleted(variable.id);
 			onClose();
 		} finally {

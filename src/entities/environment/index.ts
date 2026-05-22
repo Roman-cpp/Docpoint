@@ -1,14 +1,12 @@
-export {
-	createEnvironment,
-	createVariable,
-	deleteEnvironment,
-	deleteVariable,
-	readEnvironments,
-	updateEnvironment,
-	updateEnvironmentToken,
-	updateVariable,
-	writeEnvironments,
-} from "./api";
+export { createEnvironmentApi } from "./api/createEnvironmentApi";
+export { createVariableApi } from "./api/createVariableApi";
+export { deleteEnvironmentApi } from "./api/deleteEnvironmentApi";
+export { deleteVariableApi } from "./api/deleteVariableApi";
+export { readEnvironmentsApi } from "./api/readEnvironmentsApi";
+export { updateEnvironmentApi } from "./api/updateEnvironmentApi";
+export { updateEnvironmentTokenApi } from "./api/updateEnvironmentTokenApi";
+export { updateVariableApi } from "./api/updateVariableApi";
+export { writeEnvironmentsApi } from "./api/writeEnvironmentsApi";
 export type {
 	CreateEnvironmentDTO,
 	CreateVariableDTO,

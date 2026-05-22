@@ -1,10 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import { readDoc, useDocsStore } from "@/entities/doc";
-import { readEntities } from "@/entities/entity";
-import { readEnvironments } from "@/entities/environment";
-import { readGroups } from "@/entities/group";
+import { readDocApi, useDocsStore } from "@/entities/doc";
+import { readEntitiesApi } from "@/entities/entity";
+import { readEnvironmentsApi } from "@/entities/environment";
+import { readGroupsApi } from "@/entities/group";
 import s from "./ApiExplorerPage.module.css";
 
 export const Sidebar = () => {
@@ -54,10 +54,10 @@ export const Sidebar = () => {
 
 	const handleExport = async (docId: string, docName: string) => {
 		const [doc, groups, entities, environments] = await Promise.all([
-			readDoc(docId),
-			readGroups(docId),
-			readEntities(docId),
-			readEnvironments(docId),
+			readDocApi(docId),
+			readGroupsApi(docId),
+			readEntitiesApi(docId),
+			readEnvironmentsApi(docId),
 		]);
 		const content = JSON.stringify(
 			{ doc, groups, entities, environments },

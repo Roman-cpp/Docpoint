@@ -3,13 +3,12 @@ import { toast } from "@/core/toast";
 import type { CreateEntityDTO } from "@/entities/entity";
 import type { CreateEnvironmentDTO } from "@/entities/environment";
 import type { CreateGroupDTO } from "@/entities/group";
-import {
-	deleteDoc as deleteDocApi,
-	importDoc as importDocApi,
-	readAllDocs,
-	readDoc,
-	writeDoc,
-} from "../api";
+
+import { deleteDocApi } from "./../api/deleteDocApi";
+import { importDocApi } from "./../api/importDocApi";
+import { readAllDocsApi } from "./../api/readAllDocsApi";
+import { readDocApi } from "./../api/readDocApi";
+import { writeDocApi } from "./../api/writeDocApi";
 import type { CreateDocDTO, Doc } from "../model/type";
 
 export const docKeys = {
@@ -36,17 +35,17 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 
 	const docs = useQuery<Doc[]>({
 		queryKey: docKeys.list(),
-		queryFn: () => readAllDocs(),
+		queryFn: () => readAllDocsApi(),
 	});
 
 	const doc = useQuery<Doc | null>({
 		queryKey: docKeys.detail(id ?? ""),
-		queryFn: () => readDoc(id!),
+		queryFn: () => readDocApi(id!),
 		enabled: Boolean(id),
 	});
 
 	const createDoc = useMutation({
-		mutationFn: (dto: CreateDocDTO) => writeDoc(dto),
+		mutationFn: (dto: CreateDocDTO) => writeDocApi(dto),
 		onSuccess: () => {
 			toast({ title: "OK", description: "Документ создан" });
 			queryClient.invalidateQueries({ queryKey: docKeys.lists() });

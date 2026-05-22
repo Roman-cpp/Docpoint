@@ -1,59 +1,9 @@
-import { invoke } from "@tauri-apps/api/core";
-import type {
-	CreateEnvironmentDTO,
-	CreateVariableDTO,
-	Environment,
-	UpdateEnvironmentDTO,
-	UpdateVariableDTO,
-	Variable,
-} from "../model/type";
-
-export function readEnvironments(docId: string): Promise<Environment[]> {
-	return invoke("read_environments", { docId });
-}
-
-export function writeEnvironments(
-	docId: string,
-	environments: Environment[],
-): Promise<void> {
-	return invoke("write_environments", { docId, environments });
-}
-
-export function createEnvironment(
-	docId: string,
-	environment: CreateEnvironmentDTO,
-): Promise<Environment> {
-	return invoke("create_environment", { docId, environment });
-}
-
-export function updateEnvironment(
-	environment: UpdateEnvironmentDTO,
-): Promise<void> {
-	return invoke("update_environment", { environment });
-}
-
-export function updateEnvironmentToken(
-	environmentId: string,
-	token: string | null,
-): Promise<void> {
-	return invoke("set_environment_access_token", { environmentId, token });
-}
-
-export function deleteEnvironment(id: string): Promise<void> {
-	return invoke("delete_environment", { id });
-}
-
-export function createVariable(
-	environmentId: string,
-	variable: CreateVariableDTO,
-): Promise<Variable> {
-	return invoke("create_variable", { environmentId, variable });
-}
-
-export function updateVariable(variable: UpdateVariableDTO): Promise<void> {
-	return invoke("update_variable", { variable });
-}
-
-export function deleteVariable(id: string): Promise<void> {
-	return invoke("delete_variable", { id });
-}
+export { createEnvironmentApi } from "./createEnvironmentApi";
+export { createVariableApi } from "./createVariableApi";
+export { deleteEnvironmentApi } from "./deleteEnvironmentApi";
+export { deleteVariableApi } from "./deleteVariableApi";
+export { readEnvironmentsApi } from "./readEnvironmentsApi";
+export { updateEnvironmentApi } from "./updateEnvironmentApi";
+export { updateEnvironmentTokenApi } from "./updateEnvironmentTokenApi";
+export { updateVariableApi } from "./updateVariableApi";
+export { writeEnvironmentsApi } from "./writeEnvironmentsApi";

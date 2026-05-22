@@ -1,5 +1,6 @@
 import { type FC, useState } from "react";
-import { createVariable, updateVariable } from "../api";
+import { createVariableApi } from "../api/createVariableApi";
+import { updateVariableApi } from "../api/updateVariableApi";
 import type { Variable } from "../model/type";
 import s from "./VariableModal.module.css";
 
@@ -27,14 +28,14 @@ export const VariableModal: FC<VariableModalProps> = ({
 		setLoading(true);
 		try {
 			if (isEdit && variable) {
-				await updateVariable({
+				await updateVariableApi({
 					id: variable.id,
 					name: trimmedName,
 					value: value.trim(),
 				});
 				onSave({ ...variable, name: trimmedName, value: value.trim() });
 			} else {
-				const created = await createVariable(environmentId, {
+				const created = await createVariableApi(environmentId, {
 					name: trimmedName,
 					value: value.trim(),
 				});

@@ -18,13 +18,11 @@ const sBg = (status: number) =>
 			: "var(--red-bg)";
 
 const sClr = (status: number) =>
-	status < 300
-		? "var(--green)"
-		: status < 500
-			? "var(--amber)"
-			: "var(--red)";
+	status < 300 ? "var(--green)" : status < 500 ? "var(--amber)" : "var(--red)";
 
-function tryParseJson(text: string): { ok: true; value: unknown } | { ok: false } {
+function tryParseJson(
+	text: string,
+): { ok: true; value: unknown } | { ok: false } {
 	const t = text.trimStart();
 	if (!t.startsWith("{") && !t.startsWith("[")) return { ok: false };
 	try {
@@ -168,7 +166,10 @@ interface ResponseCardProps {
 	renderCopyBtn: (text: string) => ReactNode;
 }
 
-export const ResponseCard: FC<ResponseCardProps> = ({ resp, renderCopyBtn }) => {
+export const ResponseCard: FC<ResponseCardProps> = ({
+	resp,
+	renderCopyBtn,
+}) => {
 	const parsed = resp.body ? tryParseJson(resp.body) : { ok: false as const };
 
 	return (

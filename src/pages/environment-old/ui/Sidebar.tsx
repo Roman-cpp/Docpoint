@@ -1,6 +1,6 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
-import { deleteEnvironment, EnvironmentModal } from "@/entities/environment";
+import { deleteEnvironmentApi, EnvironmentModal } from "@/entities/environment";
 import {
 	actionAddEnvironment,
 	actionDeleteEnvironment,
@@ -31,7 +31,7 @@ export const Sidebar: FC = () => {
 		e.stopPropagation();
 		if (!confirm(`Delete environment "${label}"?`)) return;
 		try {
-			await deleteEnvironment(id);
+			await deleteEnvironmentApi(id);
 			removeEnvironment(id);
 		} catch {
 			toast({

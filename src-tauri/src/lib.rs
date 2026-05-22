@@ -1,22 +1,15 @@
+mod domain;
+mod service;
 mod state;
-mod http;
-mod doc;
-mod endpoint;
-mod group;
-mod entity;
-mod environment;
-mod environment_auth;
-mod usecase;
 
 use state::AppState;
-use http::send_request;
-use usecase::{import_doc, save_json_file};
-use doc::{read_docs, read_doc, create_doc, delete_doc};
-use endpoint::update_param_value;
-use group::{read_groups, write_groups};
-use entity::{read_schemas, write_schemas};
-use environment::{read_environments, write_environments, create_environment, update_environment, delete_environment, create_variable, update_variable, delete_variable};
-use environment_auth::{read_environment_auth, update_environment_auth, set_environment_access_token};
+use service::{
+    create_doc, create_environment, create_variable, delete_doc, delete_environment,
+    delete_variable, import_doc, read_doc, read_docs, read_environment_auth, read_environments,
+    read_groups, read_schemas, save_json_file, send_request, set_environment_access_token,
+    update_environment, update_environment_auth, update_param_value, update_variable,
+    write_environments, write_groups, write_schemas,
+};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
 
