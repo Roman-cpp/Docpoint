@@ -8,7 +8,9 @@
 		"build": "tsc && vite build",
 		"preview": "vite preview",
 		"tauri": "tauri",
-		"lint": "bunx biome check --write"
+		"lint": "bunx biome check --write",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"dependencies": {
 		"@biomejs/biome": "2.4.15",
@@ -26,10 +28,12 @@
 		"zustand": "^5.0.13"
 	},
 	"devDependencies": {
+		"@storybook/react-vite": "^10.4.1",
 		"@tauri-apps/cli": "^2",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
 		"@vitejs/plugin-react": "^4.6.0",
+		"storybook": "^10.4.1",
 		"typescript": "~5.8.3",
 		"vite": "^7.0.4"
 	}

@@ -1,3 +1,6 @@
+export { Button } from "./Button/Button";
+export { Card } from "./Card/Card";
+export { Modal, ModalBtnPrimary, ModalBtnDanger, ModalBtnCancel } from "./Modal/Modal";
 export { Field } from "./Field/Field";
 export { Input } from "./Input/Input";
 export { Textarea } from "./Textarea/Textarea";
