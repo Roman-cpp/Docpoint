@@ -52,6 +52,12 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/color")).EnvironmentPage,
 				}),
 			},
+			{
+				path: "/ui-kit",
+				lazy: async () => ({
+					Component: (await import("@/pages/ui-kit")).UiKitPage,
+				}),
+			},
 		],
 	},
 ]);
