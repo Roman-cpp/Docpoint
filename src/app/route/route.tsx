@@ -58,6 +58,18 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/ui-kit")).UiKitPage,
 				}),
 			},
+			{
+				path: "/layouts-demo",
+				lazy: async () => ({
+					Component: (await import("@/pages/layouts-demo")).LayoutsDemoPage,
+				}),
+			},
+			{
+				path: "/split-pane",
+				lazy: async () => ({
+					Component: (await import("@/pages/split-pane-demo")).SplitPaneDemoPage,
+				}),
+			},
 		],
 	},
 ]);

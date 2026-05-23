@@ -1,4 +1,4 @@
-import { type FC, useCallback, useRef } from "react";
+import type { FC } from "react";
 import { useParams } from "react-router";
 import {
 	actionSelectEndpoint,
@@ -7,13 +7,10 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import s from "@/shared/styles/apiDocs.module.css";
+import { SplitPane } from "@/shared/ui-kit";
 import { Layout } from "@/widgets/layout";
 import { EndpointPage } from "./EndpointPage";
 import { TryItPanel } from "./TryItPanel";
-
-const TRY_INIT = 348;
-const TRY_MIN = 240;
-const TRY_MAX = 600;
 
 export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
@@ -21,33 +18,6 @@ export const EndpointShowPage: FC = () => {
 	const endpoint = useDocStore(selectSelectedEndpoint);
 	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
 	const selectEndpoint = useDocStore(actionSelectEndpoint);
-
-	const tryPanelRef = useRef<HTMLDivElement>(null);
-
-	const onTryPanelDrag = useCallback((e: React.MouseEvent) => {
-		e.preventDefault();
-		const startX = e.clientX;
-		const startW = tryPanelRef.current?.offsetWidth ?? TRY_INIT;
-
-		const onMove = (ev: MouseEvent) => {
-			const w = Math.max(
-				TRY_MIN,
-				Math.min(TRY_MAX, startW - (ev.clientX - startX)),
-			);
-			if (tryPanelRef.current) tryPanelRef.current.style.width = `${w}px`;
-		};
-		const onUp = () => {
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-			document.body.style.cursor = "";
-			document.body.style.userSelect = "";
-		};
-
-		document.body.style.cursor = "col-resize";
-		document.body.style.userSelect = "none";
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
-	}, []);
 
 	if (!id) return;
 
@@ -79,24 +49,17 @@ export const EndpointShowPage: FC = () => {
 
 	return (
 		<Layout>
-			<div className={s.shell}>
-				<div className={s.main}>
-					<div className={s.endpointPanel}>
-						<EndpointPage detail={endpoint} key={id} />
-					</div>
+			<SplitPane
+				right={<TryItPanel />}
+				rightWidth={348}
+				rightMin={240}
+				rightMax={600}
+				rightVisible={!!selectedEnvConfig}
+			>
+				<div className={s.endpointPanel}>
+					<EndpointPage detail={endpoint} key={id} />
 				</div>
-			</div>
-
-			<div className={s.resizeHandle} onMouseDown={onTryPanelDrag} />
-
-			{selectedEnvConfig && (
-				<div
-					ref={tryPanelRef}
-					style={{ width: TRY_INIT, flexShrink: 0, overflow: "hidden" }}
-				>
-					<TryItPanel />
-				</div>
-			)}
+			</SplitPane>
 		</Layout>
 	);
 };

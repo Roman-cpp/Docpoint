@@ -7,7 +7,7 @@ import {
 	Select,
 	Textarea,
 	Toggle,
-} from "@/shared/ui";
+} from "@/shared/ui-kit";
 import s from "./UiKitPage.module.css";
 
 const SearchIcon = () => (

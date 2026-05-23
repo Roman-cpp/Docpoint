@@ -1,0 +1,481 @@
+/* ═══════════════ PAGE SHELL ═══════════════ */
+.page {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	background: var(--bg);
+}
+
+.body {
+	flex: 1;
+	overflow-y: auto;
+	padding: 48px 0 80px;
+}
+.body::-webkit-scrollbar {
+	width: 4px;
+}
+.body::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 2px;
+}
+
+.inner {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 0 32px;
+}
+
+/* ═══════════════ PAGE HEADER ═══════════════ */
+.pageTitle {
+	font-family: var(--font-serif);
+	font-size: var(--fs-28);
+	font-weight: 400;
+	color: var(--ink);
+	letter-spacing: -0.4px;
+	margin: 0 0 6px;
+}
+
+.pageSub {
+	font-size: var(--fs-13);
+	color: var(--ink-low);
+	margin: 0 0 40px;
+	line-height: 1.6;
+}
+
+/* ═══════════════ LAYOUT CARD ═══════════════ */
+.card {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	margin-bottom: 20px;
+	overflow: hidden;
+}
+
+.cardHead {
+	padding: 22px 28px 18px;
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+}
+
+.cardIndex {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--ink-mid);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-top: 1px;
+	font-family: var(--font-mono);
+}
+
+.cardMeta {
+	flex: 1;
+}
+
+.cardTitleRow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 6px;
+}
+
+.cardName {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	font-weight: 400;
+	color: var(--ink);
+}
+
+.badge {
+	padding: 2px 9px;
+	border-radius: 100px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.2px;
+	flex-shrink: 0;
+}
+.badge.green  { background: var(--green-bg); color: var(--green); }
+.badge.blue   { background: var(--blue-bg);  color: var(--blue); }
+.badge.amber  { background: var(--amber-bg); color: var(--amber); }
+.badge.cat    { background: var(--cat-bg);   color: var(--cat-ink); }
+
+.cardDesc {
+	font-size: 13px;
+	color: var(--ink-mid);
+	line-height: 1.65;
+	margin: 0;
+}
+
+.cardBody {
+	display: flex;
+	gap: 0;
+}
+
+/* ═══════════════ DIAGRAM PANE ═══════════════ */
+.diagramPane {
+	width: 320px;
+	flex-shrink: 0;
+	border-right: 1px solid var(--border);
+	padding: 24px;
+	background: var(--bg);
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.diagramLabel {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+
+/* ═══════════════ MINI DIAGRAMS ═══════════════ */
+.diagram {
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow: hidden;
+	height: 160px;
+	display: flex;
+	flex-direction: column;
+	font-size: 9px;
+	font-family: var(--font-sans);
+	font-weight: 500;
+	letter-spacing: 0.3px;
+}
+
+.dHeader {
+	height: 26px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	gap: 6px;
+	flex-shrink: 0;
+	color: var(--ink-low);
+}
+.dHeaderDot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--border-h);
+	flex-shrink: 0;
+}
+.dHeaderBrand {
+	font-family: var(--font-serif);
+	font-size: 10px;
+	color: var(--ink-mid);
+}
+.dHeaderSep {
+	flex: 1;
+}
+.dHeaderLink {
+	font-size: 8.5px;
+	color: var(--ink-low);
+}
+
+.dShell {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+}
+
+.dSidebar {
+	width: 60px;
+	flex-shrink: 0;
+	background: var(--surface);
+	border-right: 1px solid var(--border);
+	padding: 8px 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.dSidebarItem {
+	height: 7px;
+	border-radius: 2px;
+	background: var(--border);
+}
+.dSidebarItem.active {
+	background: var(--ink-low);
+}
+.dSidebarItem.sm { width: 70%; }
+.dSidebarItem.md { width: 85%; }
+.dSidebarItem.lg { width: 100%; }
+
+.dHandle {
+	width: 3px;
+	flex-shrink: 0;
+	background: var(--border);
+}
+
+.dMain {
+	flex: 1;
+	background: var(--bg);
+	padding: 10px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.dMainLine {
+	height: 7px;
+	border-radius: 2px;
+	background: var(--border);
+}
+.dMainLine.w100 { width: 100%; }
+.dMainLine.w80  { width: 80%; }
+.dMainLine.w60  { width: 60%; }
+.dMainLine.w40  { width: 40%; }
+.dMainLine.title {
+	height: 11px;
+	background: var(--border-h);
+	width: 65%;
+	margin-bottom: 4px;
+}
+
+.dEnvPanel {
+	height: 20px;
+	background: var(--surface);
+	border-top: 1px solid var(--border);
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	gap: 5px;
+	flex-shrink: 0;
+	color: var(--ink-low);
+}
+.dEnvDot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--green);
+	flex-shrink: 0;
+}
+.dEnvText {
+	font-size: 8px;
+	color: var(--ink-low);
+}
+
+/* Multi-panel diagram extras */
+.dMultiMain {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.dUrlBar {
+	height: 22px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	align-items: center;
+	padding: 0 8px;
+	gap: 5px;
+	flex-shrink: 0;
+}
+.dMethodBadge {
+	width: 24px;
+	height: 10px;
+	border-radius: 2px;
+	background: var(--green-bg);
+	flex-shrink: 0;
+}
+.dUrlLine {
+	flex: 1;
+	height: 10px;
+	border-radius: 2px;
+	background: var(--border);
+}
+.dSendBtn {
+	width: 22px;
+	height: 10px;
+	border-radius: 2px;
+	background: var(--ink-low);
+	flex-shrink: 0;
+}
+
+.dPanels {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+}
+.dPanel {
+	flex: 1;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	border-right: 1px solid var(--border);
+}
+.dPanel:last-child {
+	border-right: none;
+}
+.dPanelLabel {
+	font-size: 7px;
+	color: var(--ink-low);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 2px;
+}
+.dPanelLine {
+	height: 5px;
+	border-radius: 2px;
+	background: var(--border);
+}
+.dPanelLine.w100 { width: 100%; }
+.dPanelLine.w70  { width: 70%; }
+.dPanelLine.w50  { width: 50%; }
+
+/* Standalone diagram */
+.dStandalone {
+	flex: 1;
+	background: var(--bg);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 10px;
+}
+.dStandaloneInner {
+	width: 75%;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.dStandaloneTitle {
+	height: 12px;
+	border-radius: 3px;
+	background: var(--border-h);
+	width: 60%;
+}
+.dStandaloneLine {
+	height: 6px;
+	border-radius: 2px;
+	background: var(--border);
+}
+.dStandaloneLine.w100 { width: 100%; }
+.dStandaloneLine.w80  { width: 80%; }
+.dStandaloneLine.w50  { width: 50%; }
+.dStandaloneSection {
+	height: 36px;
+	border-radius: 5px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	margin-top: 4px;
+}
+
+/* ═══════════════ DETAILS PANE ═══════════════ */
+.detailsPane {
+	flex: 1;
+	padding: 24px 28px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.detailsSection {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.detailsSectionTitle {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+
+.pagesList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.pagePill {
+	padding: 3px 10px;
+	border-radius: 5px;
+	font-size: 12px;
+	font-family: var(--font-mono);
+	background: var(--cat-bg);
+	color: var(--cat-ink);
+	border: 1px solid var(--border);
+	text-decoration: none;
+	transition: background 0.13s, border-color 0.13s;
+	cursor: pointer;
+}
+.pagePill:hover {
+	background: var(--bg);
+	border-color: var(--border-h);
+}
+
+.featureList {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.featureItem {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	font-size: 13px;
+	color: var(--ink-mid);
+	line-height: 1.5;
+}
+.featureDot {
+	width: 4px;
+	height: 4px;
+	border-radius: 50%;
+	background: var(--border-h);
+	flex-shrink: 0;
+	margin-top: 6px;
+}
+
+/* ═══════════════ CODE SNIPPET ═══════════════ */
+.codeSnippet {
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow: hidden;
+}
+.codeHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 7px 12px;
+	background: var(--bg);
+	border-bottom: 1px solid var(--border);
+}
+.codeLang {
+	font-size: 10px;
+	font-weight: 500;
+	color: var(--ink-low);
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+}
+.codeBody {
+	padding: 12px 14px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	line-height: 1.7;
+	color: var(--code-ink);
+	background: var(--code-bg);
+	overflow-x: auto;
+	margin: 0;
+	white-space: pre;
+}
+.kwImport { color: var(--blue); }
+.kwFrom   { color: var(--blue); }
+.kwStr    { color: var(--amber); }
+.kwTag    { color: var(--green); }
+.kwAttr   { color: var(--ink-low); }

@@ -15,7 +15,6 @@ const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
 	{ label: "HTTP Client", href: "/http-client" },
 	{ label: "Entities", href: "/entity" },
 	{ label: "Environments", href: "/environments", active: true },
-	{ label: "UI Kit", href: "/ui-kit" },
 ];
 
 interface HeaderProps {
