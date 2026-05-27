@@ -1,8 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Modal, ModalBtnCancel, ModalBtnDanger, ModalBtnPrimary } from "./Modal";
-import { Input } from "../Input/Input";
-import { Field } from "../Field/Field";
+import { Input, Field } from "@/shared/ui-kit/controls";
 
 const meta: Meta<typeof Modal> = {
 	title: "UI Kit/Modal",

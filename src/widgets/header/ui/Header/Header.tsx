@@ -71,13 +71,11 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						{link.label}
 					</Link>
 				))}
-				{false && (
-					<div className={s.pfNavUser}>
-						<span className={s.pfNavUserAvatar}>ИП</span>
-						<span className={s.pfNavUserName}>Иван П.</span>
-						<ChevronIcon />
-					</div>
-				)}
+				<Link to="/profile" className={s.pfNavUser}>
+					<span className={s.pfNavUserAvatar}>ИП</span>
+					<span className={s.pfNavUserName}>Иван П.</span>
+					<ChevronIcon />
+				</Link>
 			</div>
 		</nav>
 	);

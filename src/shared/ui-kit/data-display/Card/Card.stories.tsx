@@ -1,9 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Card } from "./Card";
-import { Input } from "../Input/Input";
-import { Field } from "../Field/Field";
-import { Toggle } from "../Toggle/Toggle";
-import { Select } from "../Select/Select";
+import { Input, Field, Toggle, Select } from "@/shared/ui-kit/controls";
 
 const meta: Meta<typeof Card> = {
 	title: "UI Kit/Card",

@@ -1,0 +1,146 @@
+@keyframes toastIn {
+	from {
+		transform: translateX(calc(100% + 24px));
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes toastOut {
+	from {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateX(calc(100% + 24px));
+		opacity: 0;
+	}
+}
+
+/* ─── Viewport ──────────────────────────────────────────────── */
+
+.viewport {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: var(--z-toast);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 360px;
+	max-width: calc(100vw - 40px);
+	pointer-events: none;
+}
+
+/* ─── Toast ─────────────────────────────────────────────────── */
+
+.toast {
+	pointer-events: auto;
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 12px 12px 14px;
+	border-radius: var(--r-xl);
+	border: 1px solid var(--border);
+	background: var(--surface);
+	box-shadow: var(--shadow-md);
+	animation: toastIn 0.32s var(--ease-out) both;
+}
+
+.leaving {
+	animation: toastOut 0.28s var(--ease-out) both;
+}
+
+/* ─── Semantic variants ──────────────────────────────────────── */
+
+.success {
+	background: var(--green-bg);
+	border-color: var(--green-border);
+	color: var(--green);
+}
+
+.error {
+	background: var(--red-bg);
+	border-color: var(--red-border);
+	color: var(--red);
+}
+
+.warning {
+	background: var(--amber-bg);
+	border-color: var(--amber-border);
+	color: var(--amber);
+}
+
+.info {
+	background: var(--blue-bg);
+	border-color: var(--blue-border);
+	color: var(--blue);
+}
+
+/* ─── Icon ───────────────────────────────────────────────────── */
+
+.icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	margin-top: 1px;
+}
+
+/* ─── Body ───────────────────────────────────────────────────── */
+
+.body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.title {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: var(--fw-medium);
+	line-height: var(--lh-snug);
+	color: inherit;
+}
+
+.message {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	line-height: var(--lh-normal);
+	color: inherit;
+	opacity: 0.75;
+}
+
+/* ─── Close ──────────────────────────────────────────────────── */
+
+.close {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	color: inherit;
+	opacity: 0.45;
+	transition: opacity var(--t-fast), background var(--t-fast);
+}
+
+.close:hover {
+	opacity: 1;
+	background: rgba(0, 0, 0, 0.06);
+}
+
+.close:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 1px;
+	opacity: 1;
+}

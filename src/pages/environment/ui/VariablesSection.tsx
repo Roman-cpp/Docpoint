@@ -1,5 +1,14 @@
 import { type FC, useState } from "react";
 import type { Variable } from "@/entities/environment";
+import {
+	Table,
+	TableActions,
+	TableEmpty,
+	TableGrip,
+	TableHead,
+	TableRow,
+	StatusBadge,
+} from "@/shared/ui-kit/data-display";
 import s from "./EnvironmentPage.module.css";
 import {
 	EyeIcon,
@@ -11,6 +20,14 @@ import {
 	TrashIcon,
 	type VarType,
 } from "./parts";
+
+const VAR_TYPE_COLOR: Record<VarType, string> = {
+	string: "var(--green)",
+	number: "var(--blue)",
+	secret: "var(--red)",
+};
+
+const COLS = "24px 1fr 1.4fr 110px 72px";
 
 type Props = {
 	variables: Variable[];
@@ -40,10 +57,10 @@ const VarRow: FC<RowProps> = ({ variable, onEdit, onDelete }) => {
 	})();
 
 	return (
-		<div className={s.envVarsRow}>
-			<span className={s.envVarsGrip}>
+		<TableRow>
+			<TableGrip>
 				<GripIcon />
-			</span>
+			</TableGrip>
 			<span className={s.envVarsName}>
 				<span className={s.pre}>{"{{"}</span>
 				{variable.name}
@@ -62,11 +79,8 @@ const VarRow: FC<RowProps> = ({ variable, onEdit, onDelete }) => {
 					</button>
 				)}
 			</span>
-			<span className={`${s.envVarsType} ${s[type]}`}>
-				<span className={s.envVarsTypeDot} />
-				{type}
-			</span>
-			<span className={s.envVarsActions}>
+			<StatusBadge label={type} color={VAR_TYPE_COLOR[type]} />
+			<TableActions>
 				<button
 					type="button"
 					className={s.envIconbtn}
@@ -83,8 +97,8 @@ const VarRow: FC<RowProps> = ({ variable, onEdit, onDelete }) => {
 				>
 					<TrashIcon />
 				</button>
-			</span>
-		</div>
+			</TableActions>
+		</TableRow>
 	);
 };
 
@@ -113,21 +127,21 @@ export const VariablesSection: FC<Props> = ({
 		}
 	>
 		{variables.length === 0 ? (
-			<div className={s.envVarsEmpty}>
+			<TableEmpty>
 				Переменных ещё нет.{" "}
 				<button type="button" className={s.envVarsEmptyLink} onClick={onAdd}>
 					Добавить первую
 				</button>
-			</div>
+			</TableEmpty>
 		) : (
-			<div className={s.envVars}>
-				<div className={`${s.envVarsRow} ${s.head}`}>
+			<Table columns={COLS}>
+				<TableHead>
 					<span />
 					<span>Имя</span>
 					<span>Значение</span>
 					<span>Тип</span>
 					<span />
-				</div>
+				</TableHead>
 				{variables.map((v) => (
 					<VarRow
 						key={v.id}
@@ -136,7 +150,7 @@ export const VariablesSection: FC<Props> = ({
 						onDelete={() => onDelete(v)}
 					/>
 				))}
-			</div>
+			</Table>
 		)}
 	</Section>
 );

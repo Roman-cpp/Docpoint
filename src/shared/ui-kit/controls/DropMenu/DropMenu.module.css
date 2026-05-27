@@ -1,0 +1,138 @@
+/* ─── Wrapper ────────────────────────────────────────────────── */
+
+.wrap {
+	position: relative;
+	display: inline-flex;
+}
+
+/* ─── Trigger ────────────────────────────────────────────────── */
+
+.trigger {
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	outline: none;
+}
+
+.trigger:focus-visible {
+	border-radius: var(--r-sm);
+	outline: 2px solid var(--border-h);
+	outline-offset: 2px;
+}
+
+/* ─── Menu popover ───────────────────────────────────────────── */
+
+.menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	min-width: 220px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	box-shadow: var(--shadow-popover);
+	padding: 4px;
+	z-index: calc(var(--z-overlay) + 10);
+	animation: menuIn var(--t-base) var(--ease-out);
+}
+
+.menuEnd   { right: 0; }
+.menuStart { left: 0; }
+
+@keyframes menuIn {
+	from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+	to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* ─── Separator ──────────────────────────────────────────────── */
+
+.separator {
+	height: 1px;
+	background: var(--border);
+	margin: 4px 0;
+}
+
+/* ─── Section label ──────────────────────────────────────────── */
+
+.label {
+	padding: 6px 8px 3px 34px;
+	font-family: var(--font-sans);
+	font-size: var(--fs-11);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.3px;
+	color: var(--ink-low);
+	user-select: none;
+}
+
+/* ─── Item ───────────────────────────────────────────────────── */
+
+.item {
+	display: grid;
+	grid-template-columns: 22px 1fr auto;
+	align-items: center;
+	gap: 0;
+	padding: 6px 8px;
+	border-radius: var(--r-sm);
+	font-family: var(--font-sans);
+	font-size: var(--fs-13);
+	color: var(--ink);
+	cursor: pointer;
+	user-select: none;
+	outline: none;
+	transition: background var(--t-fast);
+}
+
+.item:hover,
+.item:focus-visible {
+	background: var(--cat-bg);
+}
+
+.itemDisabled {
+	color: var(--ink-low);
+	cursor: default;
+	pointer-events: none;
+}
+
+.itemDanger       { color: var(--red); }
+.itemDanger:hover,
+.itemDanger:focus-visible { background: var(--red-bg); }
+
+/* ─── Left slot ──────────────────────────────────────────────── */
+
+.itemLeft {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ink-mid);
+	flex-shrink: 0;
+}
+
+.dot {
+	font-size: 16px;
+	line-height: 1;
+	color: var(--ink-mid);
+}
+
+/* ─── Label ──────────────────────────────────────────────────── */
+
+.itemLabel {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* ─── Right slot ─────────────────────────────────────────────── */
+
+.shortcut {
+	font-family: var(--font-sans);
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+	white-space: nowrap;
+	padding-left: 16px;
+}
+
+.arrow {
+	display: flex;
+	align-items: center;
+	color: var(--ink-low);
+	padding-left: 16px;
+}

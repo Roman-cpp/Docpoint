@@ -1,6 +1,4 @@
 export { Button } from "./Button/Button";
-export { Card } from "./Card/Card";
-export { Modal, ModalBtnPrimary, ModalBtnDanger, ModalBtnCancel } from "./Modal/Modal";
 export { Field } from "./Field/Field";
 export { Input } from "./Input/Input";
 export { Textarea } from "./Textarea/Textarea";
@@ -8,4 +6,5 @@ export { Select } from "./Select/Select";
 export { Checkbox } from "./Checkbox/Checkbox";
 export { Toggle } from "./Toggle/Toggle";
 export { RadioGroup } from "./RadioGroup/RadioGroup";
-export { SplitPane } from "./SplitPane/SplitPane";
+export { DropMenu } from "./DropMenu/DropMenu";
+export type { DropMenuProps, DropMenuItemDef } from "./DropMenu/DropMenu";
