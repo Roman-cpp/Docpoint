@@ -1,7 +1,13 @@
 import type { ButtonHTMLAttributes, FC, ReactNode } from "react";
 import s from "./Button.module.css";
 
-type Variant = "primary" | "ghost" | "subtle" | "danger" | "danger-ghost" | "icon";
+type Variant =
+	| "primary"
+	| "ghost"
+	| "subtle"
+	| "danger"
+	| "danger-ghost"
+	| "icon";
 type Size = "sm" | "md" | "lg";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {

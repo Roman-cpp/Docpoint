@@ -71,11 +71,11 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						{link.label}
 					</Link>
 				))}
-				<Link to="/profile" className={s.pfNavUser}>
+				{/* <Link to="/profile" className={s.pfNavUser}>
 					<span className={s.pfNavUserAvatar}>ИП</span>
 					<span className={s.pfNavUserName}>Иван П.</span>
 					<ChevronIcon />
-				</Link>
+				</Link> */}
 			</div>
 		</nav>
 	);

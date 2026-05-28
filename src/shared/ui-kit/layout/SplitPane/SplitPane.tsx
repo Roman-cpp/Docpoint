@@ -103,15 +103,11 @@ export function SplitPane({
 				</div>
 			)}
 
-			{showLeft && (
-				<div className={s.handle} onMouseDown={onLeftDrag} />
-			)}
+			{showLeft && <div className={s.handle} onMouseDown={onLeftDrag} />}
 
 			<div className={s.main}>{children}</div>
 
-			{showRight && (
-				<div className={s.handle} onMouseDown={onRightDrag} />
-			)}
+			{showRight && <div className={s.handle} onMouseDown={onRightDrag} />}
 
 			{showRight && (
 				<div

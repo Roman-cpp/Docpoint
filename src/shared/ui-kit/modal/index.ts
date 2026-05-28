@@ -1,1 +1,6 @@
-export { Modal, ModalBtnPrimary, ModalBtnDanger, ModalBtnCancel } from "./Modal/Modal";
+export {
+	Modal,
+	ModalBtnCancel,
+	ModalBtnDanger,
+	ModalBtnPrimary,
+} from "./Modal/Modal";

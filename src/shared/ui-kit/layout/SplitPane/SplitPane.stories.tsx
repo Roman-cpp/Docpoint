@@ -4,7 +4,10 @@ import { SplitPane } from "./SplitPane";
 const Panel = ({
 	label,
 	color = "var(--green-bg)",
-}: { label: string; color?: string }) => (
+}: {
+	label: string;
+	color?: string;
+}) => (
 	<div
 		style={{
 			height: "100%",

@@ -1,19 +1,23 @@
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import { Link } from "react-router";
-import { useDocsStore } from "@/entities/doc";
+import { type Doc, useDocsStore } from "@/entities/doc";
+import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
 import s from "./ApiExplorerPage.module.css";
+import { DeleteDocModal } from "./DeleteDocModal";
+import { type EditDocUpdates, EditDocModal } from "./EditDocModal";
 import { Sidebar } from "./Sidebar";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
-	const { docs, deleteDoc } = useDocsStore();
+	const { docs } = useDocsStore();
+	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
+	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+	const [isEditOpen, setIsEditOpen] = useState(false);
 
-	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
-		e.preventDefault();
-		e.stopPropagation();
-		if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-		deleteDoc(id);
+	const handleSaveEdit = (_updates: EditDocUpdates) => {
+		// TODO: wire up updateDoc mutation once API is available
+		setIsEditOpen(false);
 	};
 
 	return (
@@ -28,21 +32,48 @@ const Overview = () => {
 						>
 							<div className={s.acAccent} />
 							<div className={s.acTop}>
-								<button
-									className={s.acDeleteBtn}
-									onClick={(e) => handleDelete(e, a.id, a.name)}
-									title="Delete"
+								{/* biome-ignore lint/a11y/useKeyWithClickEvents: stopper prevents Link navigation on menu interaction */}
+								{/* biome-ignore lint/a11y/noStaticElementInteractions: stopper prevents Link navigation on menu interaction */}
+								<div
+									className={s.acMenuWrap}
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+									}}
 								>
-									<svg
-										viewBox="0 0 14 14"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="1.5"
-										strokeLinecap="round"
-									>
-										<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
-									</svg>
-								</button>
+									<DropMenu>
+										<DropMenu.Trigger>
+											<button
+												type="button"
+												className={s.acMenuBtn}
+												aria-label="More options"
+												onClick={() => setPendingDoc(a)}
+											>
+												<svg
+													viewBox="0 0 16 16"
+													fill="currentColor"
+													aria-hidden="true"
+												>
+													<circle cx="8" cy="3" r="1.4" />
+													<circle cx="8" cy="8" r="1.4" />
+													<circle cx="8" cy="13" r="1.4" />
+												</svg>
+											</button>
+										</DropMenu.Trigger>
+										<DropMenu.Content>
+											<DropMenu.Item onClick={() => setIsEditOpen(true)}>
+												Edit
+											</DropMenu.Item>
+											<DropMenu.Separator />
+											<DropMenu.Item
+												danger
+												onClick={() => setIsDeleteOpen(true)}
+											>
+												Delete
+											</DropMenu.Item>
+										</DropMenu.Content>
+									</DropMenu>
+								</div>
 							</div>
 							<div className={s.acName}>{a.name}</div>
 							<div className={s.acDesc}>{a.desc}</div>
@@ -58,6 +89,21 @@ const Overview = () => {
 					);
 				})}
 			</div>
+			{pendingDoc && (
+				<>
+					<EditDocModal
+						open={isEditOpen}
+						onOpenChange={setIsEditOpen}
+						doc={pendingDoc}
+						onSave={handleSaveEdit}
+					/>
+					<DeleteDocModal
+						open={isDeleteOpen}
+						onOpenChange={setIsDeleteOpen}
+						doc={pendingDoc}
+					/>
+				</>
+			)}
 		</div>
 	);
 };

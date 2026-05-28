@@ -67,7 +67,10 @@ export const StatusBadge: FC<StatusBadgeProps> = ({
 	className,
 }) => (
 	<span className={[s.badge, className].filter(Boolean).join(" ")}>
-		<span className={s.badgeDot} style={color ? { background: color } : undefined} />
+		<span
+			className={s.badgeDot}
+			style={color ? { background: color } : undefined}
+		/>
 		{label}
 	</span>
 );

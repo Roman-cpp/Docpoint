@@ -1134,12 +1134,7 @@
 	align-items: flex-start;
 	justify-content: flex-end;
 }
-.acDeleteBtn {
-	opacity: 0;
-	transition:
-		opacity 0.15s,
-		background 0.13s,
-		color 0.13s;
+.acMenuBtn {
 	padding: 4px 6px;
 	border: none;
 	background: none;
@@ -1148,22 +1143,17 @@
 	cursor: pointer;
 	display: flex;
 	align-items: center;
+	transition:
+		background 0.13s,
+		color 0.13s;
 }
-.acDeleteBtn svg {
-	width: 13px;
-	height: 13px;
+.acMenuBtn svg {
+	width: 14px;
+	height: 14px;
 }
-.acDeleteBtn:hover {
-	background: var(--red-bg);
-	color: var(--red);
-}
-.apiCard:hover .acDeleteBtn {
-	opacity: 1;
-}
-@media (hover: none) {
-	.acDeleteBtn {
-		opacity: 1;
-	}
+.acMenuBtn:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
 }
 @media (max-width: 480px) {
 	.apiCard {

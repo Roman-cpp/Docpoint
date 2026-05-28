@@ -13,7 +13,9 @@ export const Checkbox: FC<Props> = ({
 	className,
 	...rest
 }) => (
-	<label className={[s.label, disabled ? s.disabled : ""].filter(Boolean).join(" ")}>
+	<label
+		className={[s.label, disabled ? s.disabled : ""].filter(Boolean).join(" ")}
+	>
 		<input {...rest} type="checkbox" disabled={disabled} className={s.input} />
 		<span className={s.box}>
 			<svg

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { Field, Input, Select, Toggle } from "@/shared/ui-kit/controls";
 import { Card } from "./Card";
-import { Input, Field, Toggle, Select } from "@/shared/ui-kit/controls";
 
 const meta: Meta<typeof Card> = {
 	title: "UI Kit/Card",
@@ -29,7 +29,10 @@ export const Default: Story = {
 					<Input placeholder="Production" style={{ width: "100%" }} />
 				</Field>
 				<Field label="Base URL" required>
-					<Input placeholder="https://api.example.com" style={{ width: "100%" }} />
+					<Input
+						placeholder="https://api.example.com"
+						style={{ width: "100%" }}
+					/>
 				</Field>
 			</>
 		),

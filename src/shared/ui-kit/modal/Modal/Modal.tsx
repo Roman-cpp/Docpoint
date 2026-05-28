@@ -2,39 +2,31 @@ import { type FC, type ReactNode, useEffect } from "react";
 import s from "./Modal.module.css";
 
 type Props = {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 	title: string;
 	subtitle?: string;
-	onClose: () => void;
 	/** Кнопки действий — рендерятся в нижней полосе с разделителем */
 	actions?: ReactNode;
 	/** Ширина бокса в px, по умолчанию 392 */
-	width?: number;
 	children: ReactNode;
 };
 
 export const Modal: FC<Props> = ({
+	open,
+	onOpenChange,
 	title,
 	subtitle,
-	onClose,
 	actions,
-	width,
 	children,
 }) => {
-	useEffect(() => {
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") onClose();
-		};
-		document.addEventListener("keydown", onKey);
-		return () => document.removeEventListener("keydown", onKey);
-	}, [onClose]);
+	if (!open) return null;
+
+	const close = () => onOpenChange(false);
 
 	return (
-		<div className={s.overlay} onClick={onClose}>
-			<div
-				className={s.box}
-				style={width ? { ["--modal-width" as string]: `${width}px` } : undefined}
-				onClick={(e) => e.stopPropagation()}
-			>
+		<div className={s.overlay} onClick={close}>
+			<div className={s.box} onClick={(e) => e.stopPropagation()}>
 				<div className={s.header}>
 					<div className={s.headerText}>
 						<span className={s.title}>{title}</span>
@@ -43,7 +35,7 @@ export const Modal: FC<Props> = ({
 					<button
 						type="button"
 						className={s.closeBtn}
-						onClick={onClose}
+						onClick={close}
 						aria-label="Закрыть"
 					>
 						<CloseIcon />

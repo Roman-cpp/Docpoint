@@ -8,7 +8,14 @@ const meta: Meta<typeof DropMenu> = {
 	tags: ["autodocs"],
 	decorators: [
 		(Story) => (
-			<div style={{ minHeight: 320, display: "flex", alignItems: "flex-start", paddingTop: 16 }}>
+			<div
+				style={{
+					minHeight: 320,
+					display: "flex",
+					alignItems: "flex-start",
+					paddingTop: 16,
+				}}
+			>
 				<Story />
 			</div>
 		),
@@ -39,7 +46,17 @@ const TriggerBtn = ({ label = "Open menu" }: { label?: string }) => (
 		}}
 	>
 		{label}
-		<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+		<svg
+			width="10"
+			height="10"
+			viewBox="0 0 10 10"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.6"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
 			<path d="M2 3.5l3 3 3-3" />
 		</svg>
 	</button>
@@ -50,70 +67,83 @@ const TriggerBtn = ({ label = "Open menu" }: { label?: string }) => (
 /** Точное воспроизведение меню из скриншота */
 export const Default: Story = {
 	render: () => (
-		<DropMenu
-			trigger={<TriggerBtn />}
-			items={[
-				{ label: "New Tab",            shortcut: "⌘T" },
-				{ label: "New Window",         shortcut: "⌘N" },
-				{ label: "New Private Window", shortcut: "⇧⌘N" },
-				{ type: "separator" },
-				{ label: "More Tools", arrow: true },
-				{ type: "separator" },
-				{ label: "Show Bookmarks", shortcut: "⌘B", checked: true },
-				{ label: "Show Full URLs" },
-				{ type: "separator" },
-				{ type: "label", label: "People" },
-				{ label: "Pedro Duarte", indicator: "•" },
-				{ label: "Colm Tuite" },
-			]}
-		/>
+		<DropMenu>
+			<DropMenu.Trigger>
+				<TriggerBtn />
+			</DropMenu.Trigger>
+			<DropMenu.Content>
+				<DropMenu.Item shortcut="⌘T">New Tab</DropMenu.Item>
+				<DropMenu.Item shortcut="⌘N">New Window</DropMenu.Item>
+				<DropMenu.Item shortcut="⇧⌘N">New Private Window</DropMenu.Item>
+				<DropMenu.Separator />
+				<DropMenu.Item arrow>More Tools</DropMenu.Item>
+				<DropMenu.Separator />
+				<DropMenu.Item shortcut="⌘B" checked>
+					Show Bookmarks
+				</DropMenu.Item>
+				<DropMenu.Item>Show Full URLs</DropMenu.Item>
+				<DropMenu.Separator />
+				<DropMenu.Label>People</DropMenu.Label>
+				<DropMenu.Item indicator="•">Pedro Duarte</DropMenu.Item>
+				<DropMenu.Item>Colm Tuite</DropMenu.Item>
+			</DropMenu.Content>
+		</DropMenu>
 	),
 };
 
 /** Элементы с деструктивным действием */
 export const WithDanger: Story = {
 	render: () => (
-		<DropMenu
-			trigger={<TriggerBtn label="Settings" />}
-			items={[
-				{ label: "Profile",       shortcut: "⌘P" },
-				{ label: "Preferences",   shortcut: "⌘," },
-				{ type: "separator" },
-				{ label: "Sign out",                         danger: true },
-				{ label: "Delete account",                   danger: true },
-			]}
-		/>
+		<DropMenu>
+			<DropMenu.Trigger>
+				<TriggerBtn label="Settings" />
+			</DropMenu.Trigger>
+			<DropMenu.Content>
+				<DropMenu.Item shortcut="⌘P">Profile</DropMenu.Item>
+				<DropMenu.Item shortcut="⌘,">Preferences</DropMenu.Item>
+				<DropMenu.Separator />
+				<DropMenu.Item danger>Sign out</DropMenu.Item>
+				<DropMenu.Item danger>Delete account</DropMenu.Item>
+			</DropMenu.Content>
+		</DropMenu>
 	),
 };
 
 /** Элементы с отключёнными пунктами */
 export const WithDisabled: Story = {
 	render: () => (
-		<DropMenu
-			trigger={<TriggerBtn label="Edit" />}
-			items={[
-				{ label: "Undo",  shortcut: "⌘Z", disabled: true },
-				{ label: "Redo",  shortcut: "⇧⌘Z", disabled: true },
-				{ type: "separator" },
-				{ label: "Cut",   shortcut: "⌘X" },
-				{ label: "Copy",  shortcut: "⌘C" },
-				{ label: "Paste", shortcut: "⌘V" },
-			]}
-		/>
+		<DropMenu>
+			<DropMenu.Trigger>
+				<TriggerBtn label="Edit" />
+			</DropMenu.Trigger>
+			<DropMenu.Content>
+				<DropMenu.Item shortcut="⌘Z" disabled>
+					Undo
+				</DropMenu.Item>
+				<DropMenu.Item shortcut="⇧⌘Z" disabled>
+					Redo
+				</DropMenu.Item>
+				<DropMenu.Separator />
+				<DropMenu.Item shortcut="⌘X">Cut</DropMenu.Item>
+				<DropMenu.Item shortcut="⌘C">Copy</DropMenu.Item>
+				<DropMenu.Item shortcut="⌘V">Paste</DropMenu.Item>
+			</DropMenu.Content>
+		</DropMenu>
 	),
 };
 
 /** Меню выровнено влево от триггера */
 export const AlignStart: Story = {
 	render: () => (
-		<DropMenu
-			align="start"
-			trigger={<TriggerBtn label="Align start" />}
-			items={[
-				{ label: "Option A" },
-				{ label: "Option B" },
-				{ label: "Option C" },
-			]}
-		/>
+		<DropMenu>
+			<DropMenu.Trigger>
+				<TriggerBtn label="Align start" />
+			</DropMenu.Trigger>
+			<DropMenu.Content align="start">
+				<DropMenu.Item>Option A</DropMenu.Item>
+				<DropMenu.Item>Option B</DropMenu.Item>
+				<DropMenu.Item>Option C</DropMenu.Item>
+			</DropMenu.Content>
+		</DropMenu>
 	),
 };

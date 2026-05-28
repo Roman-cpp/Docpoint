@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import {
+	StatusBadge,
 	Table,
 	TableActions,
 	TableEmpty,
 	TableGrip,
 	TableHead,
 	TableRow,
-	StatusBadge,
 } from "./Table";
 
 /* ─── Inline icons ──────────────────────────────────────────── */
@@ -25,21 +25,48 @@ const GripIcon = () => (
 );
 
 const PencilIcon = () => (
-	<svg viewBox="0 0 14 14" width={12} height={12} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+	<svg
+		viewBox="0 0 14 14"
+		width={12}
+		height={12}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
 		<title>edit</title>
 		<path d="M9 2.5L11.5 5l-7 7H2v-2.5l7-7zM8 3.5L10.5 6" />
 	</svg>
 );
 
 const TrashIcon = () => (
-	<svg viewBox="0 0 14 14" width={12} height={12} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+	<svg
+		viewBox="0 0 14 14"
+		width={12}
+		height={12}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
 		<title>delete</title>
 		<path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1M3.5 3.5l.5 9a1 1 0 0 0 1 .9h4a1 1 0 0 0 1-.9l.5-9" />
 	</svg>
 );
 
 const EyeIcon = () => (
-	<svg viewBox="0 0 14 14" width={12} height={12} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+	<svg
+		viewBox="0 0 14 14"
+		width={12}
+		height={12}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
 		<title>show</title>
 		<path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" />
 		<circle cx="7" cy="7" r="1.7" />
@@ -88,11 +115,21 @@ type Story = StoryObj<typeof Table>;
 /* ─── Variables table (основной use case) ───────────────────── */
 
 const VARS = [
-	{ id: "1", name: "BASE_URL",       value: "https://api.example.com", type: "string" },
-	{ id: "2", name: "RETRY_COUNT",    value: "3",                       type: "number" },
-	{ id: "3", name: "API_SECRET_KEY", value: "sk-live-xxxxxxxxxxx",     type: "secret" },
-	{ id: "4", name: "TIMEOUT_MS",     value: "5000",                    type: "number" },
-	{ id: "5", name: "DEBUG_MODE",     value: "",                        type: "string" },
+	{
+		id: "1",
+		name: "BASE_URL",
+		value: "https://api.example.com",
+		type: "string",
+	},
+	{ id: "2", name: "RETRY_COUNT", value: "3", type: "number" },
+	{
+		id: "3",
+		name: "API_SECRET_KEY",
+		value: "sk-live-xxxxxxxxxxx",
+		type: "secret",
+	},
+	{ id: "4", name: "TIMEOUT_MS", value: "5000", type: "number" },
+	{ id: "5", name: "DEBUG_MODE", value: "", type: "string" },
 ] as const;
 
 const TYPE_COLOR: Record<string, string> = {
@@ -103,25 +140,49 @@ const TYPE_COLOR: Record<string, string> = {
 
 const MASKED = "••••••••••";
 
-function VarRow({ name, value, type }: { name: string; value: string; type: string }) {
+function VarRow({
+	name,
+	value,
+	type,
+}: {
+	name: string;
+	value: string;
+	type: string;
+}) {
 	const [revealed, setRevealed] = useState(false);
 	const isSecret = type === "secret";
 
 	const display = (() => {
-		if (value === "") return <span style={{ color: "var(--ink-low)", fontStyle: "italic" }}>пусто</span>;
-		if (isSecret && !revealed) return <span style={{ letterSpacing: 2 }}>{MASKED}</span>;
+		if (value === "")
+			return (
+				<span style={{ color: "var(--ink-low)", fontStyle: "italic" }}>
+					пусто
+				</span>
+			);
+		if (isSecret && !revealed)
+			return <span style={{ letterSpacing: 2 }}>{MASKED}</span>;
 		return value;
 	})();
 
 	return (
 		<TableRow>
-			<TableGrip><GripIcon /></TableGrip>
+			<TableGrip>
+				<GripIcon />
+			</TableGrip>
 			<span style={monoCell}>
 				<span style={{ color: "var(--ink-low)" }}>{"{{"}</span>
 				{name}
 				<span style={{ color: "var(--ink-low)" }}>{"}}"}</span>
 			</span>
-			<span style={{ ...monoCell, color: "var(--ink-mid)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+			<span
+				style={{
+					...monoCell,
+					color: "var(--ink-mid)",
+					display: "inline-flex",
+					alignItems: "center",
+					gap: 6,
+				}}
+			>
 				{display}
 				{isSecret && value !== "" && (
 					<button
@@ -136,8 +197,12 @@ function VarRow({ name, value, type }: { name: string; value: string; type: stri
 			</span>
 			<StatusBadge label={type} color={TYPE_COLOR[type]} />
 			<TableActions>
-				<button type="button" style={iconBtn} aria-label="Редактировать"><PencilIcon /></button>
-				<button type="button" style={iconBtn} aria-label="Удалить"><TrashIcon /></button>
+				<button type="button" style={iconBtn} aria-label="Редактировать">
+					<PencilIcon />
+				</button>
+				<button type="button" style={iconBtn} aria-label="Удалить">
+					<TrashIcon />
+				</button>
 			</TableActions>
 		</TableRow>
 	);
@@ -164,10 +229,15 @@ export const Variables: Story = {
 /* ─── HTTP Headers table (другой use case) ──────────────────── */
 
 const HEADERS = [
-	{ id: "1", key: "Authorization",  value: "Bearer {{API_TOKEN}}",  enabled: true },
-	{ id: "2", key: "Content-Type",   value: "application/json",      enabled: true },
-	{ id: "3", key: "X-Request-ID",   value: "{{REQUEST_ID}}",        enabled: true },
-	{ id: "4", key: "X-Debug-Trace",  value: "1",                     enabled: false },
+	{
+		id: "1",
+		key: "Authorization",
+		value: "Bearer {{API_TOKEN}}",
+		enabled: true,
+	},
+	{ id: "2", key: "Content-Type", value: "application/json", enabled: true },
+	{ id: "3", key: "X-Request-ID", value: "{{REQUEST_ID}}", enabled: true },
+	{ id: "4", key: "X-Debug-Trace", value: "1", enabled: false },
 ];
 
 export const Headers: Story = {
@@ -183,7 +253,9 @@ export const Headers: Story = {
 			</TableHead>
 			{HEADERS.map(({ id, key, value, enabled }) => (
 				<TableRow key={id} style={{ opacity: enabled ? 1 : 0.45 }}>
-					<TableGrip><GripIcon /></TableGrip>
+					<TableGrip>
+						<GripIcon />
+					</TableGrip>
 					<span style={monoCell}>{key}</span>
 					<span style={{ ...monoCell, color: "var(--ink-mid)" }}>{value}</span>
 					<span>
@@ -193,8 +265,12 @@ export const Headers: Story = {
 						/>
 					</span>
 					<TableActions>
-						<button type="button" style={iconBtn} aria-label="Редактировать"><PencilIcon /></button>
-						<button type="button" style={iconBtn} aria-label="Удалить"><TrashIcon /></button>
+						<button type="button" style={iconBtn} aria-label="Редактировать">
+							<PencilIcon />
+						</button>
+						<button type="button" style={iconBtn} aria-label="Удалить">
+							<TrashIcon />
+						</button>
 					</TableActions>
 				</TableRow>
 			))}
@@ -210,7 +286,15 @@ export const Empty: Story = {
 			Переменных ещё нет.{" "}
 			<button
 				type="button"
-				style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "var(--ink)", textDecoration: "underline", cursor: "pointer" }}
+				style={{
+					background: "none",
+					border: "none",
+					padding: 0,
+					font: "inherit",
+					color: "var(--ink)",
+					textDecoration: "underline",
+					cursor: "pointer",
+				}}
 			>
 				Добавить первую
 			</button>
@@ -241,7 +325,16 @@ export const Showcase: Story = {
 	render: () => (
 		<div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 			<div>
-				<p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 500, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--ink-low)" }}>
+				<p
+					style={{
+						margin: "0 0 8px",
+						fontSize: 11,
+						fontWeight: 500,
+						letterSpacing: "0.6px",
+						textTransform: "uppercase",
+						color: "var(--ink-low)",
+					}}
+				>
 					Переменные
 				</p>
 				<Table columns="24px 1fr 1.4fr 110px 72px">
@@ -259,14 +352,31 @@ export const Showcase: Story = {
 			</div>
 
 			<div>
-				<p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 500, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--ink-low)" }}>
+				<p
+					style={{
+						margin: "0 0 8px",
+						fontSize: 11,
+						fontWeight: 500,
+						letterSpacing: "0.6px",
+						textTransform: "uppercase",
+						color: "var(--ink-low)",
+					}}
+				>
 					Пустое состояние
 				</p>
 				<TableEmpty>
 					Переменных ещё нет.{" "}
 					<button
 						type="button"
-						style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "var(--ink)", textDecoration: "underline", cursor: "pointer" }}
+						style={{
+							background: "none",
+							border: "none",
+							padding: 0,
+							font: "inherit",
+							color: "var(--ink)",
+							textDecoration: "underline",
+							cursor: "pointer",
+						}}
 					>
 						Добавить первую
 					</button>

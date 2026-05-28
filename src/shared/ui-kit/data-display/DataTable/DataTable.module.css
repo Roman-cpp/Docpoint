@@ -56,8 +56,13 @@
 	transition: color var(--t-base);
 }
 
-.thBtn:hover       { color: var(--ink-mid); }
-.thBtnActive       { color: var(--ink); font-weight: var(--fw-semibold); }
+.thBtn:hover {
+	color: var(--ink-mid);
+}
+.thBtnActive {
+	color: var(--ink);
+	font-weight: var(--fw-semibold);
+}
 
 .thStatic {
 	display: inline-flex;
@@ -81,11 +86,19 @@
 	transition: opacity var(--t-base);
 }
 
-.thBtn:hover .sortIconWrap       { opacity: 0.6; }
-.thBtnActive .sortIconWrap       { opacity: 1;   }
+.thBtn:hover .sortIconWrap {
+	opacity: 0.6;
+}
+.thBtnActive .sortIconWrap {
+	opacity: 1;
+}
 
-.sortArrow       { opacity: 0.3; }
-.sortArrowActive { opacity: 1;   }
+.sortArrow {
+	opacity: 0.3;
+}
+.sortArrowActive {
+	opacity: 1;
+}
 
 .sortPriority {
 	display: inline-flex;
@@ -119,8 +132,12 @@
 	transition: background var(--t-base);
 }
 
-.tableRow:last-child { border-bottom: none; }
-.tableRow:hover      { background: var(--cat-bg); }
+.tableRow:last-child {
+	border-bottom: none;
+}
+.tableRow:hover {
+	background: var(--cat-bg);
+}
 
 /* ─── Pagination ─────────────────────────────────────────────── */
 
@@ -169,7 +186,10 @@
 	color: var(--ink);
 }
 
-.pageBtn:disabled { opacity: 0.35; cursor: default; }
+.pageBtn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
 
 .pageBtnActive {
 	background: var(--ink);
