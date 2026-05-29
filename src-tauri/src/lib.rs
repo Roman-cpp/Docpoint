@@ -7,7 +7,7 @@ use service::{
     create_doc, create_environment, create_variable, delete_doc, delete_environment,
     delete_variable, import_doc, read_doc, read_docs, read_environment_auth, read_environments,
     read_groups, read_schemas, save_json_file, send_request, set_environment_access_token,
-    update_environment, update_environment_auth, update_param_value, update_variable,
+    update_doc, update_environment, update_environment_auth, update_param_value, update_variable,
     write_environments, write_groups, write_schemas,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
@@ -43,6 +43,7 @@ pub fn run() {
             read_docs,
             read_doc,
             create_doc,
+            update_doc,
             delete_doc,
             import_doc,
             read_groups,

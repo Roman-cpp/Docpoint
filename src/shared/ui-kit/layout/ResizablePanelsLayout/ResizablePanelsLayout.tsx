@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useRef } from "react";
-import s from "./SplitPane.module.css";
+import s from "./ResizablePanelsLayout.module.css";
 
-interface SplitPaneProps {
+interface ResizablePanelsLayoutProps {
 	/** Главный контент — занимает всё оставшееся пространство */
 	children: ReactNode;
 
@@ -58,7 +58,7 @@ function usePanelDrag(
 	);
 }
 
-export function SplitPane({
+export function ResizablePanelsLayout({
 	children,
 	left,
 	leftWidth = 300,
@@ -71,7 +71,7 @@ export function SplitPane({
 	rightMax = 600,
 	rightVisible = true,
 	className,
-}: SplitPaneProps) {
+}: ResizablePanelsLayoutProps) {
 	const leftRef = useRef<HTMLDivElement>(null);
 	const rightRef = useRef<HTMLDivElement>(null);
 

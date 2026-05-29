@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { SplitPane } from "./SplitPane";
+import { ResizablePanelsLayout } from "./ResizablePanelsLayout";
 
 const Panel = ({
 	label,
@@ -24,9 +24,9 @@ const Panel = ({
 	</div>
 );
 
-const meta: Meta<typeof SplitPane> = {
-	title: "UI Kit/SplitPane",
-	component: SplitPane,
+const meta: Meta<typeof ResizablePanelsLayout> = {
+	title: "UI Kit/ResizablePanelsLayout",
+	component: ResizablePanelsLayout,
 	parameters: { layout: "fullscreen" },
 	tags: ["autodocs"],
 	decorators: [
@@ -39,7 +39,7 @@ const meta: Meta<typeof SplitPane> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof SplitPane>;
+type Story = StoryObj<typeof ResizablePanelsLayout>;
 
 export const Default: Story = {
 	args: {

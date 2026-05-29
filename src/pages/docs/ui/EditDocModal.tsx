@@ -1,19 +1,13 @@
 import { type FC, useState } from "react";
-import type { Doc } from "@/entities/doc";
+import type { Doc, UpdateDocDTO } from "@/entities/doc";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
-
-export interface EditDocUpdates {
-	name: string;
-	desc: string;
-	tags: string[];
-}
 
 interface EditDocModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	doc: Doc;
-	onSave: (updates: EditDocUpdates) => void;
+	onSave: (updates: UpdateDocDTO) => void;
 	isSaving?: boolean;
 }
 
@@ -38,7 +32,7 @@ export const EditDocModal: FC<EditDocModalProps> = ({
 			.split(",")
 			.map((t) => t.trim())
 			.filter(Boolean);
-		onSave({ name: name.trim(), desc: desc.trim(), tags });
+		onSave({ name: name.trim(), desc: desc.trim(), tags, id: doc.id });
 	};
 
 	const canSave = name.trim().length > 0 && !isSaving;

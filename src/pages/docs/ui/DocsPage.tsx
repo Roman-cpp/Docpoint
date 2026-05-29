@@ -1,22 +1,22 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
-import { type Doc, useDocsStore } from "@/entities/doc";
+import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
 import s from "./ApiExplorerPage.module.css";
 import { DeleteDocModal } from "./DeleteDocModal";
-import { type EditDocUpdates, EditDocModal } from "./EditDocModal";
+import { EditDocModal } from "./EditDocModal";
 import { Sidebar } from "./Sidebar";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
-	const { docs } = useDocsStore();
+	const { docs, updateDoc } = useDocsStore();
 	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEditOpen, setIsEditOpen] = useState(false);
 
-	const handleSaveEdit = (_updates: EditDocUpdates) => {
-		// TODO: wire up updateDoc mutation once API is available
+	const handleSaveEdit = (update: UpdateDocDTO) => {
+		updateDoc(update);
 		setIsEditOpen(false);
 	};
 
@@ -32,8 +32,6 @@ const Overview = () => {
 						>
 							<div className={s.acAccent} />
 							<div className={s.acTop}>
-								{/* biome-ignore lint/a11y/useKeyWithClickEvents: stopper prevents Link navigation on menu interaction */}
-								{/* biome-ignore lint/a11y/noStaticElementInteractions: stopper prevents Link navigation on menu interaction */}
 								<div
 									className={s.acMenuWrap}
 									onClick={(e) => {

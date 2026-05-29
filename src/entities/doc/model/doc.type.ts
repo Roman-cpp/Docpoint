@@ -5,5 +5,3 @@ export interface Doc {
 	desc: string;
 	tags: string[];
 }
-
-export type CreateDocDTO = Omit<Doc, "id">;

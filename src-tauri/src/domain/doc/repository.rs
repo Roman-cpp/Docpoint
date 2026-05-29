@@ -1,3 +1,5 @@
+use crate::domain::doc::model::UpdateDocDTO;
+
 use super::model::{CreateDocDTO, Doca};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
@@ -6,6 +8,7 @@ pub trait DocRepository {
     async fn all(&self) -> Result<Vec<Doca>, String>;
     async fn find(&self, id: &str) -> Result<Option<Doca>, String>;
     async fn create(&self, doc: &CreateDocDTO) -> Result<String, String>;
+    async fn update(&self, doc: &UpdateDocDTO) -> Result<String, String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
 }
 
@@ -113,6 +116,33 @@ impl DocRepository for DocRepo<'_> {
         }
 
         Ok(id)
+    }
+
+    async fn update(&self, doc: &UpdateDocDTO) -> Result<String, String> {
+        sqlx::query("UPDATE docs SET name = ?, desc = ? WHERE id = ?")
+            .bind(&doc.name)
+            .bind(&doc.desc)
+            .bind(&doc.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM docs_tag WHERE doc_id = ?")
+            .bind(&doc.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for tag in &doc.tags {
+            sqlx::query("INSERT INTO docs_tag (doc_id, tag) VALUES (?, ?)")
+                .bind(&doc.id)
+                .bind(tag)
+                .execute(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+
+        Ok(doc.id.clone())
     }
 
     async fn delete(&self, id: &str) -> Result<(), String> {

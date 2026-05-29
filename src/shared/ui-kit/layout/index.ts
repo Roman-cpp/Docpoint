@@ -1,1 +1,1 @@
-export { SplitPane } from "./SplitPane/SplitPane";
+export { ResizablePanelsLayout } from "./ResizablePanelsLayout/ResizablePanelsLayout";

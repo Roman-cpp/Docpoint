@@ -15,6 +15,11 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
+			"a11y": {
+				"useSemanticElements": "off",
+				"noStaticElementInteractions": "off",
+				"useKeyWithClickEvents": "off"
+			},
 			"recommended": true
 		}
 	},

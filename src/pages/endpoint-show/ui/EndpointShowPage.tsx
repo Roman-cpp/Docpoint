@@ -7,7 +7,7 @@ import {
 	useDocStore,
 } from "@/features/doc";
 import s from "@/shared/styles/apiDocs.module.css";
-import { SplitPane } from "@/shared/ui-kit";
+import { ResizablePanelsLayout } from "@/shared/ui-kit/layout";
 import { Layout } from "@/widgets/layout";
 import { EndpointPage } from "./EndpointPage";
 import { TryItPanel } from "./TryItPanel";
@@ -37,6 +37,7 @@ export const EndpointShowPage: FC = () => {
 							strokeWidth="1.5"
 							strokeLinecap="round"
 						>
+               <title>Меню навигации</title>
 							<rect x="8" y="6" width="24" height="28" rx="3" />
 							<path d="M14 14h12M14 19h12M14 24h8" />
 						</svg>
@@ -49,7 +50,7 @@ export const EndpointShowPage: FC = () => {
 
 	return (
 		<Layout>
-			<SplitPane
+			<ResizablePanelsLayout
 				right={<TryItPanel />}
 				rightWidth={348}
 				rightMin={240}
@@ -59,7 +60,7 @@ export const EndpointShowPage: FC = () => {
 				<div className={s.endpointPanel}>
 					<EndpointPage detail={endpoint} key={id} />
 				</div>
-			</SplitPane>
+			</ResizablePanelsLayout>
 		</Layout>
 	);
 };
