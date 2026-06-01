@@ -1,4 +1,5 @@
-import { type CSSProperties, type FC, useState } from "react";
+import { type CSSProperties, type FC, useEffect, useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import {
 	Field,
@@ -44,6 +45,17 @@ interface ParamDraft {
 	default: string;
 }
 
+interface FormValues {
+	method: HttpMethod;
+	path: string;
+	name: string;
+	description: string;
+	tagsInput: string;
+	auth: boolean;
+	queryParams: ParamDraft[];
+	bodyParams: ParamDraft[];
+}
+
 const emptyParam = (): ParamDraft => ({
 	name: "",
 	type: "string",
@@ -69,6 +81,17 @@ const fromDraft = (d: ParamDraft): Endpoint["queryParams"][number] => ({
 	value: null,
 });
 
+const toFormValues = (endpoint: Endpoint): FormValues => ({
+	method: endpoint.method,
+	path: endpoint.path,
+	name: endpoint.name,
+	description: endpoint.description,
+	tagsInput: endpoint.tags.join(", "),
+	auth: endpoint.auth,
+	queryParams: (endpoint.queryParams ?? []).map(toDraft),
+	bodyParams: (endpoint.bodyParams ?? []).map(toDraft),
+});
+
 export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	open,
 	onOpenChange,
@@ -76,58 +99,50 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	onSave,
 	isSaving = false,
 }) => {
-	const [method, setMethod] = useState<HttpMethod>(endpoint.method);
-	const [path, setPath] = useState(endpoint.path);
-	const [name, setName] = useState(endpoint.name);
-	const [description, setDescription] = useState(endpoint.description);
-	const [tagsInput, setTagsInput] = useState(endpoint.tags.join(", "));
-	const [auth, setAuth] = useState(endpoint.auth);
+	const { control, handleSubmit, watch, reset } = useForm<FormValues>({
+		defaultValues: toFormValues(endpoint),
+	});
 
-	const [queryParams, setQueryParams] = useState<ParamDraft[]>(
-		(endpoint.queryParams ?? []).map(toDraft),
-	);
-	const [bodyParams, setBodyParams] = useState<ParamDraft[]>(
-		(endpoint.bodyParams ?? []).map(toDraft),
-	);
+	// Синхронизируем форму, если открыли модалку для другого endpoint
+	useEffect(() => {
+		if (open) reset(toFormValues(endpoint));
+	}, [open, endpoint, reset]);
+
+	const queryArray = useFieldArray({ control, name: "queryParams" });
+	const bodyArray = useFieldArray({ control, name: "bodyParams" });
+
 	const [tab, setTab] = useState<"query" | "body">("query");
+	const activeArray = tab === "query" ? queryArray : bodyArray;
+	const arrayName = tab === "query" ? "queryParams" : "bodyParams";
 
 	const close = () => {
 		if (isSaving) return;
 		onOpenChange(false);
 	};
 
-	const submit = () => {
-		const tags = tagsInput
+	const submit = handleSubmit((values) => {
+		const tags = values.tagsInput
 			.split(",")
 			.map((t) => t.trim())
 			.filter(Boolean);
 
 		onSave?.({
 			...endpoint,
-			method,
-			path: path.trim(),
-			name: name.trim(),
-			description: description.trim(),
+			method: values.method,
+			path: values.path.trim(),
+			name: values.name.trim(),
+			description: values.description.trim(),
 			tags,
-			auth,
-			queryParams: queryParams.map(fromDraft),
-			bodyParams: bodyParams.map(fromDraft),
+			auth: values.auth,
+			queryParams: values.queryParams.map(fromDraft),
+			bodyParams: values.bodyParams.map(fromDraft),
 		});
 		onOpenChange(false);
-	};
+	});
 
+	const path = watch("path");
+	const name = watch("name");
 	const canSave = path.trim().length > 0 && name.trim().length > 0 && !isSaving;
-
-	const params = tab === "query" ? queryParams : bodyParams;
-	const setParams = tab === "query" ? setQueryParams : setBodyParams;
-
-	const updateParam = (i: number, patch: Partial<ParamDraft>) =>
-		setParams((prev) =>
-			prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)),
-		);
-	const addParam = () => setParams((prev) => [...prev, emptyParam()]);
-	const removeParam = (i: number) =>
-		setParams((prev) => prev.filter((_, idx) => idx !== i));
 
 	return (
 		<div style={{ "--modal-width": "620px" } as CSSProperties}>
@@ -149,54 +164,86 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 			>
 				<Field label="Метод и путь" required>
 					<div style={{ display: "flex", gap: 8 }}>
-						<Select
-							options={METHOD_OPTIONS}
-							value={method}
-							onChange={(e) => setMethod(e.target.value as HttpMethod)}
-							style={{ width: 120 }}
+						<Controller
+							control={control}
+							name="method"
+							render={({ field }) => (
+								<Select
+									options={METHOD_OPTIONS}
+									{...field}
+									style={{ width: 120 }}
+								/>
+							)}
 						/>
-						<Input
-							value={path}
-							onChange={(e) => setPath(e.target.value)}
-							placeholder="/v1/payments/{id}"
-							style={{ width: "100%", fontFamily: "var(--font-mono)" }}
+						<Controller
+							control={control}
+							name="path"
+							render={({ field }) => (
+								<Input
+									{...field}
+									placeholder="/v1/payments/{id}"
+									style={{ width: "100%", fontFamily: "var(--font-mono)" }}
+								/>
+							)}
 						/>
 					</div>
 				</Field>
 
 				<Field label="Название" required>
-					<Input
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="Например, Create payment"
-						style={{ width: "100%" }}
+					<Controller
+						control={control}
+						name="name"
+						render={({ field }) => (
+							<Input
+								{...field}
+								placeholder="Например, Create payment"
+								style={{ width: "100%" }}
+							/>
+						)}
 					/>
 				</Field>
 
 				<Field label="Описание">
-					<Textarea
-						value={description}
-						onChange={(e) => setDescription(e.target.value)}
-						placeholder="Что делает этот endpoint"
-						rows={3}
-						style={{ width: "100%" }}
+					<Controller
+						control={control}
+						name="description"
+						render={({ field }) => (
+							<Textarea
+								{...field}
+								placeholder="Что делает этот endpoint"
+								rows={3}
+								style={{ width: "100%" }}
+							/>
+						)}
 					/>
 				</Field>
 
 				<Field label="Теги" hint="Список через запятую">
-					<Input
-						value={tagsInput}
-						onChange={(e) => setTagsInput(e.target.value)}
-						placeholder="payments, v1, internal"
-						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
+					<Controller
+						control={control}
+						name="tagsInput"
+						render={({ field }) => (
+							<Input
+								{...field}
+								placeholder="payments, v1, internal"
+								style={{ width: "100%", fontFamily: "var(--font-mono)" }}
+							/>
+						)}
 					/>
 				</Field>
 
-				<Toggle
-					label="Требуется авторизация"
-					hint="Endpoint доступен только с токеном"
-					checked={auth}
-					onChange={(e) => setAuth(e.target.checked)}
+				<Controller
+					control={control}
+					name="auth"
+					render={({ field: { value, onChange, ...field } }) => (
+						<Toggle
+							label="Требуется авторизация"
+							hint="Endpoint доступен только с токеном"
+							checked={value}
+							onChange={(e) => onChange(e.target.checked)}
+							{...field}
+						/>
+					)}
 				/>
 
 				{/* ─── Параметры ─────────────────────────────── */}
@@ -206,14 +253,14 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 						className={`${s.tab} ${tab === "query" ? s.tabActive : ""}`}
 						onClick={() => setTab("query")}
 					>
-						Query ({queryParams.length})
+						Query ({queryArray.fields.length})
 					</button>
 					<button
 						type="button"
 						className={`${s.tab} ${tab === "body" ? s.tabActive : ""}`}
 						onClick={() => setTab("body")}
 					>
-						Body ({bodyParams.length})
+						Body ({bodyArray.fields.length})
 					</button>
 				</div>
 
@@ -222,49 +269,65 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 						<span className={s.sectionTitle}>
 							{tab === "query" ? "Query-параметры" : "Body-параметры"}
 						</span>
-						<button type="button" className={s.addBtn} onClick={addParam}>
+						<button
+							type="button"
+							className={s.addBtn}
+							onClick={() => activeArray.append(emptyParam())}
+						>
 							<PlusIcon /> Добавить
 						</button>
 					</div>
 
-					{params.length === 0 ? (
+					{activeArray.fields.length === 0 ? (
 						<div className={s.empty}>Параметров пока нет</div>
 					) : (
-						params.map((p, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: строки формы без стабильного id
-							<div className={s.paramRow} key={i}>
-								<Input
-									size="sm"
-									value={p.name}
-									onChange={(e) => updateParam(i, { name: e.target.value })}
-									placeholder="name"
-									style={{ fontFamily: "var(--font-mono)" }}
+						activeArray.fields.map((f, i) => (
+							<div className={s.paramRow} key={f.id}>
+								<Controller
+									control={control}
+									name={`${arrayName}.${i}.name`}
+									render={({ field }) => (
+										<Input
+											size="sm"
+											{...field}
+											placeholder="name"
+											style={{ fontFamily: "var(--font-mono)" }}
+										/>
+									)}
 								/>
-								<Select
-									options={TYPE_OPTIONS}
-									value={p.type}
-									onChange={(e) => updateParam(i, { type: e.target.value })}
+								<Controller
+									control={control}
+									name={`${arrayName}.${i}.type`}
+									render={({ field }) => (
+										<Select options={TYPE_OPTIONS} {...field} />
+									)}
 								/>
-								<Input
-									size="sm"
-									value={p.desc}
-									onChange={(e) => updateParam(i, { desc: e.target.value })}
-									placeholder="описание"
+								<Controller
+									control={control}
+									name={`${arrayName}.${i}.desc`}
+									render={({ field }) => (
+										<Input size="sm" {...field} placeholder="описание" />
+									)}
 								/>
-								<label className={s.reqToggle}>
-									<input
-										type="checkbox"
-										checked={p.required}
-										onChange={(e) =>
-											updateParam(i, { required: e.target.checked })
-										}
-									/>
-									req
-								</label>
+								<Controller
+									control={control}
+									name={`${arrayName}.${i}.required`}
+									render={({ field: { value, onChange, ...field } }) => (
+										<label className={s.reqToggle}>
+											<input
+												type="checkbox"
+												checked={value}
+												onChange={(e) => onChange(e.target.checked)}
+												{...field}
+											/>
+											req
+										</label>
+									)}
+								/>
 								<button
 									type="button"
 									className={s.removeBtn}
-									onClick={() => removeParam(i)}
+									onClick={() => activeArray.remove(i)}
 									aria-label="Удалить параметр"
 								>
 									<TrashIcon />

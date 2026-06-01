@@ -4,3 +4,4 @@ pub mod entity;
 pub mod environment;
 pub mod environment_auth;
 pub mod group;
+pub mod platform;

@@ -4,10 +4,11 @@ mod state;
 
 use state::AppState;
 use service::{
-    create_doc, create_environment, create_variable, delete_doc, delete_environment,
-    delete_variable, import_doc, read_doc, read_docs, read_environment_auth, read_environments,
-    read_groups, read_schemas, save_json_file, send_request, set_environment_access_token,
-    update_doc, update_environment, update_environment_auth, update_param_value, update_variable,
+    create_doc, create_environment, create_platform, create_variable, delete_doc,
+    delete_environment, delete_platform, delete_variable, import_doc, read_doc, read_docs,
+    read_environment_auth, read_environments, read_groups, read_platforms, read_schemas,
+    save_json_file, send_request, set_environment_access_token, update_doc, update_environment,
+    update_environment_auth, update_param_value, update_platform, update_variable,
     write_environments, write_groups, write_schemas,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
@@ -62,6 +63,10 @@ pub fn run() {
             read_environment_auth,
             update_environment_auth,
             set_environment_access_token,
+            read_platforms,
+            create_platform,
+            update_platform,
+            delete_platform,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

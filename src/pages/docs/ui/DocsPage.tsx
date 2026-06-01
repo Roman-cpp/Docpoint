@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
+import { exportDoc } from "../lib/exportDoc";
 import s from "./ApiExplorerPage.module.css";
 import { DeleteDocModal } from "./DeleteDocModal";
 import { EditDocModal } from "./EditDocModal";
@@ -61,6 +62,9 @@ const Overview = () => {
 										<DropMenu.Content>
 											<DropMenu.Item onClick={() => setIsEditOpen(true)}>
 												Edit
+											</DropMenu.Item>
+											<DropMenu.Item onClick={() => exportDoc(a.id, a.name)}>
+												Export
 											</DropMenu.Item>
 											<DropMenu.Separator />
 											<DropMenu.Item

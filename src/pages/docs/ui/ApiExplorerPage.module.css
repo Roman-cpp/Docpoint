@@ -211,6 +211,27 @@
 	color: var(--ink);
 	background: var(--border);
 }
+.sbMenuBtn {
+	flex-shrink: 0;
+	padding: 5px 7px;
+	border: none;
+	background: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	border-radius: 5px;
+	display: flex;
+	align-items: center;
+	transition: all 0.13s;
+	margin-right: 4px;
+}
+.sbMenuBtn svg {
+	width: 14px;
+	height: 14px;
+}
+.sbMenuBtn:hover {
+	color: var(--ink);
+	background: var(--border);
+}
 .sbApiIcon {
 	width: 26px;
 	height: 26px;
