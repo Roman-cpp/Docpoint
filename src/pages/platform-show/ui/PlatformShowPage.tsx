@@ -1,6 +1,10 @@
 import type { FC } from "react";
 import { Link, useParams } from "react-router";
 import { usePlatformDocs, usePlatformsStore } from "@/entities/platform";
+import {
+	actionFetchEnvironmentsPlatform,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { Header } from "@/widgets/header";
@@ -53,8 +57,13 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const PlatformShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
+	const fetchEnvironments = useEnvironmentsStore(
+		actionFetchEnvironmentsPlatform,
+	);
 
 	if (!id) return null;
+
+	fetchEnvironments(id);
 
 	return (
 		<div className={s.wrapper}>

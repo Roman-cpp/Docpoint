@@ -3,7 +3,7 @@ use crate::domain::doc::repository::{DocRepo, DocRepository};
 use crate::domain::entity::model::CreateEntityDTO;
 use crate::domain::entity::repository::{EntityRepo, EntityRepository};
 use crate::domain::environment::model::CreateEnvironmentDTO;
-use crate::domain::environment::repository;
+use crate::domain::environment::repository::{EnvironmentRepo, EnvironmentRepository};
 use crate::domain::group::model::CreateGroupDTO;
 use crate::domain::group::repository::{GroupRepo, GroupRepository};
 use crate::state::AppState;
@@ -21,6 +21,8 @@ pub async fn import_doc(
     let doc_id = DocRepo::new(db).create(&doc).await?;
     GroupRepo::new(db).create(&doc_id, &groups).await?;
     EntityRepo::new(db).create(&doc_id, &entities).await?;
-    repository::write_configs(db, &doc_id, &environments).await?;
+    EnvironmentRepo::new(db)
+        .write_configs(&doc_id, "doc", &environments)
+        .await?;
     Ok(doc_id)
 }

@@ -1,5 +1,5 @@
 use crate::domain::environment::model::UpdateEnvironmentDTO;
-use crate::domain::environment::repository;
+use crate::domain::environment::repository::{EnvironmentRepo, EnvironmentRepository};
 use crate::state::AppState;
 use tauri::State;
 
@@ -8,5 +8,5 @@ pub async fn update_environment(
     state: State<'_, AppState>,
     environment: UpdateEnvironmentDTO,
 ) -> Result<(), String> {
-    repository::update_environment(&state.db, &environment).await
+    EnvironmentRepo::new(&state.db).update(&environment).await
 }

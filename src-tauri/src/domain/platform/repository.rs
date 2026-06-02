@@ -75,6 +75,17 @@ impl PlatformRepository for PlatformRepo<'_> {
     }
 
     async fn delete(&self, id: &str) -> Result<(), String> {
+        // Environments owned by this platform have no FK back to platforms
+        // (polymorphic environmentable_id/type), so remove them explicitly.
+        // Their variables/auth still cascade via FK from environments.
+        sqlx::query(
+            "DELETE FROM environments WHERE environmentable_id = ? AND environmentable_type = 'platform'",
+        )
+        .bind(id)
+        .execute(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
         sqlx::query("DELETE FROM platforms WHERE id = ?")
             .bind(id)
             .execute(self.db)
@@ -84,8 +95,9 @@ impl PlatformRepository for PlatformRepo<'_> {
         Ok(())
     }
 
+    // Links a doc to a platform via the docs.platform_id FK (migration 0011).
     async fn attach_doc(&self, platform_id: &str, doc_id: &str) -> Result<(), String> {
-        sqlx::query("UPDATE environments SET platform_id = ? WHERE doc_id = ?")
+        sqlx::query("UPDATE docs SET platform_id = ? WHERE id = ?")
             .bind(platform_id)
             .bind(doc_id)
             .execute(self.db)
@@ -96,17 +108,11 @@ impl PlatformRepository for PlatformRepo<'_> {
     }
 
     async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<Doca>, String> {
-        let rows = sqlx::query(
-            "SELECT DISTINCT d.id, d.name, d.version, d.desc \
-             FROM docs d \
-             JOIN environments e ON e.doc_id = d.id \
-             WHERE e.platform_id = ? \
-             ORDER BY d.name",
-        )
-        .bind(platform_id)
-        .fetch_all(self.db)
-        .await
-        .map_err(|e| e.to_string())?;
+        let rows = sqlx::query("SELECT * FROM docs WHERE platform_id = ?")
+            .bind(platform_id)
+            .fetch_all(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         if rows.is_empty() {
             return Ok(vec![]);
@@ -114,7 +120,7 @@ impl PlatformRepository for PlatformRepo<'_> {
 
         let ids: Vec<String> = rows.iter().map(|r| r.get("id")).collect();
 
-        let mut tq = sqlx::QueryBuilder::new("SELECT doc_id, tag FROM docs_tag WHERE doc_id IN (");
+        let mut tq = sqlx::QueryBuilder::new("SELECT * FROM docs_tag WHERE doc_id IN (");
         let mut sep = tq.separated(",");
         for id in &ids {
             sep.push_bind(id);
@@ -151,7 +157,9 @@ impl PlatformRepository for PlatformRepo<'_> {
         &self,
         platform_id: &str,
     ) -> Result<Vec<Environment>, String> {
-        let rows = sqlx::query("SELECT * FROM environments WHERE platform_id = ?")
+        let rows = sqlx::query(
+            "SELECT * FROM environments WHERE environmentable_id = ? AND environmentable_type = 'platform'",
+        )
             .bind(platform_id)
             .fetch_all(self.db)
             .await

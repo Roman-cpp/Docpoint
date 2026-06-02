@@ -2,13 +2,8 @@ import type { DocStore } from "./useDocStore";
 
 export const selectDoc = (state: DocStore) => state.doc;
 export const selectGroups = (state: DocStore) => state.groups;
-export const selectEnvironments = (state: DocStore) => state.environments;
-export const selectEnvironmentToken = (state: DocStore) =>
-	state.selectedEnvironment?.accessToken;
 export const selectSelectedGroup = (state: DocStore) => state.selectedGroup;
 export const selectSelectedEntity = (state: DocStore) => state.selectedEntity;
-export const selectSelectedEnvironment = (state: DocStore) =>
-	state.selectedEnvironment;
 export const selectSelectedEndpoint = (state: DocStore) =>
 	state.selectedEndpoint;
 export const selectEntities = (state: DocStore) => state.entities;

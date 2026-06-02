@@ -3,9 +3,9 @@ import { Link } from "react-router";
 import {
 	actionSelectEnvironment,
 	selectEnvironments,
-	useDocStore,
-} from "@/features/doc";
-import { selectEnvironment, useEnvironmentStore } from "@/features/environment";
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./Header.module.css";
 
@@ -21,9 +21,9 @@ interface HeaderProps {
 }
 
 export const Header: FC<HeaderProps> = ({ section }) => {
-	const environments = useDocStore(selectEnvironments);
-	const environment = useEnvironmentStore(selectEnvironment);
-	const selectEnv = useDocStore(actionSelectEnvironment);
+	const environments = useEnvironmentsStore(selectEnvironments);
+	const selectedEnvironment = useEnvironmentsStore(selectSelectedEnvironment);
+	const selectEnvironment = useEnvironmentsStore(actionSelectEnvironment);
 
 	return (
 		<nav className={s.pfNav}>
@@ -38,13 +38,13 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 			{environments.length > 0 && (
 				<div className={s.pfNavEnv}>
 					{environments.map((env) => {
-						const isActive = env.id === environment?.id;
+						const isActive = env.id === selectedEnvironment?.id;
 						return (
 							<button
 								key={env.id}
 								type="button"
 								className={`${s.pfEnvBtn} ${isActive ? s.active : ""}`}
-								onClick={() => selectEnv(env.id)}
+								onClick={() => selectEnvironment(env.id)}
 							>
 								<span
 									className={s.pfEnvDot}

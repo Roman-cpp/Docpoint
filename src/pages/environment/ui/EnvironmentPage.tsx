@@ -21,8 +21,8 @@ import {
 	actionUpdateEnvironmentToken,
 	actionupdateVariableInEnvironment,
 	selectSelectedEnvironment,
-	useDocStore,
-} from "@/features/doc";
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { Header } from "../../../widgets/header/ui/Header/Header";
 import { AuthRequestSection } from "./AuthRequestSection";
@@ -64,13 +64,17 @@ const asMethod = (value: string): AuthMethod => {
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export const EnvironmentPage: FC = () => {
-	const selectedEnv = useDocStore(selectSelectedEnvironment);
-	const patchEnvironment = useDocStore(actionUpdateEnvironment);
-	const removeEnvironment = useDocStore(actionDeleteEnvironment);
-	const addVariable = useDocStore(actionaddVariableToEnvironment);
-	const updateVariableInStore = useDocStore(actionupdateVariableInEnvironment);
-	const removeVariable = useDocStore(actiondeleteVariableFromEnvironment);
-	const patchToken = useDocStore(actionUpdateEnvironmentToken);
+	const selectedEnv = useEnvironmentsStore(selectSelectedEnvironment);
+	const patchEnvironment = useEnvironmentsStore(actionUpdateEnvironment);
+	const removeEnvironment = useEnvironmentsStore(actionDeleteEnvironment);
+	const addVariable = useEnvironmentsStore(actionaddVariableToEnvironment);
+	const updateVariableInStore = useEnvironmentsStore(
+		actionupdateVariableInEnvironment,
+	);
+	const removeVariable = useEnvironmentsStore(
+		actiondeleteVariableFromEnvironment,
+	);
+	const patchToken = useEnvironmentsStore(actionUpdateEnvironmentToken);
 
 	// Environment basics
 	const [label, setLabel] = useState("");

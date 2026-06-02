@@ -26,7 +26,7 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 		if (!trimmedLabel || !trimmedEnv) return;
 		setLoading(true);
 		try {
-			const created = await createEnvironmentApi(docId, {
+			const created = await createEnvironmentApi(docId, "doc", {
 				env: trimmedEnv,
 				label: trimmedLabel,
 				baseUrl: baseUrl.trim(),

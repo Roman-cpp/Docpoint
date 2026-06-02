@@ -1,11 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-
+import { readEnvironmentsByDocApi } from "@/entities/doc";
 import { createEnvironmentApi } from "../api/createEnvironmentApi";
 import { createVariableApi } from "../api/createVariableApi";
 import { deleteEnvironmentApi } from "../api/deleteEnvironmentApi";
 import { deleteVariableApi } from "../api/deleteVariableApi";
-import { readEnvironmentsApi } from "../api/readEnvironmentsApi";
 import { updateEnvironmentApi } from "../api/updateEnvironmentApi";
 import { updateEnvironmentTokenApi } from "../api/updateEnvironmentTokenApi";
 import { updateVariableApi } from "../api/updateVariableApi";
@@ -34,7 +33,7 @@ export const useEnvironmentsStore = ({
 
 	const environments = useQuery<Environment[]>({
 		queryKey: environmentKeys.list(docId ?? ""),
-		queryFn: () => readEnvironmentsApi(docId!),
+		queryFn: () => readEnvironmentsByDocApi(docId!),
 		enabled: !!docId,
 	});
 

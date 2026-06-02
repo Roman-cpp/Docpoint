@@ -2,8 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import type { CreateEnvironmentDTO, Environment } from "../model/type";
 
 export function createEnvironmentApi(
-	docId: string,
+	environmentableId: string,
+	environmentableType: "doc" | "platform",
 	environment: CreateEnvironmentDTO,
 ): Promise<Environment> {
-	return invoke("create_environment", { docId, environment });
+	return invoke("create_environment", {
+		environmentable_id: environmentableId,
+		environmentable_type: environmentableType,
+		environment,
+	});
 }

@@ -1,5 +1,5 @@
 use crate::domain::environment::model::UpdateVariableDTO;
-use crate::domain::environment::repository;
+use crate::domain::environment::repository::{EnvironmentRepo, EnvironmentRepository};
 use crate::state::AppState;
 use tauri::State;
 
@@ -8,5 +8,5 @@ pub async fn update_variable(
     state: State<'_, AppState>,
     variable: UpdateVariableDTO,
 ) -> Result<(), String> {
-    repository::update_variable(&state.db, &variable).await
+    EnvironmentRepo::new(&state.db).update_variable(&variable).await
 }

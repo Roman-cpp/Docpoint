@@ -1,24 +1,26 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
 import { EnvironmentModal } from "@/entities/environment";
+import { selectDoc, useDocStore } from "@/features/doc";
 import {
 	actionAddEnvironment,
 	actionSelectEnvironment,
-	selectDoc,
 	selectEnvironments,
 	selectSelectedEnvironment,
-	useDocStore,
-} from "@/features/doc";
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./EnvironmentPage.module.css";
 import { PlusIcon } from "./parts";
 
 export const Sidebar: FC = () => {
 	const doc = useDocStore(selectDoc);
-	const environments = useDocStore(selectEnvironments);
-	const selectedEnv = useDocStore(selectSelectedEnvironment);
-	const selectEnv = useDocStore(actionSelectEnvironment);
-	const addEnvironment = useDocStore(actionAddEnvironment);
+
+	const environments = useEnvironmentsStore(selectEnvironments);
+	const selectedEnvironment = useEnvironmentsStore(selectSelectedEnvironment);
+
+	const selectEnvironment = useEnvironmentsStore(actionSelectEnvironment);
+	const addEnvironment = useEnvironmentsStore(actionAddEnvironment);
 
 	const [modalOpen, setModalOpen] = useState(false);
 
@@ -62,13 +64,13 @@ export const Sidebar: FC = () => {
 					</div>
 				) : (
 					environments.map((env) => {
-						const isActive = env.id === selectedEnv?.id;
+						const isActive = env.id === selectedEnvironment?.id;
 						return (
 							<button
 								key={env.id}
 								type="button"
 								className={`${s.envSbItem} ${isActive ? s.active : ""}`}
-								onClick={() => selectEnv(env.id)}
+								onClick={() => selectEnvironment(env.id)}
 							>
 								<span
 									className={s.envSbItemDot}

@@ -1,0 +1,1 @@
+ALTER TABLE docs ADD COLUMN platform_id TEXT REFERENCES platforms(id) ON DELETE SET NULL;

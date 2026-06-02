@@ -1,10 +1,18 @@
 export {
+	actionAddEnvironment,
 	actionaddVariableToEnvironment,
+	actionDeleteEnvironment,
 	actiondeleteVariableFromEnvironment,
+	actionFetchEnvironmentsDoc,
+	actionFetchEnvironmentsPlatform,
+	actionResetEnvironments,
 	actionSelectEnvironment,
 	actionUpdateEnvironment,
 	actionUpdateEnvironmentToken,
 	actionupdateVariableInEnvironment,
-} from "./store/environmentStore.actions";
-export { selectEnvironment } from "./store/environmentStore.selectors";
-export { useEnvironmentStore } from "./store/useEnvironmentStore";
+} from "./store/environmentsStore.actions";
+export {
+	selectEnvironments,
+	selectSelectedEnvironment,
+} from "./store/environmentsStore.selectors";
+export { useEnvironmentsStore } from "./store/useEnvironmentsStore";

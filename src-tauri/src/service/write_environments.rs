@@ -1,5 +1,5 @@
 use crate::domain::environment::model::CreateEnvironmentDTO;
-use crate::domain::environment::repository;
+use crate::domain::environment::repository::{EnvironmentRepo, EnvironmentRepository};
 use crate::state::AppState;
 use tauri::State;
 
@@ -9,5 +9,7 @@ pub async fn write_environments(
     doc_id: String,
     environments: Vec<CreateEnvironmentDTO>,
 ) -> Result<(), String> {
-    repository::write_configs(&state.db, &doc_id, &environments).await
+    EnvironmentRepo::new(&state.db)
+        .write_configs(&doc_id, "doc", &environments)
+        .await
 }

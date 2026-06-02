@@ -1,4 +1,4 @@
-use crate::domain::environment::repository;
+use crate::domain::environment::repository::{EnvironmentRepo, EnvironmentRepository};
 use crate::state::AppState;
 use tauri::State;
 
@@ -7,5 +7,5 @@ pub async fn delete_environment(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<(), String> {
-    repository::delete_environment(&state.db, &id).await
+    EnvironmentRepo::new(&state.db).delete(&id).await
 }

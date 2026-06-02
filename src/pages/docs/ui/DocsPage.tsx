@@ -3,6 +3,10 @@ import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
 import { usePlatformsStore } from "@/entities/platform";
 import { actionResetDoc, useDocStore } from "@/features/doc";
+import {
+	actionResetEnvironments,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
 import { exportDoc } from "../lib/exportDoc";
@@ -19,8 +23,10 @@ const Overview = () => {
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const resetDoc = useDocStore(actionResetDoc);
+	const resetEnvironments = useEnvironmentsStore(actionResetEnvironments);
 
 	resetDoc();
+	resetEnvironments();
 
 	const handleSaveEdit = (update: UpdateDocDTO) => {
 		updateDoc(update);

@@ -1,4 +1,7 @@
-use crate::domain::doc::model::UpdateDocDTO;
+use crate::domain::{
+    doc::model::UpdateDocDTO,
+    environment::model::{EnvValue, Environment},
+};
 
 use super::model::{CreateDocDTO, Doca};
 use sqlx::{Row, SqlitePool};
@@ -10,6 +13,10 @@ pub trait DocRepository {
     async fn create(&self, doc: &CreateDocDTO) -> Result<String, String>;
     async fn update(&self, doc: &UpdateDocDTO) -> Result<String, String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
+    async fn environments_by_doc(
+      &self,
+      doc_id: &str,
+  ) -> Result<Vec<Environment>, String>;
 }
 
 pub struct DocRepo<'a> {
@@ -153,6 +160,17 @@ impl DocRepository for DocRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
+        // environments use a polymorphic owner (environmentable_id/type) instead of
+        // an FK to docs, so deleting the doc no longer cascades to them. Remove the
+        // doc's environments explicitly; their variables/auth still cascade via FK.
+        sqlx::query(
+            "DELETE FROM environments WHERE environmentable_id = ? AND environmentable_type = 'doc'",
+        )
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+
         sqlx::query("DELETE FROM docs WHERE id = ?")
             .bind(id)
             .execute(&mut *conn)
@@ -160,5 +178,45 @@ impl DocRepository for DocRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+
+    async fn environments_by_doc(&self, doc_id: &str) -> Result<Vec<Environment>, String> {
+        let rows = sqlx::query(
+            "SELECT * FROM environments WHERE environmentable_id = ? AND environmentable_type = 'doc'",
+        )
+        .bind(doc_id)
+        .fetch_all(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let mut environments = Vec::new();
+        for row in rows.iter() {
+            let id: String = row.get("id");
+            let var_rows =
+                sqlx::query("SELECT id, key, value FROM variables WHERE environments_id = ?")
+                    .bind(&id)
+                    .fetch_all(self.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+            environments.push(Environment {
+                id,
+                env: row.get("env"),
+                label: row.get("label"),
+                base_url: row.get("base_url"),
+                prefix: row.get("prefix"),
+                value: var_rows
+                    .iter()
+                    .map(|v| EnvValue {
+                        id: v.get("id"),
+                        name: v.get("key"),
+                        value: v.get("value"),
+                    })
+                    .collect(),
+                access_token: "".to_string(),
+            });
+        }
+
+        Ok(environments)
     }
 }
