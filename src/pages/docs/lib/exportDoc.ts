@@ -12,7 +12,11 @@ export async function exportDoc(docId: string, docName: string): Promise<void> {
 		readEntitiesApi(docId),
 		readEnvironmentsApi(docId),
 	]);
-	const content = JSON.stringify({ doc, groups, entities, environments }, null, 2);
+	const content = JSON.stringify(
+		{ doc, groups, entities, environments },
+		null,
+		2,
+	);
 	const filename = `${docName.replace(/\s+/g, "_")}.json`;
 	await invoke("save_json_file", { content, filename });
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useParams } from "react-router";
 import { type Platform, usePlatformsStore } from "@/entities/platform";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import s from "./ApiExplorerPage.module.css";
@@ -8,6 +9,8 @@ import { PlatformModal } from "./PlatformModal";
 export const PlatformsSection = () => {
 	const { platforms, createPlatform, updatePlatform, isCreating, isUpdating } =
 		usePlatformsStore();
+
+	const { id: activeId } = useParams();
 
 	const [editing, setEditing] = useState<Platform | null>(null);
 	const [pending, setPending] = useState<Platform | null>(null);
@@ -29,18 +32,18 @@ export const PlatformsSection = () => {
 			<span className={s.sbSecLbl}>Platforms</span>
 
 			{platforms.map((p) => (
-				<div key={p.id} className={s.sbApiRow}>
-					<button
-						type="button"
+				<div
+					key={p.id}
+					className={`${s.sbApiRow} ${String(p.id) === activeId ? s.on : ""}`}
+				>
+					<Link
+						to={`/platform-show/${p.id}`}
 						className={s.sbApiBtn}
 						title={p.desc || p.name}
 					>
 						<span className={s.sbApiName}>{p.name}</span>
-					</button>
-					<div
-						className={s.acMenuWrap}
-						onClick={(e) => e.stopPropagation()}
-					>
+					</Link>
+					<div className={s.acMenuWrap} onClick={(e) => e.stopPropagation()}>
 						<DropMenu>
 							<DropMenu.Trigger>
 								<button
@@ -48,7 +51,11 @@ export const PlatformsSection = () => {
 									className={s.sbMenuBtn}
 									aria-label="Действия"
 								>
-									<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<svg
+										viewBox="0 0 16 16"
+										fill="currentColor"
+										aria-hidden="true"
+									>
 										<circle cx="8" cy="3" r="1.4" />
 										<circle cx="8" cy="8" r="1.4" />
 										<circle cx="8" cy="13" r="1.4" />

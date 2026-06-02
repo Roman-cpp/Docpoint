@@ -5,6 +5,9 @@ export type {
 	DropMenuItemProps,
 	DropMenuLabelProps,
 	DropMenuProps,
+	DropMenuSubContentProps,
+	DropMenuSubProps,
+	DropMenuSubTriggerProps,
 	DropMenuTriggerProps,
 } from "./DropMenu/DropMenu";
 export { DropMenu } from "./DropMenu/DropMenu";

@@ -3,18 +3,16 @@ import { Link } from "react-router";
 import {
 	actionSelectEnvironment,
 	selectEnvironments,
-	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
+import { selectEnvironment, useEnvironmentStore } from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
-import { ChevronIcon } from "../../../../pages/environment/ui/parts";
 import s from "./Header.module.css";
 
 const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
 	{ label: "API Docs", href: "/" },
 	{ label: "HTTP Client", href: "/http-client" },
 	{ label: "Entities", href: "/entity" },
-	{ label: "Environments", href: "/environments", active: true },
 ];
 
 interface HeaderProps {
@@ -24,7 +22,7 @@ interface HeaderProps {
 
 export const Header: FC<HeaderProps> = ({ section }) => {
 	const environments = useDocStore(selectEnvironments);
-	const selectedEnv = useDocStore(selectSelectedEnvironment);
+	const environment = useEnvironmentStore(selectEnvironment);
 	const selectEnv = useDocStore(actionSelectEnvironment);
 
 	return (
@@ -37,12 +35,10 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 				</div>
 			</Link>
 
-			<div className={s.pfNavEnv}>
-				{environments.length === 0 ? (
-					<span className={s.pfNavEnvEmpty}>нет окружений</span>
-				) : (
-					environments.map((env) => {
-						const isActive = env.id === selectedEnv?.id;
+			{environments.length > 0 && (
+				<div className={s.pfNavEnv}>
+					{environments.map((env) => {
+						const isActive = env.id === environment?.id;
 						return (
 							<button
 								key={env.id}
@@ -57,9 +53,9 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 								{env.env}
 							</button>
 						);
-					})
-				)}
-			</div>
+					})}
+				</div>
+			)}
 
 			<div className={s.pfNavLinks}>
 				{NAV_LINKS.map((link) => (
@@ -71,6 +67,15 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						{link.label}
 					</Link>
 				))}
+				{environments.length > 0 && (
+					<Link
+						key="/environments"
+						to="/environments"
+						className={`${s.pfNavLink} ${s.active}`}
+					>
+						Environments
+					</Link>
+				)}
 				{/* <Link to="/profile" className={s.pfNavUser}>
 					<span className={s.pfNavUserAvatar}>ИП</span>
 					<span className={s.pfNavUserName}>Иван П.</span>

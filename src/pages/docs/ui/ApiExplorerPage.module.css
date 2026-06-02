@@ -170,7 +170,8 @@
 	border-radius: 7px;
 	transition: background 0.12s;
 }
-.sbApiRow:hover {
+.sbApiRow:hover,
+.sbApiRow.on {
 	background: var(--cat-bg);
 }
 .sbApiRow:hover .sbApiExportBtn {
@@ -1129,7 +1130,6 @@
 		box-shadow 0.18s,
 		transform 0.15s;
 	position: relative;
-	overflow: hidden;
 	display: flex;
 	flex-direction: column;
 	gap: 11px;
@@ -1138,6 +1138,11 @@
 	border-color: var(--border-h);
 	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
 	transform: translateY(-2px);
+}
+/* Raise the card whose menu is open above its siblings so the
+   popover (and its submenu) is not overlapped by adjacent cards. */
+.apiCard:has([role="menu"]) {
+	z-index: 1;
 }
 .apiCard.sel {
 	border-color: var(--ink);
@@ -1149,6 +1154,8 @@
 	left: 0;
 	right: 0;
 	height: 3px;
+	border-top-left-radius: 12px;
+	border-top-right-radius: 12px;
 }
 .acTop {
 	display: flex;

@@ -1,4 +1,6 @@
 use super::model::{CreatePlatformDTO, Platform, UpdatePlatformDTO};
+use crate::domain::doc::model::Doca;
+use crate::domain::environment::model::{EnvValue, Environment};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
@@ -7,6 +9,12 @@ pub trait PlatformRepository {
     async fn create(&self, platform: &CreatePlatformDTO) -> Result<Platform, String>;
     async fn update(&self, platform: &UpdatePlatformDTO) -> Result<(), String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
+    async fn attach_doc(&self, platform_id: &str, doc_id: &str) -> Result<(), String>;
+    async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<Doca>, String>;
+    async fn environments_by_platform(
+        &self,
+        platform_id: &str,
+    ) -> Result<Vec<Environment>, String>;
 }
 
 pub struct PlatformRepo<'a> {
@@ -74,5 +82,109 @@ impl PlatformRepository for PlatformRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+
+    async fn attach_doc(&self, platform_id: &str, doc_id: &str) -> Result<(), String> {
+        sqlx::query("UPDATE environments SET platform_id = ? WHERE doc_id = ?")
+            .bind(platform_id)
+            .bind(doc_id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<Doca>, String> {
+        let rows = sqlx::query(
+            "SELECT DISTINCT d.id, d.name, d.version, d.desc \
+             FROM docs d \
+             JOIN environments e ON e.doc_id = d.id \
+             WHERE e.platform_id = ? \
+             ORDER BY d.name",
+        )
+        .bind(platform_id)
+        .fetch_all(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        if rows.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let ids: Vec<String> = rows.iter().map(|r| r.get("id")).collect();
+
+        let mut tq = sqlx::QueryBuilder::new("SELECT doc_id, tag FROM docs_tag WHERE doc_id IN (");
+        let mut sep = tq.separated(",");
+        for id in &ids {
+            sep.push_bind(id);
+        }
+        tq.push(")");
+
+        let tag_rows = tq
+            .build()
+            .fetch_all(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(rows
+            .iter()
+            .map(|r| {
+                let id: String = r.get("id");
+                let tags: Vec<String> = tag_rows
+                    .iter()
+                    .filter(|t| t.get::<String, _>("doc_id") == id)
+                    .map(|t| t.get("tag"))
+                    .collect();
+                Doca {
+                    id,
+                    name: r.get("name"),
+                    version: r.get("version"),
+                    desc: r.get("desc"),
+                    tags,
+                }
+            })
+            .collect())
+    }
+
+    async fn environments_by_platform(
+        &self,
+        platform_id: &str,
+    ) -> Result<Vec<Environment>, String> {
+        let rows = sqlx::query("SELECT * FROM environments WHERE platform_id = ?")
+            .bind(platform_id)
+            .fetch_all(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let mut environments = Vec::new();
+        for row in rows.iter() {
+            let id: String = row.get("id");
+            let var_rows =
+                sqlx::query("SELECT id, key, value FROM variables WHERE environments_id = ?")
+                    .bind(&id)
+                    .fetch_all(self.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+            environments.push(Environment {
+                id,
+                env: row.get("env"),
+                label: row.get("label"),
+                base_url: row.get("base_url"),
+                prefix: row.get("prefix"),
+                value: var_rows
+                    .iter()
+                    .map(|v| EnvValue {
+                        id: v.get("id"),
+                        name: v.get("key"),
+                        value: v.get("value"),
+                    })
+                    .collect(),
+                access_token: "".to_string(),
+            });
+        }
+
+        Ok(environments)
     }
 }

@@ -21,3 +21,4 @@ export const actionUpdateEndpointParamValue = (state: DocStore) =>
 	state.updateEndpointParamValue;
 export const actionUpdateEnvironmentToken = (state: DocStore) =>
 	state.updateEnvironmentToken;
+export const actionResetDoc = (state: DocStore) => state.resetDoc;

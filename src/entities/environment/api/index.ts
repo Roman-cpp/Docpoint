@@ -2,6 +2,7 @@ export { createEnvironmentApi } from "./createEnvironmentApi";
 export { createVariableApi } from "./createVariableApi";
 export { deleteEnvironmentApi } from "./deleteEnvironmentApi";
 export { deleteVariableApi } from "./deleteVariableApi";
+export { environmentsByPlatformApi } from "./environmentsByPlatformApi";
 export { readEnvironmentsApi } from "./readEnvironmentsApi";
 export { updateEnvironmentApi } from "./updateEnvironmentApi";
 export { updateEnvironmentTokenApi } from "./updateEnvironmentTokenApi";

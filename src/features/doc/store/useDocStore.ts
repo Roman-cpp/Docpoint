@@ -33,6 +33,7 @@ type DocState = {
 
 type DocActions = {
 	fetchDoc: (id: string) => Promise<void>;
+	resetDoc: () => void;
 
 	selectGroup: (groupId: string) => void;
 	selectEnvironment: (envId: string) => void;
@@ -72,6 +73,8 @@ export type DocStore = DocState & DocActions;
 
 const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 	...initialState,
+
+	resetDoc: () => set(initialState),
 
 	selectGroup: (groupId: string) => {
 		const { groups } = get();

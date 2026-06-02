@@ -4,6 +4,7 @@ export {
 	actionDeleteEnvironment,
 	actiondeleteVariableFromEnvironment,
 	actionfetchDoc,
+	actionResetDoc,
 	actionSelectEndpoint,
 	actionSelectEntity,
 	actionSelectEnvironment,

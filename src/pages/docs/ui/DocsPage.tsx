@@ -1,6 +1,8 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
+import { usePlatformsStore } from "@/entities/platform";
+import { actionResetDoc, useDocStore } from "@/features/doc";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
 import { exportDoc } from "../lib/exportDoc";
@@ -12,9 +14,13 @@ import { Sidebar } from "./Sidebar";
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
 	const { docs, updateDoc } = useDocsStore();
+	const { platforms, attachDoc } = usePlatformsStore();
 	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEditOpen, setIsEditOpen] = useState(false);
+	const resetDoc = useDocStore(actionResetDoc);
+
+	resetDoc();
 
 	const handleSaveEdit = (update: UpdateDocDTO) => {
 		updateDoc(update);
@@ -66,6 +72,30 @@ const Overview = () => {
 											<DropMenu.Item onClick={() => exportDoc(a.id, a.name)}>
 												Export
 											</DropMenu.Item>
+											<DropMenu.Sub>
+												<DropMenu.SubTrigger>
+													Add to platform
+												</DropMenu.SubTrigger>
+												<DropMenu.SubContent>
+													{platforms.length === 0 ? (
+														<DropMenu.Item disabled>No platforms</DropMenu.Item>
+													) : (
+														platforms.map((p) => (
+															<DropMenu.Item
+																key={p.id}
+																onClick={() =>
+																	attachDoc({
+																		platformId: p.id,
+																		docId: a.id,
+																	})
+																}
+															>
+																{p.name}
+															</DropMenu.Item>
+														))
+													)}
+												</DropMenu.SubContent>
+											</DropMenu.Sub>
 											<DropMenu.Separator />
 											<DropMenu.Item
 												danger

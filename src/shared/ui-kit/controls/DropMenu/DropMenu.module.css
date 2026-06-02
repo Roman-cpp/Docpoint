@@ -53,6 +53,29 @@
 	}
 }
 
+/* ─── Submenu ────────────────────────────────────────────────── */
+
+.sub {
+	position: relative;
+}
+
+.submenu {
+	position: absolute;
+	top: -5px;
+	left: 100%;
+	min-width: 200px;
+	max-height: 320px;
+	overflow-y: auto;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	box-shadow: var(--shadow-popover);
+	padding: 4px;
+	margin-left: 4px;
+	z-index: calc(var(--z-overlay) + 11);
+	animation: menuIn var(--t-base) var(--ease-out);
+}
+
 /* ─── Separator ──────────────────────────────────────────────── */
 
 .separator {

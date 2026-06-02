@@ -233,6 +233,102 @@ const DropMenuItem: FC<DropMenuItemProps> = ({
 	);
 };
 
+/* ─── Submenu ────────────────────────────────────────────────── */
+
+interface SubMenuContextValue {
+	open: boolean;
+	setOpen: (open: boolean) => void;
+}
+
+const SubMenuContext = createContext<SubMenuContextValue | null>(null);
+
+const useSubMenuContext = (component: string) => {
+	const ctx = useContext(SubMenuContext);
+	if (!ctx) {
+		throw new Error(
+			`<DropMenu.${component}> must be used inside <DropMenu.Sub>`,
+		);
+	}
+	return ctx;
+};
+
+export interface DropMenuSubProps {
+	children: ReactNode;
+}
+
+const DropMenuSub: FC<DropMenuSubProps> = ({ children }) => {
+	const [open, setOpen] = useState(false);
+	const ctx = useMemo<SubMenuContextValue>(() => ({ open, setOpen }), [open]);
+	return (
+		<SubMenuContext.Provider value={ctx}>
+			<div
+				className={s.sub}
+				onMouseEnter={() => setOpen(true)}
+				onMouseLeave={() => setOpen(false)}
+			>
+				{children}
+			</div>
+		</SubMenuContext.Provider>
+	);
+};
+
+export interface DropMenuSubTriggerProps {
+	children: ReactNode;
+	indicator?: string;
+	disabled?: boolean;
+}
+
+const DropMenuSubTrigger: FC<DropMenuSubTriggerProps> = ({
+	children,
+	indicator,
+	disabled,
+}) => {
+	const { open, setOpen } = useSubMenuContext("SubTrigger");
+	return (
+		<div
+			className={[s.item, disabled ? s.itemDisabled : ""]
+				.filter(Boolean)
+				.join(" ")}
+			role="menuitem"
+			aria-haspopup="menu"
+			aria-expanded={open}
+			tabIndex={disabled ? -1 : 0}
+			aria-disabled={disabled}
+			onClick={() => !disabled && setOpen(!open)}
+			onKeyDown={(e) => {
+				if (disabled) return;
+				if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
+					e.preventDefault();
+					setOpen(true);
+				}
+				if (e.key === "ArrowLeft") setOpen(false);
+			}}
+		>
+			<span className={s.itemLeft}>
+				{indicator && <span className={s.dot}>{indicator}</span>}
+			</span>
+			<span className={s.itemLabel}>{children}</span>
+			<span className={s.arrow}>
+				<ArrowIcon />
+			</span>
+		</div>
+	);
+};
+
+export interface DropMenuSubContentProps {
+	children: ReactNode;
+}
+
+const DropMenuSubContent: FC<DropMenuSubContentProps> = ({ children }) => {
+	const { open } = useSubMenuContext("SubContent");
+	if (!open) return null;
+	return (
+		<div className={s.submenu} role="menu">
+			{children}
+		</div>
+	);
+};
+
 /* ─── Separator ──────────────────────────────────────────────── */
 
 const DropMenuSeparator: FC = () => (
@@ -255,6 +351,9 @@ export const DropMenu = Object.assign(DropMenuRoot, {
 	Trigger: DropMenuTrigger,
 	Content: DropMenuContent,
 	Item: DropMenuItem,
+	Sub: DropMenuSub,
+	SubTrigger: DropMenuSubTrigger,
+	SubContent: DropMenuSubContent,
 	Separator: DropMenuSeparator,
 	Label: DropMenuLabel,
 });

@@ -2,6 +2,7 @@ export { createEnvironmentApi } from "./api/createEnvironmentApi";
 export { createVariableApi } from "./api/createVariableApi";
 export { deleteEnvironmentApi } from "./api/deleteEnvironmentApi";
 export { deleteVariableApi } from "./api/deleteVariableApi";
+export { environmentsByPlatformApi } from "./api/environmentsByPlatformApi";
 export { readEnvironmentsApi } from "./api/readEnvironmentsApi";
 export { updateEnvironmentApi } from "./api/updateEnvironmentApi";
 export { updateEnvironmentTokenApi } from "./api/updateEnvironmentTokenApi";
@@ -15,6 +16,9 @@ export type {
 	UpdateVariableDTO,
 	Variable,
 } from "./model/type";
+export {
+	useEnvironmentsStore,
+} from "./store/useEnvironmentsStore";
 export { DeleteVariableModal } from "./ui/DeleteVariableModal";
 export { EnvironmentModal } from "./ui/EnvironmentModal";
 export { VariableModal } from "./ui/VariableModal";
