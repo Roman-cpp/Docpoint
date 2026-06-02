@@ -13,6 +13,7 @@ export {
 } from "./store/environmentsStore.actions";
 export {
 	selectEnvironments,
+	selectEnvironmentToken,
 	selectSelectedEnvironment,
 } from "./store/environmentsStore.selectors";
 export { useEnvironmentsStore } from "./store/useEnvironmentsStore";

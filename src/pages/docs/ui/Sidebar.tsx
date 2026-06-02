@@ -1,13 +1,20 @@
 import { useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import { useDocsStore } from "@/entities/doc";
+import { type CreateDocDTO, useDocsStore } from "@/entities/doc";
 import s from "./ApiExplorerPage.module.css";
+import { CreateDocModal } from "./CreateDocModal";
 import { PlatformsSection } from "./PlatformsSection";
 
 export const Sidebar = () => {
-	const { importDoc } = useDocsStore();
+	const { importDoc, createDoc, isCreating } = useDocsStore();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [importing, setImporting] = useState(false);
+	const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+	const handleCreate = (dto: CreateDocDTO) => {
+		createDoc(dto);
+		setIsCreateOpen(false);
+	};
 
 	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -53,6 +60,14 @@ export const Sidebar = () => {
 		<aside className={s.sidebar}>
 			<PlatformsSection />
 			<div className={s.sbImport}>
+				<button
+					type="button"
+					className={s.sbImportBtn}
+					onClick={() => setIsCreateOpen(true)}
+					disabled={isCreating}
+				>
+					{isCreating ? "Создаём..." : "+ Новый документ"}
+				</button>
 				<input
 					ref={fileInputRef}
 					type="file"
@@ -69,6 +84,12 @@ export const Sidebar = () => {
 					{importing ? "Импорт..." : "+ Import JSON"}
 				</button>
 			</div>
+			<CreateDocModal
+				open={isCreateOpen}
+				onOpenChange={setIsCreateOpen}
+				onCreate={handleCreate}
+				isCreating={isCreating}
+			/>
 		</aside>
 	);
 };

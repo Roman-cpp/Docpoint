@@ -3,9 +3,12 @@ import { useParams } from "react-router";
 import {
 	actionSelectEndpoint,
 	selectSelectedEndpoint,
-	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
+import {
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { ResizablePanelsLayout } from "@/shared/ui-kit/layout";
@@ -18,7 +21,7 @@ export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 
 	const endpoint = useDocStore(selectSelectedEndpoint);
-	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
+	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
 	const selectEndpoint = useDocStore(actionSelectEndpoint);
 
 	const [editOpen, setEditOpen] = useState(false);

@@ -4,13 +4,16 @@ import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import type { Environment } from "@/entities/environment";
 import {
 	actionUpdateEndpointParamValue,
-	actionUpdateEnvironmentToken,
 	selectDoc,
-	selectEnvironmentToken,
 	selectSelectedEndpoint,
-	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
+import {
+	actionUpdateEnvironmentToken,
+	selectEnvironmentToken,
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./ApiExplorerPage.module.css";
 import { ResponseCard, type RespState } from "./ResponseCard";
@@ -105,9 +108,9 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 export const TryItPanel = () => {
 	const endpoint = useDocStore(selectSelectedEndpoint);
 	const doc = useDocStore(selectDoc);
-	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
-	const authToken = useDocStore(selectEnvironmentToken) ?? "";
-	const setAccessToken = useDocStore(actionUpdateEnvironmentToken);
+	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
+	const authToken = useEnvironmentsStore(selectEnvironmentToken) ?? "";
+	const setAccessToken = useEnvironmentsStore(actionUpdateEnvironmentToken);
 	const updateEndpointParamValue = useDocStore(actionUpdateEndpointParamValue);
 
 	const [tokenInput, setTokenInput] = useState("");

@@ -1,11 +1,14 @@
 import { type FC, useState } from "react";
-import { selectSelectedEnvironment, useDocStore } from "@/features/doc";
+import {
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./EnvPanel.module.css";
 
 export const EnvPanel: FC = () => {
 	const [open, setOpen] = useState(false);
-	const env = useDocStore(selectSelectedEnvironment);
+	const env = useEnvironmentsStore(selectSelectedEnvironment);
 
 	const dotColor = env ? getEnvDotColor(env.env) : "var(--border)";
 
@@ -18,7 +21,11 @@ export const EnvPanel: FC = () => {
 							<span className={s.panelDot} style={{ background: dotColor }} />
 							{env.label}
 						</div>
-						<button className={s.panelClose} onClick={() => setOpen(false)}>
+						<button
+							type="button"
+							className={s.panelClose}
+							onClick={() => setOpen(false)}
+						>
 							<svg
 								viewBox="0 0 11 11"
 								fill="none"
