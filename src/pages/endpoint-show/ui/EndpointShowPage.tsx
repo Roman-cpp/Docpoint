@@ -1,7 +1,8 @@
 import { type FC, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import {
 	actionSelectEndpoint,
+	selectDoc,
 	selectSelectedEndpoint,
 	useDocStore,
 } from "@/features/doc";
@@ -13,18 +14,22 @@ import s from "@/shared/styles/apiDocs.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { ResizablePanelsLayout } from "@/shared/ui-kit/layout";
 import { Layout } from "@/widgets/layout";
+import { DeleteEndpointModal } from "./DeleteEndpointModal";
 import { EditEndpointModal } from "./EditEndpointModal";
 import { EndpointPage } from "./EndpointPage";
 import { TryItPanel } from "./TryItPanel";
 
 export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
 
+	const doc = useDocStore(selectDoc);
 	const endpoint = useDocStore(selectSelectedEndpoint);
 	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
 	const selectEndpoint = useDocStore(actionSelectEndpoint);
 
 	const [editOpen, setEditOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	if (!id) return;
 
@@ -69,11 +74,15 @@ export const EndpointShowPage: FC = () => {
 						style={{
 							display: "flex",
 							justifyContent: "flex-end",
+							gap: 8,
 							marginBottom: 8,
 						}}
 					>
 						<Button variant="subtle" onClick={() => setEditOpen(true)}>
 							Редактировать
+						</Button>
+						<Button variant="danger-ghost" onClick={() => setDeleteOpen(true)}>
+							Удалить
 						</Button>
 					</div>
 					<EndpointPage detail={endpoint} key={id} />
@@ -84,6 +93,13 @@ export const EndpointShowPage: FC = () => {
 				open={editOpen}
 				onOpenChange={setEditOpen}
 				endpoint={endpoint}
+			/>
+
+			<DeleteEndpointModal
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
+				endpoint={endpoint}
+				onDeleted={() => navigate(`/doc-show/${doc?.id}`)}
 			/>
 		</Layout>
 	);

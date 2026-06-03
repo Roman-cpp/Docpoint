@@ -1,5 +1,5 @@
 use crate::domain::endpoint::model::{Endpoint, ParamDef, ResponseDef, ResponseSchemaField};
-use crate::domain::endpoint::repository::EndpointRepo;
+use crate::domain::endpoint::repository::{EndpointRepo, EndpointRepository};
 use super::model::{CreateGroupDTO, Group};
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;

@@ -4,7 +4,11 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Doc } from "@/entities/doc";
 import { readDocApi } from "@/entities/doc";
 import type { CreateEndpointDTO, Endpoint } from "@/entities/endpoint";
-import { createEndpointApi, updateParamValueApi } from "@/entities/endpoint";
+import {
+	createEndpointApi,
+	deleteEndpointApi,
+	updateParamValueApi,
+} from "@/entities/endpoint";
 import type { Entity } from "@/entities/entity";
 import { readEntitiesApi } from "@/entities/entity";
 import type { Group } from "@/entities/group";
@@ -40,6 +44,8 @@ type DocActions = {
 		groupLabel?: string;
 		endpoint: CreateEndpointDTO;
 	}) => Promise<void>;
+
+	deleteEndpoint: (endpointId: string) => Promise<void>;
 };
 
 const initialState: DocState = {
@@ -115,6 +121,20 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 		if (!docId) throw new Error("[DocStore] addEndpoint: no doc loaded");
 
 		await createEndpointApi({ docId, groupId, groupLabel, endpoint });
+		await get().fetchDoc(docId);
+	},
+
+	deleteEndpoint: async (endpointId) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocStore] deleteEndpoint: no doc loaded");
+
+		await deleteEndpointApi(endpointId);
+
+		// Сбрасываем выбор, если удалили текущий endpoint.
+		if (get().selectedEndpoint?.id === endpointId) {
+			set({ selectedEndpoint: null });
+		}
+
 		await get().fetchDoc(docId);
 	},
 

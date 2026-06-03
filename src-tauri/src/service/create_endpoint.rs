@@ -1,5 +1,5 @@
 use crate::domain::endpoint::model::CreateEndpointDTO;
-use crate::domain::endpoint::repository::EndpointRepo;
+use crate::domain::endpoint::repository::{EndpointRepo, EndpointRepository};
 use crate::domain::group::repository::GroupRepo;
 use crate::state::AppState;
 use tauri::State;
