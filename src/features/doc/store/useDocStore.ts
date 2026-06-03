@@ -3,8 +3,8 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Doc } from "@/entities/doc";
 import { readDocApi } from "@/entities/doc";
-import type { Endpoint } from "@/entities/endpoint";
-import { updateParamValueApi } from "@/entities/endpoint";
+import type { CreateEndpointDTO, Endpoint } from "@/entities/endpoint";
+import { createEndpointApi, updateParamValueApi } from "@/entities/endpoint";
 import type { Entity } from "@/entities/entity";
 import { readEntitiesApi } from "@/entities/entity";
 import type { Group } from "@/entities/group";
@@ -34,6 +34,12 @@ type DocActions = {
 		name: string,
 		value: string,
 	) => Promise<void>;
+
+	addEndpoint: (args: {
+		groupId?: string;
+		groupLabel?: string;
+		endpoint: CreateEndpointDTO;
+	}) => Promise<void>;
 };
 
 const initialState: DocState = {
@@ -102,6 +108,14 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 					: state.selectedEndpoint,
 			};
 		});
+	},
+
+	addEndpoint: async ({ groupId, groupLabel, endpoint }) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocStore] addEndpoint: no doc loaded");
+
+		await createEndpointApi({ docId, groupId, groupLabel, endpoint });
+		await get().fetchDoc(docId);
 	},
 
 	fetchDoc: async (id) => {

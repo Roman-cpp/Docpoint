@@ -1,4 +1,5 @@
 export {
+	actionAddEndpoint,
 	actionfetchDoc,
 	actionResetDoc,
 	actionSelectEndpoint,

@@ -84,6 +84,8 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
     ) -> Result<Environment, String> {
         let env_id = Uuid::new_v4().to_string();
 
+        println!("1");
+
         sqlx::query(
             "INSERT INTO environments (id, environmentable_id, environmentable_type, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
@@ -97,6 +99,7 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
         .execute(self.db)
         .await
         .map_err(|e| e.to_string())?;
+      println!("2");
 
         let mut values = Vec::new();
         for var in &env.value {
@@ -117,6 +120,7 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
             });
         }
 
+        println!("3");
         Ok(Environment {
             id: env_id,
             env: env.env.clone(),

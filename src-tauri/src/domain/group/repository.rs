@@ -225,7 +225,7 @@ impl GroupRepository for GroupRepo<'_> {
             let group_id = self.insert_group(doc_id, group, gi).await?;
             let endpoint_repo = EndpointRepo::new(self.db);
             for (ei, endpoint) in group.endpoints.iter().enumerate() {
-                endpoint_repo.create(&group_id, endpoint, ei).await?;
+                endpoint_repo.create(&group_id, endpoint).await?;
             }
         }
         Ok(())
@@ -233,6 +233,22 @@ impl GroupRepository for GroupRepo<'_> {
 }
 
 impl GroupRepo<'_> {
+    /// Создаёт новую (пустую) группу в конце списка и возвращает её id.
+    pub async fn create_group(&self, doc_id: &str, label: &str) -> Result<String, String> {
+        let sort_ord: i64 =
+            sqlx::query_scalar(r#"SELECT COUNT(*) FROM "group" WHERE doc_id = ?"#)
+                .bind(doc_id)
+                .fetch_one(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        let group = CreateGroupDTO {
+            label: label.to_string(),
+            endpoints: vec![],
+        };
+        self.insert_group(doc_id, &group, sort_ord as usize).await
+    }
+
     async fn insert_group(&self, doc_id: &str, group: &CreateGroupDTO, sort_ord: usize) -> Result<String, String> {
         let group_id = Uuid::new_v4().to_string();
 

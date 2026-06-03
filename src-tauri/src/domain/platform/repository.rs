@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 pub trait PlatformRepository {
     async fn all(&self) -> Result<Vec<Platform>, String>;
+    async fn find_by_id(&self, id: &str) -> Result<Option<Platform>, String>;
     async fn create(&self, platform: &CreatePlatformDTO) -> Result<Platform, String>;
     async fn update(&self, platform: &UpdatePlatformDTO) -> Result<(), String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
@@ -42,6 +43,20 @@ impl PlatformRepository for PlatformRepo<'_> {
                 desc: r.get("desc"),
             })
             .collect())
+    }
+
+    async fn find_by_id(&self, id: &str) -> Result<Option<Platform>, String> {
+        let row = sqlx::query("SELECT id, name, desc FROM platforms WHERE id = ?")
+            .bind(id)
+            .fetch_optional(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(row.map(|r| Platform {
+            id: r.get("id"),
+            name: r.get("name"),
+            desc: r.get("desc"),
+        }))
     }
 
     async fn create(&self, platform: &CreatePlatformDTO) -> Result<Platform, String> {

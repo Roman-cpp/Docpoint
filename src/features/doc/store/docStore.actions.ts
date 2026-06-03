@@ -7,3 +7,4 @@ export const actionfetchDoc = (state: DocStore) => state.fetchDoc;
 export const actionUpdateEndpointParamValue = (state: DocStore) =>
 	state.updateEndpointParamValue;
 export const actionResetDoc = (state: DocStore) => state.resetDoc;
+export const actionAddEndpoint = (state: DocStore) => state.addEndpoint;

@@ -1,5 +1,6 @@
 mod attach_doc;
 mod create_doc;
+mod create_endpoint;
 mod create_environment;
 mod create_platform;
 mod create_variable;
@@ -32,6 +33,7 @@ mod write_schemas;
 
 pub use attach_doc::*;
 pub use create_doc::*;
+pub use create_endpoint::*;
 pub use create_environment::*;
 pub use create_platform::*;
 pub use create_variable::*;
