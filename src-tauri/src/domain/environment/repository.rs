@@ -62,15 +62,6 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-            for var in &config.value {
-                sqlx::query("INSERT INTO variables (environments_id, key, value) VALUES (?, ?, ?)")
-                    .bind(&env_id)
-                    .bind(&var.name)
-                    .bind(&var.value)
-                    .execute(self.db)
-                    .await
-                    .map_err(|e| e.to_string())?;
-            }
         }
 
         Ok(())
@@ -83,8 +74,6 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
         env: &CreateEnvironmentDTO,
     ) -> Result<Environment, String> {
         let env_id = Uuid::new_v4().to_string();
-
-        println!("1");
 
         sqlx::query(
             "INSERT INTO environments (id, environmentable_id, environmentable_type, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -99,35 +88,14 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
         .execute(self.db)
         .await
         .map_err(|e| e.to_string())?;
-      println!("2");
 
-        let mut values = Vec::new();
-        for var in &env.value {
-            let var_id = Uuid::new_v4().to_string();
-            sqlx::query("INSERT INTO variables (id, environments_id, key, value) VALUES (?, ?, ?, ?)")
-                .bind(&var_id)
-                .bind(&env_id)
-                .bind(&var.name)
-                .bind(&var.value)
-                .execute(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
-
-            values.push(EnvValue {
-                id: var_id,
-                name: var.name.clone(),
-                value: var.value.clone(),
-            });
-        }
-
-        println!("3");
         Ok(Environment {
             id: env_id,
             env: env.env.clone(),
             label: env.label.clone(),
             base_url: env.base_url.clone(),
             prefix: env.prefix.clone(),
-            value: values,
+            value: Vec::new(),
             access_token: "".to_string(),
         })
     }

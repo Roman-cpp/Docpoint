@@ -33,7 +33,6 @@ pub struct CreateEnvironmentDTO {
     #[serde(rename = "baseUrl")]
     pub base_url: String,
     pub prefix: String,
-    pub value: Vec<CreateEnvValueDTO>,
 }
 
 #[derive(Debug, Deserialize)]

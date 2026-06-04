@@ -47,7 +47,7 @@ export const useEnvironmentsStore = ({
 
 	const createEnvironment = useMutation({
 		mutationFn: (environment: CreateEnvironmentDTO) =>
-			createEnvironmentApi(docId!, environment),
+			createEnvironmentApi(environment),
 		onSuccess: () => {
 			toast({ title: "OK", description: "Окружение создано" });
 			invalidateList();

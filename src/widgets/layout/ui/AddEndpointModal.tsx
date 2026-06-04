@@ -74,7 +74,9 @@ const emptyParam = (): ParamDraft => ({
 	default: "",
 });
 
-const fromDraft = (d: ParamDraft): CreateEndpointDTO["queryParams"][number] => ({
+const fromDraft = (
+	d: ParamDraft,
+): CreateEndpointDTO["queryParams"][number] => ({
 	name: d.name.trim(),
 	type: d.type,
 	required: d.required,
@@ -162,10 +164,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 	const newGroupLabel = watch("newGroupLabel");
 	const groupOk = groupChoice !== NEW_GROUP || newGroupLabel.trim().length > 0;
 	const canSave =
-		path.trim().length > 0 &&
-		name.trim().length > 0 &&
-		groupOk &&
-		!isSaving;
+		path.trim().length > 0 && name.trim().length > 0 && groupOk && !isSaving;
 
 	return (
 		<div style={{ "--modal-width": "620px" } as CSSProperties}>

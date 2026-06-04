@@ -5,6 +5,7 @@ import {
 	actionFetchEnvironmentsPlatform,
 	useEnvironmentsStore,
 } from "@/features/environment";
+import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { Header } from "@/widgets/header";
@@ -60,10 +61,12 @@ export const PlatformShowPage: FC = () => {
 	const fetchEnvironments = useEnvironmentsStore(
 		actionFetchEnvironmentsPlatform,
 	);
+	const fetchPlatform = usePlatformStore(actionFetchPlatform);
 
 	if (!id) return null;
 
 	fetchEnvironments(id);
+	fetchPlatform(id);
 
 	return (
 		<div className={s.wrapper}>

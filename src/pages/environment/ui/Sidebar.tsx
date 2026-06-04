@@ -1,7 +1,6 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
 import { EnvironmentModal } from "@/entities/environment";
-import { selectDoc, useDocStore } from "@/features/doc";
 import {
 	actionAddEnvironment,
 	actionSelectEnvironment,
@@ -9,15 +8,15 @@ import {
 	selectSelectedEnvironment,
 	useEnvironmentsStore,
 } from "@/features/environment";
+import { selectPlatform, usePlatformStore } from "@/features/platform";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./EnvironmentPage.module.css";
 import { PlusIcon } from "./parts";
 
 export const Sidebar: FC = () => {
-	const doc = useDocStore(selectDoc);
-
 	const environments = useEnvironmentsStore(selectEnvironments);
 	const selectedEnvironment = useEnvironmentsStore(selectSelectedEnvironment);
+	const selectedtPlatform = usePlatformStore(selectPlatform);
 
 	const selectEnvironment = useEnvironmentsStore(actionSelectEnvironment);
 	const addEnvironment = useEnvironmentsStore(actionAddEnvironment);
@@ -25,7 +24,7 @@ export const Sidebar: FC = () => {
 	const [modalOpen, setModalOpen] = useState(false);
 
 	const handleCreate = () => {
-		if (!doc) {
+		if (!selectedtPlatform) {
 			toast({
 				variant: "error",
 				title: "Error",
@@ -84,9 +83,9 @@ export const Sidebar: FC = () => {
 				)}
 			</div>
 
-			{modalOpen && doc && (
+			{modalOpen && selectedtPlatform && (
 				<EnvironmentModal
-					docId={doc.id}
+					platformId={selectedtPlatform.id}
 					onClose={() => setModalOpen(false)}
 					onCreated={(env) => addEnvironment(env)}
 				/>

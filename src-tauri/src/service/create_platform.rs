@@ -19,8 +19,7 @@ pub async fn create_platform(
         env: "local".to_string(),
         label: "Local".to_string(),
         base_url: "http://localhost/".to_string(),
-        prefix: "".to_string(),
-        value: vec![],
+        prefix: "".to_string()
     };
 
     println!("{:?}", environment);
