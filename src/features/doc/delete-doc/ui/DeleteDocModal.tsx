@@ -1,4 +1,4 @@
-import { type FC, useState } from "react";
+import type { FC } from "react";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { useDocsStore } from "../../../../entities/doc/store/useDocsStore";
 

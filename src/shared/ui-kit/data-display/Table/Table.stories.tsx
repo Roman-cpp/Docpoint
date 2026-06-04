@@ -252,7 +252,7 @@ export const Headers: Story = {
 				<span />
 			</TableHead>
 			{HEADERS.map(({ id, key, value, enabled }) => (
-				<TableRow key={id} style={{ opacity: enabled ? 1 : 0.45 }}>
+				<TableRow key={id}>
 					<TableGrip>
 						<GripIcon />
 					</TableGrip>

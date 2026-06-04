@@ -8,4 +8,3 @@ export { setSelectedEnvironmentApi } from "./setSelectedEnvironmentApi";
 export { updateEnvironmentApi } from "./updateEnvironmentApi";
 export { updateEnvironmentTokenApi } from "./updateEnvironmentTokenApi";
 export { updateVariableApi } from "./updateVariableApi";
-export { writeEnvironmentsApi } from "./writeEnvironmentsApi";

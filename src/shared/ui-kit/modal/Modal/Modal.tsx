@@ -1,4 +1,4 @@
-import { type FC, type ReactNode, useEffect } from "react";
+import type { FC, ReactNode } from "react";
 import s from "./Modal.module.css";
 
 type Props = {

@@ -197,7 +197,6 @@ export const WideModal: Story = {
 					onOpenChange={onOpenChange}
 					title="Новое окружение"
 					subtitle="Базовый URL и тег для группы запросов"
-					width={520}
 					actions={
 						<>
 							<ModalBtnCancel onClick={() => onOpenChange(false)}>

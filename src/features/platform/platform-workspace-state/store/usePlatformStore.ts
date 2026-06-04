@@ -19,7 +19,7 @@ const initialState: PlatformState = {
 
 export type PlatformStore = PlatformState & PlatformActions;
 
-const createPlatformSlice: StateCreator<PlatformStore> = (set, get) => ({
+const createPlatformSlice: StateCreator<PlatformStore> = (set) => ({
 	...initialState,
 
 	resetPlatform: () => set(initialState),
