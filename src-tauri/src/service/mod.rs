@@ -31,7 +31,6 @@ mod update_environment_auth;
 mod update_param_value;
 mod update_platform;
 mod update_variable;
-mod write_environments;
 mod write_groups;
 mod write_schemas;
 
@@ -68,6 +67,5 @@ pub use update_environment_auth::*;
 pub use update_param_value::*;
 pub use update_platform::*;
 pub use update_variable::*;
-pub use write_environments::*;
 pub use write_groups::*;
 pub use write_schemas::*;

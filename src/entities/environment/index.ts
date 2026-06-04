@@ -7,7 +7,6 @@ export { setSelectedEnvironmentApi } from "./api/setSelectedEnvironmentApi";
 export { updateEnvironmentApi } from "./api/updateEnvironmentApi";
 export { updateEnvironmentTokenApi } from "./api/updateEnvironmentTokenApi";
 export { updateVariableApi } from "./api/updateVariableApi";
-export { writeEnvironmentsApi } from "./api/writeEnvironmentsApi";
 export type {
 	CreateEnvironmentDTO,
 	CreateVariableDTO,

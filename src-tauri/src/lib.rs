@@ -11,7 +11,7 @@ use service::{
     read_platform, read_platform_docs, read_platforms, read_schemas,
     save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_environment,
     update_environment_auth, update_param_value, update_platform, update_variable,
-    write_environments, write_groups, write_schemas,
+    write_groups, write_schemas,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
@@ -60,7 +60,6 @@ pub fn run() {
             read_schemas,
             write_schemas,
             read_environments_by_doc,
-            write_environments,
             create_environment,
             update_environment,
             delete_environment,

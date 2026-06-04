@@ -6,11 +6,11 @@ import {
 	selectSelectedEnvironment,
 	useEnvironmentsStore,
 } from "@/features/environment";
+import { selectPlatform, usePlatformStore } from "@/features/platform";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./Header.module.css";
 
 const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
-	{ label: "API Docs", href: "/" },
 	{ label: "HTTP Client", href: "/http-client" },
 	{ label: "Entities", href: "/entity" },
 ];
@@ -23,6 +23,7 @@ interface HeaderProps {
 export const Header: FC<HeaderProps> = ({ section }) => {
 	const environments = useEnvironmentsStore(selectEnvironments);
 	const selectedEnvironment = useEnvironmentsStore(selectSelectedEnvironment);
+	const selectedPlatform = usePlatformStore(selectPlatform);
 	const selectEnvironment = useEnvironmentsStore(actionSelectEnvironment);
 
 	return (
@@ -50,7 +51,7 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 									className={s.pfEnvDot}
 									style={{ background: getEnvDotColor(env.env) }}
 								/>
-								{env.env}
+								{env.label}
 							</button>
 						);
 					})}
@@ -58,6 +59,15 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 			)}
 
 			<div className={s.pfNavLinks}>
+				{selectedPlatform && (
+					<Link
+						key="/environments"
+						to={`/platform-show/${selectedPlatform.id}`}
+						className={`${s.pfNavLink} ${s.active}`}
+					>
+						API Docs
+					</Link>
+				)}
 				{NAV_LINKS.map((link) => (
 					<Link
 						key={link.href}

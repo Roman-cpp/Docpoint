@@ -60,19 +60,45 @@ function buildUrl(
 	return `${env.baseUrl}${env.prefix}${path}${qs ? "?" + qs : ""}`;
 }
 
+// Приводит строковое значение параметра к типу, заявленному в его схеме
+// (integer/number → число, boolean → bool). При неудаче возвращает исходную
+// строку, чтобы не терять данные.
+function coerceParamValue(raw: string, type: string): unknown {
+	switch (type.toLowerCase()) {
+		case "integer":
+		case "int":
+		case "long":
+		case "number":
+		case "float":
+		case "double": {
+			const n = Number(raw);
+			return raw.trim() !== "" && !Number.isNaN(n) ? n : raw;
+		}
+		case "boolean":
+		case "bool": {
+			const v = raw.trim().toLowerCase();
+			if (v === "true" || v === "1") return true;
+			if (v === "false" || v === "0") return false;
+			return raw;
+		}
+		default:
+			return raw;
+	}
+}
+
 function buildBody(
 	ep: Endpoint,
 	env: Environment,
 	vals: Record<string, string>,
 ): string | null {
 	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
-	const b: Record<string, string> = {};
+	const b: Record<string, unknown> = {};
 	for (const p of ep.bodyParams) {
 		const raw = (
 			vals[`body:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
 		).trim();
 		const v = resolveEnvVars(raw, env);
-		if (v) b[p.name] = v;
+		if (v) b[p.name] = coerceParamValue(v, p.type);
 	}
 	return Object.keys(b).length ? JSON.stringify(b) : null;
 }
