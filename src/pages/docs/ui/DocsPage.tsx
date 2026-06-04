@@ -9,10 +9,10 @@ import {
 } from "@/features/environment";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
+import { DeleteDocModal } from "../../../features/doc/delete-doc/ui/DeleteDocModal";
+import { EditDocModal } from "../../../features/doc/edit-doc/ui/EditDocModal";
 import { exportDoc } from "../lib/exportDoc";
 import s from "./ApiExplorerPage.module.css";
-import { DeleteDocModal } from "./DeleteDocModal";
-import { EditDocModal } from "./EditDocModal";
 import { Sidebar } from "./Sidebar";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
@@ -45,6 +45,7 @@ const Overview = () => {
 						>
 							<div className={s.acAccent} />
 							<div className={s.acTop}>
+								<div className={s.acName}>{a.name}</div>
 								<div
 									className={s.acMenuWrap}
 									onClick={(e) => {
@@ -113,7 +114,6 @@ const Overview = () => {
 									</DropMenu>
 								</div>
 							</div>
-							<div className={s.acName}>{a.name}</div>
 							<div className={s.acDesc}>{a.desc}</div>
 							<div className={s.acFooter}>
 								{a.tags.map((t) => (

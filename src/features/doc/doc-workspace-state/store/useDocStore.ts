@@ -12,7 +12,7 @@ import {
 import type { Entity } from "@/entities/entity";
 import { readEntitiesApi } from "@/entities/entity";
 import type { Group } from "@/entities/group";
-import { readGroupsApi } from "@/entities/group";
+import { deleteGroupApi, readGroupsApi } from "@/entities/group";
 
 type DocState = {
 	doc: Doc | null;
@@ -46,6 +46,8 @@ type DocActions = {
 	}) => Promise<void>;
 
 	deleteEndpoint: (endpointId: string) => Promise<void>;
+
+	deleteGroup: (groupId: string) => Promise<void>;
 };
 
 const initialState: DocState = {
@@ -133,6 +135,20 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 		// Сбрасываем выбор, если удалили текущий endpoint.
 		if (get().selectedEndpoint?.id === endpointId) {
 			set({ selectedEndpoint: null });
+		}
+
+		await get().fetchDoc(docId);
+	},
+
+	deleteGroup: async (groupId) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocStore] deleteGroup: no doc loaded");
+
+		await deleteGroupApi(groupId);
+
+		// Сбрасываем выбор, если удалили текущую группу.
+		if (get().selectedGroup?.id === groupId) {
+			set({ selectedGroup: null });
 		}
 
 		await get().fetchDoc(docId);

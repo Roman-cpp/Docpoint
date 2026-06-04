@@ -160,17 +160,8 @@ impl DocRepository for DocRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-        // environments use a polymorphic owner (environmentable_id/type) instead of
-        // an FK to docs, so deleting the doc no longer cascades to them. Remove the
-        // doc's environments explicitly; their variables/auth still cascade via FK.
-        sqlx::query(
-            "DELETE FROM environments WHERE environmentable_id = ? AND environmentable_type = 'doc'",
-        )
-        .bind(id)
-        .execute(&mut *conn)
-        .await
-        .map_err(|e| e.to_string())?;
-
+        // Environments are owned by platforms, not docs, so deleting a doc does not
+        // touch them (docs.platform_id is ON DELETE SET NULL on the platform side).
         sqlx::query("DELETE FROM docs WHERE id = ?")
             .bind(id)
             .execute(&mut *conn)
@@ -181,8 +172,10 @@ impl DocRepository for DocRepo<'_> {
     }
 
     async fn environments_by_doc(&self, doc_id: &str) -> Result<Vec<Environment>, String> {
+        // A doc's environments are those of the platform it belongs to
+        // (docs.platform_id). Docs without a platform have none.
         let rows = sqlx::query(
-            "SELECT * FROM environments WHERE environmentable_id = ? AND environmentable_type = 'doc'",
+            "SELECT * FROM environments WHERE platform_id = (SELECT platform_id FROM docs WHERE id = ?)",
         )
         .bind(doc_id)
         .fetch_all(self.db)

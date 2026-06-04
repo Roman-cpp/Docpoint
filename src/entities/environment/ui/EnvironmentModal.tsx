@@ -32,8 +32,7 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 				label: trimmedLabel,
 				baseUrl: baseUrl.trim(),
 				prefix: prefix.trim(),
-				environmentableId: platformId,
-				environmentableType: "platform",
+				platformId,
 			});
 			onCreated(created);
 			onClose();

@@ -5,8 +5,7 @@ export function createEnvironmentApi(
 	environment: CreateEnvironmentDTO,
 ): Promise<Environment> {
 	return invoke("create_environment", {
-		environmentableId: environment.environmentableId,
-		environmentableType: environment.environmentableType,
+		platformId: environment.platformId,
 		environment,
 	});
 }

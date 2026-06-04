@@ -10,8 +10,10 @@ export {
 	actionUpdateEnvironment,
 	actionUpdateEnvironmentToken,
 	actionupdateVariableInEnvironment,
+} from "./store/environmentsStore.actions";
+export {
 	selectEnvironments,
 	selectEnvironmentToken,
 	selectSelectedEnvironment,
-	useEnvironmentsStore,
-} from "./environment-workspace-state";
+} from "./store/environmentsStore.selectors";
+export { useEnvironmentsStore } from "./store/useEnvironmentsStore";

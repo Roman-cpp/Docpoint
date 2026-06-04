@@ -6,6 +6,29 @@ import {
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./EnvPanel.module.css";
 
+const CopyField: FC<{ text: string; className: string; title: string }> = ({
+	text,
+	className,
+	title,
+}) => {
+	const [copied, setCopied] = useState(false);
+	const copy = () => {
+		navigator.clipboard?.writeText(text).catch(() => {});
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1200);
+	};
+	return (
+		<button
+			type="button"
+			className={`${className} ${s.copyField}${copied ? ` ${s.copied}` : ""}`}
+			onClick={copy}
+			title={title}
+		>
+			{text}
+		</button>
+	);
+};
+
 export const EnvPanel: FC = () => {
 	const [open, setOpen] = useState(false);
 	const env = useEnvironmentsStore(selectSelectedEnvironment);
@@ -58,9 +81,17 @@ export const EnvPanel: FC = () => {
 						) : (
 							env.value.map((v) => (
 								<div key={v.id} className={s.varRow}>
-									<span className={s.varName}>{v.name}</span>
+									<CopyField
+										text={v.name}
+										className={s.varName}
+										title="Copy name"
+									/>
 									<span className={s.varEq}>=</span>
-									<span className={s.varVal}>{v.value}</span>
+									<CopyField
+										text={v.value}
+										className={s.varVal}
+										title="Copy value"
+									/>
 								</div>
 							))
 						)}

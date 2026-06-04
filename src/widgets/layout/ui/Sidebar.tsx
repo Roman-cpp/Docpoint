@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useMatch } from "react-router";
 import {
 	actionAddEndpoint,
+	DeleteGroupModal,
 	selectDoc,
 	selectGroups,
 	selectSelectedEndpoint,
@@ -28,6 +29,10 @@ export const Sidebar = () => {
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 	const [addOpen, setAddOpen] = useState(false);
 	const [saving, setSaving] = useState(false);
+	const [groupToDelete, setGroupToDelete] = useState<{
+		id: string;
+		label: string;
+	} | null>(null);
 
 	if (!groups) return;
 
@@ -40,6 +45,14 @@ export const Sidebar = () => {
 		} finally {
 			setSaving(false);
 		}
+	};
+
+	const handleDeleteGroup = (
+		e: React.MouseEvent,
+		group: { id: string; label: string },
+	) => {
+		e.stopPropagation();
+		setGroupToDelete({ id: group.id, label: group.label });
 	};
 
 	return (
@@ -156,6 +169,39 @@ export const Sidebar = () => {
 								}
 							>
 								<span className={s.sidebarGroupLabel}>{group.label}</span>
+								{group.endpoints.length === 0 && (
+									<button
+										type="button"
+										onClick={(e) => handleDeleteGroup(e, group)}
+										title="Удалить пустую группу"
+										aria-label="Удалить пустую группу"
+										style={{
+											display: "inline-flex",
+											alignItems: "center",
+											justifyContent: "center",
+											marginLeft: "auto",
+											padding: 2,
+											background: "transparent",
+											border: "none",
+											color: "var(--ink-low)",
+											cursor: "pointer",
+										}}
+									>
+										<svg
+											viewBox="0 0 14 14"
+											width="13"
+											height="13"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.4"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
+											<title>delete</title>
+											<path d="M2.5 3.5h9M5 3.5V2.5h4v1M4 3.5l.5 8h5l.5-8" />
+										</svg>
+									</button>
+								)}
 								<svg
 									className={`${s.sidebarGroupChevron} ${isOpen ? s.open : ""}`}
 									viewBox="0 0 12 12"
@@ -201,6 +247,16 @@ export const Sidebar = () => {
 				onCreate={handleCreate}
 				isSaving={saving}
 			/>
+
+			{groupToDelete && (
+				<DeleteGroupModal
+					open={!!groupToDelete}
+					onOpenChange={(open) => {
+						if (!open) setGroupToDelete(null);
+					}}
+					group={groupToDelete}
+				/>
+			)}
 		</div>
 	);
 };

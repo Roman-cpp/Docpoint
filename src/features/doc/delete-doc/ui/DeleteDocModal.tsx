@@ -1,6 +1,6 @@
 import { type FC, useState } from "react";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
-import { useDocsStore } from "../../../entities/doc/store/useDocsStore";
+import { useDocsStore } from "../../../../entities/doc/store/useDocsStore";
 
 interface DeleteDocModalProps {
 	open: boolean;

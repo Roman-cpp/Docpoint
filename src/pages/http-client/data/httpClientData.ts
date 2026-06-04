@@ -1,5 +1,5 @@
 import type { HttpMethod } from "@/entities/endpoint";
-import type { HistoryItem, MockResponse } from "../model/types";
+import type { MockResponse } from "../model/types";
 
 export const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -126,59 +126,3 @@ export function pickMockResponse(
 	return MOCK.users_list;
 }
 
-export const INITIAL_HISTORY: HistoryItem[] = [
-	{
-		id: 1,
-		name: "List Users",
-		method: "GET",
-		url: "https://api.example.com/v2/users",
-		status: 200,
-		ts: "10:42",
-	},
-	{
-		id: 2,
-		name: "Create User",
-		method: "POST",
-		url: "https://api.example.com/v2/users",
-		status: 201,
-		ts: "10:38",
-	},
-	{
-		id: 3,
-		name: "Get Token",
-		method: "POST",
-		url: "https://api.example.com/v2/auth/token",
-		status: 200,
-		ts: "10:31",
-	},
-	{
-		id: 4,
-		name: "Get Article",
-		method: "GET",
-		url: "https://api.example.com/v2/articles/the-tap-helper",
-		status: 200,
-		ts: "Yesterday",
-	},
-	{
-		id: 5,
-		name: "List Articles",
-		method: "GET",
-		url: "https://api.example.com/v2/articles?page=1&tag=helpers",
-		status: 200,
-		ts: "Yesterday",
-	},
-	{
-		id: 6,
-		name: "Delete Comment",
-		method: "DELETE",
-		url: "https://api.example.com/v2/comments/99",
-		status: 404,
-		ts: "Yesterday",
-	},
-];
-
-export const COLLECTIONS = [
-	{ name: "Authentication", color: "var(--green)", count: 3 },
-	{ name: "Users API", color: "var(--blue)", count: 5 },
-	{ name: "Articles API", color: "var(--amber)", count: 5 },
-] as const;

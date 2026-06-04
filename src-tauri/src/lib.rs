@@ -6,7 +6,7 @@ mod state;
 use state::AppState;
 use service::{
     attach_doc, create_doc, create_endpoint, create_environment, create_platform, create_variable, delete_doc,
-    delete_endpoint, delete_environment, delete_platform, delete_variable, get_environment_access_token, import_doc, read_doc, read_docs,
+    delete_endpoint, delete_environment, delete_group, delete_platform, delete_variable, get_environment_access_token, import_doc, read_doc, read_docs,
     environments_by_platform, read_environment_auth, read_environments_by_doc, read_groups,
     read_platform, read_platform_docs, read_platforms, read_schemas,
     save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_environment,
@@ -56,6 +56,7 @@ pub fn run() {
             write_groups,
             create_endpoint,
             delete_endpoint,
+            delete_group,
             update_param_value,
             read_schemas,
             write_schemas,

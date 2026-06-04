@@ -25,7 +25,7 @@ pub async fn create_platform(
     println!("{:?}", environment);
 
     let a = EnvironmentRepo::new(&state.db)
-        .create(&created_platform.id, "platform", &environment)
+        .create(&created_platform.id, &environment)
         .await?;
 
       print!("created_environment");

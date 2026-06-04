@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub trait GroupRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Group>, String>;
     async fn create(&self, doc_id: &str, groups: &[CreateGroupDTO]) -> Result<(), String>;
+    async fn delete(&self, group_id: &str) -> Result<(), String>;
 }
 
 pub struct GroupRepo<'a> {
@@ -228,6 +229,28 @@ impl GroupRepository for GroupRepo<'_> {
                 endpoint_repo.create(&group_id, endpoint).await?;
             }
         }
+        Ok(())
+    }
+
+    /// Удаляет группу. Только если она пустая (без эндпоинтов).
+    async fn delete(&self, group_id: &str) -> Result<(), String> {
+        let endpoint_count: i64 =
+            sqlx::query_scalar(r#"SELECT COUNT(*) FROM endpoint WHERE group_id = ?"#)
+                .bind(group_id)
+                .fetch_one(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        if endpoint_count > 0 {
+            return Err("Нельзя удалить непустую группу".to_string());
+        }
+
+        sqlx::query(r#"DELETE FROM "group" WHERE id = ?"#)
+            .bind(group_id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
         Ok(())
     }
 }

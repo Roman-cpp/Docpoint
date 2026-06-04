@@ -208,6 +208,28 @@
 	color: var(--ink-mid);
 	word-break: break-all;
 }
+
+/* ═══════════════ COPYABLE FIELD ═══════════════ */
+.copyField {
+	border: none;
+	background: none;
+	padding: 1px 4px;
+	margin: -1px -4px;
+	border-radius: var(--r-xs);
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
+}
+.copyField:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+.copyField.copied {
+	background: var(--ink);
+	color: var(--surface);
+}
 .empty {
 	padding: 16px 14px;
 	font-size: var(--fs-13);

@@ -1,6 +1,3 @@
-export { CreateDocModal } from "./create-doc";
-export { DeleteDocModal } from "./delete-doc";
-export { DeleteGroupModal } from "./delete-group";
 export {
 	actionAddEndpoint,
 	actionDeleteEndpoint,
@@ -11,12 +8,15 @@ export {
 	actionSelectEntity,
 	actionSelectGroup,
 	actionUpdateEndpointParamValue,
+} from "./store/docStore.actions";
+
+export {
 	selectDoc,
 	selectEntities,
 	selectGroups,
 	selectSelectedEndpoint,
 	selectSelectedEntity,
 	selectSelectedGroup,
-	useDocStore,
-} from "./doc-workspace-state";
-export { EditDocModal } from "./edit-doc";
+} from "./store/docStore.selectors";
+
+export { useDocStore } from "./store/useDocStore";

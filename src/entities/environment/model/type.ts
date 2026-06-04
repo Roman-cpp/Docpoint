@@ -19,8 +19,7 @@ export interface CreateEnvironmentDTO {
 	label: string;
 	baseUrl: string;
 	prefix: string;
-	environmentableId: string;
-	environmentableType: "doc" | "platform";
+	platformId: string;
 }
 
 export type UpdateEnvironmentDTO = {

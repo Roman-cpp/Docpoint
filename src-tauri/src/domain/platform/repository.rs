@@ -90,16 +90,15 @@ impl PlatformRepository for PlatformRepo<'_> {
     }
 
     async fn delete(&self, id: &str) -> Result<(), String> {
-        // Environments owned by this platform have no FK back to platforms
-        // (polymorphic environmentable_id/type), so remove them explicitly.
-        // Their variables/auth still cascade via FK from environments.
-        sqlx::query(
-            "DELETE FROM environments WHERE environmentable_id = ? AND environmentable_type = 'platform'",
-        )
-        .bind(id)
-        .execute(self.db)
-        .await
-        .map_err(|e| e.to_string())?;
+        // Remove this platform's environments explicitly (their variables/auth
+        // cascade via FK from environments). The environments.platform_id FK also
+        // cascades, but foreign_keys may be off on this connection, so don't rely
+        // on it here.
+        sqlx::query("DELETE FROM environments WHERE platform_id = ?")
+            .bind(id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         sqlx::query("DELETE FROM platforms WHERE id = ?")
             .bind(id)
@@ -172,9 +171,7 @@ impl PlatformRepository for PlatformRepo<'_> {
         &self,
         platform_id: &str,
     ) -> Result<Vec<Environment>, String> {
-        let rows = sqlx::query(
-            "SELECT * FROM environments WHERE environmentable_id = ? AND environmentable_type = 'platform'",
-        )
+        let rows = sqlx::query("SELECT * FROM environments WHERE platform_id = ?")
             .bind(platform_id)
             .fetch_all(self.db)
             .await

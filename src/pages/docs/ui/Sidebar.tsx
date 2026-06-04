@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { toast } from "@/core/toast";
 import { type CreateDocDTO, useDocsStore } from "@/entities/doc";
+import { CreateDocModal } from "../../../features/doc/create-doc/ui/CreateDocModal";
 import s from "./ApiExplorerPage.module.css";
-import { CreateDocModal } from "./CreateDocModal";
 import { PlatformsSection } from "./PlatformsSection";
 
 export const Sidebar = () => {

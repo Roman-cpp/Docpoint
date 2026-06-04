@@ -8,14 +8,12 @@ use uuid::Uuid;
 pub trait EnvironmentRepository {
     async fn write_configs(
         &self,
-        environmentable_id: &str,
-        environmentable_type: &str,
+        platform_id: Option<&str>,
         configs: &[CreateEnvironmentDTO],
     ) -> Result<(), String>;
     async fn create(
         &self,
-        environmentable_id: &str,
-        environmentable_type: &str,
+        platform_id: &str,
         env: &CreateEnvironmentDTO,
     ) -> Result<Environment, String>;
     async fn update(&self, env: &UpdateEnvironmentDTO) -> Result<(), String>;
@@ -42,18 +40,16 @@ impl<'a> EnvironmentRepo<'a> {
 impl EnvironmentRepository for EnvironmentRepo<'_> {
     async fn write_configs(
         &self,
-        environmentable_id: &str,
-        environmentable_type: &str,
+        platform_id: Option<&str>,
         configs: &[CreateEnvironmentDTO],
     ) -> Result<(), String> {
         for config in configs {
             let env_id = Uuid::new_v4().to_string();
             sqlx::query(
-                "INSERT INTO environments (id, environmentable_id, environmentable_type, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO environments (id, platform_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
             )
             .bind(&env_id)
-            .bind(environmentable_id)
-            .bind(environmentable_type)
+            .bind(platform_id)
             .bind(&config.env)
             .bind(&config.label)
             .bind(&config.base_url)
@@ -69,18 +65,16 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
 
     async fn create(
         &self,
-        environmentable_id: &str,
-        environmentable_type: &str,
+        platform_id: &str,
         env: &CreateEnvironmentDTO,
     ) -> Result<Environment, String> {
         let env_id = Uuid::new_v4().to_string();
 
         sqlx::query(
-            "INSERT INTO environments (id, environmentable_id, environmentable_type, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO environments (id, platform_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(&env_id)
-        .bind(environmentable_id)
-        .bind(environmentable_type)
+        .bind(platform_id)
         .bind(&env.env)
         .bind(&env.label)
         .bind(&env.base_url)
