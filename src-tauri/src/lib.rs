@@ -1,14 +1,15 @@
 mod domain;
+mod infrastructure;
 mod service;
 mod state;
 
 use state::AppState;
 use service::{
     attach_doc, create_doc, create_endpoint, create_environment, create_platform, create_variable, delete_doc,
-    delete_endpoint, delete_environment, delete_platform, delete_variable, import_doc, read_doc, read_docs,
+    delete_endpoint, delete_environment, delete_platform, delete_variable, get_environment_access_token, import_doc, read_doc, read_docs,
     environments_by_platform, read_environment_auth, read_environments_by_doc, read_groups,
     read_platform, read_platform_docs, read_platforms, read_schemas,
-    save_json_file, send_request, set_environment_access_token, update_doc, update_environment,
+    save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_environment,
     update_environment_auth, update_param_value, update_platform, update_variable,
     write_environments, write_groups, write_schemas,
 };
@@ -36,7 +37,10 @@ pub fn run() {
                 sqlx::migrate!("./migrations").run(&pool).await
             })?;
 
-            app.manage(AppState { db: pool });
+            app.manage(AppState {
+                db: pool,
+                selected_environment_id: Default::default(),
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -66,6 +70,8 @@ pub fn run() {
             read_environment_auth,
             update_environment_auth,
             set_environment_access_token,
+            get_environment_access_token,
+            set_selected_environment,
             read_platforms,
             read_platform,
             create_platform,

@@ -46,6 +46,19 @@ pub async fn read_by_env_id(
     }))
 }
 
+pub async fn get_access_token(
+    db: &SqlitePool,
+    environment_id: &str,
+) -> Result<Option<String>, String> {
+    let row = sqlx::query("SELECT access_token FROM environment_auth WHERE environment_id = ?")
+        .bind(environment_id)
+        .fetch_optional(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(row.and_then(|r| r.get("access_token")))
+}
+
 pub async fn upsert(db: &SqlitePool, dto: &UpdateEnvironmentAuthDTO) -> Result<(), String> {
     ensure_row(db, &dto.environment_id).await?;
     sqlx::query(

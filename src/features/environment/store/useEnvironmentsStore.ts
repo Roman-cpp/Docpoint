@@ -9,6 +9,7 @@ import type {
 } from "@/entities/environment";
 import {
 	readEnvironmentsByPlatformApi,
+	setSelectedEnvironmentApi,
 	updateEnvironmentTokenApi,
 } from "@/entities/environment";
 
@@ -67,9 +68,11 @@ const createEnvironmentSlice: StateCreator<EnvironmentsStore> = (set, get) => ({
 
 	selectEnvironment: (environmentId: string) => {
 		const { environments } = get();
-		set({
-			selectedEnvironment: environments.find((env) => env.id === environmentId),
-		});
+		const selected = environments.find((env) => env.id === environmentId);
+		set({ selectedEnvironment: selected });
+		setSelectedEnvironmentApi(selected?.id ?? null).catch((e) =>
+			console.error("[EnvironmentsStore] set_selected_environment failed:", e),
+		);
 	},
 
 	addEnvironment: (environment: Environment) =>

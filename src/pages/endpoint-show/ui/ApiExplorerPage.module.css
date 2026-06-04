@@ -884,6 +884,10 @@
 	border: 1px solid var(--border);
 	border-radius: 9px;
 	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
 }
 .respCardHdr {
 	display: flex;
@@ -893,6 +897,7 @@
 	background: var(--bg);
 	border-bottom: 1px solid var(--border);
 	gap: 8px;
+	flex-shrink: 0;
 }
 .respStatusBadge {
 	font-size: 11.5px;
@@ -912,7 +917,8 @@
 	line-height: 1.72;
 	color: var(--code-ink);
 	padding: 11px 13px;
-	max-height: 600px;
+	flex: 1 1 auto;
+	min-height: 0;
 	overflow-y: auto;
 	white-space: pre;
 	background: var(--code-bg);
@@ -947,7 +953,8 @@
 	line-height: 1.72;
 	color: var(--code-ink);
 	padding: 11px 13px;
-	max-height: 300px;
+	flex: 1 1 auto;
+	min-height: 0;
 	overflow: auto;
 	background: var(--code-bg);
 	white-space: nowrap;
