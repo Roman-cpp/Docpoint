@@ -85,6 +85,7 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 					</div>
 
 					<EditEntityModal
+						key={entity.id}
 						open={editOpen}
 						onOpenChange={setEditOpen}
 						entity={entity}

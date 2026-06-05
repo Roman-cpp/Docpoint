@@ -41,6 +41,12 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
+				path: "/http-history",
+				lazy: async () => ({
+					Component: (await import("@/pages/http-history")).HttpHistoryPage,
+				}),
+			},
+			{
 				path: "/endpoint-show/:id",
 				lazy: async () => ({
 					Component: (await import("@/pages/endpoint-show")).EndpointShowPage,
