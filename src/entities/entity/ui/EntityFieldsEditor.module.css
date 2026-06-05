@@ -1,0 +1,153 @@
+.fieldsHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 4px;
+}
+
+.sectionLabel {
+	font-size: var(--fs-13, 13px);
+	font-weight: var(--fw-medium, 500);
+	color: var(--ink);
+}
+
+.addBtn {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium, 500);
+	color: var(--ink-mid);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md, 8px);
+	padding: 6px 10px;
+	cursor: pointer;
+	transition:
+		color var(--t-fast, 0.12s),
+		border-color var(--t-fast, 0.12s);
+}
+
+.addBtn:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.addBtnSm {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	color: var(--ink-mid);
+	background: none;
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm, 6px);
+	padding: 3px 8px;
+	cursor: pointer;
+}
+
+.addBtnSm:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.fieldsList {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	max-height: 46vh;
+	overflow-y: auto;
+	padding-right: 2px;
+}
+
+.empty {
+	font-size: 12px;
+	color: var(--ink-low);
+	text-align: center;
+	padding: 16px;
+}
+
+.fieldCard {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg, 10px);
+	padding: 12px;
+	background: var(--cat-bg, transparent);
+}
+
+.fieldTop {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.rowActions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.iconBtn {
+	width: 26px;
+	height: 26px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 13px;
+	color: var(--ink-mid);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm, 6px);
+	cursor: pointer;
+	transition:
+		color var(--t-fast, 0.12s),
+		border-color var(--t-fast, 0.12s),
+		background var(--t-fast, 0.12s);
+}
+
+.iconBtn:hover:not(:disabled) {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.iconBtn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.iconBtnDanger:hover:not(:disabled) {
+	color: var(--red);
+	border-color: var(--red);
+}
+
+.fieldFlags {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+}
+
+.fieldGrid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+
+.enumBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	border-top: 1px dashed var(--border);
+	padding-top: 8px;
+}
+
+.enumHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 11px;
+	color: var(--ink-low);
+}
+
+.enumRow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}

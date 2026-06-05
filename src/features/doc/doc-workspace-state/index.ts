@@ -1,6 +1,8 @@
 export {
 	actionAddEndpoint,
+	actionAddEntity,
 	actionDeleteEndpoint,
+	actionDeleteEntity,
 	actionDeleteGroup,
 	actionfetchDoc,
 	actionResetDoc,
@@ -8,6 +10,7 @@ export {
 	actionSelectEntity,
 	actionSelectGroup,
 	actionUpdateEndpointParamValue,
+	actionUpdateEntity,
 } from "./store/docStore.actions";
 
 export {

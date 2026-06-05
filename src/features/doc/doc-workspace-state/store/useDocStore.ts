@@ -9,8 +9,17 @@ import {
 	deleteEndpointApi,
 	updateParamValueApi,
 } from "@/entities/endpoint";
-import type { Entity } from "@/entities/entity";
-import { readEntitiesApi } from "@/entities/entity";
+import type {
+	CreateEntityDTO,
+	Entity,
+	UpdateEntityDTO,
+} from "@/entities/entity";
+import {
+	createEntityApi,
+	deleteEntityApi,
+	readEntitiesApi,
+	updateEntityApi,
+} from "@/entities/entity";
 import type { Group } from "@/entities/group";
 import { deleteGroupApi, readGroupsApi } from "@/entities/group";
 
@@ -48,6 +57,10 @@ type DocActions = {
 	deleteEndpoint: (endpointId: string) => Promise<void>;
 
 	deleteGroup: (groupId: string) => Promise<void>;
+
+	updateEntity: (entity: UpdateEntityDTO) => Promise<void>;
+	addEntity: (schema: CreateEntityDTO) => Promise<string>;
+	deleteEntity: (entityId: string) => Promise<void>;
 };
 
 const initialState: DocState = {
@@ -149,6 +162,49 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 		// Сбрасываем выбор, если удалили текущую группу.
 		if (get().selectedGroup?.id === groupId) {
 			set({ selectedGroup: null });
+		}
+
+		await get().fetchDoc(docId);
+	},
+
+	updateEntity: async (entity) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocStore] updateEntity: no doc loaded");
+
+		await updateEntityApi(entity);
+
+		// Оптимистично обновляем выбранную entity, чтобы UI не моргал до refetch.
+		set((state) => ({
+			entities: state.entities.map((e) => (e.id === entity.id ? entity : e)),
+			selectedEntity:
+				state.selectedEntity?.id === entity.id ? entity : state.selectedEntity,
+		}));
+
+		await get().fetchDoc(docId);
+	},
+
+	addEntity: async (schema) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocStore] addEntity: no doc loaded");
+
+		const newId = await createEntityApi(docId, schema);
+		await get().fetchDoc(docId);
+
+		// Сразу выделяем созданную entity.
+		get().selectEntity(newId);
+
+		return newId;
+	},
+
+	deleteEntity: async (entityId) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocStore] deleteEntity: no doc loaded");
+
+		await deleteEntityApi(entityId);
+
+		// Сбрасываем выбор, если удалили текущую entity.
+		if (get().selectedEntity?.id === entityId) {
+			set({ selectedEntity: null });
 		}
 
 		await get().fetchDoc(docId);

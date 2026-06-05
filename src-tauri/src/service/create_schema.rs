@@ -4,14 +4,10 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
-pub async fn write_schemas(
+pub async fn create_schema(
     state: State<'_, AppState>,
     doc_id: String,
-    schemas: Vec<CreateEntityDTO>,
-) -> Result<(), String> {
-    for schema in &schemas {
-        EntityRepo::new(&state.db).create(&doc_id, schema).await?;
-    }
-
-    Ok(())
+    schema: CreateEntityDTO,
+) -> Result<String, String> {
+    EntityRepo::new(&state.db).create(&doc_id, &schema).await
 }

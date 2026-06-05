@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from "react";
+import type { CSSProperties, FC, ReactNode } from "react";
 import s from "./Modal.module.css";
 
 type Props = {
@@ -9,6 +9,7 @@ type Props = {
 	/** Кнопки действий — рендерятся в нижней полосе с разделителем */
 	actions?: ReactNode;
 	/** Ширина бокса в px, по умолчанию 392 */
+	width?: number;
 	children: ReactNode;
 };
 
@@ -18,15 +19,24 @@ export const Modal: FC<Props> = ({
 	title,
 	subtitle,
 	actions,
+	width,
 	children,
 }) => {
 	if (!open) return null;
 
 	const close = () => onOpenChange(false);
 
+	const boxStyle = width
+		? ({ "--modal-width": `${width}px` } as CSSProperties)
+		: undefined;
+
 	return (
 		<div className={s.overlay} onClick={close}>
-			<div className={s.box} onClick={(e) => e.stopPropagation()}>
+			<div
+				className={s.box}
+				style={boxStyle}
+				onClick={(e) => e.stopPropagation()}
+			>
 				<div className={s.header}>
 					<div className={s.headerText}>
 						<span className={s.title}>{title}</span>

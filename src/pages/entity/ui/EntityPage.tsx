@@ -1,6 +1,9 @@
 import { type FC, useState } from "react";
 import type { Entity } from "@/entities/entity";
 import {
+	actionUpdateEntity,
+	DeleteEntityModal,
+	EditEntityModal,
 	selectEntities,
 	selectSelectedEntity,
 	useDocStore,
@@ -28,6 +31,23 @@ interface EntityDetailProps {
 const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 	const enumFields = entity.fields.filter((f) => f.enum);
 
+	const updateEntity = useDocStore(actionUpdateEntity);
+	const [editOpen, setEditOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [saving, setSaving] = useState(false);
+
+	const handleSave = async (updated: Parameters<typeof updateEntity>[0]) => {
+		setSaving(true);
+		try {
+			await updateEntity(updated);
+			setEditOpen(false);
+		} catch (e) {
+			console.error("[EntityPage] updateEntity failed:", e);
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	return (
 		<div className={s.detailWrap}>
 			<div className={s.detailInner}>
@@ -44,9 +64,38 @@ const EntityDetail: FC<EntityDetailProps> = ({ entity }) => {
 								<img src={entity.icon} alt={entity.name} />
 							</div> */}
 							<h1 className={s.entityName}>{entity.name}</h1>
+							<div className={s.entityActions}>
+								<button
+									type="button"
+									className={s.editBtn}
+									onClick={() => setEditOpen(true)}
+								>
+									Редактировать
+								</button>
+								<button
+									type="button"
+									className={s.deleteBtn}
+									onClick={() => setDeleteOpen(true)}
+								>
+									Удалить
+								</button>
+							</div>
 						</div>
 						<p className={s.entityDesc}>{entity.desc}</p>
 					</div>
+
+					<EditEntityModal
+						open={editOpen}
+						onOpenChange={setEditOpen}
+						entity={entity}
+						onSave={handleSave}
+						isSaving={saving}
+					/>
+					<DeleteEntityModal
+						open={deleteOpen}
+						onOpenChange={setDeleteOpen}
+						entity={entity}
+					/>
 
 					<div className={s.divider} />
 

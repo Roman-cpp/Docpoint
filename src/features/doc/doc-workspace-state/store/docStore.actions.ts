@@ -10,3 +10,6 @@ export const actionResetDoc = (state: DocStore) => state.resetDoc;
 export const actionAddEndpoint = (state: DocStore) => state.addEndpoint;
 export const actionDeleteEndpoint = (state: DocStore) => state.deleteEndpoint;
 export const actionDeleteGroup = (state: DocStore) => state.deleteGroup;
+export const actionUpdateEntity = (state: DocStore) => state.updateEntity;
+export const actionAddEntity = (state: DocStore) => state.addEntity;
+export const actionDeleteEntity = (state: DocStore) => state.deleteEntity;
