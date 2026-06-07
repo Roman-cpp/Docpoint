@@ -44,3 +44,19 @@ export interface HistoryGroup {
 	id: HistoryRecord["group"];
 	label: string;
 }
+
+
+export interface Request {
+  id: string;
+  method: string;
+  url: string;
+  code: string;
+  duration: number;
+  sentAt: string;
+  payload?: Record<string, unknown>;
+  payloadHeaders?: Record<string, string>;
+  response?: Record<string, unknown>;
+  responseHeaders?: Record<string, string>;
+  timing: HistoryTiming | null;
+}
+

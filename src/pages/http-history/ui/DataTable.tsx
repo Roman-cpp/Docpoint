@@ -8,6 +8,7 @@ import {
 } from "react";
 import { cx } from "@/shared/lib/cx";
 import s from "./DataTable.module.css";
+import { DtFilters } from "./DtFilters";
 
 /* ─── Icons (14×14, stroke 1.5 — matches Docpoint set) ─── */
 const DtBase: FC<SVGProps<SVGSVGElement> & { size?: number }> = ({
@@ -63,16 +64,6 @@ const DtTrash: FC<{ size?: number }> = ({ size = 12 }) => (
 const DtExport: FC<{ size?: number }> = ({ size = 12 }) => (
 	<DtBase size={size}>
 		<path d="M7 1.5v8M3.5 6.5L7 10l3.5-3.5M2 12.5h10" />
-	</DtBase>
-);
-const DtRows: FC<{ size?: number }> = ({ size = 14 }) => (
-	<DtBase size={size}>
-		<path d="M2 4h10M2 7h10M2 10h10" />
-	</DtBase>
-);
-const DtRowsLg: FC<{ size?: number }> = ({ size = 14 }) => (
-	<DtBase size={size}>
-		<path d="M2 4.5h10M2 9.5h10" />
 	</DtBase>
 );
 const DtChevL: FC<{ size?: number }> = ({ size = 12 }) => (
@@ -204,7 +195,6 @@ export function DataTable<T>({
 	const [selected, setSelected] = useState<Set<RowKey>>(() => new Set());
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(initialPageSize);
-	const [compact, setCompact] = useState(false);
 
 	// Reset to first page whenever the result set changes shape
 	// biome-ignore lint/correctness/useExhaustiveDependencies: page reset is intentional on filter/search/size change
@@ -326,50 +316,15 @@ export function DataTable<T>({
 			</div>
 
 			{/* ─── Filters + density ─── */}
-			<div className={s["dt-filters"]}>
-				{filters?.map((f) => {
-					const cnt = f.predicate
-						? data.filter(f.predicate).length
-						: data.length;
-					return (
-						<button
-							key={f.id}
-							className={cx(s["dt-filter"], activeFilter === f.id && s.active)}
-							onClick={() => setActiveFilter(f.id)}
-						>
-							{f.label}
-							<span className={s.cnt}>{cnt}</span>
-						</button>
-					);
-				})}
-				<div className={s["dt-filters-right"]}>
-					<div
-						className={s["dt-density"]}
-						role="group"
-						aria-label="Плотность строк"
-					>
-						<button
-							className={cx(!compact && s.active)}
-							onClick={() => setCompact(false)}
-							title="Просторно"
-							aria-label="Просторно"
-						>
-							<DtRowsLg />
-						</button>
-						<button
-							className={cx(compact && s.active)}
-							onClick={() => setCompact(true)}
-							title="Плотно"
-							aria-label="Плотно"
-						>
-							<DtRows />
-						</button>
-					</div>
-				</div>
-			</div>
+			<DtFilters
+				filters={filters}
+				data={data}
+				activeFilter={activeFilter}
+				onFilter={setActiveFilter}
+			/>
 
 			{/* ─── Table ─── */}
-			<div className={cx(s["dt-table"], compact && s.compact)}>
+			<div className={cx(s["dt-table"], s.compact)}>
 				{/* Header OR selection bar */}
 				{selCount > 0 ? (
 					<div className={s["dt-selbar"]}>
