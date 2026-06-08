@@ -1,11 +1,14 @@
 export type { RequestStore } from "./request-history-state";
 export {
-	actionClearSelectedRequest,
 	actionDeleteAllRequests,
 	actionFetchRequests,
+	actionResetFilters,
 	actionResetRequests,
 	actionSelectRequest,
+	actionSetMethodFilter,
 	actionSetSearch,
+	actionSetStatusFilter,
+	selectFilters,
 	selectLoadingRequest,
 	selectLoadingRequestList,
 	selectPagination,

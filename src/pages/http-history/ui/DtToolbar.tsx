@@ -59,7 +59,6 @@ export function DtToolbar<T>({
 			{/* ─── Filters + density ─── */}
 			<DtFilters
 				filters={filters}
-				data={data}
 				activeFilter={activeFilter}
 				onFilter={onFilter}
 			/>

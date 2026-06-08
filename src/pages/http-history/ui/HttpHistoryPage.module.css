@@ -660,3 +660,10 @@
 	font-family: var(--font-mono);
 	color: var(--ink);
 }
+
+.hc-confirm-text {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--ink-low);
+}

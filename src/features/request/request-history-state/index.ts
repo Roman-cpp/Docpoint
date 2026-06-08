@@ -1,13 +1,16 @@
 export {
-	actionClearSelectedRequest,
 	actionDeleteAllRequests,
 	actionFetchRequests,
+	actionResetFilters,
 	actionResetRequests,
 	actionSelectRequest,
+	actionSetMethodFilter,
 	actionSetSearch,
+	actionSetStatusFilter,
 } from "./store/requestStore.actions";
 
 export {
+	selectFilters,
 	selectLoadingRequest,
 	selectLoadingRequestList,
 	selectPagination,

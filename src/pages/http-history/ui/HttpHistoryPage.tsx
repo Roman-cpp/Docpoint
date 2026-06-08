@@ -1,8 +1,12 @@
 import { type FC, useEffect, useState } from "react";
+import type { HttpMethod } from "@/entities/endpoint";
 import type { RequestSummary } from "@/entities/request";
 import {
+	actionDeleteAllRequests,
 	actionFetchRequests,
+	actionResetFilters,
 	actionSelectRequest,
+	actionSetMethodFilter,
 	actionSetSearch,
 	selectRequestList,
 	selectSearch,
@@ -10,6 +14,7 @@ import {
 	useRequestStore,
 } from "@/features/request";
 import { cx } from "@/shared/lib/cx";
+import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import {
 	DataTable,
@@ -113,7 +118,20 @@ const HC_COLUMNS: DataTableColumn<RequestSummary>[] = [
 	},
 ];
 
-const HC_FILTERS: DataTableFilter<RequestSummary>[] = [
+/**
+ * Toolbar chips. Each chip is single-select.
+ *
+ * Method chips carry `methods` → applied server-side via the request store
+ * (`setMethodFilter` + refetch). Status-range chips keep a client-side
+ * `predicate`, because the server `status` filter matches exact codes, not
+ * ranges. "Все" clears the server filter.
+ */
+interface HcFilter extends DataTableFilter<RequestSummary> {
+	/** HTTP methods sent to the server as `?method=...`. */
+	methods?: HttpMethod[];
+}
+
+const HC_FILTERS: HcFilter[] = [
 	{ id: "all", label: "Все" },
 	{
 		id: "ok",
@@ -125,12 +143,12 @@ const HC_FILTERS: DataTableFilter<RequestSummary>[] = [
 		label: "Ошибки",
 		predicate: (r) => isErrRecord(r) || statusNum(r.code) >= 400,
 	},
-	{ id: "get", label: "GET", predicate: (r) => r.method === "GET" },
-	{ id: "post", label: "POST", predicate: (r) => r.method === "POST" },
+	{ id: "get", label: "GET", methods: ["GET"] },
+	{ id: "post", label: "POST", methods: ["POST"] },
 	{
 		id: "write",
 		label: "PUT / PATCH / DELETE",
-		predicate: (r) => ["PUT", "PATCH", "DELETE"].includes(r.method),
+		methods: ["PUT", "PATCH", "DELETE"],
 	},
 ];
 
@@ -141,10 +159,15 @@ export const HttpHistoryPage: FC = () => {
 	const search = useRequestStore(selectSearch);
 
   const [isDialogRequestDetailOpen, setIsDialogRequestDetailOpen] = useState<boolean>(false)
+	const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const fetchRequests = useRequestStore(actionFetchRequests);
 	const selectRequest = useRequestStore(actionSelectRequest);
 	const setSearch = useRequestStore(actionSetSearch);
+	const setMethodFilter = useRequestStore(actionSetMethodFilter);
+	const resetFilters = useRequestStore(actionResetFilters);
+	const deleteAllRequests = useRequestStore(actionDeleteAllRequests);
 
 	const [activeFilter, setActiveFilter] = useState<string | null>(
 		HC_FILTERS[0].id,
@@ -154,7 +177,35 @@ export const HttpHistoryPage: FC = () => {
 		fetchRequests();
 	}, [fetchRequests]);
 
+	/**
+	 * Apply a toolbar chip. Method chips push their methods to the server
+	 * filter and refetch; status-range chips reset the server filter (so the
+	 * full list is fetched) and rely on the client-side predicate in DataTable.
+	 */
+	const onFilter = (id: string) => {
+		const filter = HC_FILTERS.find((f) => f.id === id);
+		if (filter?.methods) {
+			setMethodFilter(filter.methods);
+		} else {
+			resetFilters();
+		}
+		setActiveFilter(id);
+		fetchRequests();
+	};
+
 	const close = () => setIsDialogRequestDetailOpen(false);
+
+	const confirmDeleteAll = async () => {
+		setIsDeleting(true);
+		try {
+			await deleteAllRequests();
+			setIsConfirmDeleteOpen(false);
+		} catch (e) {
+			console.error("[HttpHistoryPage] deleteAllRequests failed:", e);
+		} finally {
+			setIsDeleting(false);
+		}
+	};
 
   const onRowClick = (request: RequestSummary) => {
     selectRequest(request.id);
@@ -176,7 +227,18 @@ export const HttpHistoryPage: FC = () => {
 						onSearch={setSearch}
 						filters={HC_FILTERS}
 						activeFilter={activeFilter}
-						onFilter={setActiveFilter}
+						onFilter={onFilter}
+						toolbarActions={
+							<button
+								type="button"
+								className={cx(dt["dt-btn"], dt["dt-btn-danger"])}
+								onClick={() => setIsConfirmDeleteOpen(true)}
+								disabled={requestList.length === 0}
+							>
+								<TrashIcon />
+								Удалить все
+							</button>
+						}
 					/>
 					<DataTable
 						columns={HC_COLUMNS}
@@ -184,7 +246,6 @@ export const HttpHistoryPage: FC = () => {
 						rowKey={(r) => r.id}
 						search={search}
 						activeFilter={activeFilter}
-						searchKeys={["url", "method"]}
 						filters={HC_FILTERS}
 						initialSort={null}
 						initialPageSize={25}
@@ -195,6 +256,47 @@ export const HttpHistoryPage: FC = () => {
 			</main>
 
 			{isDialogRequestDetailOpen && <HcDrawer onClose={close} />}
+
+			<Modal
+				open={isConfirmDeleteOpen}
+				onOpenChange={(open) => !isDeleting && setIsConfirmDeleteOpen(open)}
+				title="Удалить все логи?"
+				subtitle="Все записи истории запросов будут удалены без возможности восстановления."
+				actions={
+					<>
+						<ModalBtnCancel
+							onClick={() => setIsConfirmDeleteOpen(false)}
+							disabled={isDeleting}
+						>
+							Отмена
+						</ModalBtnCancel>
+						<ModalBtnDanger onClick={confirmDeleteAll} disabled={isDeleting}>
+							{isDeleting ? "Удаляем…" : "Удалить все"}
+						</ModalBtnDanger>
+					</>
+				}
+			>
+				<p className={s["hc-confirm-text"]}>
+					Это действие нельзя отменить.
+				</p>
+			</Modal>
 		</div>
 	);
 };
+
+/* ─── Icons ─── */
+const TrashIcon: FC = () => (
+	<svg
+		viewBox="0 0 14 14"
+		width="13"
+		height="13"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
+		<title>delete</title>
+		<path d="M2.5 3.5h9M5 3.5V2.5h4v1M4 3.5l.5 8h5l.5-8" />
+	</svg>
+);

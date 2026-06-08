@@ -9,3 +9,4 @@ export const selectLoadingRequestList = (state: RequestStore) =>
 export const selectLoadingRequest = (state: RequestStore) =>
 	state.loadingRequest;
 export const selectSearch = (state: RequestStore) => state.search;
+export const selectFilters = (state: RequestStore) => state.filters;

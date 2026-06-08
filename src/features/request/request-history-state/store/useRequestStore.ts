@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
+import type { HttpMethod } from "@/entities/endpoint";
 import type { Request, RequestSummary } from "@/entities/request";
 import {
 	deleteAllRequestsApi,
@@ -8,6 +9,7 @@ import {
 	getRequestsApi,
 } from "@/entities/request";
 import type { Pagination } from "@/shared/model/http-response.type";
+import { RequestFilters } from "@/entities/request/api/getRequestsApi";
 
 type RequestState = {
 	requestList: RequestSummary[];
@@ -18,6 +20,7 @@ type RequestState = {
 	loadingRequest: boolean;
 
 	search: string;
+	filters: RequestFilters;
 };
 
 type RequestActions = {
@@ -29,6 +32,10 @@ type RequestActions = {
 	deleteAllRequests: () => Promise<void>;
 
 	setSearch: (search: string) => void;
+
+	setMethodFilter: (method: HttpMethod[]) => void;
+	setStatusFilter: (status: string[]) => void;
+	resetFilters: () => void;
 };
 
 const initialState: RequestState = {
@@ -45,11 +52,16 @@ const initialState: RequestState = {
 	loadingRequestList: false,
 
 	search: "",
+	filters: {},
 };
 
 export type RequestStore = RequestState & RequestActions;
 
-const createRequestSlice: StateCreator<RequestStore> = (set) => ({
+/** Debounce timer for server-side search (see `setSearch`). */
+let searchDebounce: ReturnType<typeof setTimeout> | undefined;
+const SEARCH_DEBOUNCE_MS = 300;
+
+const createRequestSlice: StateCreator<RequestStore> = (set, get) => ({
 	...initialState,
 
 	resetRequests: () => {
@@ -59,7 +71,8 @@ const createRequestSlice: StateCreator<RequestStore> = (set) => ({
 	fetchRequests: async () => {
 		set({ loadingRequestList: true });
 		try {
-			const res = await getRequestsApi();
+			const { filters, search } = get();
+			const res = await getRequestsApi({ ...filters, search });
 			set({ requestList: res.data, pagination: res.pagination });
 		} catch (e) {
 			if ((e as Error).name !== "AbortError") {
@@ -88,7 +101,23 @@ const createRequestSlice: StateCreator<RequestStore> = (set) => ({
 		set({ requestList: [] });
 	},
 
-	setSearch: (search) => set({ search }),
+	/**
+	 * Update the search term and refetch with it as `?search=…`. Debounced so
+	 * typing doesn't fire a request per keystroke.
+	 */
+	setSearch: (search) => {
+		set({ search });
+		clearTimeout(searchDebounce);
+		searchDebounce = setTimeout(() => {
+			get().fetchRequests();
+		}, SEARCH_DEBOUNCE_MS);
+	},
+
+	setMethodFilter: (method) =>
+		set((state) => ({ filters: { ...state.filters, method } })),
+	setStatusFilter: (status) =>
+		set((state) => ({ filters: { ...state.filters, status } })),
+	resetFilters: () => set({ filters: {} }),
 });
 
 export const useRequestStore = create<RequestStore>()(

@@ -113,6 +113,17 @@
 	background: #333;
 	border-color: #333;
 }
+.dt-btn-danger {
+	color: var(--danger, #d11a2a);
+}
+.dt-btn-danger:hover:not(:disabled) {
+	border-color: var(--danger, #d11a2a);
+	background: color-mix(in srgb, var(--danger, #d11a2a) 8%, transparent);
+}
+.dt-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
 
 /* ─── Filters row ─── */
 .dt-filters {
