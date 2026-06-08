@@ -235,7 +235,6 @@ export function DataTable<T>({
 	initialSort,
 	selectable = false,
 	rowActions,
-	bulkActions,
 	toolbarActions,
 	initialPageSize = 8,
 	onToast,
@@ -295,10 +294,6 @@ export function DataTable<T>({
 	});
 
 	const clearSel = () => table.resetRowSelection();
-	const selectedRows = table.getSelectedRowModel().rows;
-	const selCount = selectedRows.length;
-	const allSel = table.getIsAllRowsSelected();
-	const someSel = table.getIsSomeRowsSelected();
 
 	const api: DataTableApi = {
 		clearSel,
@@ -357,89 +352,6 @@ export function DataTable<T>({
 
 			{/* ─── Table ─── */}
 			<div className={cx(s["dt-table"], s.compact)}>
-				{/* Header OR selection bar */}
-				{selCount > 0 ? (
-					<div className={s["dt-selbar"]}>
-						<span className={s["dt-selbar-count"]}>
-							{selectable && (
-								<DtCheckbox
-									checked={allSel}
-									indeterminate={someSel}
-									onChange={() => table.toggleAllRowsSelected()}
-									label="Снять выделение"
-								/>
-							)}
-							Выбрано {selCount}
-						</span>
-						<button className={s["dt-selbar-clear"]} onClick={clearSel}>
-							Сбросить
-						</button>
-						<div className={s["dt-selbar-actions"]}>
-							{bulkActions ? (
-								bulkActions(
-									selectedRows.map((r) => rowKey(r.original)),
-									api,
-								)
-							) : (
-								<>
-									<button className={s["dt-selbar-btn"]}>
-										<DtExport /> Экспорт
-									</button>
-									<button
-										className={cx(s["dt-selbar-btn"], s.danger)}
-										onClick={() => {
-											onToast?.(`Удалено: ${selCount}`, "danger");
-											clearSel();
-										}}
-									>
-										<DtTrash size={11} /> Удалить
-									</button>
-								</>
-							)}
-						</div>
-					</div>
-				) : (
-					<div
-						className={s["dt-head"]}
-						style={{ gridTemplateColumns: template }}
-					>
-						{selectable && (
-							<DtCheckbox
-								checked={false}
-								indeterminate={false}
-								onChange={() => table.toggleAllRowsSelected()}
-								label="Выбрать все"
-							/>
-						)}
-						{table.getHeaderGroups()[0].headers.map((header) => {
-							const col = header.column;
-							const meta = col.columnDef.meta;
-							const sortDir = col.getIsSorted();
-							const canSort = col.getCanSort();
-							return (
-								<span
-									key={header.id}
-									className={cx(
-										s["dt-th"],
-										meta?.align && s[meta.align],
-										canSort && s.sortable,
-										sortDir && s.sorted,
-										sortDir === "desc" && s.desc,
-									)}
-									onClick={col.getToggleSortingHandler()}
-								>
-									{flexRender(col.columnDef.header, header.getContext())}
-									{canSort && (
-										<span className={s["dt-sort-ico"]}>
-											{sortDir ? <DtCaret /> : <DtSort />}
-										</span>
-									)}
-								</span>
-							);
-						})}
-						{rowActions && <span className={cx(s["dt-th"], s.num)} />}
-					</div>
-				)}
 
 				{/* Rows */}
 				{pageRows.map((row) => {

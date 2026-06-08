@@ -48,11 +48,10 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		header: "Endpoint",
 		width: "2.4fr",
 		render: (r) => {
-			const { host, path } = splitUrl(r.url);
+			const { path } = splitUrl(r.url);
 			return (
 				<div className={s["hc-url-cell"]}>
 					<div className={s["hc-url-path"]}>{path}</div>
-					<div className={s["hc-url-host"]}>{host}</div>
 				</div>
 			);
 		},
@@ -159,7 +158,7 @@ export const HttpHistoryPage: FC = () => {
 						searchKeys={["url", "method"]}
 						filters={HC_FILTERS}
 						initialSort={null}
-						initialPageSize={8}
+						initialPageSize={25}
 						onRowClick={(r) => setOpenId(r.id)}
 						activeKey={openId}
 					/>
