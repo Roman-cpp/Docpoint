@@ -89,40 +89,150 @@ const HcUrl: FC<{ url: string; host?: string }> = ({ url, host }) => {
 	);
 };
 
-/* JSON syntax highlight (rough, for mock data) — token colors inlined. */
+/* JSON token colors. */
 const JSON_COLORS = {
 	key: "#3F6B4A",
 	str: "#75591A",
 	num: "#3A5A78",
 	bool: "#9B3B36",
+	punct: "var(--ink-low)",
 };
-const HcJson: FC<{ src: string }> = ({ src }) => {
-	const html = src
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(
-			/"([^"]+)":/g,
-			`<span style="color:${JSON_COLORS.key}">"$1"</span>:`,
-		)
-		.replace(
-			/: "([^"]*)"/g,
-			`: <span style="color:${JSON_COLORS.str}">"$1"</span>`,
-		)
-		.replace(
-			/: (-?\d+\.?\d*)/g,
-			`: <span style="color:${JSON_COLORS.num}">$1</span>`,
-		)
-		.replace(
-			/: (true|false|null)/g,
-			`: <span style="color:${JSON_COLORS.bool}">$1</span>`,
+
+/** Parse a JSON string (handling double-encoded values) into a value. */
+function hcParseJson(src: string): { ok: true; value: unknown } | { ok: false } {
+	try {
+		let v: unknown = JSON.parse(src);
+		if (typeof v === "string") {
+			try {
+				v = JSON.parse(v);
+			} catch {
+				/* single-encoded string value */
+			}
+		}
+		return { ok: true, value: v };
+	} catch {
+		return { ok: false };
+	}
+}
+
+const Caret: FC<{ open: boolean }> = ({ open }) => (
+	<svg
+		aria-hidden="true"
+		viewBox="0 0 12 12"
+		width={10}
+		height={10}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.7"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		style={{
+			transform: open ? "rotate(90deg)" : "none",
+			transition: "transform .12s",
+		}}
+	>
+		<path d="M4 2.5L8 6l-4 3.5" />
+	</svg>
+);
+
+const HcJsonPrimitive: FC<{ value: unknown }> = ({ value }) => {
+	if (typeof value === "string")
+		return <span style={{ color: JSON_COLORS.str }}>"{value}"</span>;
+	if (typeof value === "number")
+		return <span style={{ color: JSON_COLORS.num }}>{String(value)}</span>;
+	return <span style={{ color: JSON_COLORS.bool }}>{String(value)}</span>;
+};
+
+const HcJsonNode: FC<{ name?: string; value: unknown; last: boolean }> = ({
+	name,
+	value,
+	last,
+}) => {
+	const isArr = Array.isArray(value);
+	const isObj = !isArr && value !== null && typeof value === "object";
+	const [open, setOpen] = useState(true);
+
+	const comma = !last ? <span style={{ color: JSON_COLORS.punct }}>,</span> : null;
+	const keyPart =
+		name !== undefined ? (
+			<>
+				<span style={{ color: JSON_COLORS.key }}>"{name}"</span>
+				<span style={{ color: JSON_COLORS.punct }}>: </span>
+			</>
+		) : null;
+
+	if (!isArr && !isObj) {
+		return (
+			<div className={s["hc-json-row"]}>
+				<span className={s["hc-json-caret"]} />
+				{keyPart}
+				<HcJsonPrimitive value={value} />
+				{comma}
+			</div>
 		);
+	}
+
+	const entries: [string, unknown][] = isArr
+		? (value as unknown[]).map((v, i) => [String(i), v])
+		: Object.entries(value as Record<string, unknown>);
+	const openBr = isArr ? "[" : "{";
+	const closeBr = isArr ? "]" : "}";
+	const empty = entries.length === 0;
+
 	return (
-		<pre
-			className={s["hc-code-body"]}
-			// biome-ignore lint/security/noDangerouslySetInnerHtml: highlighting trusted local mock JSON
-			dangerouslySetInnerHTML={{ __html: html }}
-		/>
+		<div>
+			<div
+				className={s["hc-json-row"]}
+				style={empty ? undefined : { cursor: "pointer" }}
+				onClick={empty ? undefined : () => setOpen((o) => !o)}
+			>
+				<span className={s["hc-json-caret"]}>
+					{!empty && <Caret open={open} />}
+				</span>
+				{keyPart}
+				<span style={{ color: JSON_COLORS.punct }}>{openBr}</span>
+				{(!open || empty) && (
+					<>
+						{!empty && (
+							<span className={s["hc-json-count"]}>{entries.length}</span>
+						)}
+						<span style={{ color: JSON_COLORS.punct }}>{closeBr}</span>
+						{comma}
+					</>
+				)}
+			</div>
+			{open && !empty && (
+				<>
+					<div className={s["hc-json-children"]}>
+						{entries.map(([k, v], i) => (
+							<HcJsonNode
+								key={k}
+								name={isArr ? undefined : k}
+								value={v}
+								last={i === entries.length - 1}
+							/>
+						))}
+					</div>
+					<div className={s["hc-json-row"]}>
+						<span className={s["hc-json-caret"]} />
+						<span style={{ color: JSON_COLORS.punct }}>{closeBr}</span>
+						{comma}
+					</div>
+				</>
+			)}
+		</div>
+	);
+};
+
+const HcJson: FC<{ src: string }> = ({ src }) => {
+	const parsed = hcParseJson(src);
+	if (!parsed.ok || parsed.value === null || typeof parsed.value !== "object") {
+		return <pre className={s["hc-code-body"]}>{src}</pre>;
+	}
+	return (
+		<div className={s["hc-json-tree"]}>
+			<HcJsonNode value={parsed.value} last />
+		</div>
 	);
 };
 

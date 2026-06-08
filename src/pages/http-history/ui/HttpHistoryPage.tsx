@@ -37,7 +37,6 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		key: "method",
 		header: "Метод",
 		width: "84px",
-		sortable: true,
 		render: (r) => (
 			<span className={cx(s["hc-pill"], s[`hc-m-${r.method.toLowerCase()}`])}>
 				{r.method}
@@ -48,8 +47,6 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		key: "url",
 		header: "Endpoint",
 		width: "2.4fr",
-		sortable: true,
-		sortValue: (r) => splitUrl(r.url).path,
 		render: (r) => {
 			const { host, path } = splitUrl(r.url);
 			return (
@@ -65,8 +62,6 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		header: "Статус",
 		width: "104px",
 		align: "",
-		sortable: true,
-		sortValue: (r) => statusNum(r.code),
 		render: (r) =>
 			isErrRecord(r) ? (
 				<span className={cx(s["hc-status"], s.err)}>
@@ -87,7 +82,6 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		header: "Время",
 		width: "92px",
 		align: "num",
-		sortable: true,
 		render: (r) =>
 			isErrRecord(r) ? (
 				<span className={s["hc-dur"]} style={{ color: "var(--ink-low)" }}>
@@ -103,7 +97,6 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		key: "sent_at",
 		header: "Отправлен",
 		width: "130px",
-		sortable: true,
 		render: (r) => (
 			<span className={cx(dt["dt-muted"], dt["dt-mono"])}>
 				{formatSentAt(r.sent_at)}

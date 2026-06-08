@@ -573,6 +573,48 @@
 	color: var(--error-fg);
 }
 
+/* collapsible JSON tree */
+.hc-json-tree {
+	padding: 13px 16px;
+	overflow-x: auto;
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	line-height: 1.7;
+	color: var(--code-ink);
+}
+.hc-json-row {
+	display: flex;
+	align-items: center;
+	white-space: pre;
+	min-height: 1.7em;
+	border-radius: 4px;
+}
+.hc-json-row[style*="cursor"]:hover {
+	background: var(--bg);
+}
+.hc-json-caret {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	flex: 0 0 14px;
+	color: var(--ink-low);
+}
+.hc-json-children {
+	padding-left: 14px;
+	margin-left: 6px;
+	border-left: 1px solid var(--border);
+}
+.hc-json-count {
+	margin: 0 5px;
+	padding: 0 5px;
+	border-radius: 100px;
+	font-size: 10px;
+	font-family: var(--font-sans);
+	background: var(--border);
+	color: var(--ink-low);
+}
+
 /* timing */
 .hc-timing-track {
 	height: 9px;
