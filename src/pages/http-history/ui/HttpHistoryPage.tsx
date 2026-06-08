@@ -1,7 +1,7 @@
-import { type FC, useState } from "react";
+import { type FC, useEffect, useState } from "react";
+import { fetchRequestsApi } from "@/entities/request";
 import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
-import { HC_HISTORY } from "../data/historyData";
 import type { HistoryRecord } from "../model/types";
 import {
 	DataTable,
@@ -17,6 +17,18 @@ function splitUrl(url: string): { host: string; path: string } {
 	const host = (url.match(/^https?:\/\/([^/]+)/) || [])[1] || "";
 	const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
 	return { host, path };
+}
+
+/** Numeric status from the string `code`; `0` means the request never landed. */
+const statusNum = (code: string): number => Number(code) || 0;
+const isErrRecord = (r: HistoryRecord): boolean => statusNum(r.code) === 0;
+
+/** ISO `sent_at` → "DD.MM HH:MM" (no timezone shift). */
+function formatSentAt(iso: string): string {
+	const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+	if (!m) return iso;
+	const [, , mo, d, hh, mm] = m;
+	return `${d}.${mo} ${hh}:${mm}`;
 }
 
 /* ─── Table columns + filters ─── */
@@ -49,21 +61,24 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		},
 	},
 	{
-		key: "status",
+		key: "code",
 		header: "Статус",
 		width: "104px",
 		align: "",
 		sortable: true,
+		sortValue: (r) => statusNum(r.code),
 		render: (r) =>
-			r.isError ? (
+			isErrRecord(r) ? (
 				<span className={cx(s["hc-status"], s.err)}>
 					<span className={s.sdot} />
 					ERR
 				</span>
 			) : (
-				<span className={cx(s["hc-status"], s[hcStatusClass(r.status)])}>
+				<span
+					className={cx(s["hc-status"], s[hcStatusClass(statusNum(r.code))])}
+				>
 					<span className={s.sdot} />
-					{r.status}
+					{r.code}
 				</span>
 			),
 	},
@@ -74,7 +89,7 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 		align: "num",
 		sortable: true,
 		render: (r) =>
-			r.isError ? (
+			isErrRecord(r) ? (
 				<span className={s["hc-dur"]} style={{ color: "var(--ink-low)" }}>
 					—
 				</span>
@@ -85,20 +100,14 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 			),
 	},
 	{
-		key: "size",
-		header: "Размер",
-		width: "84px",
-		align: "num",
-		render: (r) => (
-			<span className={cx(dt["dt-mono"], dt["dt-muted"])}>{r.size}</span>
-		),
-	},
-	{
-		key: "sentAt",
+		key: "sent_at",
 		header: "Отправлен",
 		width: "130px",
+		sortable: true,
 		render: (r) => (
-			<span className={cx(dt["dt-muted"], dt["dt-mono"])}>{r.sentAt}</span>
+			<span className={cx(dt["dt-muted"], dt["dt-mono"])}>
+				{formatSentAt(r.sent_at)}
+			</span>
 		),
 	},
 ];
@@ -108,12 +117,12 @@ const HC_FILTERS: DataTableFilter<HistoryRecord>[] = [
 	{
 		id: "ok",
 		label: "Успешные",
-		predicate: (r) => r.status >= 200 && r.status < 400,
+		predicate: (r) => statusNum(r.code) >= 200 && statusNum(r.code) < 400,
 	},
 	{
 		id: "err",
 		label: "Ошибки",
-		predicate: (r) => r.status >= 400 || !!r.isError,
+		predicate: (r) => isErrRecord(r) || statusNum(r.code) >= 400,
 	},
 	{ id: "get", label: "GET", predicate: (r) => r.method === "GET" },
 	{ id: "post", label: "POST", predicate: (r) => r.method === "POST" },
@@ -127,7 +136,19 @@ const HC_FILTERS: DataTableFilter<HistoryRecord>[] = [
 /* ─── Page ─── */
 export const HttpHistoryPage: FC = () => {
 	const [openId, setOpenId] = useState<string | null>(null);
-	const open = openId ? HC_HISTORY.find((r) => r.id === openId) : null;
+	const [history, setHistory] = useState<HistoryRecord[]>([]);
+
+	useEffect(() => {
+		const controller = new AbortController();
+		fetchRequestsApi(controller.signal)
+			.then(setHistory)
+			.catch((err) => {
+				if (err.name !== "AbortError") console.error(err);
+			});
+		return () => controller.abort();
+	}, []);
+
+	const open = openId ? history.find((r) => r.id === openId) : null;
 
 	return (
 		<div className={s["hc-frame"]}>
@@ -140,9 +161,9 @@ export const HttpHistoryPage: FC = () => {
 						subtitle="Все запросы, отправленные из HTTP-клиента. Кликните строку, чтобы посмотреть детали."
 						entityName="запросов"
 						columns={HC_COLUMNS}
-						data={HC_HISTORY}
+						data={history}
 						rowKey={(r) => r.id}
-						searchKeys={["url", "title", "method"]}
+						searchKeys={["url", "method"]}
 						filters={HC_FILTERS}
 						initialSort={null}
 						initialPageSize={8}

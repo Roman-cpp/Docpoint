@@ -1,6 +1,6 @@
 import { type FC, Fragment, useEffect, useState } from "react";
 import { cx } from "@/shared/lib/cx";
-import type { HistoryRecord, HistoryTiming } from "../model/types";
+import type { HistoryRecord } from "../model/types";
 import s from "./HttpHistoryPage.module.css";
 
 /* ─── Icons ─── */
@@ -46,6 +46,14 @@ const STATUS_TEXT: Record<number, string> = {
 };
 function hcStatusText(code: number): string {
 	return STATUS_TEXT[code] || "";
+}
+
+/** ISO `sent_at` → "DD.MM HH:MM" (no timezone shift). */
+function hcWhen(iso: string): string {
+	const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+	if (!m) return iso;
+	const [, , mo, d, hh, mm] = m;
+	return `${d}.${mo} ${hh}:${mm}`;
 }
 
 /* Full-URL highlight: scheme://host/path?query */
@@ -142,14 +150,14 @@ const HcCopyBtn: FC<{ text: string; label?: string }> = ({
 	);
 };
 
-/* ─── Request side: params / headers / body ─── */
+/* ─── Request side: headers / body ─── */
 const HcRequestBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 	const tabs = [
-    { id: "body", lbl: "Тело", count: r.body ? null : 0 },
-		{ id: "headers", lbl: "Заголовки", count: r.headers.length },
+		{ id: "body", lbl: "Тело", count: r.payload ? null : 0 },
+		{ id: "headers", lbl: "Заголовки", count: r.payload_headers.length },
 	] as const;
-	const [tab, setTab] = useState<"params" | "headers" | "body">(
-		r.body ? "body" : r.params.length ? "params" : "headers",
+	const [tab, setTab] = useState<"headers" | "body">(
+		r.payload ? "body" : "headers",
 	);
 
 	return (
@@ -175,69 +183,32 @@ const HcRequestBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 
 			{tab === "headers" && (
 				<div className={s["hc-kv"]}>
-					{r.headers.map(([k, v, tok]) => (
-						<div className={s["hc-kv-row"]} key={k}>
-							<span className={s["hc-kv-key"]}>{k}</span>
-							<span className={s["hc-kv-val"]}>
-								{tok ? <span className={s.tok}>{v}</span> : v}
-							</span>
-						</div>
-					))}
+					{r.payload_headers.map((h) => {
+						const tok = h.key.toLowerCase() === "authorization";
+						return (
+							<div className={s["hc-kv-row"]} key={h.key}>
+								<span className={s["hc-kv-key"]}>{h.key}</span>
+								<span className={s["hc-kv-val"]}>
+									{tok ? <span className={s.tok}>{h.value}</span> : h.value}
+								</span>
+							</div>
+						);
+					})}
 				</div>
 			)}
 
 			{tab === "body" &&
-				(r.body ? (
+				(r.payload ? (
 					<div className={s["hc-code"]}>
 						<div className={s["hc-code-head"]}>
 							<span className={s["hc-code-lang"]}>JSON · тело запроса</span>
-							<HcCopyBtn text={r.body} />
+							<HcCopyBtn text={r.payload} />
 						</div>
-						<HcJson src={r.body} />
+						<HcJson src={r.payload} />
 					</div>
 				) : (
 					<div className={s["hc-none"]}>У запроса {r.method} нет тела</div>
 				))}
-		</div>
-	);
-};
-
-/* ─── Timing waterfall ─── */
-const HcTiming: FC<{ t: HistoryTiming; total: number }> = ({ t, total }) => {
-	const sum = t.dns + t.conn + t.tls + t.wait + t.dl || 1;
-	const pct = (n: number) => `${(n / sum) * 100}%`;
-	const items = (
-		[
-			{ k: "dns", lbl: "DNS-поиск", v: t.dns },
-			{ k: "conn", lbl: "Соединение", v: t.conn },
-			{ k: "tls", lbl: "TLS-рукопожатие", v: t.tls },
-			{ k: "wait", lbl: "Ожидание (TTFB)", v: t.wait },
-			{ k: "dl", lbl: "Загрузка", v: t.dl },
-		] as const
-	).filter((it) => it.v > 0);
-	return (
-		<div>
-			<div className={s["hc-timing-track"]}>
-				{items.map((it) => (
-					<div
-						key={it.k}
-						className={cx(s["hc-tseg"], s[it.k])}
-						style={{ width: pct(it.v) }}
-						title={`${it.lbl}: ${it.v} мс`}
-					/>
-				))}
-			</div>
-			<div className={s["hc-timing-legend"]}>
-				{items.map((it) => (
-					<span key={it.k} className={s["hc-timing-item"]}>
-						<span className={cx(s.sw, s["hc-tseg"], s[it.k])} />
-						{it.lbl} · <span className={s.ms}>{it.v} мс</span>
-					</span>
-				))}
-				<span className={s["hc-timing-item"]} style={{ marginLeft: "auto" }}>
-					Итого · <span className={s.ms}>{total} мс</span>
-				</span>
-			</div>
 		</div>
 	);
 };
@@ -249,19 +220,20 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 		{
 			id: "headers",
 			lbl: "Заголовки",
-			count: r.respHeaders.length,
+			count: r.response_headers.length,
 			disabled: false,
 		},
-		{ id: "timing", lbl: "Тайминг", count: undefined, disabled: !r.timing },
 	] as const;
-	const [tab, setTab] = useState<"body" | "headers" | "timing">("body");
-	const sc = hcStatusClass(r.status);
+	const [tab, setTab] = useState<"body" | "headers">("body");
+	const status = Number(r.code) || 0;
+	const isError = status === 0;
+	const sc = hcStatusClass(status);
 	const slow = r.duration >= 1000;
 
 	return (
 		<>
 			<div className={s["hc-respbar"]}>
-				{r.isError ? (
+				{isError ? (
 					<span className={cx(s["hc-resp-status"], s.s5)}>
 						<span className={s.sdot} />
 						Ошибка
@@ -269,21 +241,17 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 				) : (
 					<span className={cx(s["hc-resp-status"], s[sc])}>
 						<span className={s.sdot} />
-						{r.status} {hcStatusText(r.status)}
+						{r.code} {hcStatusText(status)}
 					</span>
 				)}
 				<div className={s["hc-resp-metric"]}>
 					<span className={cx(s.v, slow && s.slow)}>
-						{r.isError ? "—" : r.duration + " мс"}
+						{isError ? "—" : `${r.duration} мс`}
 					</span>
 					<span className={s.l}>Время</span>
 				</div>
-				<div className={s["hc-resp-metric"]}>
-					<span className={s.v}>{r.size}</span>
-					<span className={s.l}>Размер</span>
-				</div>
 				<div className={s["hc-resp-spacer"]} />
-				<span className={s["hc-resp-when"]}>{r.sentAt}</span>
+				<span className={s["hc-resp-when"]}>{hcWhen(r.sent_at)}</span>
 			</div>
 
 			<div className={s["hc-section"]}>
@@ -314,13 +282,13 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 					<div className={s["hc-code"]}>
 						<div className={s["hc-code-head"]}>
 							<span className={s["hc-code-lang"]}>
-								{r.isError
+								{isError
 									? "Текст · ошибка соединения"
-									: `JSON · ответ · ${r.status}`}
+									: `JSON · ответ · ${r.code}`}
 							</span>
-							{!r.isError && <HcCopyBtn text={r.response} />}
+							{!isError && <HcCopyBtn text={r.response} />}
 						</div>
-						{r.isError ? (
+						{isError ? (
 							<pre
 								className={s["hc-code-body"]}
 								style={{ color: "var(--error-fg)" }}
@@ -334,22 +302,18 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 				)}
 
 				{tab === "headers" &&
-					(r.respHeaders.length ? (
+					(r.response_headers.length ? (
 						<div className={s["hc-kv"]}>
-							{r.respHeaders.map(([k, v]) => (
-								<div className={s["hc-kv-row"]} key={k}>
-									<span className={s["hc-kv-key"]}>{k}</span>
-									<span className={s["hc-kv-val"]}>{v}</span>
+							{r.response_headers.map((h) => (
+								<div className={s["hc-kv-row"]} key={h.key}>
+									<span className={s["hc-kv-key"]}>{h.key}</span>
+									<span className={s["hc-kv-val"]}>{h.value}</span>
 								</div>
 							))}
 						</div>
 					) : (
 						<div className={s["hc-none"]}>Заголовки ответа недоступны</div>
 					))}
-
-				{tab === "timing" && r.timing && (
-					<HcTiming t={r.timing} total={r.duration} />
-				)}
 			</div>
 		</>
 	);

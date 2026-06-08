@@ -1,4 +1,4 @@
-import type { HistoryGroup, HistoryRecord } from "../model/types";
+import type { HistoryRecord } from "../model/types";
 
 /**
  * Mock history: requests the user sent from the HTTP client to the
@@ -6,34 +6,24 @@ import type { HistoryGroup, HistoryRecord } from "../model/types";
  * server-side request journal.
  */
 export const HC_HISTORY: HistoryRecord[] = [
-	// ───── Today ─────
 	{
 		id: "h_01",
-		group: "today",
 		method: "POST",
 		url: "https://api.docpoint.io/v1/documents",
-		status: 201,
+		code: "201",
 		duration: 287,
-		size: "642 Б",
-		sentAt: "14:38",
-		title: "Создать документ",
-		params: [],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Content-Type", "application/json"],
-			["Accept", "application/json"],
-			["X-Org-Id", "47821"],
-		],
-		body: `{
+		sent_at: "2026-06-08T14:38:00Z",
+		payload: `{
   "title": "Акт сверки Q1 2026",
   "type": "report",
   "orgId": 47821,
   "tags": ["finance", "q1"]
 }`,
-		respHeaders: [
-			["Content-Type", "application/json; charset=utf-8"],
-			["Location", "/v1/documents/8901"],
-			["X-RateLimit-Remaining", "4998"],
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Content-Type", value: "application/json" },
+			{ key: "Accept", value: "application/json" },
+			{ key: "X-Org-Id", value: "47821" },
 		],
 		response: `{
   "id": 8901,
@@ -41,32 +31,23 @@ export const HC_HISTORY: HistoryRecord[] = [
   "status": "draft",
   "createdAt": "2026-06-05T14:38:02Z"
 }`,
-		timing: { dns: 6, conn: 14, tls: 28, wait: 224, dl: 15 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+			{ key: "Location", value: "/v1/documents/8901" },
+			{ key: "X-RateLimit-Remaining", value: "4998" },
+		],
 	},
 	{
 		id: "h_02",
-		group: "today",
 		method: "GET",
 		url: "https://api.docpoint.io/v1/documents?page=1&per_page=25&status=signed",
-		status: 200,
+		code: "200",
 		duration: 64,
-		size: "8.4 КБ",
-		sentAt: "14:31",
-		title: "Список документов",
-		params: [
-			["page", "1"],
-			["per_page", "25"],
-			["status", "signed"],
-		],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Accept", "application/json"],
-		],
-		body: null,
-		respHeaders: [
-			["Content-Type", "application/json; charset=utf-8"],
-			["X-Total-Count", "312"],
-			["Cache-Control", "private, max-age=0"],
+		sent_at: "2026-06-08T14:31:00Z",
+		payload: "",
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Accept", value: "application/json" },
 		],
 		response: `{
   "data": [
@@ -75,27 +56,23 @@ export const HC_HISTORY: HistoryRecord[] = [
   ],
   "meta": { "total": 312, "page": 1, "perPage": 25 }
 }`,
-		timing: { dns: 0, conn: 2, tls: 0, wait: 56, dl: 6 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+			{ key: "X-Total-Count", value: "312" },
+			{ key: "Cache-Control", value: "private, max-age=0" },
+		],
 	},
 	{
 		id: "h_03",
-		group: "today",
 		method: "GET",
 		url: "https://api.docpoint.io/v1/users/me",
-		status: 200,
+		code: "200",
 		duration: 22,
-		size: "318 Б",
-		sentAt: "14:30",
-		title: "Текущий пользователь",
-		params: [],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Accept", "application/json"],
-		],
-		body: null,
-		respHeaders: [
-			["Content-Type", "application/json; charset=utf-8"],
-			["ETag", '"a1b2c3d4"'],
+		sent_at: "2026-06-08T14:30:00Z",
+		payload: "",
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Accept", value: "application/json" },
 		],
 		response: `{
   "id": "usr_42",
@@ -103,207 +80,176 @@ export const HC_HISTORY: HistoryRecord[] = [
   "email": "ivan@acme.io",
   "role": "owner"
 }`,
-		timing: { dns: 0, conn: 1, tls: 0, wait: 18, dl: 3 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+			{ key: "ETag", value: '"a1b2c3d4"' },
+		],
 	},
 	{
 		id: "h_04",
-		group: "today",
 		method: "PATCH",
 		url: "https://api.docpoint.io/v1/documents/8842",
-		status: 200,
+		code: "200",
 		duration: 134,
-		size: "204 Б",
-		sentAt: "14:22",
-		title: "Архивировать документ",
-		params: [],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Content-Type", "application/json"],
+		sent_at: "2026-06-08T14:22:00Z",
+		payload: `{ "status": "archived" }`,
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Content-Type", value: "application/json" },
 		],
-		body: `{ "status": "archived" }`,
-		respHeaders: [["Content-Type", "application/json; charset=utf-8"]],
 		response: `{
   "id": 8842,
   "status": "archived",
   "updatedAt": "2026-06-05T14:22:10Z"
 }`,
-		timing: { dns: 0, conn: 2, tls: 0, wait: 126, dl: 6 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+		],
 	},
 	{
 		id: "h_05",
-		group: "today",
 		method: "POST",
 		url: "https://api.docpoint.io/v1/auth/refresh",
-		status: 401,
+		code: "401",
 		duration: 96,
-		size: "112 Б",
-		sentAt: "13:58",
-		title: "Обновить токен",
-		params: [],
-		headers: [["Content-Type", "application/json"]],
-		body: `{ "refreshToken": "rt_8b4c…expired" }`,
-		respHeaders: [
-			["Content-Type", "application/json; charset=utf-8"],
-			["WWW-Authenticate", "Bearer"],
-		],
+		sent_at: "2026-06-08T13:58:00Z",
+		payload: `{ "refreshToken": "rt_8b4c…expired" }`,
+		payload_headers: [{ key: "Content-Type", value: "application/json" }],
 		response: `{
   "message": "Refresh-токен недействителен или истёк",
   "code": "TOKEN_EXPIRED"
 }`,
-		timing: { dns: 0, conn: 3, tls: 0, wait: 88, dl: 5 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+			{ key: "WWW-Authenticate", value: "Bearer" },
+		],
 	},
 	{
 		id: "h_06",
-		group: "today",
 		method: "DELETE",
 		url: "https://api.docpoint.io/v1/documents/8830",
-		status: 204,
+		code: "204",
 		duration: 71,
-		size: "0 Б",
-		sentAt: "13:40",
-		title: "Удалить документ",
-		params: [],
-		headers: [["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true]],
-		body: null,
-		respHeaders: [["Cache-Control", "no-cache"]],
+		sent_at: "2026-06-08T13:40:00Z",
+		payload: "",
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+		],
 		response: `(пустое тело — 204 No Content)`,
-		timing: { dns: 0, conn: 2, tls: 0, wait: 64, dl: 5 },
+		response_headers: [{ key: "Cache-Control", value: "no-cache" }],
 	},
-
-	// ───── Yesterday ─────
 	{
 		id: "h_07",
-		group: "yesterday",
 		method: "GET",
 		url: "https://staging.docpoint.io/v1/reports/monthly?month=05",
-		status: 500,
+		code: "500",
 		duration: 1240,
-		size: "98 Б",
-		sentAt: "18:12",
-		title: "Месячный отчёт",
-		params: [["month", "05"]],
-		headers: [["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true]],
-		body: null,
-		respHeaders: [["Content-Type", "application/json; charset=utf-8"]],
+		sent_at: "2026-06-07T18:12:00Z",
+		payload: "",
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+		],
 		response: `{
   "message": "Не удалось сформировать отчёт",
   "code": "INTERNAL_ERROR",
   "traceId": "5f2a-91c0"
 }`,
-		timing: { dns: 8, conn: 16, tls: 30, wait: 1180, dl: 6 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+		],
 	},
 	{
 		id: "h_08",
-		group: "yesterday",
 		method: "PUT",
 		url: "https://api.docpoint.io/v1/organizations/47821/settings",
-		status: 200,
+		code: "200",
 		duration: 158,
-		size: "84 Б",
-		sentAt: "17:05",
-		title: "Настройки организации",
-		params: [],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Content-Type", "application/json"],
-		],
-		body: `{
+		sent_at: "2026-06-07T17:05:00Z",
+		payload: `{
   "locale": "ru",
   "timezone": "Europe/Moscow",
   "twoFactor": true
 }`,
-		respHeaders: [["Content-Type", "application/json; charset=utf-8"]],
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Content-Type", value: "application/json" },
+		],
 		response: `{ "ok": true, "updated": 3 }`,
-		timing: { dns: 0, conn: 3, tls: 0, wait: 148, dl: 7 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+		],
 	},
 	{
 		id: "h_09",
-		group: "yesterday",
 		method: "POST",
 		url: "https://api.docpoint.io/v1/documents/8842/share",
-		status: 422,
+		code: "422",
 		duration: 88,
-		size: "176 Б",
-		sentAt: "16:40",
-		title: "Поделиться документом",
-		params: [],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Content-Type", "application/json"],
+		sent_at: "2026-06-07T16:40:00Z",
+		payload: `{ "email": "не-email", "role": "viewer" }`,
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Content-Type", value: "application/json" },
 		],
-		body: `{ "email": "не-email", "role": "viewer" }`,
-		respHeaders: [["Content-Type", "application/json; charset=utf-8"]],
 		response: `{
   "message": "Ошибка валидации",
   "errors": { "email": ["Некорректный адрес"] }
 }`,
-		timing: { dns: 0, conn: 2, tls: 0, wait: 80, dl: 6 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+		],
 	},
 	{
 		id: "h_10",
-		group: "yesterday",
 		method: "GET",
 		url: "https://api.docpoint.io/v1/documents/9001",
-		status: 404,
+		code: "404",
 		duration: 29,
-		size: "92 Б",
-		sentAt: "15:18",
-		title: "Документ по id",
-		params: [],
-		headers: [["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true]],
-		body: null,
-		respHeaders: [["Content-Type", "application/json; charset=utf-8"]],
+		sent_at: "2026-06-07T15:18:00Z",
+		payload: "",
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+		],
 		response: `{
   "message": "Документ не найден",
   "code": "NOT_FOUND"
 }`,
-		timing: { dns: 0, conn: 1, tls: 0, wait: 26, dl: 2 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+		],
 	},
-
-	// ───── Earlier ─────
 	{
 		id: "h_11",
-		group: "earlier",
 		method: "POST",
 		url: "http://localhost:8080/v1/auth/login",
-		status: 200,
+		code: "200",
 		duration: 142,
-		size: "428 Б",
-		sentAt: "3 июн · 11:02",
-		title: "Локальный вход",
-		params: [],
-		headers: [["Content-Type", "application/json"]],
-		body: `{
+		sent_at: "2026-06-03T11:02:00Z",
+		payload: `{
   "email": "admin@test.com",
   "password": "••••••••"
 }`,
-		respHeaders: [
-			["Content-Type", "application/json"],
-			["Cache-Control", "no-store"],
-		],
+		payload_headers: [{ key: "Content-Type", value: "application/json" }],
 		response: `{
   "accessToken": "eyJhbGc…9f23",
   "expiresIn": 3600,
   "refreshToken": "rt_8b4c…0a12"
 }`,
-		timing: { dns: 0, conn: 1, tls: 0, wait: 134, dl: 7 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json" },
+			{ key: "Cache-Control", value: "no-store" },
+		],
 	},
 	{
 		id: "h_12",
-		group: "earlier",
 		method: "GET",
 		url: "https://api.docpoint.io/v1/webhooks",
-		status: 200,
+		code: "200",
 		duration: 51,
-		size: "1.2 КБ",
-		sentAt: "3 июн · 10:46",
-		title: "Список вебхуков",
-		params: [],
-		headers: [["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true]],
-		body: null,
-		respHeaders: [
-			["Content-Type", "application/json; charset=utf-8"],
-			["X-Total-Count", "4"],
+		sent_at: "2026-06-03T10:46:00Z",
+		payload: "",
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
 		],
 		response: `{
   "data": [
@@ -311,60 +257,45 @@ export const HC_HISTORY: HistoryRecord[] = [
   ],
   "meta": { "total": 4 }
 }`,
-		timing: { dns: 4, conn: 10, tls: 22, wait: 10, dl: 5 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+			{ key: "X-Total-Count", value: "4" },
+		],
 	},
 	{
 		id: "h_13",
-		group: "earlier",
 		method: "POST",
 		url: "https://api.docpoint.io/v1/documents/import",
-		status: 429,
+		code: "429",
 		duration: 38,
-		size: "148 Б",
-		sentAt: "2 июн · 19:55",
-		title: "Импорт документов",
-		params: [],
-		headers: [
-			["Authorization", "Bearer eyJhbGciOiJIUzI1Ni…", true],
-			["Content-Type", "application/json"],
-		],
-		body: `{ "source": "google-drive", "folderId": "1aZ…" }`,
-		respHeaders: [
-			["Content-Type", "application/json; charset=utf-8"],
-			["Retry-After", "30"],
-			["X-RateLimit-Remaining", "0"],
+		sent_at: "2026-06-02T19:55:00Z",
+		payload: `{ "source": "google-drive", "folderId": "1aZ…" }`,
+		payload_headers: [
+			{ key: "Authorization", value: "Bearer eyJhbGciOiJIUzI1Ni…" },
+			{ key: "Content-Type", value: "application/json" },
 		],
 		response: `{
   "message": "Слишком много запросов. Повторите через 30 сек.",
   "code": "RATE_LIMITED"
 }`,
-		timing: { dns: 0, conn: 2, tls: 0, wait: 32, dl: 4 },
+		response_headers: [
+			{ key: "Content-Type", value: "application/json; charset=utf-8" },
+			{ key: "Retry-After", value: "30" },
+			{ key: "X-RateLimit-Remaining", value: "0" },
+		],
 	},
 	{
 		id: "h_14",
-		group: "earlier",
 		method: "GET",
 		url: "https://api.docpoint.io/v1/health",
-		status: 0,
+		code: "0",
 		duration: 0,
-		size: "—",
-		sentAt: "2 июн · 09:14",
-		title: "Проверка здоровья",
-		failed: true,
-		params: [],
-		headers: [["Accept", "application/json"]],
-		body: null,
-		respHeaders: [],
+		sent_at: "2026-06-02T09:14:00Z",
+		payload: "",
+		payload_headers: [{ key: "Accept", value: "application/json" }],
 		response: `Ошибка соединения: ECONNREFUSED
 Не удалось установить соединение с api.docpoint.io:443.
 Проверьте сеть или адрес сервера.`,
-		isError: true,
-		timing: null,
+		response_headers: [],
 	},
-];
-
-export const HC_GROUPS: HistoryGroup[] = [
-	{ id: "today", label: "Сегодня" },
-	{ id: "yesterday", label: "Вчера" },
-	{ id: "earlier", label: "Ранее" },
 ];

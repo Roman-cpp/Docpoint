@@ -1,14 +1,35 @@
 import {
+	type ColumnDef,
+	type FilterFn,
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	type RowData,
+	type SortingFn,
+	type SortingState,
+	useReactTable,
+} from "@tanstack/react-table";
+import {
 	type FC,
 	type ReactNode,
 	type SVGProps,
-	useEffect,
 	useMemo,
 	useState,
 } from "react";
 import { cx } from "@/shared/lib/cx";
 import s from "./DataTable.module.css";
 import { DtFilters } from "./DtFilters";
+
+/* Per-column presentation hints carried through to the cell/header renderers. */
+declare module "@tanstack/react-table" {
+	interface ColumnMeta<TData extends RowData, TValue> {
+		align?: "" | "num" | "center";
+		mono?: boolean;
+		truncate?: boolean;
+	}
+}
 
 /* ─── Icons (14×14, stroke 1.5 — matches Docpoint set) ─── */
 const DtBase: FC<SVGProps<SVGSVGElement> & { size?: number }> = ({
@@ -167,7 +188,41 @@ interface DataTableProps<T> {
 	activeKey?: RowKey | null;
 }
 
-/* ═══ DataTable — config-driven table for big lists ═══ */
+/* Combined chip-predicate + free-text search, run by tanstack as a global filter. */
+interface GlobalFilter<T> {
+	search: string;
+	filterId: string | null;
+	filters?: DataTableFilter<T>[];
+	searchKeys?: (keyof T & string)[];
+}
+
+/* "ru"-aware comparator; tanstack inverts the result for descending sort. */
+const localeSortingFn: SortingFn<unknown> = (a, b, columnId) => {
+	const va = a.getValue(columnId);
+	const vb = b.getValue(columnId);
+	if (va == null) return vb == null ? 0 : 1;
+	if (vb == null) return -1;
+	if (typeof va === "number" && typeof vb === "number") return va - vb;
+	return String(va).localeCompare(String(vb), "ru");
+};
+
+const globalFilterFn: FilterFn<unknown> = (row, _columnId, value) => {
+	const { search, filterId, filters, searchKeys } =
+		value as GlobalFilter<unknown>;
+	const predicate = filters?.find((f) => f.id === filterId)?.predicate;
+	if (predicate && !predicate(row.original)) return false;
+	const q = search.trim().toLowerCase();
+	if (q && searchKeys) {
+		return searchKeys.some((k) =>
+			String((row.original as Record<string, unknown>)[k] ?? "")
+				.toLowerCase()
+				.includes(q),
+		);
+	}
+	return true;
+};
+
+/* ═══ DataTable — config-driven table for big lists (built on @tanstack/react-table) ═══ */
 export function DataTable<T>({
 	title,
 	subtitle,
@@ -191,94 +246,71 @@ export function DataTable<T>({
 	const [activeFilter, setActiveFilter] = useState(
 		filters ? filters[0].id : null,
 	);
-	const [sort, setSort] = useState(initialSort || null);
-	const [selected, setSelected] = useState<Set<RowKey>>(() => new Set());
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(initialPageSize);
+	const [sorting, setSorting] = useState<SortingState>(
+		initialSort
+			? [{ id: initialSort.key, desc: initialSort.dir === "desc" }]
+			: [],
+	);
+	const [rowSelection, setRowSelection] = useState({});
 
-	// Reset to first page whenever the result set changes shape
-	// biome-ignore lint/correctness/useExhaustiveDependencies: page reset is intentional on filter/search/size change
-	useEffect(() => {
-		setPage(1);
-	}, [search, activeFilter, pageSize]);
-
-	const colByKey = useMemo(
-		() => Object.fromEntries(columns.map((c) => [c.key, c])),
+	// Translate the column config into tanstack column defs.
+	const tableColumns = useMemo<ColumnDef<T>[]>(
+		() =>
+			columns.map((c) => ({
+				id: c.key,
+				accessorFn:
+					c.sortValue ?? ((row) => (row as Record<string, unknown>)[c.key]),
+				header: c.header,
+				enableSorting: !!c.sortable,
+				sortingFn: localeSortingFn as SortingFn<T>,
+				cell: ({ row }) =>
+					c.render
+						? c.render(row.original)
+						: (row.original as Record<string, ReactNode>)[c.key],
+				meta: { align: c.align, mono: c.mono, truncate: c.truncate },
+			})),
 		[columns],
 	);
 
-	// 1 · filter chip
-	const filterFn = filters?.find((f) => f.id === activeFilter)?.predicate;
-	// 2 · search
-	const q = search.trim().toLowerCase();
-	const searched = useMemo(() => {
-		let rows = data;
-		if (filterFn) rows = rows.filter(filterFn);
-		if (q && searchKeys) {
-			rows = rows.filter((r) =>
-				searchKeys.some((k) =>
-					String(r[k] ?? "")
-						.toLowerCase()
-						.includes(q),
-				),
-			);
-		}
-		return rows;
-	}, [data, filterFn, q, searchKeys]);
+	const globalFilter = useMemo<GlobalFilter<T>>(
+		() => ({ search, filterId: activeFilter, filters, searchKeys }),
+		[search, activeFilter, filters, searchKeys],
+	);
 
-	// 3 · sort
-	const sorted = useMemo(() => {
-		if (!sort) return searched;
-		const col = colByKey[sort.key];
-		const get =
-			col?.sortValue || ((r: T) => (r as Record<string, unknown>)[sort.key]);
-		const dir = sort.dir === "desc" ? -1 : 1;
-		return [...searched].sort((a, b) => {
-			const va = get(a);
-			const vb = get(b);
-			if (va == null) return 1;
-			if (vb == null) return -1;
-			if (typeof va === "number" && typeof vb === "number")
-				return (va - vb) * dir;
-			return String(va).localeCompare(String(vb), "ru") * dir;
-		});
-	}, [searched, sort, colByKey]);
+	const table = useReactTable<T>({
+		data,
+		columns: tableColumns,
+		state: { sorting, rowSelection, globalFilter },
+		initialState: { pagination: { pageIndex: 0, pageSize: initialPageSize } },
+		enableRowSelection: selectable,
+		getRowId: (row) => String(rowKey(row)),
+		onSortingChange: setSorting,
+		onRowSelectionChange: setRowSelection,
+		globalFilterFn: globalFilterFn as FilterFn<T>,
+		getColumnCanGlobalFilter: () => true,
+		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+	});
 
-	// 4 · paginate
-	const total = sorted.length;
-	const pageCount = Math.max(1, Math.ceil(total / pageSize));
-	const safePage = Math.min(page, pageCount);
-	const start = (safePage - 1) * pageSize;
-	const pageRows = sorted.slice(start, start + pageSize);
-
-	// selection helpers (operate over the full filtered set)
-	const allKeys = sorted.map(rowKey);
-	const selCount = selected.size;
-	const allSel = selCount > 0 && allKeys.every((k) => selected.has(k));
-	const someSel = selCount > 0 && !allSel;
-	const toggleAll = () => setSelected(allSel ? new Set() : new Set(allKeys));
-	const toggleOne = (k: RowKey) =>
-		setSelected((prev) => {
-			const n = new Set(prev);
-			if (n.has(k)) n.delete(k);
-			else n.add(k);
-			return n;
-		});
-	const clearSel = () => setSelected(new Set());
-
-	const onSort = (col: DataTableColumn<T>) => {
-		if (!col.sortable) return;
-		setSort((prev) => {
-			if (!prev || prev.key !== col.key) return { key: col.key, dir: "asc" };
-			if (prev.dir === "asc") return { key: col.key, dir: "desc" };
-			return null;
-		});
-	};
+	const clearSel = () => table.resetRowSelection();
+	const selectedRows = table.getSelectedRowModel().rows;
+	const selCount = selectedRows.length;
+	const allSel = table.getIsAllRowsSelected();
+	const someSel = table.getIsSomeRowsSelected();
 
 	const api: DataTableApi = {
 		clearSel,
 		toast: (m, v) => onToast?.(m, v),
 	};
+
+	// pagination / range readouts
+	const { pageIndex, pageSize } = table.getState().pagination;
+	const total = table.getFilteredRowModel().rows.length;
+	const pageCount = table.getPageCount();
+	const start = pageIndex * pageSize;
+	const pageRows = table.getRowModel().rows;
 
 	// grid template — selection col + data cols + actions col
 	const template = [
@@ -333,7 +365,7 @@ export function DataTable<T>({
 								<DtCheckbox
 									checked={allSel}
 									indeterminate={someSel}
-									onChange={toggleAll}
+									onChange={() => table.toggleAllRowsSelected()}
 									label="Снять выделение"
 								/>
 							)}
@@ -344,7 +376,10 @@ export function DataTable<T>({
 						</button>
 						<div className={s["dt-selbar-actions"]}>
 							{bulkActions ? (
-								bulkActions([...selected], api)
+								bulkActions(
+									selectedRows.map((r) => rowKey(r.original)),
+									api,
+								)
 							) : (
 								<>
 									<button className={s["dt-selbar-btn"]}>
@@ -372,28 +407,31 @@ export function DataTable<T>({
 							<DtCheckbox
 								checked={false}
 								indeterminate={false}
-								onChange={toggleAll}
+								onChange={() => table.toggleAllRowsSelected()}
 								label="Выбрать все"
 							/>
 						)}
-						{columns.map((c) => {
-							const isSorted = sort && sort.key === c.key;
+						{table.getHeaderGroups()[0].headers.map((header) => {
+							const col = header.column;
+							const meta = col.columnDef.meta;
+							const sortDir = col.getIsSorted();
+							const canSort = col.getCanSort();
 							return (
 								<span
-									key={c.key}
+									key={header.id}
 									className={cx(
 										s["dt-th"],
-										c.align && s[c.align],
-										c.sortable && s.sortable,
-										isSorted && s.sorted,
-										isSorted && sort?.dir === "desc" && s.desc,
+										meta?.align && s[meta.align],
+										canSort && s.sortable,
+										sortDir && s.sorted,
+										sortDir === "desc" && s.desc,
 									)}
-									onClick={() => onSort(c)}
+									onClick={col.getToggleSortingHandler()}
 								>
-									{c.header}
-									{c.sortable && (
+									{flexRender(col.columnDef.header, header.getContext())}
+									{canSort && (
 										<span className={s["dt-sort-ico"]}>
-											{isSorted ? <DtCaret /> : <DtSort />}
+											{sortDir ? <DtCaret /> : <DtSort />}
 										</span>
 									)}
 								</span>
@@ -405,12 +443,12 @@ export function DataTable<T>({
 
 				{/* Rows */}
 				{pageRows.map((row) => {
-					const k = rowKey(row);
-					const isSel = selected.has(k);
+					const k = rowKey(row.original);
+					const isSel = row.getIsSelected();
 					const isActive = activeKey != null && activeKey === k;
 					return (
 						<div
-							key={k}
+							key={row.id}
 							className={cx(
 								s["dt-row"],
 								isSel && s.selected,
@@ -419,13 +457,13 @@ export function DataTable<T>({
 							)}
 							tabIndex={0}
 							style={{ gridTemplateColumns: template }}
-							onClick={onRowClick ? () => onRowClick(row) : undefined}
+							onClick={onRowClick ? () => onRowClick(row.original) : undefined}
 							onKeyDown={
 								onRowClick
 									? (e) => {
 											if (e.key === "Enter" || e.key === " ") {
 												e.preventDefault();
-												onRowClick(row);
+												onRowClick(row.original);
 											}
 										}
 									: undefined
@@ -434,28 +472,29 @@ export function DataTable<T>({
 							{selectable && (
 								<DtCheckbox
 									checked={isSel}
-									onChange={() => toggleOne(k)}
+									onChange={() => row.toggleSelected()}
 									label="Выбрать строку"
 								/>
 							)}
-							{columns.map((c) => (
-								<div
-									key={c.key}
-									className={cx(
-										s["dt-cell"],
-										c.align === "num" && s["dt-num"],
-										c.mono && s["dt-mono"],
-										c.truncate && s["dt-truncate"],
-									)}
-								>
-									{c.render
-										? c.render(row)
-										: (row as Record<string, ReactNode>)[c.key]}
-								</div>
-							))}
+							{row.getVisibleCells().map((cell) => {
+								const meta = cell.column.columnDef.meta;
+								return (
+									<div
+										key={cell.id}
+										className={cx(
+											s["dt-cell"],
+											meta?.align === "num" && s["dt-num"],
+											meta?.mono && s["dt-mono"],
+											meta?.truncate && s["dt-truncate"],
+										)}
+									>
+										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+									</div>
+								);
+							})}
 							{rowActions && (
 								<div className={s["dt-row-actions"]}>
-									{rowActions(row, api)}
+									{rowActions(row.original, api)}
 								</div>
 							)}
 						</div>
@@ -488,7 +527,7 @@ export function DataTable<T>({
 						На странице
 						<select
 							value={pageSize}
-							onChange={(e) => setPageSize(Number(e.target.value))}
+							onChange={(e) => table.setPageSize(Number(e.target.value))}
 						>
 							{[8, 12, 25, 50].map((n) => (
 								<option key={n} value={n}>
@@ -502,22 +541,28 @@ export function DataTable<T>({
 					<div className={s["dt-pag"]}>
 						<button
 							className={s["dt-pag-btn"]}
-							disabled={safePage === 1}
-							onClick={() => setPage(safePage - 1)}
+							disabled={!table.getCanPreviousPage()}
+							onClick={() => table.previousPage()}
 							aria-label="Назад"
 						>
 							<DtChevL />
 						</button>
-						{pageList(safePage, pageCount).map((p, i) =>
+						{pageList(pageIndex + 1, pageCount).map((p, i, arr) =>
 							p === "…" ? (
-								<span key={`e${i}`} className={s["dt-pag-ellipsis"]}>
+								<span
+									key={i < arr.length / 2 ? "ellipsis-lead" : "ellipsis-trail"}
+									className={s["dt-pag-ellipsis"]}
+								>
 									…
 								</span>
 							) : (
 								<button
 									key={p}
-									className={cx(s["dt-pag-btn"], p === safePage && s.active)}
-									onClick={() => setPage(p)}
+									className={cx(
+										s["dt-pag-btn"],
+										p === pageIndex + 1 && s.active,
+									)}
+									onClick={() => table.setPageIndex(p - 1)}
 								>
 									{p}
 								</button>
@@ -525,8 +570,8 @@ export function DataTable<T>({
 						)}
 						<button
 							className={s["dt-pag-btn"]}
-							disabled={safePage === pageCount}
-							onClick={() => setPage(safePage + 1)}
+							disabled={!table.getCanNextPage()}
+							onClick={() => table.nextPage()}
 							aria-label="Вперёд"
 						>
 							<DtChevR />
