@@ -1,7 +1,6 @@
 import {
 	type ColumnDef,
 	type FilterFn,
-	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
 	getPaginationRowModel,
@@ -11,16 +10,11 @@ import {
 	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
-import {
-	type FC,
-	type ReactNode,
-	type SVGProps,
-	useMemo,
-	useState,
-} from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { cx } from "@/shared/lib/cx";
 import s from "./DataTable.module.css";
-import { DtFilters } from "./DtFilters";
+import { DtChevL, DtChevR } from "./DtIcons";
+import { DtTable } from "./DtTable";
 
 /* Per-column presentation hints carried through to the cell/header renderers. */
 declare module "@tanstack/react-table" {
@@ -30,104 +24,6 @@ declare module "@tanstack/react-table" {
 		truncate?: boolean;
 	}
 }
-
-/* ─── Icons (14×14, stroke 1.5 — matches Docpoint set) ─── */
-const DtBase: FC<SVGProps<SVGSVGElement> & { size?: number }> = ({
-	children,
-	size = 14,
-	...rest
-}) => (
-	<svg
-		viewBox="0 0 14 14"
-		width={size}
-		height={size}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		{...rest}
-	>
-		{children}
-	</svg>
-);
-const DtCheck: FC<{ size?: number }> = ({ size = 11 }) => (
-	<DtBase size={size}>
-		<path d="M2.5 7.5L5.5 10.5 11.5 4" />
-	</DtBase>
-);
-const DtDash: FC<{ size?: number }> = ({ size = 11 }) => (
-	<DtBase size={size}>
-		<path d="M3 7h8" />
-	</DtBase>
-);
-const DtCaret: FC<{ size?: number }> = ({ size = 11 }) => (
-	<DtBase size={size}>
-		<path d="M3.5 5.5L7 9l3.5-3.5" />
-	</DtBase>
-);
-const DtSort: FC<{ size?: number }> = ({ size = 11 }) => (
-	<DtBase size={size}>
-		<path d="M4 5.5L7 2.5 10 5.5M4 8.5L7 11.5 10 8.5" />
-	</DtBase>
-);
-const DtSearch: FC<{ size?: number }> = ({ size = 14 }) => (
-	<DtBase size={size}>
-		<circle cx="6" cy="6" r="4" />
-		<path d="M9 9l3.5 3.5" />
-	</DtBase>
-);
-const DtTrash: FC<{ size?: number }> = ({ size = 12 }) => (
-	<DtBase size={size}>
-		<path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1M3.5 3.5l.5 9a1 1 0 0 0 1 .9h4a1 1 0 0 0 1-.9l.5-9M6 6v5M8 6v5" />
-	</DtBase>
-);
-const DtExport: FC<{ size?: number }> = ({ size = 12 }) => (
-	<DtBase size={size}>
-		<path d="M7 1.5v8M3.5 6.5L7 10l3.5-3.5M2 12.5h10" />
-	</DtBase>
-);
-const DtChevL: FC<{ size?: number }> = ({ size = 12 }) => (
-	<DtBase size={size}>
-		<path d="M8.5 3.5L5 7l3.5 3.5" />
-	</DtBase>
-);
-const DtChevR: FC<{ size?: number }> = ({ size = 12 }) => (
-	<DtBase size={size}>
-		<path d="M5.5 3.5L9 7l-3.5 3.5" />
-	</DtBase>
-);
-
-/* ─── Checkbox ─── */
-interface DtCheckboxProps {
-	checked: boolean;
-	indeterminate?: boolean;
-	onChange: () => void;
-	label: string;
-}
-const DtCheckbox: FC<DtCheckboxProps> = ({
-	checked,
-	indeterminate,
-	onChange,
-	label,
-}) => {
-	const cls = indeterminate ? s.indeterminate : checked ? s.checked : undefined;
-	return (
-		<button
-			type="button"
-			className={cx(s["dt-cb"], cls)}
-			role="checkbox"
-			aria-checked={indeterminate ? "mixed" : checked}
-			aria-label={label}
-			onClick={(e) => {
-				e.stopPropagation();
-				onChange();
-			}}
-		>
-			{indeterminate ? <DtDash /> : checked ? <DtCheck /> : null}
-		</button>
-	);
-};
 
 /* ─── Build page-number list with ellipses ─── */
 function pageList(page: number, count: number): (number | "…")[] {
@@ -169,19 +65,19 @@ export interface DataTableApi {
 }
 
 interface DataTableProps<T> {
-	title: string;
-	subtitle?: string;
 	entityName?: string;
 	columns: DataTableColumn<T>[];
 	data: T[];
 	rowKey?: (row: T) => RowKey;
+	/* Controlled search / filter state — owned by the parent (see {@link DtToolbar}). */
+	search: string;
+	activeFilter: string | null;
 	searchKeys?: (keyof T & string)[];
 	filters?: DataTableFilter<T>[];
 	initialSort?: { key: string; dir: "asc" | "desc" } | null;
 	selectable?: boolean;
 	rowActions?: (row: T, api: DataTableApi) => ReactNode;
 	bulkActions?: (ids: RowKey[], api: DataTableApi) => ReactNode;
-	toolbarActions?: ReactNode;
 	initialPageSize?: number;
 	onToast?: (msg: string, variant?: string) => void;
 	onRowClick?: (row: T) => void;
@@ -224,27 +120,21 @@ const globalFilterFn: FilterFn<unknown> = (row, _columnId, value) => {
 
 /* ═══ DataTable — config-driven table for big lists (built on @tanstack/react-table) ═══ */
 export function DataTable<T>({
-	title,
-	subtitle,
-	entityName = "записи",
 	columns,
 	data,
 	rowKey = (r: T) => (r as { id: RowKey }).id,
+	search,
+	activeFilter,
 	searchKeys,
 	filters,
 	initialSort,
 	selectable = false,
 	rowActions,
-	toolbarActions,
 	initialPageSize = 8,
 	onToast,
 	onRowClick,
 	activeKey,
 }: DataTableProps<T>) {
-	const [search, setSearch] = useState("");
-	const [activeFilter, setActiveFilter] = useState(
-		filters ? filters[0].id : null,
-	);
 	const [sorting, setSorting] = useState<SortingState>(
 		initialSort
 			? [{ id: initialSort.key, desc: initialSort.dir === "desc" }]
@@ -305,7 +195,6 @@ export function DataTable<T>({
 	const total = table.getFilteredRowModel().rows.length;
 	const pageCount = table.getPageCount();
 	const start = pageIndex * pageSize;
-	const pageRows = table.getRowModel().rows;
 
 	// grid template — selection col + data cols + actions col
 	const template = [
@@ -318,114 +207,17 @@ export function DataTable<T>({
 
 	return (
 		<div>
-			{/* ─── Toolbar ─── */}
-			<div className={s["dt-toolbar"]}>
-				<div>
-					<h1 className={s["dt-title"]}>
-						{title}
-						<span className={s["dt-title-count"]}>· {data.length}</span>
-					</h1>
-					{subtitle && <p className={s["dt-sub"]}>{subtitle}</p>}
-				</div>
-				<div className={s["dt-tools"]}>
-					{searchKeys && (
-						<div className={s["dt-search"]}>
-							<DtSearch />
-							<input
-								value={search}
-								onChange={(e) => setSearch(e.target.value)}
-								placeholder="Поиск…"
-							/>
-						</div>
-					)}
-					{toolbarActions}
-				</div>
-			</div>
-
-			{/* ─── Filters + density ─── */}
-			<DtFilters
-				filters={filters}
-				data={data}
-				activeFilter={activeFilter}
-				onFilter={setActiveFilter}
-			/>
-
 			{/* ─── Table ─── */}
-			<div className={cx(s["dt-table"], s.compact)}>
-
-				{/* Rows */}
-				{pageRows.map((row) => {
-					const k = rowKey(row.original);
-					const isSel = row.getIsSelected();
-					const isActive = activeKey != null && activeKey === k;
-					return (
-						<div
-							key={row.id}
-							className={cx(
-								s["dt-row"],
-								isSel && s.selected,
-								isActive && s.active,
-								onRowClick && s.clickable,
-							)}
-							tabIndex={0}
-							style={{ gridTemplateColumns: template }}
-							onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-							onKeyDown={
-								onRowClick
-									? (e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												e.preventDefault();
-												onRowClick(row.original);
-											}
-										}
-									: undefined
-							}
-						>
-							{selectable && (
-								<DtCheckbox
-									checked={isSel}
-									onChange={() => row.toggleSelected()}
-									label="Выбрать строку"
-								/>
-							)}
-							{row.getVisibleCells().map((cell) => {
-								const meta = cell.column.columnDef.meta;
-								return (
-									<div
-										key={cell.id}
-										className={cx(
-											s["dt-cell"],
-											meta?.align === "num" && s["dt-num"],
-											meta?.mono && s["dt-mono"],
-											meta?.truncate && s["dt-truncate"],
-										)}
-									>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
-									</div>
-								);
-							})}
-							{rowActions && (
-								<div className={s["dt-row-actions"]}>
-									{rowActions(row.original, api)}
-								</div>
-							)}
-						</div>
-					);
-				})}
-
-				{/* Empty */}
-				{pageRows.length === 0 && (
-					<div className={s["dt-empty"]}>
-						<div className={s["dt-empty-ico"]}>
-							<DtSearch size={16} />
-						</div>
-						<p className={s["dt-empty-title"]}>Ничего не найдено</p>
-						<p className={s["dt-empty-text"]}>
-							Попробуйте изменить запрос или сбросить фильтры.
-						</p>
-					</div>
-				)}
-			</div>
+			<DtTable
+				table={table}
+				template={template}
+				selectable={selectable}
+				rowActions={rowActions}
+				onRowClick={onRowClick}
+				activeKey={activeKey}
+				rowKey={rowKey}
+				api={api}
+			/>
 
 			{/* ─── Footer ─── */}
 			<div className={s["dt-foot"]}>
@@ -433,7 +225,7 @@ export function DataTable<T>({
 					<span>
 						{total === 0
 							? "Нет данных"
-							: `Показано ${start + 1}–${Math.min(start + pageSize, total)} из ${total} ${entityName}`}
+							: `Показано ${start + 1}–${Math.min(start + pageSize, total)} из ${total} запросов`}
 					</span>
 					<span className={s["dt-pagesize"]}>
 						На странице

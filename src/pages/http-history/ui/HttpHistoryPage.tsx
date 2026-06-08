@@ -1,14 +1,23 @@
 import { type FC, useEffect, useState } from "react";
-import { fetchRequestsApi } from "@/entities/request";
+import type { RequestSummary } from "@/entities/request";
+import {
+	actionFetchRequests,
+	actionSelectRequest,
+	actionSetSearch,
+	selectRequestList,
+	selectSearch,
+	selectSelectedRequest,
+	useRequestStore,
+} from "@/features/request";
 import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
-import type { HistoryRecord } from "../model/types";
 import {
 	DataTable,
 	type DataTableColumn,
 	type DataTableFilter,
 } from "./DataTable";
 import dt from "./DataTable.module.css";
+import { DtToolbar } from "./DtToolbar";
 import { HcDrawer, hcStatusClass } from "./HcDrawer";
 import s from "./HttpHistoryPage.module.css";
 
@@ -21,7 +30,7 @@ function splitUrl(url: string): { host: string; path: string } {
 
 /** Numeric status from the string `code`; `0` means the request never landed. */
 const statusNum = (code: string): number => Number(code) || 0;
-const isErrRecord = (r: HistoryRecord): boolean => statusNum(r.code) === 0;
+const isErrRecord = (r: RequestSummary): boolean => statusNum(r.code) === 0;
 
 /** ISO `sent_at` → "DD.MM HH:MM" (no timezone shift). */
 function formatSentAt(iso: string): string {
@@ -32,7 +41,7 @@ function formatSentAt(iso: string): string {
 }
 
 /* ─── Table columns + filters ─── */
-const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
+const HC_COLUMNS: DataTableColumn<RequestSummary>[] = [
 	{
 		key: "method",
 		header: "Метод",
@@ -104,7 +113,7 @@ const HC_COLUMNS: DataTableColumn<HistoryRecord>[] = [
 	},
 ];
 
-const HC_FILTERS: DataTableFilter<HistoryRecord>[] = [
+const HC_FILTERS: DataTableFilter<RequestSummary>[] = [
 	{ id: "all", label: "Все" },
 	{
 		id: "ok",
@@ -127,20 +136,30 @@ const HC_FILTERS: DataTableFilter<HistoryRecord>[] = [
 
 /* ─── Page ─── */
 export const HttpHistoryPage: FC = () => {
-	const [openId, setOpenId] = useState<string | null>(null);
-	const [history, setHistory] = useState<HistoryRecord[]>([]);
+	const requestList = useRequestStore(selectRequestList);
+	const request = useRequestStore(selectSelectedRequest);
+	const search = useRequestStore(selectSearch);
+
+  const [isDialogRequestDetailOpen, setIsDialogRequestDetailOpen] = useState<boolean>(false)
+
+	const fetchRequests = useRequestStore(actionFetchRequests);
+	const selectRequest = useRequestStore(actionSelectRequest);
+	const setSearch = useRequestStore(actionSetSearch);
+
+	const [activeFilter, setActiveFilter] = useState<string | null>(
+		HC_FILTERS[0].id,
+	);
 
 	useEffect(() => {
-		const controller = new AbortController();
-		fetchRequestsApi(controller.signal)
-			.then(setHistory)
-			.catch((err) => {
-				if (err.name !== "AbortError") console.error(err);
-			});
-		return () => controller.abort();
-	}, []);
+		fetchRequests();
+	}, [fetchRequests]);
 
-	const open = openId ? history.find((r) => r.id === openId) : null;
+	const close = () => setIsDialogRequestDetailOpen(false);
+
+  const onRowClick = (request: RequestSummary) => {
+    selectRequest(request.id);
+    setIsDialogRequestDetailOpen(true);
+  }
 
 	return (
 		<div className={s["hc-frame"]}>
@@ -148,24 +167,34 @@ export const HttpHistoryPage: FC = () => {
 
 			<main className={s["hc-page"]}>
 				<div className={s["hc-page-inner"]}>
-					<DataTable
+					<DtToolbar
 						title="История запросов"
 						subtitle="Все запросы, отправленные из HTTP-клиента. Кликните строку, чтобы посмотреть детали."
-						entityName="запросов"
+						data={requestList}
+						searchKeys={["url", "method"]}
+						search={search}
+						onSearch={setSearch}
+						filters={HC_FILTERS}
+						activeFilter={activeFilter}
+						onFilter={setActiveFilter}
+					/>
+					<DataTable
 						columns={HC_COLUMNS}
-						data={history}
+						data={requestList}
 						rowKey={(r) => r.id}
+						search={search}
+						activeFilter={activeFilter}
 						searchKeys={["url", "method"]}
 						filters={HC_FILTERS}
 						initialSort={null}
 						initialPageSize={25}
-						onRowClick={(r) => setOpenId(r.id)}
-						activeKey={openId}
+						onRowClick={(r) => onRowClick(r)}
+						activeKey={request?.id ?? null}
 					/>
 				</div>
 			</main>
 
-			{open && <HcDrawer r={open} onClose={() => setOpenId(null)} />}
+			{isDialogRequestDetailOpen && <HcDrawer onClose={close} />}
 		</div>
 	);
 };

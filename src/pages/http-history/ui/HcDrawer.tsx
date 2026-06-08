@@ -2,6 +2,7 @@ import { type FC, Fragment, useEffect, useState } from "react";
 import { cx } from "@/shared/lib/cx";
 import type { HistoryRecord } from "../model/types";
 import s from "./HttpHistoryPage.module.css";
+import { selectSelectedRequest, useRequestStore } from "@/features/request";
 
 /* ─── Icons ─── */
 const CopyIcon: FC<{ size?: number }> = ({ size = 12 }) => (
@@ -99,7 +100,9 @@ const JSON_COLORS = {
 };
 
 /** Parse a JSON string (handling double-encoded values) into a value. */
-function hcParseJson(src: string): { ok: true; value: unknown } | { ok: false } {
+function hcParseJson(
+	src: string,
+): { ok: true; value: unknown } | { ok: false } {
 	try {
 		let v: unknown = JSON.parse(src);
 		if (typeof v === "string") {
@@ -152,7 +155,9 @@ const HcJsonNode: FC<{ name?: string; value: unknown; last: boolean }> = ({
 	const isObj = !isArr && value !== null && typeof value === "object";
 	const [open, setOpen] = useState(true);
 
-	const comma = !last ? <span style={{ color: JSON_COLORS.punct }}>,</span> : null;
+	const comma = !last ? (
+		<span style={{ color: JSON_COLORS.punct }}>,</span>
+	) : null;
 	const keyPart =
 		name !== undefined ? (
 			<>
@@ -430,17 +435,48 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 };
 
 /* ─── Drawer (view-only) ─── */
-export const HcDrawer: FC<{ r: HistoryRecord; onClose: () => void }> = ({
-	r,
+export const HcDrawer: FC<{ onClose: () => void }> = ({
 	onClose,
 }) => {
-	useEffect(() => {
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") onClose();
-		};
-		window.addEventListener("keydown", onKey);
-		return () => window.removeEventListener("keydown", onKey);
-	}, [onClose]);
+
+  const request = useRequestStore(selectSelectedRequest);
+
+  if(!request) return (
+    <>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: scrim closes the drawer on click */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: Escape handled at window level */}
+			<div className={s["hc-drawer-scrim"]} onClick={onClose} />
+			<div
+				className={s["hc-drawer"]}
+				role="dialog"
+				aria-label="Загрузка запроса"
+			>
+				<div className={s["hc-drawer-head"]}>
+					<div className={s["hc-drawer-head-top"]}>
+						<span className={s["hc-drawer-title"]} />
+						<button
+							className={s["hc-drawer-close"]}
+							onClick={onClose}
+							aria-label="Закрыть"
+						>
+							<svg
+								viewBox="0 0 14 14"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.6"
+								strokeLinecap="round"
+							>
+								<path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+							</svg>
+						</button>
+					</div>
+				</div>
+				<div className={s["hc-drawer-scroll"]}>
+					<div className={s["hc-none"]}>Загрузка…</div>
+				</div>
+			</div>
+		</>
+  );
 
 	return (
 		<>
@@ -475,13 +511,13 @@ export const HcDrawer: FC<{ r: HistoryRecord; onClose: () => void }> = ({
 						<span
 							className={cx(
 								s["hc-urlbar-method"],
-								s[`hc-m-${r.method.toLowerCase()}`],
+								s[`hc-m-${request.method.toLowerCase()}`],
 							)}
 						>
-							{r.method}
+							{request.method}
 						</span>
 						<div className={s["hc-urlbar-url"]}>
-							<HcUrl url={r.url} />
+							<HcUrl url={request.url} />
 						</div>
 						<button
 							className={s["hc-copy-url"]}
@@ -499,8 +535,8 @@ export const HcDrawer: FC<{ r: HistoryRecord; onClose: () => void }> = ({
 					</div>
 				</div>
 				<div className={s["hc-drawer-scroll"]}>
-					<HcResponseBlock r={r} />
-					<HcRequestBlock r={r} />
+					<HcResponseBlock r={request} />
+					<HcRequestBlock r={request} />
 				</div>
 			</div>
 		</>

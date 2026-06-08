@@ -2,7 +2,6 @@ import { cx } from "@/shared/lib/cx";
 import type { DataTableFilter } from "./DataTable";
 import s from "./DataTable.module.css";
 
-
 interface DtFiltersProps<T> {
 	filters?: DataTableFilter<T>[];
 	data: T[];
