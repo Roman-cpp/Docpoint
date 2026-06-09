@@ -36,7 +36,13 @@ type RequestActions = {
 	setMethodFilter: (method: HttpMethod[]) => void;
 	setStatusFilter: (status: string[]) => void;
 	resetFilters: () => void;
+
+	setPage: (page: number) => void;
+	setPerPage: (perPage: number) => void;
 };
+
+/** Default page size; mirrors the options offered in the table footer. */
+const DEFAULT_PER_PAGE = 25;
 
 const initialState: RequestState = {
 	requestList: [],
@@ -52,7 +58,7 @@ const initialState: RequestState = {
 	loadingRequestList: false,
 
 	search: "",
-	filters: {},
+	filters: { page: 1, perPage: DEFAULT_PER_PAGE },
 };
 
 export type RequestStore = RequestState & RequestActions;
@@ -106,18 +112,35 @@ const createRequestSlice: StateCreator<RequestStore> = (set, get) => ({
 	 * typing doesn't fire a request per keystroke.
 	 */
 	setSearch: (search) => {
-		set({ search });
+		// A new query starts from the first page.
+		set((state) => ({ search, filters: { ...state.filters, page: 1 } }));
 		clearTimeout(searchDebounce);
 		searchDebounce = setTimeout(() => {
 			get().fetchRequests();
 		}, SEARCH_DEBOUNCE_MS);
 	},
 
+	// Changing a filter resets to page 1 so the user isn't left on an
+	// out-of-range page. Callers refetch afterwards.
 	setMethodFilter: (method) =>
-		set((state) => ({ filters: { ...state.filters, method } })),
+		set((state) => ({ filters: { ...state.filters, method, page: 1 } })),
 	setStatusFilter: (status) =>
-		set((state) => ({ filters: { ...state.filters, status } })),
-	resetFilters: () => set({ filters: {} }),
+		set((state) => ({ filters: { ...state.filters, status, page: 1 } })),
+	resetFilters: () =>
+		set((state) => ({
+			filters: { page: 1, perPage: state.filters.perPage ?? DEFAULT_PER_PAGE },
+		})),
+
+	setPage: (page) => {
+		set((state) => ({ filters: { ...state.filters, page } }));
+		get().fetchRequests();
+	},
+	setPerPage: (perPage) => {
+		// Resizing the page can move the current offset out of range, so go back
+		// to the first page.
+		set((state) => ({ filters: { ...state.filters, perPage, page: 1 } }));
+		get().fetchRequests();
+	},
 });
 
 export const useRequestStore = create<RequestStore>()(

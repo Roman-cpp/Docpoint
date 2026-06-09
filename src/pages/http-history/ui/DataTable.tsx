@@ -79,9 +79,28 @@ interface DataTableProps<T> {
 	rowActions?: (row: T, api: DataTableApi) => ReactNode;
 	bulkActions?: (ids: RowKey[], api: DataTableApi) => ReactNode;
 	initialPageSize?: number;
+	/**
+	 * Server-side pagination. When provided, `data` is treated as a single,
+	 * already-paginated page from the server and page/size changes are delegated
+	 * to the parent instead of being handled client-side.
+	 */
+	serverPagination?: ServerPagination;
 	onToast?: (msg: string, variant?: string) => void;
 	onRowClick?: (row: T) => void;
 	activeKey?: RowKey | null;
+}
+
+export interface ServerPagination {
+	/** Current page index, 0-based. */
+	pageIndex: number;
+	/** Rows per page. */
+	pageSize: number;
+	/** Total number of pages reported by the server. */
+	pageCount: number;
+	/** Total number of rows across all pages. */
+	total: number;
+	onPageChange: (pageIndex: number) => void;
+	onPageSizeChange: (pageSize: number) => void;
 }
 
 /* Combined chip-predicate + free-text search, run by tanstack as a global filter. */
@@ -131,6 +150,7 @@ export function DataTable<T>({
 	selectable = false,
 	rowActions,
 	initialPageSize = 8,
+	serverPagination,
 	onToast,
 	onRowClick,
 	activeKey,
@@ -180,7 +200,11 @@ export function DataTable<T>({
 		getCoreRowModel: getCoreRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		getSortedRowModel: getSortedRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
+		// With server-side pagination `data` is already a single page, so the
+		// client-side slicing row model is left out.
+		...(serverPagination
+			? { manualPagination: true, pageCount: serverPagination.pageCount }
+			: { getPaginationRowModel: getPaginationRowModel() }),
 	});
 
 	const clearSel = () => table.resetRowSelection();
@@ -190,11 +214,32 @@ export function DataTable<T>({
 		toast: (m, v) => onToast?.(m, v),
 	};
 
-	// pagination / range readouts
-	const { pageIndex, pageSize } = table.getState().pagination;
-	const total = table.getFilteredRowModel().rows.length;
-	const pageCount = table.getPageCount();
+	// pagination / range readouts — sourced from the server when paginating
+	// server-side, otherwise from tanstack's client-side state.
+	const pageIndex = serverPagination
+		? serverPagination.pageIndex
+		: table.getState().pagination.pageIndex;
+	const pageSize = serverPagination
+		? serverPagination.pageSize
+		: table.getState().pagination.pageSize;
+	const total = serverPagination
+		? serverPagination.total
+		: table.getFilteredRowModel().rows.length;
+	const pageCount = serverPagination
+		? serverPagination.pageCount
+		: table.getPageCount();
 	const start = pageIndex * pageSize;
+
+	const goToPage = (p: number) =>
+		serverPagination ? serverPagination.onPageChange(p) : table.setPageIndex(p);
+	const setPageSize = (n: number) =>
+		serverPagination
+			? serverPagination.onPageSizeChange(n)
+			: table.setPageSize(n);
+	const canPrev = serverPagination ? pageIndex > 0 : table.getCanPreviousPage();
+	const canNext = serverPagination
+		? pageIndex < pageCount - 1
+		: table.getCanNextPage();
 
 	// grid template — selection col + data cols + actions col
 	const template = [
@@ -231,7 +276,7 @@ export function DataTable<T>({
 						На странице
 						<select
 							value={pageSize}
-							onChange={(e) => table.setPageSize(Number(e.target.value))}
+							onChange={(e) => setPageSize(Number(e.target.value))}
 						>
 							{[8, 12, 25, 50].map((n) => (
 								<option key={n} value={n}>
@@ -244,9 +289,10 @@ export function DataTable<T>({
 				{pageCount > 1 && (
 					<div className={s["dt-pag"]}>
 						<button
+							type="button"
 							className={s["dt-pag-btn"]}
-							disabled={!table.getCanPreviousPage()}
-							onClick={() => table.previousPage()}
+							disabled={!canPrev}
+							onClick={() => goToPage(pageIndex - 1)}
 							aria-label="Назад"
 						>
 							<DtChevL />
@@ -261,21 +307,23 @@ export function DataTable<T>({
 								</span>
 							) : (
 								<button
+									type="button"
 									key={p}
 									className={cx(
 										s["dt-pag-btn"],
 										p === pageIndex + 1 && s.active,
 									)}
-									onClick={() => table.setPageIndex(p - 1)}
+									onClick={() => goToPage(p - 1)}
 								>
 									{p}
 								</button>
 							),
 						)}
 						<button
+							type="button"
 							className={s["dt-pag-btn"]}
-							disabled={!table.getCanNextPage()}
-							onClick={() => table.nextPage()}
+							disabled={!canNext}
+							onClick={() => goToPage(pageIndex + 1)}
 							aria-label="Вперёд"
 						>
 							<DtChevR />

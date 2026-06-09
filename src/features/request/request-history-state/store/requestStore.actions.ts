@@ -11,3 +11,5 @@ export const actionSetMethodFilter = (state: RequestStore) =>
 export const actionSetStatusFilter = (state: RequestStore) =>
 	state.setStatusFilter;
 export const actionResetFilters = (state: RequestStore) => state.resetFilters;
+export const actionSetPage = (state: RequestStore) => state.setPage;
+export const actionSetPerPage = (state: RequestStore) => state.setPerPage;

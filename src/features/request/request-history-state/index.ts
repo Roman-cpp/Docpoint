@@ -5,6 +5,8 @@ export {
 	actionResetRequests,
 	actionSelectRequest,
 	actionSetMethodFilter,
+	actionSetPage,
+	actionSetPerPage,
 	actionSetSearch,
 	actionSetStatusFilter,
 } from "./store/requestStore.actions";

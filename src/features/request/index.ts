@@ -6,6 +6,8 @@ export {
 	actionResetRequests,
 	actionSelectRequest,
 	actionSetMethodFilter,
+	actionSetPage,
+	actionSetPerPage,
 	actionSetSearch,
 	actionSetStatusFilter,
 	selectFilters,

@@ -151,6 +151,11 @@
 }
 
 /* ═══════════════ PAGE ═══════════════ */
+.hc-body {
+	flex: 1;
+	display: flex;
+	min-height: 0;
+}
 .hc-page {
 	flex: 1;
 	overflow-y: auto;

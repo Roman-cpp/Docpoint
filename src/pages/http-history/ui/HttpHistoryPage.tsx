@@ -7,7 +7,10 @@ import {
 	actionResetFilters,
 	actionSelectRequest,
 	actionSetMethodFilter,
+	actionSetPage,
+	actionSetPerPage,
 	actionSetSearch,
+	selectPagination,
 	selectRequestList,
 	selectSearch,
 	selectSelectedRequest,
@@ -16,6 +19,7 @@ import {
 import { cx } from "@/shared/lib/cx";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
+import { Sidebar } from "@/widgets/sidebar";
 import {
 	DataTable,
 	type DataTableColumn,
@@ -157,6 +161,7 @@ export const HttpHistoryPage: FC = () => {
 	const requestList = useRequestStore(selectRequestList);
 	const request = useRequestStore(selectSelectedRequest);
 	const search = useRequestStore(selectSearch);
+	const pagination = useRequestStore(selectPagination);
 
   const [isDialogRequestDetailOpen, setIsDialogRequestDetailOpen] = useState<boolean>(false)
 	const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -168,6 +173,8 @@ export const HttpHistoryPage: FC = () => {
 	const setMethodFilter = useRequestStore(actionSetMethodFilter);
 	const resetFilters = useRequestStore(actionResetFilters);
 	const deleteAllRequests = useRequestStore(actionDeleteAllRequests);
+	const setPage = useRequestStore(actionSetPage);
+	const setPerPage = useRequestStore(actionSetPerPage);
 
 	const [activeFilter, setActiveFilter] = useState<string | null>(
 		HC_FILTERS[0].id,
@@ -216,7 +223,10 @@ export const HttpHistoryPage: FC = () => {
 		<div className={s["hc-frame"]}>
 			<Header section="История запросов" activeLink="http-history" />
 
-			<main className={s["hc-page"]}>
+			<div className={s["hc-body"]}>
+				<Sidebar />
+
+				<main className={s["hc-page"]}>
 				<div className={s["hc-page-inner"]}>
 					<DtToolbar
 						title="История запросов"
@@ -248,12 +258,20 @@ export const HttpHistoryPage: FC = () => {
 						activeFilter={activeFilter}
 						filters={HC_FILTERS}
 						initialSort={null}
-						initialPageSize={25}
+						serverPagination={{
+							pageIndex: Math.max(0, pagination.page - 1),
+							pageSize: pagination.perPage || 25,
+							pageCount: pagination.totalPages,
+							total: pagination.total,
+							onPageChange: (pageIndex) => setPage(pageIndex + 1),
+							onPageSizeChange: setPerPage,
+						}}
 						onRowClick={(r) => onRowClick(r)}
 						activeKey={request?.id ?? null}
 					/>
 				</div>
-			</main>
+				</main>
+			</div>
 
 			{isDialogRequestDetailOpen && <HcDrawer onClose={close} />}
 
