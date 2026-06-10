@@ -12,6 +12,7 @@ use service::{
     save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_environment,
     update_environment_auth, update_param_value, update_platform, update_schema, update_variable,
     write_groups, write_schemas,
+    create_markdown, delete_markdown, read_markdown, read_markdowns, update_markdown,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
@@ -89,6 +90,11 @@ pub fn run() {
             attach_doc,
             read_platform_docs,
             environments_by_platform,
+            read_markdowns,
+            read_markdown,
+            create_markdown,
+            update_markdown,
+            delete_markdown,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

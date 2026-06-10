@@ -29,6 +29,12 @@ export const router = createBrowserRouter([
 			// 	}),
 			// },
 			{
+				path: "/markdown-show",
+				lazy: async () => ({
+					Component: (await import("@/pages/markdown-show")).MarkdownShowPage,
+				}),
+			},
+			{
 				path: "/entity",
 				lazy: async () => ({
 					Component: (await import("@/pages/entity")).EntityPage,

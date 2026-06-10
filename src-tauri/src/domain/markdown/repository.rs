@@ -1,0 +1,215 @@
+use super::model::{CreateMarkdownDTO, MarkdownFile, UpdateMarkdownDTO};
+use std::path::{Path, PathBuf};
+
+/// Filesystem-backed store for markdown files. Everything lives under
+/// `vault_dir`: directories are folders, files are documents, and `author`
+/// metadata is kept in a small YAML frontmatter block at the top of each file.
+pub struct MarkdownRepo<'a> {
+    pub vault_dir: &'a Path,
+}
+
+impl<'a> MarkdownRepo<'a> {
+    pub fn new(vault_dir: &'a Path) -> Self {
+        Self { vault_dir }
+    }
+
+    /// Resolve a vault-relative id to an absolute path, rejecting any component
+    /// that could escape the vault (`..`, empty, backslashes).
+    fn resolve(&self, id: &str) -> Result<PathBuf, String> {
+        if id.is_empty() {
+            return Err("invalid markdown id".to_string());
+        }
+
+        let mut path = self.vault_dir.to_path_buf();
+        for comp in id.split('/') {
+            if comp.is_empty() || comp == "." || comp == ".." || comp.contains('\\') {
+                return Err("invalid markdown id".to_string());
+            }
+            path.push(comp);
+        }
+        Ok(path)
+    }
+
+    /// Vault-relative id for an absolute path, always using `/` separators.
+    fn rel_id(&self, path: &Path) -> Result<String, String> {
+        let rel = path
+            .strip_prefix(self.vault_dir)
+            .map_err(|e| e.to_string())?;
+        Ok(rel
+            .components()
+            .map(|c| c.as_os_str().to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("/"))
+    }
+
+    /// Read every `*.md` file in the vault tree as a full `MarkdownFile`,
+    /// sorted by id for a stable listing.
+    pub async fn all(&self) -> Result<Vec<MarkdownFile>, String> {
+        let mut out = Vec::new();
+        let mut stack = vec![self.vault_dir.to_path_buf()];
+
+        while let Some(dir) = stack.pop() {
+            let mut rd = match tokio::fs::read_dir(&dir).await {
+                Ok(rd) => rd,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(e.to_string()),
+            };
+
+            while let Some(entry) = rd.next_entry().await.map_err(|e| e.to_string())? {
+                let path = entry.path();
+                let ft = entry.file_type().await.map_err(|e| e.to_string())?;
+
+                if ft.is_dir() {
+                    stack.push(path);
+                } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                    out.push(self.load(&path).await?);
+                }
+            }
+        }
+
+        out.sort_by(|a, b| a.id.cmp(&b.id));
+        Ok(out)
+    }
+
+    /// Read a single file by id, or `None` if it does not exist.
+    pub async fn find(&self, id: &str) -> Result<Option<MarkdownFile>, String> {
+        let path = self.resolve(id)?;
+        match tokio::fs::metadata(&path).await {
+            Ok(_) => Ok(Some(self.load(&path).await?)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    /// Create a new file, failing if one already exists at the target path.
+    /// Returns the id (vault-relative path) of the created file.
+    pub async fn create(&self, dto: &CreateMarkdownDTO) -> Result<String, String> {
+        let rel = if dto.folder.is_empty() {
+            dto.name.clone()
+        } else {
+            format!("{}/{}", dto.folder.trim_matches('/'), dto.name)
+        };
+
+        let path = self.resolve(&rel)?;
+
+        if tokio::fs::try_exists(&path).await.map_err(|e| e.to_string())? {
+            return Err(format!("markdown file already exists: {rel}"));
+        }
+
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+
+        tokio::fs::write(&path, build_file(&dto.author, &dto.content))
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(rel)
+    }
+
+    /// Overwrite the author and body of an existing file.
+    pub async fn update(&self, dto: &UpdateMarkdownDTO) -> Result<String, String> {
+        let path = self.resolve(&dto.id)?;
+
+        if !tokio::fs::try_exists(&path).await.map_err(|e| e.to_string())? {
+            return Err(format!("markdown file not found: {}", dto.id));
+        }
+
+        tokio::fs::write(&path, build_file(&dto.author, &dto.content))
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(dto.id.clone())
+    }
+
+    /// Delete a file. Missing files are treated as already deleted.
+    pub async fn delete(&self, id: &str) -> Result<(), String> {
+        let path = self.resolve(id)?;
+        match tokio::fs::remove_file(&path).await {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    /// Build a `MarkdownFile` from an on-disk path and its metadata.
+    async fn load(&self, path: &Path) -> Result<MarkdownFile, String> {
+        let raw = tokio::fs::read_to_string(path)
+            .await
+            .map_err(|e| e.to_string())?;
+        let meta = tokio::fs::metadata(path).await.map_err(|e| e.to_string())?;
+
+        let (author, content) = split_frontmatter(&raw);
+
+        let rel = path
+            .strip_prefix(self.vault_dir)
+            .map_err(|e| e.to_string())?;
+        let folder = rel
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .map(|p| {
+                p.components()
+                    .map(|c| c.as_os_str().to_string_lossy())
+                    .collect::<Vec<_>>()
+                    .join("/")
+            })
+            .unwrap_or_default();
+        let name = rel
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default()
+            .to_string();
+
+        let updated = meta
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+
+        Ok(MarkdownFile {
+            id: self.rel_id(path)?,
+            folder,
+            name,
+            author,
+            content,
+            size: meta.len(),
+            updated,
+        })
+    }
+}
+
+/// Split an optional leading `---` frontmatter block off the body and pull the
+/// `author` field out of it. Files without frontmatter return an empty author
+/// and the whole text as the body, so plain `.md` files keep working.
+fn split_frontmatter(raw: &str) -> (String, String) {
+    if let Some(rest) = raw.strip_prefix("---\n") {
+        if let Some(end) = rest.find("\n---\n") {
+            let front = &rest[..end];
+            let body = &rest[end + "\n---\n".len()..];
+
+            let author = front
+                .lines()
+                .find_map(|line| line.strip_prefix("author:"))
+                .map(|v| v.trim().trim_matches('"').to_string())
+                .unwrap_or_default();
+
+            return (author, body.to_string());
+        }
+    }
+
+    (String::new(), raw.to_string())
+}
+
+/// Prepend a frontmatter block with the author when one is set; otherwise write
+/// the body verbatim so files stay clean when there is no metadata.
+fn build_file(author: &str, content: &str) -> String {
+    let author = author.trim();
+    if author.is_empty() {
+        content.to_string()
+    } else {
+        format!("---\nauthor: {author}\n---\n\n{content}")
+    }
+}
