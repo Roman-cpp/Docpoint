@@ -1,0 +1,1363 @@
+{
+	"doc": {
+		"name": "HTTP History Service",
+		"version": "v1",
+		"desc": "Микросервис приёма и хранения истории HTTP-запросов. Мультитенантный: история ведётся отдельно для каждого зарегистрированного сервиса-источника и его окружений.",
+		"tags": ["REST", "JSON", "Observability", "Multi-tenant", "Auth required"]
+	},
+	"groups": [
+		{
+			"label": "Services",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/services",
+					"name": "List services",
+					"description": "Возвращает список зарегистрированных сервисов-источников, история которых хранится. Доступно администраторам.",
+					"tags": ["paginated", "admin"],
+					"auth": true,
+					"queryParams": [
+						{
+							"name": "page",
+							"type": "integer",
+							"required": false,
+							"desc": "Номер страницы",
+							"default": "1"
+						},
+						{
+							"name": "limit",
+							"type": "integer",
+							"required": false,
+							"desc": "Элементов на странице",
+							"default": "20"
+						},
+						{
+							"name": "is_active",
+							"type": "boolean",
+							"required": false,
+							"desc": "Фильтр по активности источника",
+							"default": ""
+						},
+						{
+							"name": "search",
+							"type": "string",
+							"required": false,
+							"desc": "Фильтр по name или slug",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "data[].id",
+									"type": "uuid",
+									"desc": "UUID сервиса",
+									"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+								},
+								{
+									"key": "data[].slug",
+									"type": "string",
+									"desc": "Машинный идентификатор",
+									"example": "\"billing-api\""
+								},
+								{
+									"key": "data[].name",
+									"type": "string",
+									"desc": "Человекочитаемое имя",
+									"example": "\"Billing API\""
+								},
+								{
+									"key": "data[].is_active",
+									"type": "boolean",
+									"desc": "Принимается ли история",
+									"example": "true"
+								},
+								{
+									"key": "meta.total",
+									"type": "integer",
+									"desc": "Всего сервисов",
+									"example": "12"
+								}
+							],
+							"example": "{\n  \"data\": [\n    { \"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\", \"slug\": \"billing-api\", \"name\": \"Billing API\", \"is_active\": true }\n  ],\n  \"meta\": { \"total\": 12 }\n}"
+						}
+					}
+				},
+				{
+					"method": "POST",
+					"path": "/services",
+					"name": "Register service",
+					"description": "Регистрирует новый сервис-источник. С этого момента под его идентификатором можно принимать историю запросов.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "slug",
+							"type": "string",
+							"required": true,
+							"desc": "Уникальный машинный идентификатор (a-z, 0-9, дефис)",
+							"default": ""
+						},
+						{
+							"name": "name",
+							"type": "string",
+							"required": true,
+							"desc": "Человекочитаемое имя",
+							"default": ""
+						},
+						{
+							"name": "desc",
+							"type": "string",
+							"required": false,
+							"desc": "Описание назначения сервиса",
+							"default": ""
+						},
+						{
+							"name": "base_url",
+							"type": "string",
+							"required": false,
+							"desc": "Базовый URL сервиса (для справки)",
+							"default": ""
+						},
+						{
+							"name": "owner",
+							"type": "string",
+							"required": false,
+							"desc": "Команда или владелец сервиса",
+							"default": ""
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID нового сервиса",
+									"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+								},
+								{
+									"key": "slug",
+									"type": "string",
+									"desc": "Машинный идентификатор",
+									"example": "\"billing-api\""
+								}
+							],
+							"example": "{\n  \"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\n  \"slug\": \"billing-api\"\n}"
+						},
+						"422": {
+							"label": "422 Validation Error",
+							"schema": [
+								{
+									"key": "errors[].field",
+									"type": "string",
+									"desc": "Имя поля с ошибкой"
+								},
+								{
+									"key": "errors[].message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
+							],
+							"example": "{\n  \"errors\": [\n    { \"field\": \"slug\", \"message\": \"Slug already taken\" }\n  ]\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/services/{id}",
+					"name": "Get service",
+					"description": "Возвращает карточку сервиса-источника по UUID.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "id", "type": "uuid", "desc": "UUID сервиса" },
+								{ "key": "slug", "type": "string", "desc": "Машинный идентификатор" },
+								{ "key": "name", "type": "string", "desc": "Имя сервиса" },
+								{ "key": "desc", "type": "string", "desc": "Описание" },
+								{ "key": "base_url", "type": "string", "desc": "Базовый URL" },
+								{ "key": "owner", "type": "string", "desc": "Владелец / команда" },
+								{ "key": "is_active", "type": "boolean", "desc": "Активность" },
+								{ "key": "created_at", "type": "datetime", "desc": "Дата регистрации" }
+							],
+							"example": "{\n  \"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\n  \"slug\": \"billing-api\",\n  \"name\": \"Billing API\",\n  \"desc\": \"Сервис выставления счетов\",\n  \"base_url\": \"https://billing.internal\",\n  \"owner\": \"payments-team\",\n  \"is_active\": true,\n  \"created_at\": \"2026-01-10T09:00:00Z\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{ "key": "message", "type": "string", "desc": "Описание ошибки" }
+							],
+							"example": "{\n  \"message\": \"Service not found\"\n}"
+						}
+					}
+				},
+				{
+					"method": "PATCH",
+					"path": "/services/{id}",
+					"name": "Update service",
+					"description": "Частичное обновление карточки сервиса. Деактивация (is_active=false) останавливает приём новой истории, не удаляя накопленную.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "name",
+							"type": "string",
+							"required": false,
+							"desc": "Новое имя",
+							"default": ""
+						},
+						{
+							"name": "desc",
+							"type": "string",
+							"required": false,
+							"desc": "Новое описание",
+							"default": ""
+						},
+						{
+							"name": "is_active",
+							"type": "boolean",
+							"required": false,
+							"desc": "Принимать ли новую историю",
+							"default": ""
+						}
+					],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "id", "type": "uuid", "desc": "UUID сервиса" },
+								{ "key": "is_active", "type": "boolean", "desc": "Активность" }
+							],
+							"example": "{\n  \"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\n  \"is_active\": false\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/services/{id}",
+					"name": "Delete service",
+					"description": "Удаляет сервис вместе со всей его историей, окружениями, токенами и телами запросов. Необратимая операция.",
+					"tags": ["admin", "destructive"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Environments",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/services/{id}/environments",
+					"name": "List environments",
+					"description": "Возвращает окружения конкретного сервиса (prod / staging / local), в разрезе которых разделяется история.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "data[].id", "type": "uuid", "desc": "UUID окружения" },
+								{ "key": "data[].name", "type": "string", "desc": "prod / staging / local" },
+								{ "key": "data[].base_url", "type": "string", "desc": "Базовый URL окружения" }
+							],
+							"example": "{\n  \"data\": [\n    { \"id\": \"a1b2c3d4-0000-4000-8000-000000000001\", \"name\": \"prod\", \"base_url\": \"https://billing.internal\" }\n  ]\n}"
+						}
+					}
+				},
+				{
+					"method": "POST",
+					"path": "/services/{id}/environments",
+					"name": "Create environment",
+					"description": "Добавляет окружение к сервису. Имя окружения уникально в пределах сервиса.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "name",
+							"type": "string",
+							"required": true,
+							"desc": "Идентификатор окружения (prod / staging / local)",
+							"default": ""
+						},
+						{
+							"name": "base_url",
+							"type": "string",
+							"required": false,
+							"desc": "Базовый URL окружения",
+							"default": ""
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{ "key": "id", "type": "uuid", "desc": "UUID окружения" }
+							],
+							"example": "{\n  \"id\": \"a1b2c3d4-0000-4000-8000-000000000001\"\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/environments/{env_id}",
+					"name": "Delete environment",
+					"description": "Удаляет окружение и относящуюся к нему историю запросов.",
+					"tags": ["admin", "destructive"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Ingest",
+			"endpoints": [
+				{
+					"method": "POST",
+					"path": "/ingest/{service_slug}/requests",
+					"name": "Ingest request record",
+					"description": "Принимает одну запись истории (запрос + ответ) от сервиса-источника. Аутентификация — по ingest-токену сервиса (заголовок X-Ingest-Token). Идемпотентность обеспечивается по correlation_id.",
+					"tags": ["ingest", "high-throughput"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "environment",
+							"type": "string",
+							"required": false,
+							"desc": "Имя окружения источника (prod / staging / local)",
+							"default": "prod"
+						},
+						{
+							"name": "direction",
+							"type": "string",
+							"required": true,
+							"desc": "Направление: inbound (сервис принял) или outbound (сервис отправил)",
+							"default": "inbound"
+						},
+						{
+							"name": "method",
+							"type": "string",
+							"required": true,
+							"desc": "HTTP-метод",
+							"default": ""
+						},
+						{
+							"name": "url",
+							"type": "string",
+							"required": true,
+							"desc": "Полный URL запроса",
+							"default": ""
+						},
+						{
+							"name": "request_headers",
+							"type": "object",
+							"required": false,
+							"desc": "Заголовки запроса (секреты должны быть замаскированы)",
+							"default": ""
+						},
+						{
+							"name": "request_body",
+							"type": "string",
+							"required": false,
+							"desc": "Тело запроса (raw). Большие тела сервис вынесет в Payload",
+							"default": ""
+						},
+						{
+							"name": "status_code",
+							"type": "integer",
+							"required": false,
+							"desc": "HTTP-код ответа (отсутствует при ошибке соединения)",
+							"default": ""
+						},
+						{
+							"name": "response_headers",
+							"type": "object",
+							"required": false,
+							"desc": "Заголовки ответа",
+							"default": ""
+						},
+						{
+							"name": "response_body",
+							"type": "string",
+							"required": false,
+							"desc": "Тело ответа (raw)",
+							"default": ""
+						},
+						{
+							"name": "started_at",
+							"type": "datetime",
+							"required": true,
+							"desc": "Время начала запроса (ISO 8601, UTC)",
+							"default": ""
+						},
+						{
+							"name": "duration_ms",
+							"type": "integer",
+							"required": false,
+							"desc": "Длительность обмена в миллисекундах",
+							"default": ""
+						},
+						{
+							"name": "correlation_id",
+							"type": "string",
+							"required": false,
+							"desc": "Идентификатор для дедупликации и трассировки",
+							"default": ""
+						},
+						{
+							"name": "error_kind",
+							"type": "string",
+							"required": false,
+							"desc": "Тип ошибки: timeout / connection / tls / ... (если запрос не удался)",
+							"default": ""
+						}
+					],
+					"responses": {
+						"202": {
+							"label": "202 Accepted",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID созданной записи истории",
+									"example": "\"b2c3d4e5-1111-4111-8111-111111111111\""
+								},
+								{
+									"key": "deduplicated",
+									"type": "boolean",
+									"desc": "true, если запись с таким correlation_id уже была принята",
+									"example": "false"
+								}
+							],
+							"example": "{\n  \"id\": \"b2c3d4e5-1111-4111-8111-111111111111\",\n  \"deduplicated\": false\n}"
+						},
+						"401": {
+							"label": "401 Unauthorized",
+							"schema": [
+								{ "key": "message", "type": "string", "desc": "Описание ошибки" }
+							],
+							"example": "{\n  \"message\": \"Invalid ingest token\"\n}"
+						}
+					}
+				},
+				{
+					"method": "POST",
+					"path": "/ingest/{service_slug}/requests:batch",
+					"name": "Ingest batch",
+					"description": "Пакетный приём истории — массив записей того же формата, что и одиночный ingest. Используется агентами/прокси для снижения числа обращений.",
+					"tags": ["ingest", "high-throughput"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "records",
+							"type": "array",
+							"required": true,
+							"desc": "Массив записей истории (см. Ingest request record)",
+							"default": ""
+						}
+					],
+					"responses": {
+						"202": {
+							"label": "202 Accepted",
+							"schema": [
+								{
+									"key": "accepted",
+									"type": "integer",
+									"desc": "Сколько записей принято",
+									"example": "98"
+								},
+								{
+									"key": "deduplicated",
+									"type": "integer",
+									"desc": "Сколько отброшено как дубли",
+									"example": "2"
+								}
+							],
+							"example": "{\n  \"accepted\": 98,\n  \"deduplicated\": 2\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "History",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/services/{id}/requests",
+					"name": "Query request history",
+					"description": "Возвращает историю запросов сервиса с фильтрами и пагинацией. Тела по умолчанию не возвращаются (только метаданные) — за телом обращайтесь к payload-эндпоинту.",
+					"tags": ["paginated", "auth-required"],
+					"auth": true,
+					"queryParams": [
+						{
+							"name": "environment",
+							"type": "string",
+							"required": false,
+							"desc": "Фильтр по окружению",
+							"default": ""
+						},
+						{
+							"name": "method",
+							"type": "string",
+							"required": false,
+							"desc": "Фильтр по HTTP-методу",
+							"default": ""
+						},
+						{
+							"name": "status_code",
+							"type": "integer",
+							"required": false,
+							"desc": "Фильтр по коду ответа",
+							"default": ""
+						},
+						{
+							"name": "endpoint_id",
+							"type": "uuid",
+							"required": false,
+							"desc": "Фильтр по нормализованному эндпоинту",
+							"default": ""
+						},
+						{
+							"name": "direction",
+							"type": "string",
+							"required": false,
+							"desc": "inbound / outbound",
+							"default": ""
+						},
+						{
+							"name": "correlation_id",
+							"type": "string",
+							"required": false,
+							"desc": "Поиск по идентификатору трассировки",
+							"default": ""
+						},
+						{
+							"name": "from",
+							"type": "datetime",
+							"required": false,
+							"desc": "Начало интервала (started_at >= from)",
+							"default": ""
+						},
+						{
+							"name": "to",
+							"type": "datetime",
+							"required": false,
+							"desc": "Конец интервала (started_at < to)",
+							"default": ""
+						},
+						{
+							"name": "limit",
+							"type": "integer",
+							"required": false,
+							"desc": "Элементов на странице",
+							"default": "50"
+						},
+						{
+							"name": "cursor",
+							"type": "string",
+							"required": false,
+							"desc": "Курсор пагинации (keyset по started_at)",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "data[].id", "type": "uuid", "desc": "UUID записи" },
+								{ "key": "data[].method", "type": "string", "desc": "HTTP-метод" },
+								{ "key": "data[].path", "type": "string", "desc": "Путь запроса" },
+								{ "key": "data[].status_code", "type": "integer", "desc": "Код ответа" },
+								{ "key": "data[].duration_ms", "type": "integer", "desc": "Длительность" },
+								{ "key": "data[].started_at", "type": "datetime", "desc": "Время начала" },
+								{ "key": "next_cursor", "type": "string", "desc": "Курсор следующей страницы (null в конце)" }
+							],
+							"example": "{\n  \"data\": [\n    { \"id\": \"b2c3d4e5-1111-4111-8111-111111111111\", \"method\": \"POST\", \"path\": \"/v1/charges\", \"status_code\": 201, \"duration_ms\": 142, \"started_at\": \"2026-06-05T10:15:00Z\" }\n  ],\n  \"next_cursor\": \"eyJ0cyI6IjIwMjYtMDYtMDVUMTA6MTU6MDBaIn0\"\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/requests/{request_id}",
+					"name": "Get request record",
+					"description": "Возвращает полную запись истории: метаданные запроса и ответа, заголовки и ссылки на тела (payload).",
+					"tags": ["auth-required"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "id", "type": "uuid", "desc": "UUID записи" },
+								{ "key": "service_id", "type": "uuid", "desc": "UUID сервиса-источника" },
+								{ "key": "environment", "type": "string", "desc": "Окружение" },
+								{ "key": "direction", "type": "string", "desc": "inbound / outbound" },
+								{ "key": "method", "type": "string", "desc": "HTTP-метод" },
+								{ "key": "url", "type": "string", "desc": "Полный URL" },
+								{ "key": "request_headers", "type": "object", "desc": "Заголовки запроса" },
+								{ "key": "request_body_id", "type": "uuid", "desc": "Ссылка на тело запроса (Payload), null если пусто" },
+								{ "key": "status_code", "type": "integer", "desc": "Код ответа" },
+								{ "key": "response_headers", "type": "object", "desc": "Заголовки ответа" },
+								{ "key": "response_body_id", "type": "uuid", "desc": "Ссылка на тело ответа (Payload)" },
+								{ "key": "started_at", "type": "datetime", "desc": "Время начала" },
+								{ "key": "duration_ms", "type": "integer", "desc": "Длительность" },
+								{ "key": "correlation_id", "type": "string", "desc": "Идентификатор трассировки" }
+							],
+							"example": "{\n  \"id\": \"b2c3d4e5-1111-4111-8111-111111111111\",\n  \"service_id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\n  \"environment\": \"prod\",\n  \"direction\": \"inbound\",\n  \"method\": \"POST\",\n  \"url\": \"https://billing.internal/v1/charges\",\n  \"request_headers\": { \"content-type\": \"application/json\", \"authorization\": \"***\" },\n  \"request_body_id\": \"c3d4e5f6-2222-4222-8222-222222222222\",\n  \"status_code\": 201,\n  \"response_headers\": { \"content-type\": \"application/json\" },\n  \"response_body_id\": \"d4e5f6a7-3333-4333-8333-333333333333\",\n  \"started_at\": \"2026-06-05T10:15:00Z\",\n  \"duration_ms\": 142,\n  \"correlation_id\": \"req-9f8c\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{ "key": "message", "type": "string", "desc": "Описание ошибки" }
+							],
+							"example": "{\n  \"message\": \"Request record not found\"\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/payloads/{payload_id}",
+					"name": "Get payload body",
+					"description": "Отдаёт сохранённое тело запроса или ответа по ссылке из записи. Контент возвращается с исходным content-type; крупные тела стримятся из blob-хранилища.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "(raw body)", "type": "string", "desc": "Сырое тело с заголовком Content-Type исходного обмена" }
+							],
+							"example": "{\n  \"amount\": 4200,\n  \"currency\": \"USD\"\n}"
+						},
+						"410": {
+							"label": "410 Gone",
+							"schema": [
+								{ "key": "message", "type": "string", "desc": "Тело удалено по retention-политике" }
+							],
+							"example": "{\n  \"message\": \"Payload expired by retention policy\"\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/requests/{request_id}",
+					"name": "Delete request record",
+					"description": "Удаляет одну запись истории и связанные с ней тела (если на них не ссылаются другие записи).",
+					"tags": ["auth-required", "destructive"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Endpoints & Stats",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/services/{id}/endpoints",
+					"name": "List endpoints",
+					"description": "Возвращает нормализованные шаблоны путей сервиса (например, /users/:id) с агрегированной статистикой по истории.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"queryParams": [
+						{
+							"name": "from",
+							"type": "datetime",
+							"required": false,
+							"desc": "Начало интервала агрегации",
+							"default": ""
+						},
+						{
+							"name": "to",
+							"type": "datetime",
+							"required": false,
+							"desc": "Конец интервала агрегации",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "data[].id", "type": "uuid", "desc": "UUID эндпоинта" },
+								{ "key": "data[].method", "type": "string", "desc": "HTTP-метод" },
+								{ "key": "data[].path_template", "type": "string", "desc": "Шаблон пути" },
+								{ "key": "data[].count", "type": "integer", "desc": "Число запросов за интервал" },
+								{ "key": "data[].error_rate", "type": "number", "desc": "Доля ответов со статусом >= 500" },
+								{ "key": "data[].p95_ms", "type": "integer", "desc": "95-й перцентиль длительности" }
+							],
+							"example": "{\n  \"data\": [\n    { \"id\": \"e5f6a7b8-4444-4444-8444-444444444444\", \"method\": \"POST\", \"path_template\": \"/v1/charges\", \"count\": 10432, \"error_rate\": 0.004, \"p95_ms\": 210 }\n  ]\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Ingest Tokens",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/services/{id}/tokens",
+					"name": "List ingest tokens",
+					"description": "Возвращает ingest-токены сервиса. Само секретное значение не возвращается — только префикс и метаданные.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{ "key": "data[].id", "type": "uuid", "desc": "UUID токена" },
+								{ "key": "data[].name", "type": "string", "desc": "Назначение токена" },
+								{ "key": "data[].prefix", "type": "string", "desc": "Первые символы токена для опознания" },
+								{ "key": "data[].last_used_at", "type": "datetime", "desc": "Последнее использование" },
+								{ "key": "data[].revoked", "type": "boolean", "desc": "Отозван ли токен" }
+							],
+							"example": "{\n  \"data\": [\n    { \"id\": \"f6a7b8c9-5555-4555-8555-555555555555\", \"name\": \"prod-agent\", \"prefix\": \"ihs_a1b2\", \"last_used_at\": \"2026-06-05T10:14:59Z\", \"revoked\": false }\n  ]\n}"
+						}
+					}
+				},
+				{
+					"method": "POST",
+					"path": "/services/{id}/tokens",
+					"name": "Create ingest token",
+					"description": "Создаёт ingest-токен для приёма истории сервиса. Полное секретное значение возвращается единожды — в ответе на этот запрос.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "name",
+							"type": "string",
+							"required": true,
+							"desc": "Назначение токена (например, prod-agent)",
+							"default": ""
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{ "key": "id", "type": "uuid", "desc": "UUID токена" },
+								{ "key": "token", "type": "string", "desc": "Секретное значение (показывается один раз)" }
+							],
+							"example": "{\n  \"id\": \"f6a7b8c9-5555-4555-8555-555555555555\",\n  \"token\": \"ihs_a1b2c3d4e5f6...\"\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/tokens/{token_id}",
+					"name": "Revoke ingest token",
+					"description": "Отзывает ingest-токен. После отзыва приём истории с этим токеном немедленно отклоняется (401).",
+					"tags": ["admin", "destructive"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						}
+					}
+				}
+			]
+		}
+	],
+	"entities": [
+		{
+			"name": "Service",
+			"desc": "Сервис-источник, история которого хранится. Корень мультитенантности — все записи привязаны к сервису.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Уникальный идентификатор сервиса",
+					"note": "UUIDv4",
+					"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+				},
+				{
+					"name": "slug",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Машинный идентификатор сервиса (используется в ingest-URL)",
+					"note": "Уникальный; a-z, 0-9, дефис",
+					"example": "\"billing-api\""
+				},
+				{
+					"name": "name",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Человекочитаемое имя",
+					"note": "Макс. 100 символов",
+					"example": "\"Billing API\""
+				},
+				{
+					"name": "desc",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Описание назначения сервиса",
+					"note": "",
+					"example": "\"Сервис выставления счетов\""
+				},
+				{
+					"name": "base_url",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Базовый URL сервиса (справочно)",
+					"note": "",
+					"example": "\"https://billing.internal\""
+				},
+				{
+					"name": "owner",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Команда или владелец",
+					"note": "",
+					"example": "\"payments-team\""
+				},
+				{
+					"name": "is_active",
+					"type": "boolean",
+					"req": true,
+					"nullable": false,
+					"desc": "Принимается ли новая история",
+					"note": "false останавливает ingest, не удаляя данные",
+					"example": "true"
+				},
+				{
+					"name": "created_at",
+					"type": "datetime",
+					"req": true,
+					"nullable": false,
+					"desc": "Дата регистрации сервиса",
+					"note": "ISO 8601, UTC",
+					"example": "\"2026-01-10T09:00:00Z\""
+				}
+			]
+		},
+		{
+			"name": "Environment",
+			"desc": "Окружение сервиса (prod / staging / local). История разделяется по окружениям, чтобы не смешивать данные сред.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "UUID окружения",
+					"note": "UUIDv4",
+					"example": "\"a1b2c3d4-0000-4000-8000-000000000001\""
+				},
+				{
+					"name": "service_id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Ссылка на сервис",
+					"note": "FK → Service.id",
+					"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+				},
+				{
+					"name": "name",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Идентификатор окружения",
+					"note": "Уникален в пределах сервиса",
+					"example": "\"prod\""
+				},
+				{
+					"name": "base_url",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Базовый URL окружения",
+					"note": "",
+					"example": "\"https://billing.internal\""
+				}
+			]
+		},
+		{
+			"name": "RequestRecord",
+			"desc": "Центральная сущность: одна запись истории — связка HTTP-запроса и ответа. Append-only, партиционируется по started_at.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Уникальный идентификатор записи",
+					"note": "ULID/UUIDv7 для сортировки по времени",
+					"example": "\"b2c3d4e5-1111-4111-8111-111111111111\""
+				},
+				{
+					"name": "service_id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Ссылка на сервис-источник",
+					"note": "FK → Service.id",
+					"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+				},
+				{
+					"name": "environment_id",
+					"type": "uuid",
+					"req": false,
+					"nullable": true,
+					"desc": "Ссылка на окружение",
+					"note": "FK → Environment.id",
+					"example": "\"a1b2c3d4-0000-4000-8000-000000000001\""
+				},
+				{
+					"name": "endpoint_id",
+					"type": "uuid",
+					"req": false,
+					"nullable": true,
+					"desc": "Ссылка на нормализованный эндпоинт",
+					"note": "FK → Endpoint.id; вычисляется при приёме",
+					"example": "\"e5f6a7b8-4444-4444-8444-444444444444\""
+				},
+				{
+					"name": "direction",
+					"type": "enum",
+					"req": true,
+					"nullable": false,
+					"desc": "Направление обмена относительно сервиса",
+					"note": "",
+					"example": "\"inbound\"",
+					"enum": [
+						{ "val": "inbound", "desc": "Сервис принял входящий запрос" },
+						{ "val": "outbound", "desc": "Сервис сам отправил исходящий запрос" }
+					]
+				},
+				{
+					"name": "method",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "HTTP-метод",
+					"note": "GET / POST / PUT / PATCH / DELETE / ...",
+					"example": "\"POST\""
+				},
+				{
+					"name": "url",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Полный URL запроса",
+					"note": "Из него извлекаются scheme/host/path/query",
+					"example": "\"https://billing.internal/v1/charges?dry_run=0\""
+				},
+				{
+					"name": "path",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Путь запроса без query",
+					"note": "",
+					"example": "\"/v1/charges\""
+				},
+				{
+					"name": "request_headers",
+					"type": "object",
+					"req": false,
+					"nullable": true,
+					"desc": "Заголовки запроса (key→value)",
+					"note": "Секреты маскируются при приёме",
+					"example": "{ \"content-type\": \"application/json\", \"authorization\": \"***\" }"
+				},
+				{
+					"name": "request_body_id",
+					"type": "uuid",
+					"req": false,
+					"nullable": true,
+					"desc": "Ссылка на тело запроса",
+					"note": "FK → Payload.id; null, если тела нет",
+					"example": "\"c3d4e5f6-2222-4222-8222-222222222222\""
+				},
+				{
+					"name": "status_code",
+					"type": "integer",
+					"req": false,
+					"nullable": true,
+					"desc": "HTTP-код ответа",
+					"note": "null при ошибке соединения / таймауте",
+					"example": "201"
+				},
+				{
+					"name": "response_headers",
+					"type": "object",
+					"req": false,
+					"nullable": true,
+					"desc": "Заголовки ответа",
+					"note": "",
+					"example": "{ \"content-type\": \"application/json\" }"
+				},
+				{
+					"name": "response_body_id",
+					"type": "uuid",
+					"req": false,
+					"nullable": true,
+					"desc": "Ссылка на тело ответа",
+					"note": "FK → Payload.id",
+					"example": "\"d4e5f6a7-3333-4333-8333-333333333333\""
+				},
+				{
+					"name": "started_at",
+					"type": "datetime",
+					"req": true,
+					"nullable": false,
+					"desc": "Время начала запроса",
+					"note": "ISO 8601, UTC; ключ партиционирования",
+					"example": "\"2026-06-05T10:15:00Z\""
+				},
+				{
+					"name": "duration_ms",
+					"type": "integer",
+					"req": false,
+					"nullable": true,
+					"desc": "Длительность обмена в миллисекундах",
+					"note": "",
+					"example": "142"
+				},
+				{
+					"name": "correlation_id",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Идентификатор трассировки / дедупликации",
+					"note": "Уникален в паре (service_id, correlation_id)",
+					"example": "\"req-9f8c\""
+				},
+				{
+					"name": "client_ip",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "IP-адрес клиента (для inbound)",
+					"note": "",
+					"example": "\"203.0.113.10\""
+				},
+				{
+					"name": "error_kind",
+					"type": "enum",
+					"req": false,
+					"nullable": true,
+					"desc": "Тип ошибки, если запрос не завершился ответом",
+					"note": "null при успешном обмене",
+					"example": "null",
+					"enum": [
+						{ "val": "timeout", "desc": "Истекло время ожидания" },
+						{ "val": "connection", "desc": "Ошибка соединения" },
+						{ "val": "tls", "desc": "Ошибка TLS-рукопожатия" },
+						{ "val": "dns", "desc": "Ошибка разрешения имени" }
+					]
+				}
+			]
+		},
+		{
+			"name": "Payload",
+			"desc": "Тело запроса или ответа. Вынесено из RequestRecord: метаданные в БД, контент — в blob-хранилище. Дедуплицируется по хешу.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "UUID тела",
+					"note": "UUIDv4",
+					"example": "\"c3d4e5f6-2222-4222-8222-222222222222\""
+				},
+				{
+					"name": "content_type",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "MIME-тип содержимого",
+					"note": "",
+					"example": "\"application/json\""
+				},
+				{
+					"name": "size",
+					"type": "integer",
+					"req": true,
+					"nullable": false,
+					"desc": "Размер тела в байтах",
+					"note": "",
+					"example": "48"
+				},
+				{
+					"name": "hash",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "SHA-256 содержимого для дедупликации",
+					"note": "hex",
+					"example": "\"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\""
+				},
+				{
+					"name": "storage_ref",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Ключ объекта в blob-хранилище (S3/MinIO)",
+					"note": "null, если тело хранится inline",
+					"example": "\"payloads/2026/06/05/c3d4e5f6.bin\""
+				},
+				{
+					"name": "inline_body",
+					"type": "string",
+					"req": false,
+					"nullable": true,
+					"desc": "Тело прямо в БД для мелких payload",
+					"note": "Используется при size ниже порога",
+					"example": "\"{ \\\"amount\\\": 4200 }\""
+				},
+				{
+					"name": "expires_at",
+					"type": "datetime",
+					"req": false,
+					"nullable": true,
+					"desc": "Когда тело будет удалено по retention-политике",
+					"note": "ISO 8601, UTC",
+					"example": "\"2026-07-05T10:15:00Z\""
+				}
+			]
+		},
+		{
+			"name": "Endpoint",
+			"desc": "Нормализованный шаблон пути сервиса (например, /users/:id). Группирует записи истории для фильтрации и агрегатов.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "UUID эндпоинта",
+					"note": "UUIDv4",
+					"example": "\"e5f6a7b8-4444-4444-8444-444444444444\""
+				},
+				{
+					"name": "service_id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Ссылка на сервис",
+					"note": "FK → Service.id",
+					"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+				},
+				{
+					"name": "method",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "HTTP-метод шаблона",
+					"note": "",
+					"example": "\"POST\""
+				},
+				{
+					"name": "path_template",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Шаблон пути с плейсхолдерами",
+					"note": "Уникален в паре (service_id, method, path_template)",
+					"example": "\"/v1/charges\""
+				},
+				{
+					"name": "created_at",
+					"type": "datetime",
+					"req": true,
+					"nullable": false,
+					"desc": "Когда шаблон впервые встретился",
+					"note": "ISO 8601, UTC",
+					"example": "\"2026-01-12T11:00:00Z\""
+				}
+			]
+		},
+		{
+			"name": "IngestToken",
+			"desc": "Токен для аутентификации приёма истории конкретного сервиса. Передаётся агентом в заголовке X-Ingest-Token.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "UUID токена",
+					"note": "UUIDv4",
+					"example": "\"f6a7b8c9-5555-4555-8555-555555555555\""
+				},
+				{
+					"name": "service_id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Ссылка на сервис",
+					"note": "FK → Service.id",
+					"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+				},
+				{
+					"name": "name",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Назначение токена",
+					"note": "",
+					"example": "\"prod-agent\""
+				},
+				{
+					"name": "token_hash",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Хеш секретного значения (само значение не хранится)",
+					"note": "SHA-256/argon2",
+					"example": "\"$argon2id$v=19$m=65536...\""
+				},
+				{
+					"name": "prefix",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Первые символы токена для опознания в UI",
+					"note": "",
+					"example": "\"ihs_a1b2\""
+				},
+				{
+					"name": "last_used_at",
+					"type": "datetime",
+					"req": false,
+					"nullable": true,
+					"desc": "Время последнего использования",
+					"note": "ISO 8601, UTC",
+					"example": "\"2026-06-05T10:14:59Z\""
+				},
+				{
+					"name": "revoked",
+					"type": "boolean",
+					"req": true,
+					"nullable": false,
+					"desc": "Отозван ли токен",
+					"note": "true → ingest отклоняется",
+					"example": "false"
+				}
+			]
+		},
+		{
+			"name": "Tag",
+			"desc": "Произвольная метка для записей истории (например, инцидент или релиз). Связь с RequestRecord — многие-ко-многим.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "UUID метки",
+					"note": "UUIDv4",
+					"example": "\"a7b8c9d0-6666-4666-8666-666666666666\""
+				},
+				{
+					"name": "service_id",
+					"type": "uuid",
+					"req": true,
+					"nullable": false,
+					"desc": "Ссылка на сервис",
+					"note": "FK → Service.id",
+					"example": "\"7c9e6679-7425-40de-944b-e07fc1f90ae7\""
+				},
+				{
+					"name": "key",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Имя метки",
+					"note": "Уникально в паре (service_id, key)",
+					"example": "\"incident-4821\""
+				}
+			]
+		}
+	],
+	"environments": [
+		{
+			"env": "prod",
+			"label": "Production",
+			"baseUrl": "https://history.internal",
+			"prefix": "/api/v1",
+			"value": [{ "name": "INGEST_TOKEN", "value": "ihs_prod-token-here" }],
+			"accessToken": null
+		},
+		{
+			"env": "staging",
+			"label": "Staging",
+			"baseUrl": "https://staging.history.internal",
+			"prefix": "/api/v1",
+			"value": [{ "name": "INGEST_TOKEN", "value": "ihs_staging-token-here" }],
+			"accessToken": null
+		},
+		{
+			"env": "local",
+			"label": "Local",
+			"baseUrl": "http://localhost:8080",
+			"prefix": "/api/v1",
+			"value": [{ "name": "INGEST_TOKEN", "value": "ihs_dev-token" }],
+			"accessToken": null
+		}
+	]
+}

@@ -1203,3 +1203,36 @@
 	width: 14px;
 	height: 14px;
 }
+
+/* ─── Doc-show: markdown document / overview tabs ─── */
+.docColumn {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+.docTabs {
+	display: flex;
+	gap: 4px;
+	padding: 8px 16px 0;
+	border-bottom: 1px solid var(--border);
+}
+.docTab {
+	font-family: var(--font-sans);
+	font-size: var(--fs-13);
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	padding: 8px 12px;
+	margin-bottom: -1px;
+	cursor: pointer;
+	transition: color var(--t-base) var(--ease-out);
+}
+.docTab:hover {
+	color: var(--ink);
+}
+.docTabActive {
+	color: var(--ink);
+	border-bottom-color: var(--ink);
+}
