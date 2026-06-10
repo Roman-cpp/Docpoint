@@ -1,83 +1,39 @@
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
 
+mod domain;
+
+use domain::relation::model::Relation;
+use domain::table::model::{ColKind, Column, Table, HEADER_H};
+
 // ---------------------------------------------------------------------------
-// Layout constants (in world / CSS pixels, before camera scaling).
+// Rendering layout constants (in world / CSS pixels, before camera scaling).
+// The table's intrinsic geometry (HEADER_H, ROW_H) lives in the table model.
 // ---------------------------------------------------------------------------
-const HEADER_H: f64 = 38.0;
-const ROW_H: f64 = 30.0;
 const PAD_X: f64 = 14.0;
 const ICON_W: f64 = 20.0;
 const TEXT_GAP: f64 = 6.0;
 const MIN_TABLE_W: f64 = 170.0;
 const CORNER_R: f64 = 8.0;
 
-// Dark theme palette (matches the reference screenshot).
-const COL_BG: &str = "#0d1117";
-const COL_GRID: &str = "#1b2129";
-const COL_TABLE_BG: &str = "#161b22";
-const COL_HEADER_BG: &str = "#21262d";
-const COL_BORDER: &str = "#30363d";
-const COL_BORDER_SEL: &str = "#58a6ff";
-const COL_TEXT: &str = "#c9d1d9";
-const COL_TEXT_HEAD: &str = "#e6edf3";
-const COL_TEXT_DIM: &str = "#8b949e";
-const COL_KEY: &str = "#3fb950";
-const COL_REL: &str = "#6e7681";
+// Light theme palette — mirrors the app's design tokens (tokens.css):
+// warm cream canvas, white surfaces, earthy accents.
+const COL_BG: &str = "#faf7f2"; // --bg
+const COL_GRID: &str = "#e2dccf"; // subtle warm dot, between --border and --border-h
+const COL_TABLE_BG: &str = "#ffffff"; // --surface
+const COL_HEADER_BG: &str = "#f0ede8"; // --cat-bg
+const COL_BORDER: &str = "#e8e2d9"; // --border
+const COL_BORDER_SEL: &str = "#3a5a78"; // --blue
+const COL_TEXT: &str = "#1a1a1a"; // --ink
+const COL_TEXT_HEAD: &str = "#1a1a1a"; // --ink
+const COL_TEXT_DIM: &str = "#888888"; // --ink-low
+const COL_KEY: &str = "#3f6b4a"; // --green
+const COL_REL: &str = "#c8c0b4"; // --border-h
+const COL_SHADOW: &str = "rgba(0, 0, 0, 0.08)"; // --shadow-sm tone
 
-/// How a column is marked, which decides its row icon.
-#[derive(Clone, Copy, PartialEq)]
-enum ColKind {
-    /// Primary key — green key icon.
-    Pk,
-    /// Foreign key — green link icon.
-    Fk,
-    /// Ordinary, NOT NULL column — filled diamond.
-    Plain,
-    /// Nullable column — hollow diamond.
-    Nullable,
-}
-
-struct Column {
-    name: String,
-    kind: ColKind,
-}
-
-/// A single table node: header plus a stack of column rows. `w` is computed
-/// once from the rendered text widths (see `Scene::ensure_layout`).
-struct Table {
-    x: f64,
-    y: f64,
-    w: f64,
-    name: String,
-    columns: Vec<Column>,
-}
-
-impl Table {
-    fn height(&self) -> f64 {
-        HEADER_H + self.columns.len() as f64 * ROW_H
-    }
-
-    fn contains(&self, x: f64, y: f64) -> bool {
-        x >= self.x && x <= self.x + self.w && y >= self.y && y <= self.y + self.height()
-    }
-
-    fn center_x(&self) -> f64 {
-        self.x + self.w * 0.5
-    }
-
-    /// Vertical center of a column row, in world coordinates.
-    fn row_y(&self, col: usize) -> f64 {
-        self.y + HEADER_H + col as f64 * ROW_H + ROW_H * 0.5
-    }
-}
-
-/// A directed relation: primary-key side (`from`) to foreign-key side (`to`),
-/// each addressed as `(table_index, column_index)`.
-struct Relation {
-    from: (usize, usize),
-    to: (usize, usize),
-}
+// Font stacks mirroring --font-serif / --font-mono in tokens.css.
+const FONT_HEAD: &str = "600 14px \"Lora\", Georgia, \"Times New Roman\", serif";
+const FONT_ROW: &str = "13px \"Menlo\", \"SF Mono\", \"Courier New\", monospace";
 
 /// An in-progress table drag: which table and the cursor offset from its
 /// top-left corner, in world coordinates.
@@ -152,6 +108,23 @@ impl Scene {
     /// Index of the currently selected table, or `-1` if none.
     pub fn selected_index(&self) -> i32 {
         self.selected.map_or(-1, |i| i as i32)
+    }
+
+    /// Number of tables in the scene.
+    pub fn table_count(&self) -> usize {
+        self.tables.len()
+    }
+
+    /// Appends a new table built from the default template, centered in the
+    /// current viewport, and selects it. Flags the layout dirty so the next
+    /// render measures the new table's text and fits its width.
+    pub fn add_table(&mut self) {
+        let (wx, wy) = self.screen_to_world(self.width * 0.5, self.height * 0.5);
+        let name = format!("new_table_{}", self.tables.len() + 1);
+        let table = Table::from_template(name, wx - MIN_TABLE_W * 0.5, wy - HEADER_H);
+        self.tables.push(table);
+        self.selected = Some(self.tables.len() - 1);
+        self.laid_out = false;
     }
 
     fn screen_to_world(&self, x: f64, y: f64) -> (f64, f64) {
@@ -267,9 +240,9 @@ impl Scene {
             return;
         }
         for table in &mut self.tables {
-            ctx.set_font("600 14px sans-serif");
+            ctx.set_font(FONT_HEAD);
             let mut max = measure(ctx, &table.name);
-            ctx.set_font("13px sans-serif");
+            ctx.set_font(FONT_ROW);
             for col in &table.columns {
                 max = max.max(measure(ctx, &col.name));
             }
@@ -378,10 +351,19 @@ fn rounded_top(ctx: &CanvasRenderingContext2d, x: f64, y: f64, w: f64, h: f64, r
 fn draw_table(ctx: &CanvasRenderingContext2d, t: &Table, selected: bool) {
     let h = t.height();
 
-    // Body.
+    // Body — drawn with a soft drop shadow so surfaces read as cards on the
+    // light canvas (mirrors --shadow-sm). The shadow is cleared immediately
+    // afterwards so nothing else inherits it.
+    ctx.set_shadow_color(COL_SHADOW);
+    ctx.set_shadow_blur(12.0);
+    ctx.set_shadow_offset_x(0.0);
+    ctx.set_shadow_offset_y(3.0);
     rounded_rect(ctx, t.x, t.y, t.w, h, CORNER_R);
     ctx.set_fill_style_str(COL_TABLE_BG);
     ctx.fill();
+    ctx.set_shadow_color("rgba(0, 0, 0, 0)");
+    ctx.set_shadow_blur(0.0);
+    ctx.set_shadow_offset_y(0.0);
 
     // Header band.
     rounded_top(ctx, t.x, t.y, t.w, HEADER_H, CORNER_R);
@@ -390,7 +372,7 @@ fn draw_table(ctx: &CanvasRenderingContext2d, t: &Table, selected: bool) {
 
     // Header: table glyph + name.
     draw_table_glyph(ctx, t.x + PAD_X + ICON_W * 0.5, t.y + HEADER_H * 0.5);
-    ctx.set_font("600 14px sans-serif");
+    ctx.set_font(FONT_HEAD);
     ctx.set_text_baseline("middle");
     ctx.set_text_align("left");
     ctx.set_fill_style_str(COL_TEXT_HEAD);
@@ -401,7 +383,7 @@ fn draw_table(ctx: &CanvasRenderingContext2d, t: &Table, selected: bool) {
     );
 
     // Column rows.
-    ctx.set_font("13px sans-serif");
+    ctx.set_font(FONT_ROW);
     for (i, col) in t.columns.iter().enumerate() {
         let cy = t.row_y(i);
         let icon_cx = t.x + PAD_X + ICON_W * 0.5;

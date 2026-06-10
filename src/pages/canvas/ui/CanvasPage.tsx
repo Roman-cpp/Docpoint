@@ -3,6 +3,15 @@ import styles from "./CanvasPage.module.css";
 
 export function CanvasPage() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	// Holds the live scene and a bound render callback so toolbar actions
+	// (outside the effect) can mutate and repaint the diagram.
+	const sceneRef = useRef<import("canvas-wasm").Scene | null>(null);
+	const renderRef = useRef<(() => void) | null>(null);
+
+	const handleAddTable = () => {
+		sceneRef.current?.add_table();
+		renderRef.current?.();
+	};
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -70,6 +79,8 @@ export function CanvasPage() {
 		import("canvas-wasm").then(({ Scene }) => {
 			if (disposed) return;
 			scene = new Scene();
+			sceneRef.current = scene;
+			renderRef.current = () => scene?.render(ctx);
 			resize();
 		});
 
@@ -88,14 +99,28 @@ export function CanvasPage() {
 			window.removeEventListener("resize", resize);
 			scene?.free();
 			scene = null;
+			sceneRef.current = null;
+			renderRef.current = null;
 		};
 	}, []);
 
 	return (
 		<div className={styles.page}>
-			<p className={styles.hint}>
-				Перетаскивайте таблицы · колесо — масштаб · фон — панорама
-			</p>
+			<div className={styles.toolbar}>
+				<p className={styles.hint}>
+					Перетаскивайте таблицы · колесо — масштаб · фон — панорама
+				</p>
+				<button
+					type="button"
+					className={styles.addBtn}
+					onClick={handleAddTable}
+				>
+					<span className={styles.addBtnIcon} aria-hidden>
+						+
+					</span>
+					Таблица
+				</button>
+			</div>
 			<canvas ref={canvasRef} className={styles.canvas} />
 		</div>
 	);
