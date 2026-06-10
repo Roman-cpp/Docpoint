@@ -3,8 +3,10 @@ use web_sys::CanvasRenderingContext2d;
 
 mod domain;
 
-use domain::relation::model::Relation;
-use domain::table::model::{ColKind, Column, Table, HEADER_H};
+use domain::relation::model::{Endpoint, Relation};
+use domain::table::model::{ColKind, Column, Table, HEADER_H, ROW_H};
+
+const TAU: f64 = std::f64::consts::PI * 2.0;
 
 // ---------------------------------------------------------------------------
 // Rendering layout constants (in world / CSS pixels, before camera scaling).
@@ -15,6 +17,10 @@ const ICON_W: f64 = 20.0;
 const TEXT_GAP: f64 = 6.0;
 const MIN_TABLE_W: f64 = 170.0;
 const CORNER_R: f64 = 8.0;
+const PORT_R: f64 = 4.0; // visible connection-port radius
+const PORT_HIT: f64 = 8.0; // grab tolerance around a port, in world px
+const REL_HIT: f64 = 6.0; // click tolerance around a relation curve, in screen px
+const BADGE_R: f64 = 9.0; // delete-badge radius on a selected relation
 
 // Light theme palette — mirrors the app's design tokens (tokens.css):
 // warm cream canvas, white surfaces, earthy accents.
@@ -29,6 +35,8 @@ const COL_TEXT_HEAD: &str = "#1a1a1a"; // --ink
 const COL_TEXT_DIM: &str = "#888888"; // --ink-low
 const COL_KEY: &str = "#3f6b4a"; // --green
 const COL_REL: &str = "#c8c0b4"; // --border-h
+const COL_REL_SEL: &str = "#3a5a78"; // --blue, selected relation
+const COL_DELETE: &str = "#9b3b36"; // --red, delete badge
 const COL_SHADOW: &str = "rgba(0, 0, 0, 0.08)"; // --shadow-sm tone
 
 // Font stacks mirroring --font-serif / --font-mono in tokens.css.
@@ -52,6 +60,41 @@ struct PanState {
     cam_y: f64,
 }
 
+/// An in-progress relation drag started from a column port: the source endpoint,
+/// which side of the table the port sits on, and the live cursor position in
+/// world coordinates (drives the preview curve).
+struct LinkState {
+    from: Endpoint,
+    from_right: bool,
+    cursor: (f64, f64),
+}
+
+/// The resolved cubic-bezier geometry of a relation, in world coordinates.
+/// The two control points share the y of their anchor (`c1.y == ay`,
+/// `c2.y == by`), so only their x is stored.
+struct Curve {
+    ax: f64,
+    ay: f64,
+    c1x: f64,
+    c2x: f64,
+    bx: f64,
+    by: f64,
+    src_right: bool,
+    dst_right: bool,
+}
+
+impl Curve {
+    /// Point on the curve at parameter `t` in `[0, 1]`.
+    fn point(&self, t: f64) -> (f64, f64) {
+        let mt = 1.0 - t;
+        let (a, b, c, d) = (mt * mt * mt, 3.0 * mt * mt * t, 3.0 * mt * t * t, t * t * t);
+        let x = a * self.ax + b * self.c1x + c * self.c2x + d * self.bx;
+        // Control-point y's equal their anchor y's.
+        let y = a * self.ay + b * self.ay + c * self.by + d * self.by;
+        (x, y)
+    }
+}
+
 /// The whole diagram. All hit-testing, camera math, drag/pan state and
 /// rendering live here; the JS side only forwards CSS-pixel pointer
 /// coordinates and viewport size.
@@ -69,7 +112,13 @@ pub struct Scene {
     scale: f64,
     drag: Option<DragState>,
     pan: Option<PanState>,
+    link: Option<LinkState>,
     selected: Option<usize>,
+    selected_rel: Option<usize>,
+    // The column row whose ports are currently revealed (cursor hovering it).
+    hover_col: Option<Endpoint>,
+    // Desired CSS cursor for the current pointer state; read by JS.
+    cursor: String,
     laid_out: bool,
 }
 
@@ -90,7 +139,11 @@ impl Scene {
             scale: 1.0,
             drag: None,
             pan: None,
+            link: None,
             selected: None,
+            selected_rel: None,
+            hover_col: None,
+            cursor: "default".to_string(),
             laid_out: false,
         };
         scene.seed_sample();
@@ -131,73 +184,259 @@ impl Scene {
         ((x - self.cam_x) / self.scale, (y - self.cam_y) / self.scale)
     }
 
-    /// Begins dragging the topmost table under the cursor, or starts a canvas
-    /// pan over empty space. Coordinates are CSS pixels. Returns `true` when a
-    /// table was grabbed.
+    /// The CSS cursor name matching the current pointer state. Read by JS after
+    /// every pointer event.
+    pub fn cursor(&self) -> String {
+        self.cursor.clone()
+    }
+
+    /// Routes a left-button press, in priority order: delete a selected
+    /// relation via its badge, start a relation drag from a column port, select
+    /// a relation curve, drag a table, or pan empty space. Coordinates are CSS
+    /// pixels.
     pub fn on_mouse_down(&mut self, x: f64, y: f64) -> bool {
         let (wx, wy) = self.screen_to_world(x, y);
 
-        let hit = self.tables.iter().rposition(|t| t.contains(wx, wy));
-        match hit {
-            Some(index) => {
-                let t = &self.tables[index];
-                self.drag = Some(DragState {
-                    index,
-                    offset_x: wx - t.x,
-                    offset_y: wy - t.y,
-                });
-                self.selected = Some(index);
-                true
-            }
-            None => {
-                self.selected = None;
-                self.pan = Some(PanState {
-                    start_x: x,
-                    start_y: y,
-                    cam_x: self.cam_x,
-                    cam_y: self.cam_y,
-                });
-                false
+        // 1. The delete badge of the currently selected relation.
+        if let Some(ri) = self.selected_rel {
+            if self.over_delete_badge(ri, wx, wy) {
+                self.relations.remove(ri);
+                self.selected_rel = None;
+                self.cursor = "default".to_string();
+                return false;
             }
         }
+
+        // 2. A column port — start drawing a new relation.
+        if let Some((ti, ci, right)) = self.hit_port(wx, wy) {
+            self.selected = None;
+            self.selected_rel = None;
+            self.link = Some(LinkState {
+                from: (ti, ci),
+                from_right: right,
+                cursor: (wx, wy),
+            });
+            self.cursor = "crosshair".to_string();
+            return false;
+        }
+
+        // 3. A relation curve — select it.
+        if let Some(ri) = self.hit_relation(wx, wy) {
+            self.selected = None;
+            self.selected_rel = Some(ri);
+            self.cursor = "pointer".to_string();
+            return false;
+        }
+
+        // 4. A table body — drag it.
+        if let Some(index) = self.tables.iter().rposition(|t| t.contains(wx, wy)) {
+            let t = &self.tables[index];
+            self.drag = Some(DragState {
+                index,
+                offset_x: wx - t.x,
+                offset_y: wy - t.y,
+            });
+            self.selected = Some(index);
+            self.selected_rel = None;
+            self.cursor = "grabbing".to_string();
+            return true;
+        }
+
+        // 5. Empty space — pan.
+        self.selected = None;
+        self.selected_rel = None;
+        self.pan = Some(PanState {
+            start_x: x,
+            start_y: y,
+            cam_x: self.cam_x,
+            cam_y: self.cam_y,
+        });
+        self.cursor = "grabbing".to_string();
+        false
     }
 
-    /// Updates an in-progress table drag or canvas pan. Returns `true` when
-    /// something moved and a redraw is needed.
+    /// Updates whatever interaction is live (table drag, relation drag, pan) or,
+    /// when idle, refreshes hover state and the cursor. Returns `true` when a
+    /// redraw is needed.
     pub fn on_mouse_move(&mut self, x: f64, y: f64) -> bool {
+        let (wx, wy) = self.screen_to_world(x, y);
+
         if let Some(drag) = &self.drag {
-            let (wx, wy) = self.screen_to_world(x, y);
             if let Some(t) = self.tables.get_mut(drag.index) {
                 t.x = wx - drag.offset_x;
                 t.y = wy - drag.offset_y;
-                return true;
             }
+            self.cursor = "grabbing".to_string();
+            return true;
+        }
+
+        if self.link.is_some() {
+            // Reveal the prospective target row's ports while dragging.
+            let target = self.hit_row(wx, wy);
+            if let Some(link) = self.link.as_mut() {
+                link.cursor = (wx, wy);
+            }
+            self.hover_col = target;
+            self.cursor = "crosshair".to_string();
+            return true;
         }
 
         if let Some(pan) = &self.pan {
             self.cam_x = pan.cam_x + (x - pan.start_x);
             self.cam_y = pan.cam_y + (y - pan.start_y);
+            self.cursor = "grabbing".to_string();
             return true;
         }
 
-        false
+        // Idle hover: ports follow the row under the cursor; pick a cursor.
+        let prev = self.hover_col;
+        self.hover_col = self.hit_row(wx, wy);
+
+        let over_badge = self
+            .selected_rel
+            .is_some_and(|ri| self.over_delete_badge(ri, wx, wy));
+
+        self.cursor = if over_badge {
+            "pointer"
+        } else if self.hit_port(wx, wy).is_some() {
+            "crosshair"
+        } else if self.hit_relation(wx, wy).is_some() {
+            "pointer"
+        } else if self.tables.iter().any(|t| t.contains(wx, wy)) {
+            "grab"
+        } else {
+            "default"
+        }
+        .to_string();
+
+        prev != self.hover_col
     }
 
-    /// Ends any in-progress drag or pan.
-    pub fn on_mouse_up(&mut self) {
+    /// Ends any interaction. A relation drag dropped on a column row of a
+    /// different table creates a new relation. Returns `true` when a redraw is
+    /// needed.
+    pub fn on_mouse_up(&mut self, x: f64, y: f64) -> bool {
+        let mut dirty = false;
+
+        if let Some(link) = self.link.take() {
+            let (wx, wy) = self.screen_to_world(x, y);
+            if let Some((ti, ci)) = self.hit_row(wx, wy) {
+                let to: Endpoint = (ti, ci);
+                let valid = ti != link.from.0
+                    && !self.relations.iter().any(|r| r.connects(link.from, to));
+                if valid {
+                    self.relations.push(Relation::new(link.from, to));
+                    self.selected_rel = Some(self.relations.len() - 1);
+                }
+            }
+            dirty = true;
+        }
+
         self.drag = None;
         self.pan = None;
+        dirty
     }
 
-    /// Whether the cursor is over any table (used by JS to pick the cursor).
-    pub fn contains(&self, x: f64, y: f64) -> bool {
-        let (wx, wy) = self.screen_to_world(x, y);
-        self.tables.iter().any(|t| t.contains(wx, wy))
-    }
-
-    /// Whether a table drag or pan is currently active.
+    /// Whether a table drag, relation drag, or pan is currently active.
     pub fn is_interacting(&self) -> bool {
-        self.drag.is_some() || self.pan.is_some()
+        self.drag.is_some() || self.pan.is_some() || self.link.is_some()
+    }
+
+    // -----------------------------------------------------------------------
+    // Hit-testing
+    // -----------------------------------------------------------------------
+
+    /// The `(table, column)` row at a world point, if the point is over a
+    /// column row (not the header) of some table. Topmost table wins.
+    fn hit_row(&self, wx: f64, wy: f64) -> Option<Endpoint> {
+        for (ti, t) in self.tables.iter().enumerate().rev() {
+            if !t.contains(wx, wy) || wy < t.y + HEADER_H {
+                continue;
+            }
+            let idx = ((wy - t.y - HEADER_H) / ROW_H).floor() as usize;
+            if idx < t.columns.len() {
+                return Some((ti, idx));
+            }
+            return None;
+        }
+        None
+    }
+
+    /// The column port near a world point: `(table, column, on_right_edge)`.
+    /// Ports sit at each row's vertical center on the left and right edges.
+    fn hit_port(&self, wx: f64, wy: f64) -> Option<(usize, usize, bool)> {
+        for (ti, t) in self.tables.iter().enumerate().rev() {
+            for ci in 0..t.columns.len() {
+                let cy = t.row_y(ci);
+                for (right, px) in [(false, t.x), (true, t.x + t.w)] {
+                    if (wx - px).powi(2) + (wy - cy).powi(2) <= PORT_HIT * PORT_HIT {
+                        return Some((ti, ci, right));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Index of the relation whose curve passes near a world point.
+    fn hit_relation(&self, wx: f64, wy: f64) -> Option<usize> {
+        // Tolerance is a screen distance, so widen it as the scene zooms out.
+        let tol = (REL_HIT / self.scale).max(REL_HIT);
+        for (i, rel) in self.relations.iter().enumerate() {
+            let Some(c) = self.rel_curve(rel) else {
+                continue;
+            };
+            const N: usize = 24;
+            let mut prev = c.point(0.0);
+            for k in 1..=N {
+                let p = c.point(k as f64 / N as f64);
+                if dist_to_segment(wx, wy, prev, p) <= tol {
+                    return Some(i);
+                }
+                prev = p;
+            }
+        }
+        None
+    }
+
+    /// Whether a world point falls on relation `ri`'s delete badge (its curve
+    /// midpoint).
+    fn over_delete_badge(&self, ri: usize, wx: f64, wy: f64) -> bool {
+        self.relations
+            .get(ri)
+            .and_then(|rel| self.rel_curve(rel))
+            .map(|c| c.point(0.5))
+            .is_some_and(|(mx, my)| (wx - mx).powi(2) + (wy - my).powi(2) <= BADGE_R * BADGE_R)
+    }
+
+    /// Resolves a relation's bezier geometry from the current table positions.
+    fn rel_curve(&self, rel: &Relation) -> Option<Curve> {
+        let src = self.tables.get(rel.from.0)?;
+        let dst = self.tables.get(rel.to.0)?;
+        if rel.from.1 >= src.columns.len() || rel.to.1 >= dst.columns.len() {
+            return None;
+        }
+
+        let src_right = src.center_x() <= dst.center_x();
+        let dst_right = !src_right;
+        let ax = if src_right { src.x + src.w } else { src.x };
+        let ay = src.row_y(rel.from.1);
+        let bx = if dst_right { dst.x + dst.w } else { dst.x };
+        let by = dst.row_y(rel.to.1);
+        let dx = ((bx - ax).abs() * 0.5).max(40.0);
+        let c1x = ax + if src_right { dx } else { -dx };
+        let c2x = bx + if dst_right { dx } else { -dx };
+
+        Some(Curve {
+            ax,
+            ay,
+            c1x,
+            c2x,
+            bx,
+            by,
+            src_right,
+            dst_right,
+        })
     }
 
     /// Zooms toward the cursor by `factor`, keeping the world point under the
@@ -232,6 +471,10 @@ impl Scene {
         for (i, table) in self.tables.iter().enumerate() {
             draw_table(ctx, table, self.selected == Some(i));
         }
+        // Editing overlays sit above the tables.
+        self.draw_ports(ctx);
+        self.draw_link_preview(ctx);
+        self.draw_delete_badge(ctx);
     }
 
     /// Computes each table's width from its text, once. Mutates `w` in place.
@@ -274,40 +517,105 @@ impl Scene {
         }
     }
 
-    /// Draws every relation as a bezier curve with crow's-foot endpoints.
+    /// Draws every relation as a bezier curve with crow's-foot endpoints. The
+    /// selected relation is highlighted in the accent color.
     fn draw_relations(&self, ctx: &CanvasRenderingContext2d) {
-        ctx.set_stroke_style_str(COL_REL);
-        ctx.set_line_width(1.5);
-
-        for rel in &self.relations {
-            let (Some(src), Some(dst)) = (
-                self.tables.get(rel.from.0),
-                self.tables.get(rel.to.0),
-            ) else {
+        for (i, rel) in self.relations.iter().enumerate() {
+            let Some(c) = self.rel_curve(rel) else {
                 continue;
             };
-
-            // Anchor each end on the side facing the other table.
-            let src_right = src.center_x() <= dst.center_x();
-            let dst_right = !src_right;
-
-            let ax = if src_right { src.x + src.w } else { src.x };
-            let ay = src.row_y(rel.from.1);
-            let bx = if dst_right { dst.x + dst.w } else { dst.x };
-            let by = dst.row_y(rel.to.1);
-
-            let dx = ((bx - ax).abs() * 0.5).max(40.0);
-            let c1x = ax + if src_right { dx } else { -dx };
-            let c2x = bx + if dst_right { dx } else { -dx };
+            let selected = self.selected_rel == Some(i);
+            ctx.set_stroke_style_str(if selected { COL_REL_SEL } else { COL_REL });
+            ctx.set_line_width(if selected { 2.0 } else { 1.5 });
 
             ctx.begin_path();
-            ctx.move_to(ax, ay);
-            ctx.bezier_curve_to(c1x, ay, c2x, by, bx, by);
+            ctx.move_to(c.ax, c.ay);
+            ctx.bezier_curve_to(c.c1x, c.ay, c.c2x, c.by, c.bx, c.by);
             ctx.stroke();
 
-            draw_one(ctx, ax, ay, src_right);
-            draw_many(ctx, bx, by, dst_right);
+            draw_one(ctx, c.ax, c.ay, c.src_right);
+            draw_many(ctx, c.bx, c.by, c.dst_right);
         }
+    }
+
+    /// Reveals the connection ports (left + right) on the hovered column row.
+    fn draw_ports(&self, ctx: &CanvasRenderingContext2d) {
+        let Some((ti, ci)) = self.hover_col else {
+            return;
+        };
+        let Some(t) = self.tables.get(ti) else {
+            return;
+        };
+        let cy = t.row_y(ci);
+        ctx.set_line_width(1.5);
+        for px in [t.x, t.x + t.w] {
+            ctx.begin_path();
+            let _ = ctx.arc(px, cy, PORT_R, 0.0, TAU);
+            ctx.set_fill_style_str(COL_TABLE_BG);
+            ctx.fill();
+            ctx.set_stroke_style_str(COL_REL_SEL);
+            ctx.stroke();
+        }
+    }
+
+    /// Draws the live preview curve while a relation is being dragged out.
+    fn draw_link_preview(&self, ctx: &CanvasRenderingContext2d) {
+        let Some(link) = &self.link else {
+            return;
+        };
+        let Some(t) = self.tables.get(link.from.0) else {
+            return;
+        };
+        let ax = if link.from_right { t.x + t.w } else { t.x };
+        let ay = t.row_y(link.from.1);
+        let (bx, by) = link.cursor;
+        let dx = ((bx - ax).abs() * 0.5).max(40.0);
+        let c1x = ax + if link.from_right { dx } else { -dx };
+
+        ctx.set_stroke_style_str(COL_REL_SEL);
+        ctx.set_line_width(1.8);
+        ctx.begin_path();
+        ctx.move_to(ax, ay);
+        ctx.bezier_curve_to(c1x, ay, bx, by, bx, by);
+        ctx.stroke();
+
+        // Source anchor dot.
+        ctx.begin_path();
+        let _ = ctx.arc(ax, ay, PORT_R, 0.0, TAU);
+        ctx.set_fill_style_str(COL_REL_SEL);
+        ctx.fill();
+    }
+
+    /// Draws the round ✕ delete badge at the midpoint of the selected relation.
+    fn draw_delete_badge(&self, ctx: &CanvasRenderingContext2d) {
+        let Some(ri) = self.selected_rel else {
+            return;
+        };
+        let Some((mx, my)) = self
+            .relations
+            .get(ri)
+            .and_then(|rel| self.rel_curve(rel))
+            .map(|c| c.point(0.5))
+        else {
+            return;
+        };
+
+        ctx.begin_path();
+        let _ = ctx.arc(mx, my, BADGE_R, 0.0, TAU);
+        ctx.set_fill_style_str(COL_TABLE_BG);
+        ctx.fill();
+        ctx.set_stroke_style_str(COL_DELETE);
+        ctx.set_line_width(1.5);
+        ctx.stroke();
+
+        let d = 3.5;
+        ctx.begin_path();
+        ctx.move_to(mx - d, my - d);
+        ctx.line_to(mx + d, my + d);
+        ctx.move_to(mx + d, my - d);
+        ctx.line_to(mx - d, my + d);
+        ctx.set_line_width(1.6);
+        ctx.stroke();
     }
 }
 
@@ -323,6 +631,21 @@ impl Default for Scene {
 
 fn measure(ctx: &CanvasRenderingContext2d, text: &str) -> f64 {
     ctx.measure_text(text).map(|m| m.width()).unwrap_or(0.0)
+}
+
+/// Shortest distance from point `(px, py)` to the segment `a`–`b`.
+fn dist_to_segment(px: f64, py: f64, a: (f64, f64), b: (f64, f64)) -> f64 {
+    let (ax, ay) = a;
+    let (bx, by) = b;
+    let (dx, dy) = (bx - ax, by - ay);
+    let len_sq = dx * dx + dy * dy;
+    let t = if len_sq <= f64::EPSILON {
+        0.0
+    } else {
+        (((px - ax) * dx + (py - ay) * dy) / len_sq).clamp(0.0, 1.0)
+    };
+    let (cx, cy) = (ax + t * dx, ay + t * dy);
+    ((px - cx).powi(2) + (py - cy).powi(2)).sqrt()
 }
 
 /// Traces a rounded rectangle path (does not stroke or fill).

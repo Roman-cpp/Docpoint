@@ -45,25 +45,25 @@ export function CanvasPage() {
 		const handleMouseDown = (e: MouseEvent) => {
 			if (e.button !== 0 || !scene) return;
 			const { x, y } = getPos(e);
-			const grabbed = scene.on_mouse_down(x, y);
-			canvas.style.cursor = grabbed ? "grabbing" : "move";
+			scene.on_mouse_down(x, y);
+			canvas.style.cursor = scene.cursor();
 			scene.render(ctx);
 		};
 
 		const handleMouseMove = (e: MouseEvent) => {
 			if (!scene) return;
 			const { x, y } = getPos(e);
-			if (scene.on_mouse_move(x, y)) {
-				scene.render(ctx);
-				return;
-			}
-			canvas.style.cursor = scene.contains(x, y) ? "grab" : "default";
+			const dirty = scene.on_mouse_move(x, y);
+			canvas.style.cursor = scene.cursor();
+			if (dirty) scene.render(ctx);
 		};
 
-		const handleMouseUp = () => {
+		const handleMouseUp = (e: MouseEvent) => {
 			if (!scene) return;
-			scene.on_mouse_up();
-			canvas.style.cursor = "default";
+			const { x, y } = getPos(e);
+			const dirty = scene.on_mouse_up(x, y);
+			canvas.style.cursor = scene.cursor();
+			if (dirty) scene.render(ctx);
 		};
 
 		const handleWheel = (e: WheelEvent) => {
@@ -108,7 +108,8 @@ export function CanvasPage() {
 		<div className={styles.page}>
 			<div className={styles.toolbar}>
 				<p className={styles.hint}>
-					Перетаскивайте таблицы · колесо — масштаб · фон — панорама
+					Тяните от поля к полю — связь · клик по связи, затем ✕ —
+					удалить · колесо — масштаб
 				</p>
 				<button
 					type="button"
