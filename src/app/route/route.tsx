@@ -46,6 +46,12 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/environment")).EnvironmentPage,
 				}),
 			},
+			{
+				path: "/canvas",
+				lazy: async () => ({
+					Component: (await import("@/pages/canvas")).CanvasPage,
+				}),
+			},
 		],
 	},
 ]);

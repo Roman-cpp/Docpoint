@@ -1,0 +1,26 @@
+.page {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.hint {
+	margin: 0;
+	font-size: 13px;
+	color: #8b949e;
+}
+
+.canvas {
+	flex: 1;
+	width: 100%;
+	min-height: 0;
+	display: block;
+	border: 1px solid #30363d;
+	border-radius: 8px;
+	background: #0d1117;
+	cursor: default;
+	touch-action: none;
+}
