@@ -59,6 +59,12 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
+				path: "/files",
+				lazy: async () => ({
+					Component: (await import("@/pages/file-explorer")).FileExplorerPage,
+				}),
+			},
+			{
 				path: "/endpoint-show/:id",
 				lazy: async () => ({
 					Component: (await import("@/pages/endpoint-show")).EndpointShowPage,
