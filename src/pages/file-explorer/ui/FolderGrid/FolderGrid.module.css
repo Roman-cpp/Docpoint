@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════════
+   ФАЙЛОВЫЙ ПРОВОДНИК — сетка каталогов (FolderGrid).
+   Палитра и токены Docpoint. Префикс `fe-`.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════ SECTION ═══════════════ */
+.fe-section {
+	margin-bottom: 28px;
+}
+.fe-section-title {
+	font-size: 11px;
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.7px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin: 0 0 12px;
+}
+
+/* ═══════════════ FOLDER ROWS ═══════════════ */
+.fe-folder-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 10px;
+}
+.fe-folder {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--surface);
+	cursor: pointer;
+	text-align: left;
+	font-family: var(--font-sans);
+	transition:
+		border-color var(--t-base),
+		box-shadow var(--t-base),
+		transform var(--t-base);
+}
+.fe-folder:hover {
+	border-color: var(--border-h);
+	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.06);
+	transform: translateY(-1px);
+}
+.fe-folder .fe-tile {
+	margin-bottom: 0;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+}
+.fe-folder-body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.fe-folder-name {
+	font-size: 13.5px;
+	font-weight: var(--fw-medium);
+	color: var(--ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fe-folder-count {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+.fe-folder-go {
+	flex-shrink: 0;
+	display: inline-flex;
+	color: var(--ink-low);
+	opacity: 0;
+	transform: translateX(-4px);
+	transition:
+		opacity var(--t-base),
+		transform var(--t-base);
+}
+.fe-folder:hover .fe-folder-go {
+	opacity: 1;
+	transform: translateX(0);
+	color: var(--ink);
+}
+
+/* ═══════════════ ICON TILE ═══════════════ */
+.fe-tile {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: var(--r-lg);
+	margin-bottom: 14px;
+}
+.fe-tile-folder {
+	color: var(--blue);
+	background: var(--blue-bg);
+	border: 1px solid var(--blue-border);
+}

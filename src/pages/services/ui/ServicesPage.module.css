@@ -160,7 +160,9 @@
 	padding: 16px 18px 14px;
 	display: flex;
 	flex-direction: column;
-	transition: border-color var(--t-base), box-shadow var(--t-base);
+	transition:
+		border-color var(--t-base),
+		box-shadow var(--t-base);
 }
 .sv-card:hover {
 	border-color: var(--border-h);

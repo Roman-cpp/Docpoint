@@ -118,7 +118,9 @@ function formatNum(n: number): string {
 /* ─── Page ─── */
 export const ServicesPage: FC = () => {
 	const [search, setSearch] = useState("");
-	const [activeStatus, setActiveStatus] = useState<ServiceStatus | "all">("all");
+	const [activeStatus, setActiveStatus] = useState<ServiceStatus | "all">(
+		"all",
+	);
 
 	const rows = useMemo(() => {
 		const q = search.trim().toLowerCase();
@@ -200,10 +202,7 @@ export const ServicesPage: FC = () => {
 								<div key={sv.id} className={s["sv-card"]}>
 									<div className={s["sv-card-head"]}>
 										<span
-											className={cx(
-												s["sv-status"],
-												s[`sv-st-${sv.status}`],
-											)}
+											className={cx(s["sv-status"], s[`sv-st-${sv.status}`])}
 										>
 											<span className={s["sv-dot"]} />
 											{STATUS_LABEL[sv.status]}
@@ -237,7 +236,15 @@ export const ServicesPage: FC = () => {
 
 /* ─── Icons ─── */
 const SearchIcon: FC = () => (
-	<svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+	<svg
+		viewBox="0 0 14 14"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+	>
 		<title>search</title>
 		<circle cx="6" cy="6" r="4.2" />
 		<path d="M9.2 9.2L12 12" />

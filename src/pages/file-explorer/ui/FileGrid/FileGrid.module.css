@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════════
+   ФАЙЛОВЫЙ ПРОВОДНИК — сетка файлов (FileGrid).
+   Палитра и токены Docpoint. Префикс `fe-`.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════ SECTION ═══════════════ */
+.fe-section {
+	margin-bottom: 28px;
+}
+.fe-section-title {
+	font-size: 11px;
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.7px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin: 0 0 12px;
+}
+
+/* ═══════════════ GRID ═══════════════ */
+.fe-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 14px;
+}
+
+/* ═══════════════ CARD ═══════════════ */
+.fe-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	text-align: left;
+	gap: 4px;
+	min-height: 132px;
+	padding: 16px 18px 14px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	background: var(--surface);
+	cursor: pointer;
+	font-family: var(--font-sans);
+	transition:
+		border-color var(--t-base),
+		box-shadow var(--t-base),
+		transform var(--t-base);
+}
+.fe-card:hover {
+	border-color: var(--border-h);
+	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.06);
+	transform: translateY(-1px);
+}
+.fe-card-active {
+	border-color: var(--ink);
+	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.08);
+}
+
+.fe-card-name {
+	margin-top: auto;
+	font-size: 13.5px;
+	color: var(--ink);
+	font-weight: var(--fw-medium);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+.fe-card-meta {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+
+/* shared indicator — corner chip */
+.fe-share-dot {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: var(--r-circle);
+	color: var(--green);
+	background: var(--green-bg);
+	border: 1px solid var(--green-border);
+}
+
+/* ═══════════════ ICON TILE ═══════════════ */
+.fe-tile {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: var(--r-lg);
+	margin-bottom: 14px;
+}
+.fe-tile-doc {
+	color: var(--blue);
+	background: var(--blue-bg);
+	border: 1px solid var(--blue-border);
+}

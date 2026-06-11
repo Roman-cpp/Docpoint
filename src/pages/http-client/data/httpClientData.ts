@@ -125,4 +125,3 @@ export function pickMockResponse(
 		return MOCK.created;
 	return MOCK.users_list;
 }
-

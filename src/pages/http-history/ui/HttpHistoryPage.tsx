@@ -163,7 +163,8 @@ export const HttpHistoryPage: FC = () => {
 	const search = useRequestStore(selectSearch);
 	const pagination = useRequestStore(selectPagination);
 
-  const [isDialogRequestDetailOpen, setIsDialogRequestDetailOpen] = useState<boolean>(false)
+	const [isDialogRequestDetailOpen, setIsDialogRequestDetailOpen] =
+		useState<boolean>(false);
 	const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 
@@ -214,10 +215,10 @@ export const HttpHistoryPage: FC = () => {
 		}
 	};
 
-  const onRowClick = (request: RequestSummary) => {
-    selectRequest(request.id);
-    setIsDialogRequestDetailOpen(true);
-  }
+	const onRowClick = (request: RequestSummary) => {
+		selectRequest(request.id);
+		setIsDialogRequestDetailOpen(true);
+	};
 
 	return (
 		<div className={s["hc-frame"]}>
@@ -227,49 +228,49 @@ export const HttpHistoryPage: FC = () => {
 				<Sidebar />
 
 				<main className={s["hc-page"]}>
-				<div className={s["hc-page-inner"]}>
-					<DtToolbar
-						title="История запросов"
-						subtitle="Все запросы, отправленные из HTTP-клиента. Кликните строку, чтобы посмотреть детали."
-						data={requestList}
-						searchKeys={["url", "method"]}
-						search={search}
-						onSearch={setSearch}
-						filters={HC_FILTERS}
-						activeFilter={activeFilter}
-						onFilter={onFilter}
-						toolbarActions={
-							<button
-								type="button"
-								className={cx(dt["dt-btn"], dt["dt-btn-danger"])}
-								onClick={() => setIsConfirmDeleteOpen(true)}
-								disabled={requestList.length === 0}
-							>
-								<TrashIcon />
-								Удалить все
-							</button>
-						}
-					/>
-					<DataTable
-						columns={HC_COLUMNS}
-						data={requestList}
-						rowKey={(r) => r.id}
-						search={search}
-						activeFilter={activeFilter}
-						filters={HC_FILTERS}
-						initialSort={null}
-						serverPagination={{
-							pageIndex: Math.max(0, pagination.page - 1),
-							pageSize: pagination.perPage || 25,
-							pageCount: pagination.totalPages,
-							total: pagination.total,
-							onPageChange: (pageIndex) => setPage(pageIndex + 1),
-							onPageSizeChange: setPerPage,
-						}}
-						onRowClick={(r) => onRowClick(r)}
-						activeKey={request?.id ?? null}
-					/>
-				</div>
+					<div className={s["hc-page-inner"]}>
+						<DtToolbar
+							title="История запросов"
+							subtitle="Все запросы, отправленные из HTTP-клиента. Кликните строку, чтобы посмотреть детали."
+							data={requestList}
+							searchKeys={["url", "method"]}
+							search={search}
+							onSearch={setSearch}
+							filters={HC_FILTERS}
+							activeFilter={activeFilter}
+							onFilter={onFilter}
+							toolbarActions={
+								<button
+									type="button"
+									className={cx(dt["dt-btn"], dt["dt-btn-danger"])}
+									onClick={() => setIsConfirmDeleteOpen(true)}
+									disabled={requestList.length === 0}
+								>
+									<TrashIcon />
+									Удалить все
+								</button>
+							}
+						/>
+						<DataTable
+							columns={HC_COLUMNS}
+							data={requestList}
+							rowKey={(r) => r.id}
+							search={search}
+							activeFilter={activeFilter}
+							filters={HC_FILTERS}
+							initialSort={null}
+							serverPagination={{
+								pageIndex: Math.max(0, pagination.page - 1),
+								pageSize: pagination.perPage || 25,
+								pageCount: pagination.totalPages,
+								total: pagination.total,
+								onPageChange: (pageIndex) => setPage(pageIndex + 1),
+								onPageSizeChange: setPerPage,
+							}}
+							onRowClick={(r) => onRowClick(r)}
+							activeKey={request?.id ?? null}
+						/>
+					</div>
 				</main>
 			</div>
 
@@ -294,9 +295,7 @@ export const HttpHistoryPage: FC = () => {
 					</>
 				}
 			>
-				<p className={s["hc-confirm-text"]}>
-					Это действие нельзя отменить.
-				</p>
+				<p className={s["hc-confirm-text"]}>Это действие нельзя отменить.</p>
 			</Modal>
 		</div>
 	);

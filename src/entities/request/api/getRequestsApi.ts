@@ -1,7 +1,7 @@
 import axios from "axios";
-import type { RequestSummary } from "../model/types";
+import type { HttpMethod } from "@/entities/endpoint";
 import type { HttpSuccessResponsePagination, Pagination } from "@/shared/model";
-import { HttpMethod } from "@/entities/endpoint";
+import type { RequestSummary } from "../model/types";
 
 /**
  * Filters accepted by GET /api/v1/requests.
@@ -22,15 +22,12 @@ export interface RequestFilters {
 	perPage?: number;
 }
 
-
 /** Builds the query params for GET /api/v1/requests from the given filters. */
 function buildParams(filters?: RequestFilters): Record<string, string> {
 	const params: Record<string, string> = {};
 
 	if (filters?.method?.length) {
-		params.method = filters.method
-			.map((m) => m.trim().toUpperCase())
-			.join(",");
+		params.method = filters.method.map((m) => m.trim().toUpperCase()).join(",");
 	}
 
 	if (filters?.status?.length) {

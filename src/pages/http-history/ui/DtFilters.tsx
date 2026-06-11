@@ -22,7 +22,7 @@ export function DtFilters<T>({
 						key={f.id}
 						className={cx(s["dt-filter"], activeFilter === f.id && s.active)}
 						onClick={() => onFilter(f.id)}
-            type="button"
+						type="button"
 					>
 						{f.label}
 					</button>

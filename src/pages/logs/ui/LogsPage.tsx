@@ -78,7 +78,8 @@ const LOGS: LogEntry[] = [
 		level: "error",
 		at: "2026-06-09T10:37:21",
 		source: "import.parser",
-		message: "Не удалось разобрать файл импорта: неожиданный токен на строке 14",
+		message:
+			"Не удалось разобрать файл импорта: неожиданный токен на строке 14",
 		context: { file: "nexus-import.json", line: "14" },
 		stack:
 			"SyntaxError: Unexpected token } in JSON at position 482\n    at JSON.parse (<anonymous>)\n    at parseImport (import.parser.ts:58:21)",
@@ -152,98 +153,100 @@ export const LogsPage: FC = () => {
 				<Sidebar />
 
 				<main className={s["lg-page"]}>
-				<div className={s["lg-page-inner"]}>
-					{/* Toolbar */}
-					<div className={s["lg-toolbar"]}>
-						<div className={s["lg-toolbar-head"]}>
-							<div>
-								<h1 className={s["lg-title"]}>Логи</h1>
-								<p className={s["lg-subtitle"]}>
-									Системные события приложения. Кликните строку, чтобы
-									посмотреть детали.
-								</p>
+					<div className={s["lg-page-inner"]}>
+						{/* Toolbar */}
+						<div className={s["lg-toolbar"]}>
+							<div className={s["lg-toolbar-head"]}>
+								<div>
+									<h1 className={s["lg-title"]}>Логи</h1>
+									<p className={s["lg-subtitle"]}>
+										Системные события приложения. Кликните строку, чтобы
+										посмотреть детали.
+									</p>
+								</div>
+								<button type="button" className={s["lg-btn"]}>
+									<DownloadIcon />
+									Экспорт
+								</button>
 							</div>
-							<button type="button" className={s["lg-btn"]}>
-								<DownloadIcon />
-								Экспорт
-							</button>
+
+							<div className={s["lg-toolbar-controls"]}>
+								<label className={s["lg-search"]}>
+									<SearchIcon />
+									<input
+										type="text"
+										placeholder="Поиск по сообщению или источнику…"
+										value={search}
+										onChange={(e) => setSearch(e.target.value)}
+									/>
+								</label>
+
+								<div className={s["lg-chips"]}>
+									{LEVEL_FILTERS.map((f) => (
+										<button
+											key={f.id}
+											type="button"
+											className={cx(
+												s["lg-chip"],
+												activeLevel === f.id && s.active,
+											)}
+											onClick={() => setActiveLevel(f.id)}
+										>
+											{f.label}
+											{f.id !== "all" && (
+												<span className={s["lg-chip-count"]}>
+													{counts[f.id] ?? 0}
+												</span>
+											)}
+										</button>
+									))}
+								</div>
+							</div>
 						</div>
 
-						<div className={s["lg-toolbar-controls"]}>
-							<label className={s["lg-search"]}>
-								<SearchIcon />
-								<input
-									type="text"
-									placeholder="Поиск по сообщению или источнику…"
-									value={search}
-									onChange={(e) => setSearch(e.target.value)}
-								/>
-							</label>
+						{/* Table */}
+						<div className={s["lg-table"]}>
+							<div className={cx(s["lg-row"], s["lg-head"])}>
+								<span>Уровень</span>
+								<span>Время</span>
+								<span>Источник</span>
+								<span>Сообщение</span>
+							</div>
 
-							<div className={s["lg-chips"]}>
-								{LEVEL_FILTERS.map((f) => (
+							{rows.length === 0 ? (
+								<div className={s["lg-empty"]}>
+									Нет записей по заданным условиям
+								</div>
+							) : (
+								rows.map((log) => (
 									<button
-										key={f.id}
+										key={log.id}
 										type="button"
 										className={cx(
-											s["lg-chip"],
-											activeLevel === f.id && s.active,
+											s["lg-row"],
+											s["lg-row-btn"],
+											selectedId === log.id && s.active,
 										)}
-										onClick={() => setActiveLevel(f.id)}
+										onClick={() => setSelectedId(log.id)}
 									>
-										{f.label}
-										{f.id !== "all" && (
-											<span className={s["lg-chip-count"]}>
-												{counts[f.id] ?? 0}
+										<span>
+											<span
+												className={cx(s["lg-level"], s[`lg-lv-${log.level}`])}
+											>
+												<span className={s["lg-dot"]} />
+												{LEVEL_LABEL[log.level]}
 											</span>
-										)}
-									</button>
-								))}
-							</div>
-						</div>
-					</div>
-
-					{/* Table */}
-					<div className={s["lg-table"]}>
-						<div className={cx(s["lg-row"], s["lg-head"])}>
-							<span>Уровень</span>
-							<span>Время</span>
-							<span>Источник</span>
-							<span>Сообщение</span>
-						</div>
-
-						{rows.length === 0 ? (
-							<div className={s["lg-empty"]}>Нет записей по заданным условиям</div>
-						) : (
-							rows.map((log) => (
-								<button
-									key={log.id}
-									type="button"
-									className={cx(
-										s["lg-row"],
-										s["lg-row-btn"],
-										selectedId === log.id && s.active,
-									)}
-									onClick={() => setSelectedId(log.id)}
-								>
-									<span>
-										<span
-											className={cx(s["lg-level"], s[`lg-lv-${log.level}`])}
-										>
-											<span className={s["lg-dot"]} />
-											{LEVEL_LABEL[log.level]}
 										</span>
-									</span>
-									<span className={cx(s["lg-mono"], s["lg-muted"])}>
-										{formatAt(log.at)}
-									</span>
-									<span className={s["lg-mono"]}>{log.source}</span>
-									<span className={s["lg-msg"]}>{log.message}</span>
-								</button>
-							))
-						)}
+										<span className={cx(s["lg-mono"], s["lg-muted"])}>
+											{formatAt(log.at)}
+										</span>
+										<span className={s["lg-mono"]}>{log.source}</span>
+										<span className={s["lg-msg"]}>{log.message}</span>
+									</button>
+								))
+							)}
+						</div>
 					</div>
-				</div>
 				</main>
 			</div>
 
@@ -257,9 +260,7 @@ export const LogsPage: FC = () => {
 					/>
 					<aside className={s["lg-drawer"]}>
 						<div className={s["lg-drawer-head"]}>
-							<span
-								className={cx(s["lg-level"], s[`lg-lv-${selected.level}`])}
-							>
+							<span className={cx(s["lg-level"], s[`lg-lv-${selected.level}`])}>
 								<span className={s["lg-dot"]} />
 								{LEVEL_LABEL[selected.level]}
 							</span>
@@ -315,7 +316,15 @@ export const LogsPage: FC = () => {
 
 /* ─── Icons ─── */
 const SearchIcon: FC = () => (
-	<svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+	<svg
+		viewBox="0 0 14 14"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+	>
 		<title>search</title>
 		<circle cx="6" cy="6" r="4.2" />
 		<path d="M9.2 9.2L12 12" />
@@ -323,14 +332,31 @@ const SearchIcon: FC = () => (
 );
 
 const DownloadIcon: FC = () => (
-	<svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+	<svg
+		viewBox="0 0 14 14"
+		width="13"
+		height="13"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
 		<title>export</title>
 		<path d="M7 2v7M4 6.2L7 9.2 10 6.2M2.5 11.5h9" />
 	</svg>
 );
 
 const CloseIcon: FC = () => (
-	<svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+	<svg
+		viewBox="0 0 14 14"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+	>
 		<title>close</title>
 		<path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
 	</svg>

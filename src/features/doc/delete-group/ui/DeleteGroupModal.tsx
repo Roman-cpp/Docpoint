@@ -1,8 +1,7 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
-import { actionDeleteGroup } from "../../doc-workspace-state";
-import { useDocStore } from "../../doc-workspace-state";
+import { actionDeleteGroup, useDocStore } from "../../doc-workspace-state";
 
 interface DeleteGroupModalProps {
 	open: boolean;

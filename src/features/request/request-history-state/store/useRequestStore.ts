@@ -8,8 +8,8 @@ import {
 	getRequestByIdApi,
 	getRequestsApi,
 } from "@/entities/request";
+import type { RequestFilters } from "@/entities/request/api/getRequestsApi";
 import type { Pagination } from "@/shared/model/http-response.type";
-import { RequestFilters } from "@/entities/request/api/getRequestsApi";
 
 type RequestState = {
 	requestList: RequestSummary[];

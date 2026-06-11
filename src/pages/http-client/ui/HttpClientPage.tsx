@@ -11,9 +11,7 @@ import {
 } from "react";
 import type { HttpMethod } from "@/entities/endpoint";
 import { Header } from "@/widgets/header";
-import {
-	METHOD_CFG,
-} from "../data/httpClientData";
+import { METHOD_CFG } from "../data/httpClientData";
 import type {
 	AuthType,
 	BodyType,

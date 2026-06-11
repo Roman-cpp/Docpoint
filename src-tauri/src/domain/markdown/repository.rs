@@ -1,4 +1,6 @@
-use super::model::{CreateMarkdownDTO, MarkdownFile, UpdateMarkdownDTO};
+use super::model::{
+    CreateMarkdownDTO, DirListing, FileEntry, FolderEntry, MarkdownFile, UpdateMarkdownDTO,
+};
 use std::path::{Path, PathBuf};
 
 /// Filesystem-backed store for markdown files. Everything lives under
@@ -69,6 +71,53 @@ impl<'a> MarkdownRepo<'a> {
 
         out.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(out)
+    }
+
+    /// List the direct children of a folder inside the vault, split into
+    /// sub-folders and files. `folder` is a vault-relative path; an empty
+    /// string lists the vault root. A missing folder lists as empty.
+    pub async fn list(&self, folder: &str) -> Result<DirListing, String> {
+        let dir = if folder.is_empty() {
+            self.vault_dir.to_path_buf()
+        } else {
+            self.resolve(folder)?
+        };
+
+        let mut folders = Vec::new();
+        let mut files = Vec::new();
+
+        let mut rd = match tokio::fs::read_dir(&dir).await {
+            Ok(rd) => rd,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(DirListing { folders, files });
+            }
+            Err(e) => return Err(e.to_string()),
+        };
+
+        while let Some(entry) = rd.next_entry().await.map_err(|e| e.to_string())? {
+            let path = entry.path();
+            let ft = entry.file_type().await.map_err(|e| e.to_string())?;
+            let name = entry.file_name().to_string_lossy().to_string();
+
+            if ft.is_dir() {
+                folders.push(FolderEntry {
+                    id: self.rel_id(&path)?,
+                    name,
+                    children_count: count_children(&path).await?,
+                });
+            } else {
+                let meta = entry.metadata().await.map_err(|e| e.to_string())?;
+                files.push(FileEntry {
+                    name,
+                    size: meta.len(),
+                });
+            }
+        }
+
+        folders.sort_by(|a, b| a.name.cmp(&b.name));
+        files.sort_by(|a, b| a.name.cmp(&b.name));
+
+        Ok(DirListing { folders, files })
     }
 
     /// Read a single file by id, or `None` if it does not exist.
@@ -179,6 +228,17 @@ impl<'a> MarkdownRepo<'a> {
             updated,
         })
     }
+}
+
+/// Count the direct entries (files + sub-folders) inside a directory, without
+/// descending into it.
+async fn count_children(dir: &Path) -> Result<u64, String> {
+    let mut rd = tokio::fs::read_dir(dir).await.map_err(|e| e.to_string())?;
+    let mut count = 0u64;
+    while rd.next_entry().await.map_err(|e| e.to_string())?.is_some() {
+        count += 1;
+    }
+    Ok(count)
 }
 
 /// Split an optional leading `---` frontmatter block off the body and pull the

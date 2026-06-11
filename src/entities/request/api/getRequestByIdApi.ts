@@ -1,6 +1,6 @@
 import axios from "axios";
-import type { Request } from "../model/types";
 import type { HttpSuccessResponse } from "@/shared/model";
+import type { Request } from "../model/types";
 
 export async function getRequestByIdApi(
 	id: string,
@@ -13,6 +13,6 @@ export async function getRequestByIdApi(
 	);
 
 	return {
-    data: res.data,
-  };
+		data: res.data,
+	};
 }

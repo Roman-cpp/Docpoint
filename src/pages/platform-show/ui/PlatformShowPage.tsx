@@ -1,6 +1,11 @@
-import { type FC, useState } from "react";
-import { Link, useParams } from "react-router";
+import { type FC, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
+import {
+	type DirListing,
+	type File,
+	readDirectoryApi,
+} from "@/entities/file-explorer";
 import { usePlatformDocs, usePlatformsStore } from "@/entities/platform";
 import { DeleteDocModal, EditDocModal } from "@/features/doc";
 import {
@@ -11,8 +16,14 @@ import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
 import { exportDoc } from "@/pages/docs/lib/exportDoc";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
+import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
+import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
+import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
+import b from "./PlatformShowPage.module.css";
+
+const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {
@@ -22,6 +33,61 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEditOpen, setIsEditOpen] = useState(false);
+	const [listing, setListing] = useState<DirListing>(EMPTY_LISTING);
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	/** Current folder inside the vault: a vault-relative path, "" for the root. */
+	const [path, setPath] = useState("");
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		let cancelled = false;
+		readDirectoryApi(path)
+			.then((data) => {
+				if (!cancelled) setListing(data);
+			})
+			.catch(() => {
+				if (!cancelled) setListing(EMPTY_LISTING);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [path]);
+
+	/** Re-read the current folder after a mutation (e.g. creating a file). */
+	const reloadCurrent = () => {
+		readDirectoryApi(path)
+			.then(setListing)
+			.catch(() => setListing(EMPTY_LISTING));
+	};
+
+	const { openMenu, element: newFileUi } = useNewMarkdownFile(
+		path,
+		reloadCurrent,
+	);
+
+	const openFolder = (folderId: string) => {
+		setSelectedFile(null);
+		setPath(folderId);
+	};
+
+	/** Double-click a file: `.md` files open in the markdown viewer. */
+	const openFile = (file: File) => {
+		if (!file.name.toLowerCase().endsWith(".md")) return;
+		const fileId = path ? `${path}/${file.name}` : file.name;
+		navigate(`/markdown-show?file=${encodeURIComponent(fileId)}`);
+	};
+
+	/** Breadcrumb chain: root + each folder segment along the current path. */
+	const crumbs: { name: string; id: string }[] = [
+		{ name: "Файлы", id: "" },
+	];
+	{
+		let prefix = "";
+		for (const segment of path.split("/").filter(Boolean)) {
+			prefix = prefix ? `${prefix}/${segment}` : segment;
+			crumbs.push({ name: segment, id: prefix });
+		}
+	}
 
 	const platform = platforms.find((p) => p.id === id);
 
@@ -40,7 +106,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	}
 
 	return (
-		<div className={s.overview}>
+		<div className={s.overview} onContextMenu={openMenu}>
 			{isDocsLoading ? (
 				<p className={s.ovSub}>Загрузка документов…</p>
 			) : docs.length === 0 ? (
@@ -126,6 +192,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 							</div>
 							<div className={s.acDesc}>{a.desc}</div>
 							<div className={s.acFooter}>
+								<span className={s.acTag}>service</span>
 								{a.tags.map((t) => (
 									<span key={t} className={s.acTag}>
 										{t}
@@ -137,6 +204,42 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					))}
 				</div>
 			)}
+
+			{(path !== "" ||
+				listing.folders.length > 0 ||
+				listing.files.length > 0) && (
+				<div className={b.fileBrowser}>
+					<h2 className={b.fileBrowserTitle}>Файлы рабочего пространства</h2>
+					{path !== "" && (
+						<nav className={b.crumbs} aria-label="Путь">
+							{crumbs.map((c, i) => (
+								<span key={c.id} className={b.crumbItem}>
+									{i > 0 && <span className={b.crumbSep}>/</span>}
+									{i === crumbs.length - 1 ? (
+										<span className={b.crumbCurrent}>{c.name}</span>
+									) : (
+										<button
+											type="button"
+											className={b.crumb}
+											onClick={() => openFolder(c.id)}
+										>
+											{c.name}
+										</button>
+									)}
+								</span>
+							))}
+						</nav>
+					)}
+					<FolderGrid folders={listing.folders} onOpen={openFolder} />
+					<FileGrid
+						files={listing.files}
+						selectedId={selectedFile?.name ?? null}
+						onSelect={setSelectedFile}
+						onOpen={openFile}
+					/>
+				</div>
+			)}
+
 			{pendingDoc && (
 				<>
 					<EditDocModal
@@ -152,6 +255,8 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					/>
 				</>
 			)}
+
+			{newFileUi}
 		</div>
 	);
 };

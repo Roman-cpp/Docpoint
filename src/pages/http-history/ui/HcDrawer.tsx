@@ -1,8 +1,8 @@
 import { type FC, Fragment, useEffect, useState } from "react";
+import { selectSelectedRequest, useRequestStore } from "@/features/request";
 import { cx } from "@/shared/lib/cx";
 import type { HistoryRecord } from "../model/types";
 import s from "./HttpHistoryPage.module.css";
-import { selectSelectedRequest, useRequestStore } from "@/features/request";
 
 /* ─── Icons ─── */
 const CopyIcon: FC<{ size?: number }> = ({ size = 12 }) => (
@@ -435,48 +435,46 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 };
 
 /* ─── Drawer (view-only) ─── */
-export const HcDrawer: FC<{ onClose: () => void }> = ({
-	onClose,
-}) => {
+export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
+	const request = useRequestStore(selectSelectedRequest);
 
-  const request = useRequestStore(selectSelectedRequest);
-
-  if(!request) return (
-    <>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: scrim closes the drawer on click */}
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: Escape handled at window level */}
-			<div className={s["hc-drawer-scrim"]} onClick={onClose} />
-			<div
-				className={s["hc-drawer"]}
-				role="dialog"
-				aria-label="Загрузка запроса"
-			>
-				<div className={s["hc-drawer-head"]}>
-					<div className={s["hc-drawer-head-top"]}>
-						<span className={s["hc-drawer-title"]} />
-						<button
-							className={s["hc-drawer-close"]}
-							onClick={onClose}
-							aria-label="Закрыть"
-						>
-							<svg
-								viewBox="0 0 14 14"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.6"
-								strokeLinecap="round"
+	if (!request)
+		return (
+			<>
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: scrim closes the drawer on click */}
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: Escape handled at window level */}
+				<div className={s["hc-drawer-scrim"]} onClick={onClose} />
+				<div
+					className={s["hc-drawer"]}
+					role="dialog"
+					aria-label="Загрузка запроса"
+				>
+					<div className={s["hc-drawer-head"]}>
+						<div className={s["hc-drawer-head-top"]}>
+							<span className={s["hc-drawer-title"]} />
+							<button
+								className={s["hc-drawer-close"]}
+								onClick={onClose}
+								aria-label="Закрыть"
 							>
-								<path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
-							</svg>
-						</button>
+								<svg
+									viewBox="0 0 14 14"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.6"
+									strokeLinecap="round"
+								>
+									<path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+								</svg>
+							</button>
+						</div>
+					</div>
+					<div className={s["hc-drawer-scroll"]}>
+						<div className={s["hc-none"]}>Загрузка…</div>
 					</div>
 				</div>
-				<div className={s["hc-drawer-scroll"]}>
-					<div className={s["hc-none"]}>Загрузка…</div>
-				</div>
-			</div>
-		</>
-  );
+			</>
+		);
 
 	return (
 		<>

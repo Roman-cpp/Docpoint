@@ -182,20 +182,36 @@
 							"label": "200 OK",
 							"schema": [
 								{ "key": "id", "type": "uuid", "desc": "UUID сервиса" },
-								{ "key": "slug", "type": "string", "desc": "Машинный идентификатор" },
+								{
+									"key": "slug",
+									"type": "string",
+									"desc": "Машинный идентификатор"
+								},
 								{ "key": "name", "type": "string", "desc": "Имя сервиса" },
 								{ "key": "desc", "type": "string", "desc": "Описание" },
 								{ "key": "base_url", "type": "string", "desc": "Базовый URL" },
-								{ "key": "owner", "type": "string", "desc": "Владелец / команда" },
+								{
+									"key": "owner",
+									"type": "string",
+									"desc": "Владелец / команда"
+								},
 								{ "key": "is_active", "type": "boolean", "desc": "Активность" },
-								{ "key": "created_at", "type": "datetime", "desc": "Дата регистрации" }
+								{
+									"key": "created_at",
+									"type": "datetime",
+									"desc": "Дата регистрации"
+								}
 							],
 							"example": "{\n  \"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\n  \"slug\": \"billing-api\",\n  \"name\": \"Billing API\",\n  \"desc\": \"Сервис выставления счетов\",\n  \"base_url\": \"https://billing.internal\",\n  \"owner\": \"payments-team\",\n  \"is_active\": true,\n  \"created_at\": \"2026-01-10T09:00:00Z\"\n}"
 						},
 						"404": {
 							"label": "404 Not Found",
 							"schema": [
-								{ "key": "message", "type": "string", "desc": "Описание ошибки" }
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
 							],
 							"example": "{\n  \"message\": \"Service not found\"\n}"
 						}
@@ -278,9 +294,21 @@
 						"200": {
 							"label": "200 OK",
 							"schema": [
-								{ "key": "data[].id", "type": "uuid", "desc": "UUID окружения" },
-								{ "key": "data[].name", "type": "string", "desc": "prod / staging / local" },
-								{ "key": "data[].base_url", "type": "string", "desc": "Базовый URL окружения" }
+								{
+									"key": "data[].id",
+									"type": "uuid",
+									"desc": "UUID окружения"
+								},
+								{
+									"key": "data[].name",
+									"type": "string",
+									"desc": "prod / staging / local"
+								},
+								{
+									"key": "data[].base_url",
+									"type": "string",
+									"desc": "Базовый URL окружения"
+								}
 							],
 							"example": "{\n  \"data\": [\n    { \"id\": \"a1b2c3d4-0000-4000-8000-000000000001\", \"name\": \"prod\", \"base_url\": \"https://billing.internal\" }\n  ]\n}"
 						}
@@ -465,7 +493,11 @@
 						"401": {
 							"label": "401 Unauthorized",
 							"schema": [
-								{ "key": "message", "type": "string", "desc": "Описание ошибки" }
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
 							],
 							"example": "{\n  \"message\": \"Invalid ingest token\"\n}"
 						}
@@ -599,12 +631,36 @@
 							"label": "200 OK",
 							"schema": [
 								{ "key": "data[].id", "type": "uuid", "desc": "UUID записи" },
-								{ "key": "data[].method", "type": "string", "desc": "HTTP-метод" },
-								{ "key": "data[].path", "type": "string", "desc": "Путь запроса" },
-								{ "key": "data[].status_code", "type": "integer", "desc": "Код ответа" },
-								{ "key": "data[].duration_ms", "type": "integer", "desc": "Длительность" },
-								{ "key": "data[].started_at", "type": "datetime", "desc": "Время начала" },
-								{ "key": "next_cursor", "type": "string", "desc": "Курсор следующей страницы (null в конце)" }
+								{
+									"key": "data[].method",
+									"type": "string",
+									"desc": "HTTP-метод"
+								},
+								{
+									"key": "data[].path",
+									"type": "string",
+									"desc": "Путь запроса"
+								},
+								{
+									"key": "data[].status_code",
+									"type": "integer",
+									"desc": "Код ответа"
+								},
+								{
+									"key": "data[].duration_ms",
+									"type": "integer",
+									"desc": "Длительность"
+								},
+								{
+									"key": "data[].started_at",
+									"type": "datetime",
+									"desc": "Время начала"
+								},
+								{
+									"key": "next_cursor",
+									"type": "string",
+									"desc": "Курсор следующей страницы (null в конце)"
+								}
 							],
 							"example": "{\n  \"data\": [\n    { \"id\": \"b2c3d4e5-1111-4111-8111-111111111111\", \"method\": \"POST\", \"path\": \"/v1/charges\", \"status_code\": 201, \"duration_ms\": 142, \"started_at\": \"2026-06-05T10:15:00Z\" }\n  ],\n  \"next_cursor\": \"eyJ0cyI6IjIwMjYtMDYtMDVUMTA6MTU6MDBaIn0\"\n}"
 						}
@@ -624,26 +680,70 @@
 							"label": "200 OK",
 							"schema": [
 								{ "key": "id", "type": "uuid", "desc": "UUID записи" },
-								{ "key": "service_id", "type": "uuid", "desc": "UUID сервиса-источника" },
+								{
+									"key": "service_id",
+									"type": "uuid",
+									"desc": "UUID сервиса-источника"
+								},
 								{ "key": "environment", "type": "string", "desc": "Окружение" },
-								{ "key": "direction", "type": "string", "desc": "inbound / outbound" },
+								{
+									"key": "direction",
+									"type": "string",
+									"desc": "inbound / outbound"
+								},
 								{ "key": "method", "type": "string", "desc": "HTTP-метод" },
 								{ "key": "url", "type": "string", "desc": "Полный URL" },
-								{ "key": "request_headers", "type": "object", "desc": "Заголовки запроса" },
-								{ "key": "request_body_id", "type": "uuid", "desc": "Ссылка на тело запроса (Payload), null если пусто" },
-								{ "key": "status_code", "type": "integer", "desc": "Код ответа" },
-								{ "key": "response_headers", "type": "object", "desc": "Заголовки ответа" },
-								{ "key": "response_body_id", "type": "uuid", "desc": "Ссылка на тело ответа (Payload)" },
-								{ "key": "started_at", "type": "datetime", "desc": "Время начала" },
-								{ "key": "duration_ms", "type": "integer", "desc": "Длительность" },
-								{ "key": "correlation_id", "type": "string", "desc": "Идентификатор трассировки" }
+								{
+									"key": "request_headers",
+									"type": "object",
+									"desc": "Заголовки запроса"
+								},
+								{
+									"key": "request_body_id",
+									"type": "uuid",
+									"desc": "Ссылка на тело запроса (Payload), null если пусто"
+								},
+								{
+									"key": "status_code",
+									"type": "integer",
+									"desc": "Код ответа"
+								},
+								{
+									"key": "response_headers",
+									"type": "object",
+									"desc": "Заголовки ответа"
+								},
+								{
+									"key": "response_body_id",
+									"type": "uuid",
+									"desc": "Ссылка на тело ответа (Payload)"
+								},
+								{
+									"key": "started_at",
+									"type": "datetime",
+									"desc": "Время начала"
+								},
+								{
+									"key": "duration_ms",
+									"type": "integer",
+									"desc": "Длительность"
+								},
+								{
+									"key": "correlation_id",
+									"type": "string",
+									"desc": "Идентификатор трассировки"
+								}
 							],
 							"example": "{\n  \"id\": \"b2c3d4e5-1111-4111-8111-111111111111\",\n  \"service_id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\n  \"environment\": \"prod\",\n  \"direction\": \"inbound\",\n  \"method\": \"POST\",\n  \"url\": \"https://billing.internal/v1/charges\",\n  \"request_headers\": { \"content-type\": \"application/json\", \"authorization\": \"***\" },\n  \"request_body_id\": \"c3d4e5f6-2222-4222-8222-222222222222\",\n  \"status_code\": 201,\n  \"response_headers\": { \"content-type\": \"application/json\" },\n  \"response_body_id\": \"d4e5f6a7-3333-4333-8333-333333333333\",\n  \"started_at\": \"2026-06-05T10:15:00Z\",\n  \"duration_ms\": 142,\n  \"correlation_id\": \"req-9f8c\"\n}"
 						},
 						"404": {
 							"label": "404 Not Found",
 							"schema": [
-								{ "key": "message", "type": "string", "desc": "Описание ошибки" }
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
 							],
 							"example": "{\n  \"message\": \"Request record not found\"\n}"
 						}
@@ -662,14 +762,22 @@
 						"200": {
 							"label": "200 OK",
 							"schema": [
-								{ "key": "(raw body)", "type": "string", "desc": "Сырое тело с заголовком Content-Type исходного обмена" }
+								{
+									"key": "(raw body)",
+									"type": "string",
+									"desc": "Сырое тело с заголовком Content-Type исходного обмена"
+								}
 							],
 							"example": "{\n  \"amount\": 4200,\n  \"currency\": \"USD\"\n}"
 						},
 						"410": {
 							"label": "410 Gone",
 							"schema": [
-								{ "key": "message", "type": "string", "desc": "Тело удалено по retention-политике" }
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Тело удалено по retention-политике"
+								}
 							],
 							"example": "{\n  \"message\": \"Payload expired by retention policy\"\n}"
 						}
@@ -725,12 +833,36 @@
 						"200": {
 							"label": "200 OK",
 							"schema": [
-								{ "key": "data[].id", "type": "uuid", "desc": "UUID эндпоинта" },
-								{ "key": "data[].method", "type": "string", "desc": "HTTP-метод" },
-								{ "key": "data[].path_template", "type": "string", "desc": "Шаблон пути" },
-								{ "key": "data[].count", "type": "integer", "desc": "Число запросов за интервал" },
-								{ "key": "data[].error_rate", "type": "number", "desc": "Доля ответов со статусом >= 500" },
-								{ "key": "data[].p95_ms", "type": "integer", "desc": "95-й перцентиль длительности" }
+								{
+									"key": "data[].id",
+									"type": "uuid",
+									"desc": "UUID эндпоинта"
+								},
+								{
+									"key": "data[].method",
+									"type": "string",
+									"desc": "HTTP-метод"
+								},
+								{
+									"key": "data[].path_template",
+									"type": "string",
+									"desc": "Шаблон пути"
+								},
+								{
+									"key": "data[].count",
+									"type": "integer",
+									"desc": "Число запросов за интервал"
+								},
+								{
+									"key": "data[].error_rate",
+									"type": "number",
+									"desc": "Доля ответов со статусом >= 500"
+								},
+								{
+									"key": "data[].p95_ms",
+									"type": "integer",
+									"desc": "95-й перцентиль длительности"
+								}
 							],
 							"example": "{\n  \"data\": [\n    { \"id\": \"e5f6a7b8-4444-4444-8444-444444444444\", \"method\": \"POST\", \"path_template\": \"/v1/charges\", \"count\": 10432, \"error_rate\": 0.004, \"p95_ms\": 210 }\n  ]\n}"
 						}
@@ -755,10 +887,26 @@
 							"label": "200 OK",
 							"schema": [
 								{ "key": "data[].id", "type": "uuid", "desc": "UUID токена" },
-								{ "key": "data[].name", "type": "string", "desc": "Назначение токена" },
-								{ "key": "data[].prefix", "type": "string", "desc": "Первые символы токена для опознания" },
-								{ "key": "data[].last_used_at", "type": "datetime", "desc": "Последнее использование" },
-								{ "key": "data[].revoked", "type": "boolean", "desc": "Отозван ли токен" }
+								{
+									"key": "data[].name",
+									"type": "string",
+									"desc": "Назначение токена"
+								},
+								{
+									"key": "data[].prefix",
+									"type": "string",
+									"desc": "Первые символы токена для опознания"
+								},
+								{
+									"key": "data[].last_used_at",
+									"type": "datetime",
+									"desc": "Последнее использование"
+								},
+								{
+									"key": "data[].revoked",
+									"type": "boolean",
+									"desc": "Отозван ли токен"
+								}
 							],
 							"example": "{\n  \"data\": [\n    { \"id\": \"f6a7b8c9-5555-4555-8555-555555555555\", \"name\": \"prod-agent\", \"prefix\": \"ihs_a1b2\", \"last_used_at\": \"2026-06-05T10:14:59Z\", \"revoked\": false }\n  ]\n}"
 						}
@@ -786,7 +934,11 @@
 							"label": "201 Created",
 							"schema": [
 								{ "key": "id", "type": "uuid", "desc": "UUID токена" },
-								{ "key": "token", "type": "string", "desc": "Секретное значение (показывается один раз)" }
+								{
+									"key": "token",
+									"type": "string",
+									"desc": "Секретное значение (показывается один раз)"
+								}
 							],
 							"example": "{\n  \"id\": \"f6a7b8c9-5555-4555-8555-555555555555\",\n  \"token\": \"ihs_a1b2c3d4e5f6...\"\n}"
 						}
@@ -983,7 +1135,10 @@
 					"example": "\"inbound\"",
 					"enum": [
 						{ "val": "inbound", "desc": "Сервис принял входящий запрос" },
-						{ "val": "outbound", "desc": "Сервис сам отправил исходящий запрос" }
+						{
+							"val": "outbound",
+							"desc": "Сервис сам отправил исходящий запрос"
+						}
 					]
 				},
 				{
