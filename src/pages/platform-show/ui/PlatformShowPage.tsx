@@ -1,38 +1,52 @@
 import { type FC, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
+import { useNavigate, useParams } from "react-router";
+import { toast } from "@/core/toast";
 import {
 	type DirListing,
+	deleteDirectoryApi,
+	deleteMarkdownApi,
 	type File,
+	type Folder,
 	readDirectoryApi,
 } from "@/entities/file-explorer";
-import { usePlatformDocs, usePlatformsStore } from "@/entities/platform";
-import { DeleteDocModal, EditDocModal } from "@/features/doc";
+import { usePlatformsStore } from "@/entities/platform";
+import { type Service, usePlatformServices } from "@/entities/service";
 import {
 	actionFetchEnvironmentsPlatform,
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
-import { exportDoc } from "@/pages/docs/lib/exportDoc";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
 import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
 import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
-import { DropMenu } from "@/shared/ui-kit/controls";
+import { Button } from "@/shared/ui-kit/controls";
+import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import b from "./PlatformShowPage.module.css";
+import { ServiceModal } from "./ServiceModal";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {
-	const { platforms, attachDoc } = usePlatformsStore();
-	const { updateDoc } = useDocsStore();
-	const { docs, isDocsLoading } = usePlatformDocs(id);
-	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
-	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-	const [isEditOpen, setIsEditOpen] = useState(false);
+	const { platforms } = usePlatformsStore();
+	const {
+		services,
+		isServicesLoading,
+		createService,
+		isCreatingService,
+		deleteServiceAsync,
+		isDeletingService,
+	} = usePlatformServices(id);
+	const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+	const [pendingDelete, setPendingDelete] = useState<Service | null>(null);
+	const [svcMenu, setSvcMenu] = useState<{
+		x: number;
+		y: number;
+		svc: Service;
+	} | null>(null);
 	const [listing, setListing] = useState<DirListing>(EMPTY_LISTING);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	/** Current folder inside the vault: a vault-relative path, "" for the root. */
@@ -70,6 +84,33 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		setPath(folderId);
 	};
 
+	const deleteFolder = async (folder: Folder) => {
+		try {
+			await deleteDirectoryApi(folder.id);
+			reloadCurrent();
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось удалить каталог",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	const deleteFile = async (file: File) => {
+		try {
+			await deleteMarkdownApi(path ? `${path}/${file.name}` : file.name);
+			if (selectedFile?.name === file.name) setSelectedFile(null);
+			reloadCurrent();
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось удалить файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
 	/** Double-click a file: `.md` files open in the markdown viewer. */
 	const openFile = (file: File) => {
 		if (!file.name.toLowerCase().endsWith(".md")) return;
@@ -78,9 +119,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	};
 
 	/** Breadcrumb chain: root + each folder segment along the current path. */
-	const crumbs: { name: string; id: string }[] = [
-		{ name: "Файлы", id: "" },
-	];
+	const crumbs: { name: string; id: string }[] = [{ name: "Файлы", id: "" }];
 	{
 		let prefix = "";
 		for (const segment of path.split("/").filter(Boolean)) {
@@ -90,11 +129,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	}
 
 	const platform = platforms.find((p) => p.id === id);
-
-	const handleSaveEdit = (update: UpdateDocDTO) => {
-		updateDoc(update);
-		setIsEditOpen(false);
-	};
 
 	if (!platform) {
 		return (
@@ -107,103 +141,58 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 	return (
 		<div className={s.overview} onContextMenu={openMenu}>
-			{isDocsLoading ? (
-				<p className={s.ovSub}>Загрузка документов…</p>
-			) : docs.length === 0 ? (
-				<p className={s.ovSub}>В этой платформе пока нет документов</p>
-			) : (
-				<div className={s.apiCardsGrid}>
-					{docs.map((a) => (
-						<Link
-							to={`/doc-show/${a.id}`}
-							key={a.id}
-							className={`${s.apiCard}`}
-						>
-							<div className={s.acAccent} />
-							<div className={s.acTop}>
-								<div className={s.acName}>{a.name}</div>
-								<div
-									className={s.acMenuWrap}
-									onClick={(e) => {
-										e.preventDefault();
-										e.stopPropagation();
-									}}
-								>
-									<DropMenu>
-										<DropMenu.Trigger>
-											<button
-												type="button"
-												className={s.acMenuBtn}
-												aria-label="More options"
-												onClick={() => setPendingDoc(a)}
-											>
-												<svg
-													viewBox="0 0 16 16"
-													fill="currentColor"
-													aria-hidden="true"
-												>
-													<circle cx="8" cy="3" r="1.4" />
-													<circle cx="8" cy="8" r="1.4" />
-													<circle cx="8" cy="13" r="1.4" />
-												</svg>
-											</button>
-										</DropMenu.Trigger>
-										<DropMenu.Content>
-											<DropMenu.Item onClick={() => setIsEditOpen(true)}>
-												Edit
-											</DropMenu.Item>
-											<DropMenu.Item onClick={() => exportDoc(a.id, a.name)}>
-												Export
-											</DropMenu.Item>
-											<DropMenu.Sub>
-												<DropMenu.SubTrigger>
-													Add to platform
-												</DropMenu.SubTrigger>
-												<DropMenu.SubContent>
-													{platforms.length === 0 ? (
-														<DropMenu.Item disabled>No platforms</DropMenu.Item>
-													) : (
-														platforms.map((p) => (
-															<DropMenu.Item
-																key={p.id}
-																onClick={() =>
-																	attachDoc({
-																		platformId: p.id,
-																		docId: a.id,
-																	})
-																}
-															>
-																{p.name}
-															</DropMenu.Item>
-														))
-													)}
-												</DropMenu.SubContent>
-											</DropMenu.Sub>
-											<DropMenu.Separator />
-											<DropMenu.Item
-												danger
-												onClick={() => setIsDeleteOpen(true)}
-											>
-												Delete
-											</DropMenu.Item>
-										</DropMenu.Content>
-									</DropMenu>
-								</div>
-							</div>
-							<div className={s.acDesc}>{a.desc}</div>
-							<div className={s.acFooter}>
-								<span className={s.acTag}>service</span>
-								{a.tags.map((t) => (
-									<span key={t} className={s.acTag}>
-										{t}
-									</span>
-								))}
-								<span className={s.acCount}> endpoints →</span>
-							</div>
-						</Link>
-					))}
+			<section className={b.section}>
+				<div className={b.sectionHead}>
+					<h2 className={b.fileBrowserTitle}>
+						Микросервисы
+						{services.length > 0 && (
+							<span className={b.titleCount}>{services.length}</span>
+						)}
+					</h2>
+					<Button
+						variant="subtle"
+						size="sm"
+						onClick={() => setIsServiceModalOpen(true)}
+					>
+						+ Добавить
+					</Button>
 				</div>
-			)}
+				{isServicesLoading ? (
+					<p className={s.ovSub}>Загрузка микросервисов…</p>
+				) : services.length === 0 ? (
+					<div className={b.emptyState}>
+						<p className={b.emptyText}>
+							К этой платформе пока не прикреплён ни один микросервис
+						</p>
+						<Button
+							variant="primary"
+							size="sm"
+							onClick={() => setIsServiceModalOpen(true)}
+						>
+							+ Добавить микросервис
+						</Button>
+					</div>
+				) : (
+					<div className={s.apiCardsGrid}>
+						{services.map((svc) => (
+							<button
+								type="button"
+								key={svc.id}
+								className={s.apiCard}
+								onClick={() => navigate(`/service-show/${svc.id}`)}
+								onContextMenu={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									setSvcMenu({ x: e.clientX, y: e.clientY, svc });
+								}}
+							>
+								<div className={s.acName}>{svc.name}</div>
+								{svc.desc && <div className={s.acDesc}>{svc.desc}</div>}
+							</button>
+						))}
+					</div>
+				)}
+			</section>
 
 			{(path !== "" ||
 				listing.folders.length > 0 ||
@@ -230,36 +219,124 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 							))}
 						</nav>
 					)}
-					<FolderGrid folders={listing.folders} onOpen={openFolder} />
+					<FolderGrid
+						folders={listing.folders}
+						onOpen={openFolder}
+						onDelete={deleteFolder}
+					/>
 					<FileGrid
 						files={listing.files}
 						selectedId={selectedFile?.name ?? null}
 						onSelect={setSelectedFile}
 						onOpen={openFile}
+						onDelete={deleteFile}
 					/>
 				</div>
 			)}
 
-			{pendingDoc && (
+			<ServiceModal
+				open={isServiceModalOpen}
+				onOpenChange={setIsServiceModalOpen}
+				platformId={id}
+				onCreate={(dto) =>
+					createService(dto, { onSuccess: () => setIsServiceModalOpen(false) })
+				}
+				isSaving={isCreatingService}
+			/>
+
+			{svcMenu && (
 				<>
-					<EditDocModal
-						open={isEditOpen}
-						onOpenChange={setIsEditOpen}
-						doc={pendingDoc}
-						onSave={handleSaveEdit}
+					<button
+						type="button"
+						className={b.svcMenuBackdrop}
+						aria-label="Закрыть меню"
+						onClick={() => setSvcMenu(null)}
+						onContextMenu={(e) => {
+							e.preventDefault();
+							setSvcMenu(null);
+						}}
 					/>
-					<DeleteDocModal
-						open={isDeleteOpen}
-						onOpenChange={setIsDeleteOpen}
-						doc={pendingDoc}
-					/>
+					<div
+						className={b.svcMenu}
+						style={{ left: svcMenu.x, top: svcMenu.y }}
+						role="menu"
+					>
+						<button
+							type="button"
+							className={b.svcMenuItem}
+							role="menuitem"
+							onClick={() => {
+								setPendingDelete(svcMenu.svc);
+								setSvcMenu(null);
+							}}
+						>
+							<TrashIcon />
+							Удалить микросервис
+						</button>
+					</div>
 				</>
+			)}
+
+			{pendingDelete && (
+				<Modal
+					open
+					onOpenChange={(open) =>
+						!open && !isDeletingService && setPendingDelete(null)
+					}
+					title="Удалить микросервис?"
+					actions={
+						<>
+							<ModalBtnCancel
+								onClick={() => setPendingDelete(null)}
+								disabled={isDeletingService}
+							>
+								Отмена
+							</ModalBtnCancel>
+							<ModalBtnDanger
+								onClick={async () => {
+									if (isDeletingService) return;
+									try {
+										await deleteServiceAsync(pendingDelete.id);
+										setPendingDelete(null);
+									} catch {
+										/* error toast handled by the mutation */
+									}
+								}}
+								disabled={isDeletingService}
+							>
+								{isDeletingService ? "Удаляем…" : "Удалить"}
+							</ModalBtnDanger>
+						</>
+					}
+				>
+					<p className={s.ovSub} style={{ margin: 0 }}>
+						Микросервис «{pendingDelete.name}» будет удалён без возможности
+						восстановления.
+					</p>
+				</Modal>
 			)}
 
 			{newFileUi}
 		</div>
 	);
 };
+
+const TrashIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>delete</title>
+		<path d="M2.5 4h11M6 4V2.5h4V4M5 4l.5 9.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L11 4M6.5 7v4M9.5 7v4" />
+	</svg>
+);
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const PlatformShowPage: FC = () => {

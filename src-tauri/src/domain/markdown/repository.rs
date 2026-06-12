@@ -158,6 +158,44 @@ impl<'a> MarkdownRepo<'a> {
         Ok(rel)
     }
 
+    /// Create a new sub-folder, failing if anything already exists at the
+    /// target path. Returns the id (vault-relative path) of the created folder.
+    pub async fn create_dir(&self, parent: &str, name: &str) -> Result<String, String> {
+        let name = name.trim();
+        if name.is_empty() || name.contains('/') {
+            return Err("invalid folder name".to_string());
+        }
+
+        let rel = if parent.is_empty() {
+            name.to_string()
+        } else {
+            format!("{}/{}", parent.trim_matches('/'), name)
+        };
+
+        let path = self.resolve(&rel)?;
+
+        if tokio::fs::try_exists(&path).await.map_err(|e| e.to_string())? {
+            return Err(format!("folder already exists: {rel}"));
+        }
+
+        tokio::fs::create_dir_all(&path)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(rel)
+    }
+
+    /// Delete a folder and everything inside it. Missing folders are treated as
+    /// already deleted.
+    pub async fn delete_dir(&self, id: &str) -> Result<(), String> {
+        let path = self.resolve(id)?;
+        match tokio::fs::remove_dir_all(&path).await {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
     /// Overwrite the author and body of an existing file.
     pub async fn update(&self, dto: &UpdateMarkdownDTO) -> Result<String, String> {
         let path = self.resolve(&dto.id)?;

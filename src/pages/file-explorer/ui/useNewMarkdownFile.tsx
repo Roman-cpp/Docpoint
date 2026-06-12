@@ -1,23 +1,25 @@
 import { type FC, type ReactNode, useState } from "react";
 import { toast } from "@/core/toast";
-import { createMarkdownApi } from "@/entities/file-explorer";
 import {
-	Modal,
-	ModalBtnCancel,
-	ModalBtnPrimary,
-} from "@/shared/ui-kit/modal";
+	createDirectoryApi,
+	createMarkdownApi,
+} from "@/entities/file-explorer";
+import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
 import s from "./FileExplorerPage.module.css";
 
-/** Right-click "new markdown file" flow, shared by the file explorer and the
- *  platform page. Wire `openMenu` to a container's `onContextMenu` and render
- *  `element` somewhere inside the page; `onCreated` fires with the new file id
- *  after a successful create (e.g. to refresh the listing). */
+/** What the create dialog is currently asking for, if anything. */
+type Pending = "file" | "folder" | null;
+
+/** Right-click "new markdown file / new folder" flow, shared by the file
+ *  explorer and the platform page. Wire `openMenu` to a container's
+ *  `onContextMenu` and render `element` somewhere inside the page; `onCreated`
+ *  fires after a successful create (e.g. to refresh the listing). */
 export function useNewMarkdownFile(
 	folder: string,
 	onCreated?: (id: string) => void,
 ): { openMenu: (e: React.MouseEvent) => void; element: ReactNode } {
 	const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-	const [creating, setCreating] = useState(false);
+	const [pending, setPending] = useState<Pending>(null);
 
 	const openMenu = (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -39,6 +41,12 @@ export function useNewMarkdownFile(
 		return id;
 	};
 
+	const createFolder = async (rawName: string) => {
+		const id = await createDirectoryApi(folder, rawName.trim());
+		onCreated?.(id);
+		return id;
+	};
+
 	const element = (
 		<>
 			{menu && (
@@ -48,14 +56,32 @@ export function useNewMarkdownFile(
 					onClose={() => setMenu(null)}
 					onCreateFile={() => {
 						setMenu(null);
-						setCreating(true);
+						setPending("file");
+					}}
+					onCreateFolder={() => {
+						setMenu(null);
+						setPending("folder");
 					}}
 				/>
 			)}
-			{creating && (
-				<CreateFileDialog
-					onClose={() => setCreating(false)}
+			{pending === "file" && (
+				<CreateDialog
+					title="Новый markdown-файл"
+					subtitle="Файл будет создан в текущем каталоге. Расширение .md добавится автоматически."
+					placeholder="Имя файла, например quickstart"
+					errorTitle="Не удалось создать файл"
+					onClose={() => setPending(null)}
 					onCreate={createFile}
+				/>
+			)}
+			{pending === "folder" && (
+				<CreateDialog
+					title="Новый каталог"
+					subtitle="Каталог будет создан в текущей папке."
+					placeholder="Имя каталога, например Документация"
+					errorTitle="Не удалось создать каталог"
+					onClose={() => setPending(null)}
+					onCreate={createFolder}
 				/>
 			)}
 		</>
@@ -70,7 +96,8 @@ const ContextMenu: FC<{
 	y: number;
 	onClose: () => void;
 	onCreateFile: () => void;
-}> = ({ x, y, onClose, onCreateFile }) => (
+	onCreateFolder: () => void;
+}> = ({ x, y, onClose, onCreateFile, onCreateFolder }) => (
 	<>
 		<button
 			type="button"
@@ -92,15 +119,28 @@ const ContextMenu: FC<{
 				<NewFileIcon />
 				Создать markdown-файл
 			</button>
+			<button
+				type="button"
+				className={s["fe-menu-item"]}
+				onClick={onCreateFolder}
+				role="menuitem"
+			>
+				<NewFolderIcon />
+				Создать каталог
+			</button>
 		</div>
 	</>
 );
 
-/* ─── New file dialog ─── */
-const CreateFileDialog: FC<{
+/* ─── New file / folder dialog ─── */
+const CreateDialog: FC<{
+	title: string;
+	subtitle: string;
+	placeholder: string;
+	errorTitle: string;
 	onClose: () => void;
 	onCreate: (name: string) => Promise<string>;
-}> = ({ onClose, onCreate }) => {
+}> = ({ title, subtitle, placeholder, errorTitle, onClose, onCreate }) => {
 	const [name, setName] = useState("");
 	const [saving, setSaving] = useState(false);
 
@@ -113,7 +153,7 @@ const CreateFileDialog: FC<{
 		} catch (err) {
 			toast({
 				variant: "error",
-				title: "Не удалось создать файл",
+				title: errorTitle,
 				description: err instanceof Error ? err.message : String(err),
 			});
 		} finally {
@@ -125,8 +165,8 @@ const CreateFileDialog: FC<{
 		<Modal
 			open
 			onOpenChange={(open) => !open && !saving && onClose()}
-			title="Новый markdown-файл"
-			subtitle="Файл будет создан в текущем каталоге. Расширение .md добавится автоматически."
+			title={title}
+			subtitle={subtitle}
 			actions={
 				<>
 					<ModalBtnCancel onClick={onClose} disabled={saving}>
@@ -141,7 +181,7 @@ const CreateFileDialog: FC<{
 			<input
 				className={s["fe-input"]}
 				type="text"
-				placeholder="Имя файла, например quickstart"
+				placeholder={placeholder}
 				value={name}
 				onChange={(e) => setName(e.target.value)}
 				onKeyDown={(e) => {
@@ -170,5 +210,23 @@ const NewFileIcon: FC = () => (
 		<path d="M9 1.5H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5.5L9 1.5Z" />
 		<path d="M9 1.5V5.5h4" />
 		<path d="M8 8v4M6 10h4" />
+	</svg>
+);
+
+const NewFolderIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="15"
+		height="15"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>new folder</title>
+		<path d="M1.5 4a1 1 0 0 1 1-1h3l1.5 1.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4Z" />
+		<path d="M8 7.5v3M6.5 9h3" />
 	</svg>
 );

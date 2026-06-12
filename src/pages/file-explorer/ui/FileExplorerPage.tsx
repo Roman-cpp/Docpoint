@@ -1,8 +1,12 @@
 import { type FC, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "@/core/toast";
 import {
 	type DirListing,
+	deleteDirectoryApi,
+	deleteMarkdownApi,
 	type File,
+	type Folder,
 	readDirectoryApi,
 } from "@/entities/file-explorer";
 import { cx } from "@/shared/lib/cx";
@@ -61,11 +65,36 @@ export const FileExplorerPage: FC = () => {
 		reloadCurrent,
 	);
 
+	const deleteFolder = async (folder: Folder) => {
+		try {
+			await deleteDirectoryApi(folder.id);
+			reloadCurrent();
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось удалить каталог",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	const deleteFile = async (file: File) => {
+		try {
+			await deleteMarkdownApi(path ? `${path}/${file.name}` : file.name);
+			if (selected?.name === file.name) setSelected(null);
+			reloadCurrent();
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось удалить файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
 	/** Breadcrumb chain: Главная + each folder segment along the path. */
 	const crumbs = useMemo(() => {
-		const chain: { name: string; id: string }[] = [
-			{ name: "Главная", id: "" },
-		];
+		const chain: { name: string; id: string }[] = [{ name: "Главная", id: "" }];
 		const segments = path.split("/").filter(Boolean);
 		let prefix = "";
 		for (const segment of segments) {
@@ -151,9 +180,7 @@ export const FileExplorerPage: FC = () => {
 
 					{error && <div className={s["fe-empty"]}>{error}</div>}
 
-					{!error && loading && (
-						<div className={s["fe-empty"]}>Загрузка…</div>
-					)}
+					{!error && loading && <div className={s["fe-empty"]}>Загрузка…</div>}
 
 					{!error && !loading && isEmpty && (
 						<div className={s["fe-empty"]}>
@@ -163,13 +190,18 @@ export const FileExplorerPage: FC = () => {
 
 					{!error && !loading && (
 						<>
-							<FolderGrid folders={folders} onOpen={openFolder} />
+							<FolderGrid
+								folders={folders}
+								onOpen={openFolder}
+								onDelete={deleteFolder}
+							/>
 
 							<FileGrid
 								files={files}
 								selectedId={selected?.name ?? null}
 								onSelect={setSelected}
 								onOpen={openFile}
+								onDelete={deleteFile}
 							/>
 						</>
 					)}

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import type { Doc } from "@/entities/doc";
 
-import { attachDocApi } from "../api/attachDocApi";
 import { deletePlatformApi } from "../api/deletePlatformApi";
 import { readAllPlatformsApi } from "../api/readAllPlatformsApi";
 import { readPlatformDocsApi } from "../api/readPlatformDocsApi";
@@ -78,23 +77,6 @@ export const usePlatformsStore = () => {
 		},
 	});
 
-	const attachDoc = useMutation({
-		mutationFn: ({
-			platformId,
-			docId,
-		}: {
-			platformId: string;
-			docId: string;
-		}) => attachDocApi(platformId, docId),
-		onSuccess: () => {
-			toast({ title: "OK", description: "Документ добавлен в платформу" });
-			queryClient.invalidateQueries({ queryKey: platformKeys.lists() });
-		},
-		onError: (error: Error) => {
-			toast({ title: "Ошибка", description: error.message, variant: "error" });
-		},
-	});
-
 	return {
 		platforms: platforms.data ?? [],
 
@@ -109,12 +91,9 @@ export const usePlatformsStore = () => {
 		updatePlatformAsync: updatePlatform.mutateAsync,
 		deletePlatform: deletePlatform.mutate,
 		deletePlatformAsync: deletePlatform.mutateAsync,
-		attachDoc: attachDoc.mutate,
-		attachDocAsync: attachDoc.mutateAsync,
 
 		isCreating: createPlatform.isPending,
 		isUpdating: updatePlatform.isPending,
 		isDeleting: deletePlatform.isPending,
-		isAttaching: attachDoc.isPending,
 	};
 };

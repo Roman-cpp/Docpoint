@@ -1,4 +1,3 @@
-export { attachDocApi } from "./api/attachDocApi";
 export { deletePlatformApi } from "./api/deletePlatformApi";
 export { readAllPlatformsApi } from "./api/readAllPlatformsApi";
 export { readPlatformApi } from "./api/readPlatformApi";

@@ -10,7 +10,6 @@ pub trait PlatformRepository {
     async fn create(&self, platform: &CreatePlatformDTO) -> Result<Platform, String>;
     async fn update(&self, platform: &UpdatePlatformDTO) -> Result<(), String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
-    async fn attach_doc(&self, platform_id: &str, doc_id: &str) -> Result<(), String>;
     async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<Doca>, String>;
     async fn environments_by_platform(
         &self,
@@ -109,24 +108,18 @@ impl PlatformRepository for PlatformRepo<'_> {
         Ok(())
     }
 
-    // Links a doc to a platform via the docs.platform_id FK (migration 0011).
-    async fn attach_doc(&self, platform_id: &str, doc_id: &str) -> Result<(), String> {
-        sqlx::query("UPDATE docs SET platform_id = ? WHERE id = ?")
-            .bind(platform_id)
-            .bind(doc_id)
-            .execute(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(())
-    }
-
+    // A platform's docs are those attached to any of its services, joined
+    // through docs.service_id -> services.platform_id (migrations 0013, 0014).
     async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<Doca>, String> {
-        let rows = sqlx::query("SELECT * FROM docs WHERE platform_id = ?")
-            .bind(platform_id)
-            .fetch_all(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
+        let rows = sqlx::query(
+            "SELECT docs.* FROM docs \
+             JOIN services ON docs.service_id = services.id \
+             WHERE services.platform_id = ?",
+        )
+        .bind(platform_id)
+        .fetch_all(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
 
         if rows.is_empty() {
             return Ok(vec![]);

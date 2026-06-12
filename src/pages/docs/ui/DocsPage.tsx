@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
-import { usePlatformsStore } from "@/entities/platform";
+import { useAllServices, useAttachDoc } from "@/entities/service";
 import { actionResetDoc, useDocStore } from "@/features/doc";
 import {
 	actionResetEnvironments,
@@ -18,7 +18,8 @@ import { Sidebar } from "./Sidebar";
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
 	const { docs, updateDoc } = useDocsStore();
-	const { platforms, attachDoc } = usePlatformsStore();
+	const { services } = useAllServices();
+	const { attachDoc } = useAttachDoc();
 	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEditOpen, setIsEditOpen] = useState(false);
@@ -81,23 +82,23 @@ const Overview = () => {
 											</DropMenu.Item>
 											<DropMenu.Sub>
 												<DropMenu.SubTrigger>
-													Add to platform
+													Add to service
 												</DropMenu.SubTrigger>
 												<DropMenu.SubContent>
-													{platforms.length === 0 ? (
-														<DropMenu.Item disabled>No platforms</DropMenu.Item>
+													{services.length === 0 ? (
+														<DropMenu.Item disabled>No services</DropMenu.Item>
 													) : (
-														platforms.map((p) => (
+														services.map((svc) => (
 															<DropMenu.Item
-																key={p.id}
+																key={svc.id}
 																onClick={() =>
 																	attachDoc({
-																		platformId: p.id,
+																		serviceId: svc.id,
 																		docId: a.id,
 																	})
 																}
 															>
-																{p.name}
+																{svc.name}
 															</DropMenu.Item>
 														))
 													)}

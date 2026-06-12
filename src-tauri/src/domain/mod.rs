@@ -6,3 +6,4 @@ pub mod environment_auth;
 pub mod group;
 pub mod markdown;
 pub mod platform;
+pub mod service;
