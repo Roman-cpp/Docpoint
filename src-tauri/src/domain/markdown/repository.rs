@@ -185,6 +185,52 @@ impl<'a> MarkdownRepo<'a> {
         Ok(rel)
     }
 
+    /// Copy an external file (e.g. one dragged in from the OS) into the vault
+    /// under `folder`, keeping its original name. When a file with that name
+    /// already exists, a numeric suffix (` (1)`, ` (2)`, …) is appended so the
+    /// drop never overwrites existing data. Returns the stored file's id.
+    pub async fn import(&self, src: &Path, folder: &str) -> Result<String, String> {
+        let file_name = src
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| "invalid source file name".to_string())?;
+
+        if !tokio::fs::try_exists(src).await.map_err(|e| e.to_string())? {
+            return Err(format!("source file not found: {}", src.display()));
+        }
+
+        let dir = if folder.is_empty() {
+            self.vault_dir.to_path_buf()
+        } else {
+            self.resolve(folder)?
+        };
+        tokio::fs::create_dir_all(&dir)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        // Find a destination name that doesn't collide with an existing entry.
+        let (stem, ext) = split_name(file_name);
+        let mut candidate = file_name.to_string();
+        let mut n = 1;
+        while tokio::fs::try_exists(dir.join(&candidate))
+            .await
+            .map_err(|e| e.to_string())?
+        {
+            candidate = match &ext {
+                Some(ext) => format!("{stem} ({n}).{ext}"),
+                None => format!("{stem} ({n})"),
+            };
+            n += 1;
+        }
+
+        let dest = dir.join(&candidate);
+        tokio::fs::copy(src, &dest)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        self.rel_id(&dest)
+    }
+
     /// Delete a folder and everything inside it. Missing folders are treated as
     /// already deleted.
     pub async fn delete_dir(&self, id: &str) -> Result<(), String> {
@@ -265,6 +311,16 @@ impl<'a> MarkdownRepo<'a> {
             size: meta.len(),
             updated,
         })
+    }
+}
+
+/// Split a filename into its stem and optional extension. A leading dot
+/// (dotfiles like `.gitignore`) is treated as part of the stem, not an
+/// extension, so collision suffixes read `.gitignore (1)`.
+fn split_name(name: &str) -> (String, Option<String>) {
+    match name.rfind('.') {
+        Some(i) if i > 0 => (name[..i].to_string(), Some(name[i + 1..].to_string())),
+        _ => (name.to_string(), None),
     }
 }
 

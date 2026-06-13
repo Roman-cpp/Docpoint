@@ -31,9 +31,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 	return (
 		<div className={s.overview}>
-			<span className={s.ovEyebrow}>Microservice</span>
-			<h1 className={s.ovTitle}>{service.name}</h1>
-			{service.desc && <p className={s.ovSub}>{service.desc}</p>}
 			{service.platform_id && (
 				<Link className={s.ovSub} to={`/platform-show/${service.platform_id}`}>
 					← К платформе

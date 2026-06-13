@@ -12,6 +12,7 @@ import {
 import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
 import { CloseIcon, FileIcon, SearchIcon } from "../../../shared/icon/icons";
+import { FileDropZone } from "./FileDropZone/FileDropZone";
 import s from "./FileExplorerPage.module.css";
 import { FileGrid } from "./FileGrid/FileGrid";
 import { FolderGrid } from "./FolderGrid/FolderGrid";
@@ -177,6 +178,8 @@ export const FileExplorerPage: FC = () => {
 							перейти внутрь, или файл — чтобы посмотреть его данные.
 						</p>
 					</div>
+
+					<FileDropZone folder={path} onImported={reloadCurrent} />
 
 					{error && <div className={s["fe-empty"]}>{error}</div>}
 
