@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS doc_erds (
+    id   TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    desc TEXT NOT NULL DEFAULT ''
+);
