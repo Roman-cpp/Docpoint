@@ -37,10 +37,13 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		isServicesLoading,
 		createService,
 		isCreatingService,
+		updateService,
+		isUpdatingService,
 		deleteServiceAsync,
 		isDeletingService,
 	} = usePlatformServices(id);
 	const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+	const [editingService, setEditingService] = useState<Service | null>(null);
 	const [pendingDelete, setPendingDelete] = useState<Service | null>(null);
 	const [svcMenu, setSvcMenu] = useState<{
 		x: number;
@@ -235,13 +238,21 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			)}
 
 			<ServiceModal
-				open={isServiceModalOpen}
-				onOpenChange={setIsServiceModalOpen}
+				open={isServiceModalOpen || editingService != null}
+				onOpenChange={(open) => {
+					if (open) return;
+					setIsServiceModalOpen(false);
+					setEditingService(null);
+				}}
 				platformId={id}
+				service={editingService}
 				onCreate={(dto) =>
 					createService(dto, { onSuccess: () => setIsServiceModalOpen(false) })
 				}
-				isSaving={isCreatingService}
+				onUpdate={(dto) =>
+					updateService(dto, { onSuccess: () => setEditingService(null) })
+				}
+				isSaving={editingService ? isUpdatingService : isCreatingService}
 			/>
 
 			{svcMenu && (
@@ -261,6 +272,18 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						style={{ left: svcMenu.x, top: svcMenu.y }}
 						role="menu"
 					>
+						<button
+							type="button"
+							className={b.svcMenuItem}
+							role="menuitem"
+							onClick={() => {
+								setEditingService(svcMenu.svc);
+								setSvcMenu(null);
+							}}
+						>
+							<PencilIcon />
+							Редактировать
+						</button>
 						<button
 							type="button"
 							className={b.svcMenuItem}
@@ -320,6 +343,23 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		</div>
 	);
 };
+
+const PencilIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>edit</title>
+		<path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
+	</svg>
+);
 
 const TrashIcon: FC = () => (
 	<svg

@@ -8,7 +8,8 @@ import { deleteServiceApi } from "../api/deleteServiceApi";
 import { readAllServicesApi } from "../api/readAllServicesApi";
 import { readPlatformServicesApi } from "../api/readPlatformServicesApi";
 import { readServiceDocsApi } from "../api/readServiceDocsApi";
-import type { CreateServiceDTO } from "../model/service.dto";
+import { updateServiceApi } from "../api/updateServiceApi";
+import type { CreateServiceDTO, UpdateServiceDTO } from "../model/service.dto";
 import type { Service } from "../model/service.type";
 
 export const serviceKeys = {
@@ -98,6 +99,19 @@ export const usePlatformServices = (platformId: string) => {
 		},
 	});
 
+	const updateService = useMutation({
+		mutationFn: (dto: UpdateServiceDTO) => updateServiceApi(dto),
+		onSuccess: () => {
+			toast({ title: "OK", description: "Микросервис обновлён" });
+			queryClient.invalidateQueries({
+				queryKey: serviceKeys.byPlatform(platformId),
+			});
+		},
+		onError: (error: Error) => {
+			toast({ title: "Ошибка", description: error.message, variant: "error" });
+		},
+	});
+
 	const deleteService = useMutation({
 		mutationFn: (id: string) => deleteServiceApi(id),
 		onSuccess: () => {
@@ -121,6 +135,10 @@ export const usePlatformServices = (platformId: string) => {
 		createService: createService.mutate,
 		createServiceAsync: createService.mutateAsync,
 		isCreatingService: createService.isPending,
+
+		updateService: updateService.mutate,
+		updateServiceAsync: updateService.mutateAsync,
+		isUpdatingService: updateService.isPending,
 
 		deleteService: deleteService.mutate,
 		deleteServiceAsync: deleteService.mutateAsync,

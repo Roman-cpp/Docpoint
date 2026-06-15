@@ -10,19 +10,29 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import { useSearchParams } from "react-router";
 import remarkGfm from "remark-gfm";
-import {
-	type MarkdownContent,
-	readMarkdownApi,
-} from "@/entities/file-explorer";
+import type { MarkdownContent } from "@/entities/file-explorer";
 import { cx } from "@/shared/lib/cx";
+import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { Header } from "@/widgets/header";
 import { extractToc, nodeToText, slugify } from "../lib/toc";
 import { type MarkdownFile, MD_FILES } from "../model/sampleFiles";
+import {
+	type SaveStatus,
+	useMarkdownContent,
+} from "../model/useMarkdownContent";
 import { CopyIcon, DocIcon, DownloadIcon } from "./icons";
 import s from "./MarkdownShowPage.module.css";
 import { Sidebar } from "./Sidebar";
 
-type View = "rendered" | "raw";
+type View = "rendered" | "edit";
+
+const STATUS_LABEL: Record<SaveStatus, string> = {
+	loading: "Загрузка…",
+	idle: "",
+	saving: "Сохранение…",
+	saved: "Сохранено",
+	error: "Ошибка сохранения",
+};
 
 /* ─── Code block with copy button ─── */
 const CodeBlock: FC<{ lang: string; code: string }> = ({ lang, code }) => {
@@ -109,7 +119,6 @@ const toViewFile = (md: MarkdownContent): MarkdownFile => ({
 export const MarkdownShowPage: FC = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const fileParam = searchParams.get("file");
-	const [loaded, setLoaded] = useState<MarkdownFile | null>(null);
 	const [activeId, setActiveId] = useState(MD_FILES[0].id);
 	const [query, setQuery] = useState("");
 	const [view, setView] = useState<View>("rendered");
@@ -118,43 +127,37 @@ export const MarkdownShowPage: FC = () => {
 	const [copied, setCopied] = useState(false);
 	const readerRef = useRef<HTMLDivElement>(null);
 
-	// Load the real vault file named in `?file=<id>`; falls back to the sample
-	// browser when the param is absent or the file can't be read.
-	useEffect(() => {
-		if (!fileParam) {
-			setLoaded(null);
-			return;
-		}
-		let cancelled = false;
-		readMarkdownApi(fileParam)
-			.then((md) => {
-				if (!cancelled) setLoaded(md ? toViewFile(md) : null);
-			})
-			.catch(() => {
-				if (!cancelled) setLoaded(null);
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [fileParam]);
+	// Load the real vault file named in `?file=<id>` and autosave edits to disk.
+	// Resolves to `null` when the param is absent or the file can't be read, so
+	// the page falls back to the read-only sample browser.
+	const {
+		file: vaultFile,
+		content: vaultContent,
+		status,
+		onChange,
+	} = useMarkdownContent(fileParam);
+	const isVault = vaultFile !== null;
 
-	const file = loaded ?? MD_FILES.find((f) => f.id === activeId) ?? MD_FILES[0];
+	// Sample files are read-only — never expose the editor for them.
+	const effectiveView: View = isVault || view !== "edit" ? view : "rendered";
+
+	const file: MarkdownFile = vaultFile
+		? { ...toViewFile(vaultFile), content: vaultContent }
+		: (MD_FILES.find((f) => f.id === activeId) ?? MD_FILES[0]);
 	const toc = useMemo(() => extractToc(file.content), [file.content]);
 
 	// Render the document once per file/view — keeps scroll-spy state changes
 	// from re-parsing the whole Markdown tree on every scroll frame.
 	const docBody = useMemo(
 		() =>
-			view === "rendered" ? (
+			 (
 				<div className={s.rendered}>
 					<ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
 						{file.content}
 					</ReactMarkdown>
 				</div>
-			) : (
-				<div className={s.raw}>{file.content}</div>
 			),
-		[file.content, view],
+		[file.content, effectiveView],
 	);
 
 	// Group files by folder, filtered by search.
@@ -221,7 +224,8 @@ export const MarkdownShowPage: FC = () => {
 	const selectFile = (id: string) => {
 		setActiveId(id);
 		setView("rendered");
-		setLoaded(null);
+		// Clearing `?file` drops the loaded vault file via the hook, returning to
+		// the read-only sample browser.
 		if (fileParam) setSearchParams({}, { replace: true });
 	};
 
@@ -239,7 +243,7 @@ export const MarkdownShowPage: FC = () => {
 					onToggleFolder={(folder) =>
 						setOpenFolders((p) => ({ ...p, [folder]: p[folder] === false }))
 					}
-					activeId={loaded ? "" : activeId}
+					activeId={isVault ? "" : activeId}
 					onSelectFile={selectFile}
 				/>
 
@@ -252,21 +256,27 @@ export const MarkdownShowPage: FC = () => {
 							<span className={s.bcCur}>{file.name}</span>
 						</div>
 						<div className={s.toolbarActions}>
+							{effectiveView === "edit" && (
+								<span className={s.saveStatus}>{STATUS_LABEL[status]}</span>
+							)}
 							<div className={s.toolSeg}>
 								<button
 									type="button"
-									className={cx(view === "rendered" && s.segActive)}
+									className={cx(effectiveView === "rendered" && s.segActive)}
 									onClick={() => setView("rendered")}
 								>
 									Просмотр
 								</button>
-								<button
-									type="button"
-									className={cx(view === "raw" && s.segActive)}
-									onClick={() => setView("raw")}
-								>
-									Исходник
-								</button>
+								{/* Editing only applies to real vault files. */}
+								{isVault && (
+									<button
+										type="button"
+										className={cx(effectiveView === "edit" && s.segActive)}
+										onClick={() => setView("edit")}
+									>
+										Редактировать
+									</button>
+								)}
 							</div>
 							<button type="button" className={s.toolBtn} onClick={copyAll}>
 								<CopyIcon /> {copied ? "Скопировано" : "Копировать"}
@@ -292,12 +302,20 @@ export const MarkdownShowPage: FC = () => {
 									<span>{file.author}</span>
 								</div>
 
-								{docBody}
+								{effectiveView === "edit" ? (
+									<MarkdownEditor
+										value={vaultContent}
+										onChange={onChange}
+										className={s.editorHost}
+									/>
+								) : (
+									docBody
+								)}
 							</div>
 						</div>
 
 						{/* ─── TOC ─── */}
-						{view === "rendered" && toc.length > 0 && (
+						{effectiveView === "rendered" && toc.length > 0 && (
 							<nav className={s.toc}>
 								<div className={s.tocH}>На этой странице</div>
 								<div className={s.tocList}>

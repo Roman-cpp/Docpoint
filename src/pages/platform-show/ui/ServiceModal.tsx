@@ -1,5 +1,9 @@
 import { type FC, useEffect, useState } from "react";
-import type { CreateServiceDTO } from "@/entities/service";
+import type {
+	CreateServiceDTO,
+	Service,
+	UpdateServiceDTO,
+} from "@/entities/service";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
 
@@ -9,6 +13,9 @@ interface ServiceModalProps {
 	/** Platform the new microservice will be attached to. */
 	platformId: string;
 	onCreate: (dto: CreateServiceDTO) => void;
+	onUpdate: (dto: UpdateServiceDTO) => void;
+	/** When set, the modal edits this microservice instead of creating one. */
+	service?: Service | null;
 	isSaving?: boolean;
 }
 
@@ -17,18 +24,22 @@ export const ServiceModal: FC<ServiceModalProps> = ({
 	onOpenChange,
 	platformId,
 	onCreate,
+	onUpdate,
+	service = null,
 	isSaving = false,
 }) => {
+	const isEditing = service != null;
 	const [name, setName] = useState("");
 	const [desc, setDesc] = useState("");
 
-	// Reset the form each time the modal opens.
+	// Reset the form each time the modal opens, seeding it with the edited
+	// microservice's values when present.
 	useEffect(() => {
 		if (open) {
-			setName("");
-			setDesc("");
+			setName(service?.name ?? "");
+			setDesc(service?.desc ?? "");
 		}
-	}, [open]);
+	}, [open, service]);
 
 	const close = () => {
 		if (isSaving) return;
@@ -36,11 +47,20 @@ export const ServiceModal: FC<ServiceModalProps> = ({
 	};
 
 	const submit = () => {
-		onCreate({
-			name: name.trim(),
-			desc: desc.trim(),
-			platform_id: platformId,
-		});
+		if (isEditing) {
+			onUpdate({
+				id: service.id,
+				name: name.trim(),
+				desc: desc.trim(),
+				platform_id: service.platform_id,
+			});
+		} else {
+			onCreate({
+				name: name.trim(),
+				desc: desc.trim(),
+				platform_id: platformId,
+			});
+		}
 	};
 
 	const canSave = name.trim().length > 0 && !isSaving;
@@ -49,15 +69,23 @@ export const ServiceModal: FC<ServiceModalProps> = ({
 		<Modal
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Новый микросервис"
-			subtitle="Добавьте микросервис к этой платформе"
+			title={isEditing ? "Редактировать микросервис" : "Новый микросервис"}
+			subtitle={
+				isEditing
+					? "Измените данные микросервиса"
+					: "Добавьте микросервис к этой платформе"
+			}
 			actions={
 				<>
 					<ModalBtnCancel onClick={close} disabled={isSaving}>
 						Отмена
 					</ModalBtnCancel>
 					<ModalBtnPrimary onClick={submit} disabled={!canSave} autoFocus>
-						{isSaving ? "Сохраняем…" : "Создать"}
+						{isSaving
+							? "Сохраняем…"
+							: isEditing
+								? "Сохранить"
+								: "Создать"}
 					</ModalBtnPrimary>
 				</>
 			}

@@ -4,7 +4,11 @@ export { deleteServiceApi } from "./api/deleteServiceApi";
 export { readAllServicesApi } from "./api/readAllServicesApi";
 export { readPlatformServicesApi } from "./api/readPlatformServicesApi";
 export { readServiceDocsApi } from "./api/readServiceDocsApi";
-export type { CreateServiceDTO } from "./model/service.dto";
+export { updateServiceApi } from "./api/updateServiceApi";
+export type {
+	CreateServiceDTO,
+	UpdateServiceDTO,
+} from "./model/service.dto";
 export type { Service } from "./model/service.type";
 export {
 	serviceKeys,

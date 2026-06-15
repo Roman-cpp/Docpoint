@@ -438,6 +438,22 @@
 	margin: 0 0 18px;
 }
 
+/* ═══════════════ EDITOR ═══════════════ */
+.editorHost {
+	min-height: 60vh;
+	display: flex;
+	flex-direction: column;
+}
+.editorHost :global(.cm-editor) {
+	height: 100%;
+}
+
+.saveStatus {
+	font-size: 12px;
+	color: var(--ink-low);
+	white-space: nowrap;
+}
+
 /* ═══════════════ RAW VIEW ═══════════════ */
 .raw {
 	font-family: var(--font-mono);

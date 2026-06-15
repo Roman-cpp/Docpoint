@@ -10,7 +10,7 @@ use service::{
     environments_by_platform, read_directory, read_environment_auth, read_environments_by_doc, read_groups,
     read_all_services, read_platform, read_platform_docs, read_platform_services, read_platforms, read_schemas, read_service_docs,
     save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_environment,
-    update_environment_auth, update_param_value, update_platform, update_schema, update_variable,
+    update_environment_auth, update_param_value, update_platform, update_schema, update_service, update_variable,
     write_groups, write_schemas,
     create_markdown, delete_markdown, read_markdown, read_markdowns, update_markdown,
 };
@@ -95,6 +95,7 @@ pub fn run() {
             read_all_services,
             read_service_docs,
             create_service,
+            update_service,
             delete_service,
             environments_by_platform,
             read_directory,
