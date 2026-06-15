@@ -151,3 +151,16 @@
 	background: var(--blue-bg);
 	border: 1px solid var(--blue-border);
 }
+
+/* ═══════════════ SPECIFICITY GUARD ═══════════════ */
+/* Hold the section-title font against broad `.wrapper h2` page resets (the
+   platform page restyles every h2 to serif). Doubled class wins; placed last
+   to keep selectors in ascending-specificity order. */
+.fe-section-title.fe-section-title {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.7px;
+	line-height: 1.2;
+	color: var(--ink-low);
+}

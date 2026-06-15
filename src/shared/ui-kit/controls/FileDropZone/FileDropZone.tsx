@@ -60,8 +60,7 @@ export const FileDropZone: FC<{
 			if (ok > 0) {
 				toast({
 					variant: "success",
-					title:
-						ok === 1 ? "Файл сохранён" : `Сохранено файлов: ${ok}`,
+					title: ok === 1 ? "Файл сохранён" : `Сохранено файлов: ${ok}`,
 				});
 				onImportedRef.current?.();
 			}

@@ -15,14 +15,13 @@ import { cx } from "@/shared/lib/cx";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { Header } from "@/widgets/header";
 import { extractToc, nodeToText, slugify } from "../lib/toc";
-import { type MarkdownFile, MD_FILES } from "../model/sampleFiles";
+import type { MarkdownFile } from "../model/sampleFiles";
 import {
 	type SaveStatus,
 	useMarkdownContent,
 } from "../model/useMarkdownContent";
 import { CopyIcon, DocIcon, DownloadIcon } from "./icons";
 import s from "./MarkdownShowPage.module.css";
-import { Sidebar } from "./Sidebar";
 
 type View = "rendered" | "edit";
 
@@ -117,12 +116,9 @@ const toViewFile = (md: MarkdownContent): MarkdownFile => ({
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const MarkdownShowPage: FC = () => {
-	const [searchParams, setSearchParams] = useSearchParams();
+	const [searchParams] = useSearchParams();
 	const fileParam = searchParams.get("file");
-	const [activeId, setActiveId] = useState(MD_FILES[0].id);
-	const [query, setQuery] = useState("");
 	const [view, setView] = useState<View>("rendered");
-	const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 	const [activeHeading, setActiveHeading] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
 	const readerRef = useRef<HTMLDivElement>(null);
@@ -141,42 +137,23 @@ export const MarkdownShowPage: FC = () => {
 	// Sample files are read-only — never expose the editor for them.
 	const effectiveView: View = isVault || view !== "edit" ? view : "rendered";
 
-	const file: MarkdownFile = vaultFile
+	const file: MarkdownFile | null = vaultFile
 		? { ...toViewFile(vaultFile), content: vaultContent }
-		: (MD_FILES.find((f) => f.id === activeId) ?? MD_FILES[0]);
-	const toc = useMemo(() => extractToc(file.content), [file.content]);
+		: null;
+	const toc = useMemo(() => (file ? extractToc(file.content) : []), [file]);
 
 	// Render the document once per file/view — keeps scroll-spy state changes
 	// from re-parsing the whole Markdown tree on every scroll frame.
 	const docBody = useMemo(
-		() =>
-			 (
-				<div className={s.rendered}>
-					<ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-						{file.content}
-					</ReactMarkdown>
-				</div>
-			),
-		[file.content, effectiveView],
+		() => (
+			<div className={s.rendered}>
+				<ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+					{file?.content ?? ""}
+				</ReactMarkdown>
+			</div>
+		),
+		[file, effectiveView],
 	);
-
-	// Group files by folder, filtered by search.
-	const groups = useMemo(() => {
-		const q = query.toLowerCase();
-		const map: Record<string, typeof MD_FILES> = {};
-		for (const f of MD_FILES) {
-			if (
-				q &&
-				!f.name.toLowerCase().includes(q) &&
-				!f.content.toLowerCase().includes(q)
-			) {
-				continue;
-			}
-			if (!map[f.folder]) map[f.folder] = [];
-			map[f.folder].push(f);
-		}
-		return map;
-	}, [query]);
 
 	// Scroll-spy for the TOC — throttled with rAF to avoid layout thrash.
 	useEffect(() => {
@@ -216,17 +193,10 @@ export const MarkdownShowPage: FC = () => {
 	};
 
 	const copyAll = () => {
+		if (!file) return;
 		navigator.clipboard?.writeText(file.content).catch(() => {});
 		setCopied(true);
 		setTimeout(() => setCopied(false), 1500);
-	};
-
-	const selectFile = (id: string) => {
-		setActiveId(id);
-		setView("rendered");
-		// Clearing `?file` drops the loaded vault file via the hook, returning to
-		// the read-only sample browser.
-		if (fileParam) setSearchParams({}, { replace: true });
 	};
 
 	return (
@@ -234,26 +204,21 @@ export const MarkdownShowPage: FC = () => {
 			<Header section="Документы / Markdown" activeLink="docs" />
 
 			<div className={s.body}>
-				<Sidebar
-					totalCount={MD_FILES.length}
-					query={query}
-					onQueryChange={setQuery}
-					groups={groups}
-					openFolders={openFolders}
-					onToggleFolder={(folder) =>
-						setOpenFolders((p) => ({ ...p, [folder]: p[folder] === false }))
-					}
-					activeId={isVault ? "" : activeId}
-					onSelectFile={selectFile}
-				/>
+
 
 				{/* ─── Reader ─── */}
 				<div className={s.reader} ref={readerRef}>
 					<div className={s.toolbar}>
 						<div className={s.bc}>
-							<span className={s.bcItem}>{file.folder}</span>
-							<span className={s.bcSep}>/</span>
-							<span className={s.bcCur}>{file.name}</span>
+							{file ? (
+								<>
+									<span className={s.bcItem}>{file.folder}</span>
+									<span className={s.bcSep}>/</span>
+									<span className={s.bcCur}>{file.name}</span>
+								</>
+							) : (
+								<span className={s.bcCur}>Файл не выбран</span>
+							)}
 						</div>
 						<div className={s.toolbarActions}>
 							{effectiveView === "edit" && (
@@ -290,26 +255,32 @@ export const MarkdownShowPage: FC = () => {
 					<div className={s.readerRow}>
 						<div className={s.docWrap}>
 							<div className={s.doc}>
-								<div className={s.docMeta}>
-									<span className={s.pill}>
-										<DocIcon /> {file.name}
-									</span>
-									<span className={s.sep}>·</span>
-									<span>{file.size}</span>
-									<span className={s.sep}>·</span>
-									<span>обновлён {file.updated}</span>
-									<span className={s.sep}>·</span>
-									<span>{file.author}</span>
-								</div>
+								{file ? (
+									<>
+										<div className={s.docMeta}>
+											<span className={s.pill}>
+												<DocIcon /> {file.name}
+											</span>
+											<span className={s.sep}>·</span>
+											<span>{file.size}</span>
+											<span className={s.sep}>·</span>
+											<span>обновлён {file.updated}</span>
+											<span className={s.sep}>·</span>
+											<span>{file.author}</span>
+										</div>
 
-								{effectiveView === "edit" ? (
-									<MarkdownEditor
-										value={vaultContent}
-										onChange={onChange}
-										className={s.editorHost}
-									/>
+										{effectiveView === "edit" ? (
+											<MarkdownEditor
+												value={vaultContent}
+												onChange={onChange}
+												className={s.editorHost}
+											/>
+										) : (
+											docBody
+										)}
+									</>
 								) : (
-									docBody
+									<p className={s.docMeta}>Файл не найден или не выбран</p>
 								)}
 							</div>
 						</div>

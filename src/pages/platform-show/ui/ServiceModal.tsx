@@ -81,11 +81,7 @@ export const ServiceModal: FC<ServiceModalProps> = ({
 						Отмена
 					</ModalBtnCancel>
 					<ModalBtnPrimary onClick={submit} disabled={!canSave} autoFocus>
-						{isSaving
-							? "Сохраняем…"
-							: isEditing
-								? "Сохранить"
-								: "Создать"}
+						{isSaving ? "Сохраняем…" : isEditing ? "Сохранить" : "Создать"}
 					</ModalBtnPrimary>
 				</>
 			}

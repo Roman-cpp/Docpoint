@@ -21,7 +21,7 @@ import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
 import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
 import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
-import { Button } from "@/shared/ui-kit/controls";
+import { Button, FileDropZone } from "@/shared/ui-kit/controls";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import b from "./PlatformShowPage.module.css";
@@ -181,7 +181,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 							<button
 								type="button"
 								key={svc.id}
-								className={s.apiCard}
+								className={`${s.apiCard} ${b.svcCard}`}
 								onClick={() => navigate(`/service-show/${svc.id}`)}
 								onContextMenu={(e) => {
 									e.preventDefault();
@@ -201,7 +201,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				listing.folders.length > 0 ||
 				listing.files.length > 0) && (
 				<div className={b.fileBrowser}>
-					<h2 className={b.fileBrowserTitle}>Файлы рабочего пространства</h2>
+					<h2 className={b.fileBrowserTitle}>Файлы платформы</h2>
 					{path !== "" && (
 						<nav className={b.crumbs} aria-label="Путь">
 							{crumbs.map((c, i) => (
@@ -234,6 +234,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						onOpen={openFile}
 						onDelete={deleteFile}
 					/>
+					<FileDropZone folder={path} onImported={reloadCurrent} />
 				</div>
 			)}
 

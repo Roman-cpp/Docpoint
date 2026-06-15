@@ -23,8 +23,8 @@ export const DocShowPage: FC = () => {
 				<div className={s.main}>
 					<div className={s.docColumn}>
 						<div className={s.endpointPanel}>
-								<OverviewPage />
-							</div>
+							<OverviewPage />
+						</div>
 					</div>
 				</div>
 			</div>

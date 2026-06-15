@@ -46,6 +46,29 @@
 	flex-shrink: 0;
 }
 
+/* Microservice card. Overrides the centred text that a native <button>
+   inherits and leads with a monogram avatar so the card reads as a deliberate
+   object, matching the icon tiles used for files and folders below. */
+.svcCard {
+	text-align: left;
+	gap: 5px;
+}
+.svcAvatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	margin-bottom: 9px;
+	border-radius: 10px;
+	font-family: var(--font-serif);
+	font-size: 17px;
+	line-height: 1;
+	color: var(--blue);
+	background: var(--blue-bg);
+	border: 1px solid var(--blue-border);
+}
+
 /* Count badge shown next to a section title. */
 .titleCount {
 	font-family: var(--font-sans);
@@ -84,9 +107,12 @@
 .section {
 	margin-top: 30px;
 }
+/* The first section sits right under the page's own top padding — no extra gap. */
+.section:first-child {
+	margin-top: 0;
+}
 .fileBrowser {
 	padding-top: 30px;
-	border-top: 1px solid var(--border);
 }
 .fileBrowserTitle {
 	font-family: var(--font-serif);
@@ -94,6 +120,11 @@
 	color: var(--ink);
 	line-height: 1.2;
 	margin: 0 0 18px;
+}
+/* Pull the first sub-label (Каталоги) up so it reads as belonging to this
+   heading rather than floating on its own. */
+.fileBrowser > .fileBrowserTitle {
+	margin-bottom: 10px;
 }
 
 /* Section header row: title on the left, an action button on the right. */

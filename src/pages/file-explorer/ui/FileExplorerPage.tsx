@@ -12,7 +12,7 @@ import {
 import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
 import { CloseIcon, FileIcon, SearchIcon } from "../../../shared/icon/icons";
-import { FileDropZone } from "./FileDropZone/FileDropZone";
+import { FileDropZone } from "../../../shared/ui-kit/controls/FileDropZone/FileDropZone";
 import s from "./FileExplorerPage.module.css";
 import { FileGrid } from "./FileGrid/FileGrid";
 import { FolderGrid } from "./FolderGrid/FolderGrid";
