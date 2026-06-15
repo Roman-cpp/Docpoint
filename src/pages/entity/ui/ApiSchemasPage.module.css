@@ -40,6 +40,26 @@
 	flex-shrink: 0;
 }
 
+.newSchemaBtn {
+	width: 100%;
+	margin-bottom: 9px;
+	padding: 8px 12px;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium, 500);
+	color: var(--surface);
+	background: var(--ink);
+	border: 1px solid var(--ink);
+	border-radius: var(--r-md, 8px);
+	cursor: pointer;
+	transition: background var(--t-base, 0.15s);
+}
+
+.newSchemaBtn:hover {
+	background: #000;
+	border-color: #000;
+}
+
 .searchWrap {
 	position: relative;
 }
@@ -243,6 +263,39 @@
 	color: var(--ink);
 	letter-spacing: -0.3px;
 	line-height: 1.15;
+}
+
+.entityActions {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.editBtn,
+.deleteBtn {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium, 500);
+	color: var(--ink-mid);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md, 8px);
+	padding: 7px 14px;
+	cursor: pointer;
+	transition:
+		color var(--t-fast, 0.12s),
+		border-color var(--t-fast, 0.12s);
+}
+
+.editBtn:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.deleteBtn:hover {
+	color: var(--red);
+	border-color: var(--red);
 }
 
 .entityDesc {

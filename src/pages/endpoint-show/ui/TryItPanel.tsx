@@ -2,15 +2,18 @@ import { invoke } from "@tauri-apps/api/core";
 import { type FC, useEffect, useState } from "react";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import type { Environment } from "@/entities/environment";
+import { getEnvironmentAccessTokenApi } from "@/entities/environment-auth/api";
 import {
 	actionUpdateEndpointParamValue,
-	actionUpdateEnvironmentToken,
-	selectDoc,
-	selectEnvironmentToken,
+	// selectDoc,
 	selectSelectedEndpoint,
-	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
+import {
+	actionUpdateEnvironmentToken,
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./ApiExplorerPage.module.css";
 import { ResponseCard, type RespState } from "./ResponseCard";
@@ -57,19 +60,45 @@ function buildUrl(
 	return `${env.baseUrl}${env.prefix}${path}${qs ? "?" + qs : ""}`;
 }
 
+// Приводит строковое значение параметра к типу, заявленному в его схеме
+// (integer/number → число, boolean → bool). При неудаче возвращает исходную
+// строку, чтобы не терять данные.
+function coerceParamValue(raw: string, type: string): unknown {
+	switch (type.toLowerCase()) {
+		case "integer":
+		case "int":
+		case "long":
+		case "number":
+		case "float":
+		case "double": {
+			const n = Number(raw);
+			return raw.trim() !== "" && !Number.isNaN(n) ? n : raw;
+		}
+		case "boolean":
+		case "bool": {
+			const v = raw.trim().toLowerCase();
+			if (v === "true" || v === "1") return true;
+			if (v === "false" || v === "0") return false;
+			return raw;
+		}
+		default:
+			return raw;
+	}
+}
+
 function buildBody(
 	ep: Endpoint,
 	env: Environment,
 	vals: Record<string, string>,
 ): string | null {
 	if (ep.method === "GET" || !ep.bodyParams?.length) return null;
-	const b: Record<string, string> = {};
+	const b: Record<string, unknown> = {};
 	for (const p of ep.bodyParams) {
 		const raw = (
 			vals[`body:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
 		).trim();
 		const v = resolveEnvVars(raw, env);
-		if (v) b[p.name] = v;
+		if (v) b[p.name] = coerceParamValue(v, p.type);
 	}
 	return Object.keys(b).length ? JSON.stringify(b) : null;
 }
@@ -104,10 +133,10 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 
 export const TryItPanel = () => {
 	const endpoint = useDocStore(selectSelectedEndpoint);
-	const doc = useDocStore(selectDoc);
-	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
-	const authToken = useDocStore(selectEnvironmentToken) ?? "";
-	const setAccessToken = useDocStore(actionUpdateEnvironmentToken);
+	// const doc = useDocStore(selectDoc);
+	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
+	const [authToken, setAuthToken] = useState("");
+	const setAccessToken = useEnvironmentsStore(actionUpdateEnvironmentToken);
 	const updateEndpointParamValue = useDocStore(actionUpdateEndpointParamValue);
 
 	const [tokenInput, setTokenInput] = useState("");
@@ -117,7 +146,7 @@ export const TryItPanel = () => {
 	const [resp, setResp] = useState<RespState | null>(null);
 
 	if (!endpoint) return;
-	if (!doc) return;
+	// if (!doc) return;
 
 	const mc = METHOD_CFG[endpoint.method];
 	const pathParams = extractPathParams(endpoint.path);
@@ -126,6 +155,26 @@ export const TryItPanel = () => {
 		setVals({});
 		setResp(null);
 	}, [endpoint.id]);
+
+	useEffect(() => {
+		const envId = selectedEnvConfig?.id;
+		if (!envId) {
+			setAuthToken("");
+			return;
+		}
+		let active = true;
+		getEnvironmentAccessTokenApi(envId)
+			.then((token) => {
+				if (active) setAuthToken(token ?? "");
+			})
+			.catch((e) => {
+				console.error("[TryItPanel] failed to load access token:", e);
+				if (active) setAuthToken("");
+			});
+		return () => {
+			active = false;
+		};
+	}, [selectedEnvConfig?.id]);
 
 	if (!selectedEnvConfig) return;
 
@@ -163,8 +212,8 @@ export const TryItPanel = () => {
 		}
 
 		const headers: Record<string, string> = { Accept: "application/json" };
-		if (endpoint.auth && authToken)
-			headers["Authorization"] = `Bearer ${authToken}`;
+		// if (endpoint.auth && authToken)
+		// 	headers["Authorization"] = `Bearer ${authToken}`;
 		const body = buildBody(endpoint, selectedEnvConfig, vals);
 		if (body !== null) headers["Content-Type"] = "application/json";
 
@@ -246,6 +295,7 @@ export const TryItPanel = () => {
 								className={s.authNoticeBtn}
 								onClick={() => {
 									setAccessToken(null);
+									setAuthToken("");
 									setSettingToken(false);
 								}}
 							>
@@ -258,6 +308,7 @@ export const TryItPanel = () => {
 									e.preventDefault();
 									if (tokenInput.trim()) {
 										setAccessToken(tokenInput.trim());
+										setAuthToken(tokenInput.trim());
 										setSettingToken(false);
 										setTokenInput("");
 									}

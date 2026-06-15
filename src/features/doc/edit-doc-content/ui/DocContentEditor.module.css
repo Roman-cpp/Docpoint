@@ -1,0 +1,43 @@
+.wrap {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
+.toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--border);
+}
+
+.modeBtn {
+	font-family: var(--font-sans);
+	font-size: var(--fs-12);
+	color: var(--ink-mid);
+	background: transparent;
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	padding: 4px 10px;
+	cursor: pointer;
+	transition: border-color var(--t-base) var(--ease-out);
+}
+
+.modeBtn:hover {
+	border-color: var(--border-h);
+	color: var(--ink);
+}
+
+.status {
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+}
+
+.editor {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}

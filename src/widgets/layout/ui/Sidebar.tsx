@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { Link, useMatch } from "react-router";
 import {
+	actionAddEndpoint,
+	DeleteGroupModal,
 	selectDoc,
 	selectGroups,
 	selectSelectedEndpoint,
 	useDocStore,
 } from "@/features/doc";
 import s from "@/shared/styles/apiDocs.module.css";
+import { AddEndpointModal } from "./AddEndpointModal";
 
 const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -20,16 +23,45 @@ export const Sidebar = () => {
 	const doc = useDocStore(selectDoc);
 	const groups = useDocStore(selectGroups);
 	const selectedEndpoint = useDocStore(selectSelectedEndpoint);
+	const addEndpoint = useDocStore(actionAddEndpoint);
 	const isOverviewActive = !!useMatch("/doc-show/:id");
 	const [search, setSearch] = useState("");
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+	const [addOpen, setAddOpen] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [groupToDelete, setGroupToDelete] = useState<{
+		id: string;
+		label: string;
+	} | null>(null);
 
 	if (!groups) return;
 
+	const handleCreate = async (args: Parameters<typeof addEndpoint>[0]) => {
+		try {
+			setSaving(true);
+			await addEndpoint(args);
+		} catch (e) {
+			console.error("[Sidebar] addEndpoint failed:", e);
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleDeleteGroup = (
+		e: React.MouseEvent,
+		group: { id: string; label: string },
+	) => {
+		e.stopPropagation();
+		setGroupToDelete({ id: group.id, label: group.label });
+	};
+
 	return (
 		<div className={s.sidebar}>
-			<div className={s.sidebarSearch}>
-				<div className={s.searchInputWrap}>
+			<div
+				className={s.sidebarSearch}
+				style={{ display: "flex", alignItems: "center", gap: 6 }}
+			>
+				<div className={s.searchInputWrap} style={{ flex: 1 }}>
 					<svg
 						viewBox="0 0 16 16"
 						fill="none"
@@ -47,6 +79,38 @@ export const Sidebar = () => {
 						onChange={(e) => setSearch(e.target.value)}
 					/>
 				</div>
+				<button
+					type="button"
+					onClick={() => setAddOpen(true)}
+					title="Добавить endpoint"
+					aria-label="Добавить endpoint"
+					style={{
+						width: 30,
+						height: 30,
+						flexShrink: 0,
+						display: "inline-flex",
+						alignItems: "center",
+						justifyContent: "center",
+						background: "var(--surface)",
+						border: "1px solid var(--border)",
+						borderRadius: "var(--r-md)",
+						color: "var(--ink-mid)",
+						cursor: "pointer",
+					}}
+				>
+					<svg
+						viewBox="0 0 12 12"
+						width="12"
+						height="12"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.6"
+						strokeLinecap="round"
+					>
+						<title>add</title>
+						<path d="M6 2v8M2 6h8" />
+					</svg>
+				</button>
 			</div>
 
 			<div className={s.sidebarScroll}>
@@ -105,6 +169,39 @@ export const Sidebar = () => {
 								}
 							>
 								<span className={s.sidebarGroupLabel}>{group.label}</span>
+								{group.endpoints.length === 0 && (
+									<button
+										type="button"
+										onClick={(e) => handleDeleteGroup(e, group)}
+										title="Удалить пустую группу"
+										aria-label="Удалить пустую группу"
+										style={{
+											display: "inline-flex",
+											alignItems: "center",
+											justifyContent: "center",
+											marginLeft: "auto",
+											padding: 2,
+											background: "transparent",
+											border: "none",
+											color: "var(--ink-low)",
+											cursor: "pointer",
+										}}
+									>
+										<svg
+											viewBox="0 0 14 14"
+											width="13"
+											height="13"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.4"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
+											<title>delete</title>
+											<path d="M2.5 3.5h9M5 3.5V2.5h4v1M4 3.5l.5 8h5l.5-8" />
+										</svg>
+									</button>
+								)}
 								<svg
 									className={`${s.sidebarGroupChevron} ${isOpen ? s.open : ""}`}
 									viewBox="0 0 12 12"
@@ -142,6 +239,24 @@ export const Sidebar = () => {
 					);
 				})}
 			</div>
+
+			<AddEndpointModal
+				open={addOpen}
+				onOpenChange={setAddOpen}
+				groups={groups}
+				onCreate={handleCreate}
+				isSaving={saving}
+			/>
+
+			{groupToDelete && (
+				<DeleteGroupModal
+					open={!!groupToDelete}
+					onOpenChange={(open) => {
+						if (!open) setGroupToDelete(null);
+					}}
+					group={groupToDelete}
+				/>
+			)}
 		</div>
 	);
 };

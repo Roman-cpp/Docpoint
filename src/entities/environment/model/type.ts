@@ -14,7 +14,13 @@ export interface Environment {
 	value: Variable[];
 }
 
-export type CreateEnvironmentDTO = Omit<Environment, "id" | "auth">;
+export interface CreateEnvironmentDTO {
+	env: string;
+	label: string;
+	baseUrl: string;
+	prefix: string;
+	platformId: string;
+}
 
 export type UpdateEnvironmentDTO = {
 	id: string;

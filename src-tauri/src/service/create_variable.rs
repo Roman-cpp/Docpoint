@@ -1,5 +1,5 @@
 use crate::domain::environment::model::{CreateVariableDTO, EnvValue};
-use crate::domain::environment::repository;
+use crate::domain::environment::repository::{EnvironmentRepo, EnvironmentRepository};
 use crate::state::AppState;
 use tauri::State;
 
@@ -9,5 +9,7 @@ pub async fn create_variable(
     environment_id: String,
     variable: CreateVariableDTO,
 ) -> Result<EnvValue, String> {
-    repository::create_variable(&state.db, &environment_id, &variable).await
+    EnvironmentRepo::new(&state.db)
+        .create_variable(&environment_id, &variable)
+        .await
 }

@@ -1,0 +1,1022 @@
+{
+	"doc": {
+		"name": "Nexus Service API",
+		"version": "v1",
+		"desc": "REST API сервиса Nexus: временные ссылки на файлы (FileShare) и общий буфер обмена (Clipboard). Хранилище — SQLite, файлы — локальная ФС. Аутентификация отсутствует.",
+		"tags": ["REST", "JSON", "No auth", "SQLite"]
+	},
+	"groups": [
+		{
+			"label": "Health",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/health",
+					"name": "Health check",
+					"description": "Liveness/readiness проба. Всегда возвращает 200 OK, если сервис запущен. Находится вне префикса /api/v1.",
+					"tags": ["public"],
+					"auth": false,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "name",
+									"type": "string",
+									"desc": "Имя сервиса",
+									"example": "\"nexus\""
+								},
+								{
+									"key": "status",
+									"type": "string",
+									"desc": "Статус сервиса",
+									"example": "\"ok\""
+								}
+							],
+							"example": "{\n  \"name\": \"nexus\",\n  \"status\": \"ok\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Clipboards",
+			"endpoints": [
+				{
+					"method": "POST",
+					"path": "/clipboards",
+					"name": "Создать запись буфера",
+					"description": "Создаёт новую запись буфера обмена с текстовым сообщением. Ответ обёрнут в объект `data`.",
+					"tags": ["public"],
+					"auth": false,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "message",
+							"type": "string",
+							"required": true,
+							"desc": "Текст сообщения. Не может быть пустым.",
+							"default": ""
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{
+									"key": "data.id",
+									"type": "string",
+									"desc": "Идентификатор записи (uuid-подобный)",
+									"example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
+								},
+								{
+									"key": "data.message",
+									"type": "string",
+									"desc": "Текст сообщения",
+									"example": "\"hello world\""
+								},
+								{
+									"key": "data.created_at",
+									"type": "datetime",
+									"desc": "Дата создания (RFC3339)",
+									"example": "\"2026-06-01T10:00:00Z\""
+								},
+								{
+									"key": "data.updated_at",
+									"type": "datetime",
+									"desc": "Дата обновления (RFC3339)",
+									"example": "\"2026-06-01T10:00:00Z\""
+								}
+							],
+							"example": "{\n  \"data\": {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"message\": \"hello world\",\n    \"created_at\": \"2026-06-01T10:00:00Z\",\n    \"updated_at\": \"2026-06-01T10:00:00Z\"\n  }\n}"
+						},
+						"400": {
+							"label": "400 Bad Request",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Bad Request\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки (пустое сообщение или невалидный JSON)",
+									"example": "\"invalid message\""
+								}
+							],
+							"example": "{\n  \"code\": \"Bad Request\",\n  \"message\": \"invalid message\"\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/clipboards",
+					"name": "Список записей буфера",
+					"description": "Возвращает постраничный список записей буфера обмена.",
+					"tags": ["public", "paginated"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "page",
+							"type": "integer",
+							"required": false,
+							"desc": "Номер страницы (>= 1)",
+							"default": "1"
+						},
+						{
+							"name": "limit",
+							"type": "integer",
+							"required": false,
+							"desc": "Размер страницы (>= 1)",
+							"default": "20"
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "data[].id",
+									"type": "string",
+									"desc": "Идентификатор записи",
+									"example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
+								},
+								{
+									"key": "data[].message",
+									"type": "string",
+									"desc": "Текст сообщения",
+									"example": "\"hello world\""
+								},
+								{
+									"key": "data[].created_at",
+									"type": "datetime",
+									"desc": "Дата создания",
+									"example": "\"2026-06-01T10:00:00Z\""
+								},
+								{
+									"key": "data[].updated_at",
+									"type": "datetime",
+									"desc": "Дата обновления",
+									"example": "\"2026-06-01T10:00:00Z\""
+								},
+								{
+									"key": "pagination.total",
+									"type": "integer",
+									"desc": "Всего записей",
+									"example": "42"
+								},
+								{
+									"key": "pagination.page",
+									"type": "integer",
+									"desc": "Текущая страница",
+									"example": "1"
+								},
+								{
+									"key": "pagination.limit",
+									"type": "integer",
+									"desc": "Размер страницы",
+									"example": "20"
+								},
+								{
+									"key": "pagination.total_pages",
+									"type": "integer",
+									"desc": "Всего страниц",
+									"example": "3"
+								}
+							],
+							"example": "{\n  \"data\": [\n    {\n      \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"message\": \"hello world\",\n      \"created_at\": \"2026-06-01T10:00:00Z\",\n      \"updated_at\": \"2026-06-01T10:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 42,\n    \"page\": 1,\n    \"limit\": 20,\n    \"total_pages\": 3\n  }\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/clipboards/{id}",
+					"name": "Получить запись по ID",
+					"description": "Возвращает одну запись буфера обмена. Объект отдаётся без обёртки `data`.",
+					"tags": ["public"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "id",
+							"type": "string",
+							"required": true,
+							"desc": "Идентификатор записи (path-параметр)",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "id",
+									"type": "string",
+									"desc": "Идентификатор записи",
+									"example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Текст сообщения",
+									"example": "\"hello world\""
+								},
+								{
+									"key": "created_at",
+									"type": "datetime",
+									"desc": "Дата создания",
+									"example": "\"2026-06-01T10:00:00Z\""
+								},
+								{
+									"key": "updated_at",
+									"type": "datetime",
+									"desc": "Дата обновления",
+									"example": "\"2026-06-01T10:00:00Z\""
+								}
+							],
+							"example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"message\": \"hello world\",\n  \"created_at\": \"2026-06-01T10:00:00Z\",\n  \"updated_at\": \"2026-06-01T10:00:00Z\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Not Found\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки",
+									"example": "\"clipboard not found\""
+								}
+							],
+							"example": "{\n  \"code\": \"Not Found\",\n  \"message\": \"clipboard not found\"\n}"
+						}
+					}
+				},
+				{
+					"method": "PUT",
+					"path": "/clipboards/{id}",
+					"name": "Обновить запись",
+					"description": "Заменяет текст сообщения существующей записи. Объект отдаётся без обёртки `data`.",
+					"tags": ["public"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "id",
+							"type": "string",
+							"required": true,
+							"desc": "Идентификатор записи (path-параметр)",
+							"default": ""
+						}
+					],
+					"bodyParams": [
+						{
+							"name": "message",
+							"type": "string",
+							"required": true,
+							"desc": "Новый текст сообщения. Не может быть пустым.",
+							"default": ""
+						}
+					],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "id",
+									"type": "string",
+									"desc": "Идентификатор записи",
+									"example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Обновлённый текст",
+									"example": "\"updated text\""
+								},
+								{
+									"key": "created_at",
+									"type": "datetime",
+									"desc": "Дата создания",
+									"example": "\"2026-06-01T10:00:00Z\""
+								},
+								{
+									"key": "updated_at",
+									"type": "datetime",
+									"desc": "Дата обновления",
+									"example": "\"2026-06-01T11:30:00Z\""
+								}
+							],
+							"example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"message\": \"updated text\",\n  \"created_at\": \"2026-06-01T10:00:00Z\",\n  \"updated_at\": \"2026-06-01T11:30:00Z\"\n}"
+						},
+						"400": {
+							"label": "400 Bad Request",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Bad Request\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Пустое сообщение или невалидный JSON",
+									"example": "\"invalid message\""
+								}
+							],
+							"example": "{\n  \"code\": \"Bad Request\",\n  \"message\": \"invalid message\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Not Found\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Запись не найдена",
+									"example": "\"clipboard not found\""
+								}
+							],
+							"example": "{\n  \"code\": \"Not Found\",\n  \"message\": \"clipboard not found\"\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/clipboards/{id}",
+					"name": "Удалить запись",
+					"description": "Удаляет запись буфера обмена. Тело ответа пустое.",
+					"tags": ["public", "destructive"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "id",
+							"type": "string",
+							"required": true,
+							"desc": "Идентификатор записи (path-параметр)",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Not Found\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Запись не найдена",
+									"example": "\"clipboard not found\""
+								}
+							],
+							"example": "{\n  \"code\": \"Not Found\",\n  \"message\": \"clipboard not found\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Files",
+			"endpoints": [
+				{
+					"method": "POST",
+					"path": "/files",
+					"name": "Загрузить файл",
+					"description": "Загружает файл и создаёт временную ссылку для скачивания. Запрос в формате multipart/form-data. Максимальный размер файла — 100 MB. Объект FileShare отдаётся без обёртки `data`.",
+					"tags": ["public", "multipart"],
+					"auth": false,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "file",
+							"type": "object",
+							"required": true,
+							"desc": "Файл (multipart field), макс. 100 MB",
+							"default": ""
+						},
+						{
+							"name": "expires_at",
+							"type": "datetime",
+							"required": false,
+							"desc": "Срок жизни ссылки в формате RFC3339. Без значения — бессрочно.",
+							"default": ""
+						},
+						{
+							"name": "max_downloads",
+							"type": "integer",
+							"required": false,
+							"desc": "Лимит скачиваний, целое число > 0. Без значения — без лимита.",
+							"default": ""
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{
+									"key": "id",
+									"type": "string",
+									"desc": "Идентификатор файла",
+									"example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\""
+								},
+								{
+									"key": "file_name",
+									"type": "string",
+									"desc": "Оригинальное имя файла",
+									"example": "\"report.pdf\""
+								},
+								{
+									"key": "size",
+									"type": "integer",
+									"desc": "Размер в байтах",
+									"example": "204800"
+								},
+								{
+									"key": "content_type",
+									"type": "string",
+									"desc": "MIME-тип",
+									"example": "\"application/pdf\""
+								},
+								{
+									"key": "token",
+									"type": "string",
+									"desc": "Публичный токен для скачивания",
+									"example": "\"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\""
+								},
+								{
+									"key": "expires_at",
+									"type": "datetime",
+									"desc": "Срок жизни ссылки (опускается, если null)",
+									"example": "\"2026-06-08T12:00:00Z\""
+								},
+								{
+									"key": "max_downloads",
+									"type": "integer",
+									"desc": "Лимит скачиваний (опускается, если null)",
+									"example": "5"
+								},
+								{
+									"key": "downloads",
+									"type": "integer",
+									"desc": "Счётчик скачиваний",
+									"example": "0"
+								},
+								{
+									"key": "created_at",
+									"type": "datetime",
+									"desc": "Дата загрузки",
+									"example": "\"2026-06-01T10:00:00Z\""
+								}
+							],
+							"example": "{\n  \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"file_name\": \"report.pdf\",\n  \"size\": 204800,\n  \"content_type\": \"application/pdf\",\n  \"token\": \"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\",\n  \"expires_at\": \"2026-06-08T12:00:00Z\",\n  \"max_downloads\": 5,\n  \"downloads\": 0,\n  \"created_at\": \"2026-06-01T10:00:00Z\"\n}"
+						},
+						"400": {
+							"label": "400 Bad Request",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Bad Request\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Невалидный multipart, отсутствует поле file, неверный expires_at/max_downloads или пустое имя файла",
+									"example": "\"invalid expires_at: use RFC3339 format\""
+								}
+							],
+							"example": "{\n  \"code\": \"Bad Request\",\n  \"message\": \"invalid expires_at: use RFC3339 format\"\n}"
+						},
+						"413": {
+							"label": "413 Request Entity Too Large",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Request Entity Too Large\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Файл превышает 100 MB",
+									"example": "\"fileshare: file too large\""
+								}
+							],
+							"example": "{\n  \"code\": \"Request Entity Too Large\",\n  \"message\": \"fileshare: file too large\"\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/files",
+					"name": "Список файлов",
+					"description": "Возвращает постраничный список загруженных файлов.",
+					"tags": ["public", "paginated"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "page",
+							"type": "integer",
+							"required": false,
+							"desc": "Номер страницы (>= 1)",
+							"default": "1"
+						},
+						{
+							"name": "limit",
+							"type": "integer",
+							"required": false,
+							"desc": "Размер страницы (>= 1)",
+							"default": "20"
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "data[].id",
+									"type": "string",
+									"desc": "Идентификатор файла",
+									"example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\""
+								},
+								{
+									"key": "data[].file_name",
+									"type": "string",
+									"desc": "Имя файла",
+									"example": "\"report.pdf\""
+								},
+								{
+									"key": "data[].size",
+									"type": "integer",
+									"desc": "Размер в байтах",
+									"example": "204800"
+								},
+								{
+									"key": "data[].content_type",
+									"type": "string",
+									"desc": "MIME-тип",
+									"example": "\"application/pdf\""
+								},
+								{
+									"key": "data[].token",
+									"type": "string",
+									"desc": "Токен скачивания",
+									"example": "\"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\""
+								},
+								{
+									"key": "data[].downloads",
+									"type": "integer",
+									"desc": "Счётчик скачиваний",
+									"example": "2"
+								},
+								{
+									"key": "data[].created_at",
+									"type": "datetime",
+									"desc": "Дата загрузки",
+									"example": "\"2026-06-01T10:00:00Z\""
+								},
+								{
+									"key": "pagination.total",
+									"type": "integer",
+									"desc": "Всего файлов",
+									"example": "42"
+								},
+								{
+									"key": "pagination.page",
+									"type": "integer",
+									"desc": "Текущая страница",
+									"example": "1"
+								},
+								{
+									"key": "pagination.limit",
+									"type": "integer",
+									"desc": "Размер страницы",
+									"example": "20"
+								},
+								{
+									"key": "pagination.total_pages",
+									"type": "integer",
+									"desc": "Всего страниц",
+									"example": "3"
+								}
+							],
+							"example": "{\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"file_name\": \"report.pdf\",\n      \"size\": 204800,\n      \"content_type\": \"application/pdf\",\n      \"token\": \"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\",\n      \"downloads\": 2,\n      \"created_at\": \"2026-06-01T10:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 42,\n    \"page\": 1,\n    \"limit\": 20,\n    \"total_pages\": 3\n  }\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/files/dl/{token}",
+					"name": "Скачать файл",
+					"description": "Публичное скачивание файла по токену. Возвращает бинарные данные с заголовками Content-Type, Content-Disposition (attachment) и Content-Length. Каждое успешное скачивание увеличивает счётчик downloads.",
+					"tags": ["public", "binary"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "token",
+							"type": "string",
+							"required": true,
+							"desc": "Значение поля token (path-параметр)",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK (binary)",
+							"schema": [
+								{
+									"key": "<binary>",
+									"type": "string",
+									"desc": "Содержимое файла. Заголовки: Content-Type, Content-Disposition: attachment; filename=\"...\", Content-Length",
+									"example": ""
+								}
+							],
+							"example": ""
+						},
+						"403": {
+							"label": "403 Forbidden",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Forbidden\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Лимит скачиваний исчерпан",
+									"example": "\"fileshare: download limit reached\""
+								}
+							],
+							"example": "{\n  \"code\": \"Forbidden\",\n  \"message\": \"fileshare: download limit reached\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Not Found\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Файл по токену не найден",
+									"example": "\"fileshare: not found\""
+								}
+							],
+							"example": "{\n  \"code\": \"Not Found\",\n  \"message\": \"fileshare: not found\"\n}"
+						},
+						"410": {
+							"label": "410 Gone",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Gone\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Срок жизни ссылки истёк",
+									"example": "\"fileshare: link expired\""
+								}
+							],
+							"example": "{\n  \"code\": \"Gone\",\n  \"message\": \"fileshare: link expired\"\n}"
+						}
+					}
+				},
+				{
+					"method": "GET",
+					"path": "/files/{id}",
+					"name": "Метаданные файла",
+					"description": "Возвращает метаданные файла (объект FileShare) по внутреннему идентификатору. Без обёртки `data`.",
+					"tags": ["public"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "id",
+							"type": "string",
+							"required": true,
+							"desc": "Идентификатор файла (path-параметр)",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "id",
+									"type": "string",
+									"desc": "Идентификатор файла",
+									"example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\""
+								},
+								{
+									"key": "file_name",
+									"type": "string",
+									"desc": "Имя файла",
+									"example": "\"report.pdf\""
+								},
+								{
+									"key": "size",
+									"type": "integer",
+									"desc": "Размер в байтах",
+									"example": "204800"
+								},
+								{
+									"key": "content_type",
+									"type": "string",
+									"desc": "MIME-тип",
+									"example": "\"application/pdf\""
+								},
+								{
+									"key": "token",
+									"type": "string",
+									"desc": "Токен скачивания",
+									"example": "\"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\""
+								},
+								{
+									"key": "expires_at",
+									"type": "datetime",
+									"desc": "Срок жизни ссылки (опускается, если null)",
+									"example": "\"2026-06-08T12:00:00Z\""
+								},
+								{
+									"key": "max_downloads",
+									"type": "integer",
+									"desc": "Лимит скачиваний (опускается, если null)",
+									"example": "5"
+								},
+								{
+									"key": "downloads",
+									"type": "integer",
+									"desc": "Счётчик скачиваний",
+									"example": "2"
+								},
+								{
+									"key": "created_at",
+									"type": "datetime",
+									"desc": "Дата загрузки",
+									"example": "\"2026-06-01T10:00:00Z\""
+								}
+							],
+							"example": "{\n  \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"file_name\": \"report.pdf\",\n  \"size\": 204800,\n  \"content_type\": \"application/pdf\",\n  \"token\": \"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\",\n  \"expires_at\": \"2026-06-08T12:00:00Z\",\n  \"max_downloads\": 5,\n  \"downloads\": 2,\n  \"created_at\": \"2026-06-01T10:00:00Z\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Not Found\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Файл не найден",
+									"example": "\"fileshare: not found\""
+								}
+							],
+							"example": "{\n  \"code\": \"Not Found\",\n  \"message\": \"fileshare: not found\"\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/files/{id}",
+					"name": "Удалить файл",
+					"description": "Удаляет метаданные и байты файла из хранилища. Тело ответа пустое.",
+					"tags": ["public", "destructive"],
+					"auth": false,
+					"queryParams": [
+						{
+							"name": "id",
+							"type": "string",
+							"required": true,
+							"desc": "Идентификатор файла (path-параметр)",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "code",
+									"type": "string",
+									"desc": "Категория ошибки",
+									"example": "\"Not Found\""
+								},
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Файл не найден",
+									"example": "\"fileshare: not found\""
+								}
+							],
+							"example": "{\n  \"code\": \"Not Found\",\n  \"message\": \"fileshare: not found\"\n}"
+						}
+					}
+				}
+			]
+		}
+	],
+	"entities": [
+		{
+			"name": "Clipboard",
+			"desc": "Запись общего буфера обмена с текстовым сообщением.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Идентификатор записи (uuid-подобный, формат 8-4-4-4-12)",
+					"note": "Генерируется сервером",
+					"example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
+				},
+				{
+					"name": "message",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Текст сообщения",
+					"note": "Не может быть пустым",
+					"example": "\"hello world\""
+				},
+				{
+					"name": "created_at",
+					"type": "datetime",
+					"req": true,
+					"nullable": false,
+					"desc": "Дата создания (RFC3339)",
+					"note": "",
+					"example": "\"2026-06-01T10:00:00Z\""
+				},
+				{
+					"name": "updated_at",
+					"type": "datetime",
+					"req": true,
+					"nullable": false,
+					"desc": "Дата последнего обновления (RFC3339)",
+					"note": "",
+					"example": "\"2026-06-01T10:00:00Z\""
+				}
+			]
+		},
+		{
+			"name": "FileShare",
+			"desc": "Загруженный файл с временной публичной ссылкой для скачивания.",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Внутренний идентификатор файла",
+					"note": "Генерируется сервером",
+					"example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\""
+				},
+				{
+					"name": "file_name",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Оригинальное имя файла",
+					"note": "Не может быть пустым",
+					"example": "\"report.pdf\""
+				},
+				{
+					"name": "size",
+					"type": "integer",
+					"req": true,
+					"nullable": false,
+					"desc": "Размер файла в байтах",
+					"note": "От 1 до 104857600 (100 MB)",
+					"example": "204800"
+				},
+				{
+					"name": "content_type",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "MIME-тип файла",
+					"note": "Берётся из заголовка загрузки",
+					"example": "\"application/pdf\""
+				},
+				{
+					"name": "token",
+					"type": "string",
+					"req": true,
+					"nullable": false,
+					"desc": "Публичный токен для скачивания (hex, 32 символа)",
+					"note": "Генерируется сервером",
+					"example": "\"3f8a1c2e9d4b7a6f0e5c2d1b8a9f4e3c\""
+				},
+				{
+					"name": "expires_at",
+					"type": "datetime",
+					"req": false,
+					"nullable": true,
+					"desc": "Срок жизни ссылки (RFC3339)",
+					"note": "null/опускается = бессрочно",
+					"example": "\"2026-06-08T12:00:00Z\""
+				},
+				{
+					"name": "max_downloads",
+					"type": "integer",
+					"req": false,
+					"nullable": true,
+					"desc": "Лимит скачиваний",
+					"note": "null/опускается = без лимита; при заданном значении > 0",
+					"example": "5"
+				},
+				{
+					"name": "downloads",
+					"type": "integer",
+					"req": true,
+					"nullable": false,
+					"desc": "Текущее количество скачиваний",
+					"note": "Стартует с 0",
+					"example": "2"
+				},
+				{
+					"name": "created_at",
+					"type": "datetime",
+					"req": true,
+					"nullable": false,
+					"desc": "Дата загрузки (RFC3339)",
+					"note": "",
+					"example": "\"2026-06-01T10:00:00Z\""
+				}
+			]
+		}
+	],
+	"environments": [
+		{
+			"env": "local",
+			"label": "Local (go run)",
+			"baseUrl": "http://localhost:8080",
+			"prefix": "",
+			"value": [],
+			"accessToken": null
+		},
+		{
+			"env": "docker",
+			"label": "Docker compose (host)",
+			"baseUrl": "http://localhost:8085",
+			"prefix": "",
+			"value": [],
+			"accessToken": null
+		},
+		{
+			"env": "internal",
+			"label": "Docker network (service-to-service)",
+			"baseUrl": "http://nexus-service:8080",
+			"prefix": "",
+			"value": [],
+			"accessToken": null
+		}
+	]
+}

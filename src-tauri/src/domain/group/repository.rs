@@ -1,5 +1,5 @@
 use crate::domain::endpoint::model::{Endpoint, ParamDef, ResponseDef, ResponseSchemaField};
-use crate::domain::endpoint::repository::EndpointRepo;
+use crate::domain::endpoint::repository::{EndpointRepo, EndpointRepository};
 use super::model::{CreateGroupDTO, Group};
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub trait GroupRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Group>, String>;
     async fn create(&self, doc_id: &str, groups: &[CreateGroupDTO]) -> Result<(), String>;
+    async fn delete(&self, group_id: &str) -> Result<(), String>;
 }
 
 pub struct GroupRepo<'a> {
@@ -225,14 +226,52 @@ impl GroupRepository for GroupRepo<'_> {
             let group_id = self.insert_group(doc_id, group, gi).await?;
             let endpoint_repo = EndpointRepo::new(self.db);
             for (ei, endpoint) in group.endpoints.iter().enumerate() {
-                endpoint_repo.create(&group_id, endpoint, ei).await?;
+                endpoint_repo.create(&group_id, endpoint).await?;
             }
         }
+        Ok(())
+    }
+
+    /// Удаляет группу. Только если она пустая (без эндпоинтов).
+    async fn delete(&self, group_id: &str) -> Result<(), String> {
+        let endpoint_count: i64 =
+            sqlx::query_scalar(r#"SELECT COUNT(*) FROM endpoint WHERE group_id = ?"#)
+                .bind(group_id)
+                .fetch_one(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        if endpoint_count > 0 {
+            return Err("Нельзя удалить непустую группу".to_string());
+        }
+
+        sqlx::query(r#"DELETE FROM "group" WHERE id = ?"#)
+            .bind(group_id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
         Ok(())
     }
 }
 
 impl GroupRepo<'_> {
+    /// Создаёт новую (пустую) группу в конце списка и возвращает её id.
+    pub async fn create_group(&self, doc_id: &str, label: &str) -> Result<String, String> {
+        let sort_ord: i64 =
+            sqlx::query_scalar(r#"SELECT COUNT(*) FROM "group" WHERE doc_id = ?"#)
+                .bind(doc_id)
+                .fetch_one(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        let group = CreateGroupDTO {
+            label: label.to_string(),
+            endpoints: vec![],
+        };
+        self.insert_group(doc_id, &group, sort_ord as usize).await
+    }
+
     async fn insert_group(&self, doc_id: &str, group: &CreateGroupDTO, sort_ord: usize) -> Result<String, String> {
         let group_id = Uuid::new_v4().to_string();
 

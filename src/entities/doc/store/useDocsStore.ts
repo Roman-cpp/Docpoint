@@ -8,8 +8,10 @@ import { deleteDocApi } from "./../api/deleteDocApi";
 import { importDocApi } from "./../api/importDocApi";
 import { readAllDocsApi } from "./../api/readAllDocsApi";
 import { readDocApi } from "./../api/readDocApi";
+import { updateDocApi } from "./../api/updateDocApi";
 import { writeDocApi } from "./../api/writeDocApi";
-import type { CreateDocDTO, Doc } from "../model/type";
+import type { CreateDocDTO, UpdateDocDTO } from "../model/doc.dto";
+import type { Doc } from "../model/doc.type";
 
 export const docKeys = {
 	all: ["docs"] as const,
@@ -75,6 +77,22 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 		},
 	});
 
+	const updateDoc = useMutation({
+		mutationFn: (dto: UpdateDocDTO) => updateDocApi(dto),
+		onSuccess: (_data, dto) => {
+			toast({ title: "OK", description: "Документ обновлён" });
+			queryClient.invalidateQueries({ queryKey: docKeys.detail(dto.id) });
+			queryClient.invalidateQueries({ queryKey: docKeys.lists() });
+		},
+		onError: (error: Error) => {
+			toast({
+				title: "Ошибка",
+				description: error.message,
+				variant: "error",
+			});
+		},
+	});
+
 	const importDoc = useMutation({
 		mutationFn: (payload: ImportDocPayload) => importDocApi(payload),
 		onSuccess: () => {
@@ -106,12 +124,15 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 
 		createDoc: createDoc.mutate,
 		createDocAsync: createDoc.mutateAsync,
+		updateDoc: updateDoc.mutate,
+		updateDocAsync: updateDoc.mutateAsync,
 		deleteDoc: deleteDoc.mutate,
 		deleteDocAsync: deleteDoc.mutateAsync,
 		importDoc: importDoc.mutate,
 		importDocAsync: importDoc.mutateAsync,
 
 		isCreating: createDoc.isPending,
+		isUpdating: updateDoc.isPending,
 		isDeleting: deleteDoc.isPending,
 		isImporting: importDoc.isPending,
 	};

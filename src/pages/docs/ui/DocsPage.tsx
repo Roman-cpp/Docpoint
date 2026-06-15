@@ -1,19 +1,37 @@
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import { Link } from "react-router";
-import { useDocsStore } from "@/entities/doc";
+import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
+import { useAllServices, useAttachDoc } from "@/entities/service";
+import { actionResetDoc, useDocStore } from "@/features/doc";
+import {
+	actionResetEnvironments,
+	useEnvironmentsStore,
+} from "@/features/environment";
+import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
+import { DeleteDocModal } from "../../../features/doc/delete-doc/ui/DeleteDocModal";
+import { EditDocModal } from "../../../features/doc/edit-doc/ui/EditDocModal";
+import { exportDoc } from "../lib/exportDoc";
 import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
-	const { docs, deleteDoc } = useDocsStore();
+	const { docs, updateDoc } = useDocsStore();
+	const { services } = useAllServices();
+	const { attachDoc } = useAttachDoc();
+	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
+	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+	const [isEditOpen, setIsEditOpen] = useState(false);
+	const resetDoc = useDocStore(actionResetDoc);
+	const resetEnvironments = useEnvironmentsStore(actionResetEnvironments);
 
-	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
-		e.preventDefault();
-		e.stopPropagation();
-		if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-		deleteDoc(id);
+	resetDoc();
+	resetEnvironments();
+
+	const handleSaveEdit = (update: UpdateDocDTO) => {
+		updateDoc(update);
+		setIsEditOpen(false);
 	};
 
 	return (
@@ -28,23 +46,75 @@ const Overview = () => {
 						>
 							<div className={s.acAccent} />
 							<div className={s.acTop}>
-								<button
-									className={s.acDeleteBtn}
-									onClick={(e) => handleDelete(e, a.id, a.name)}
-									title="Delete"
+								<div className={s.acName}>{a.name}</div>
+								<div
+									className={s.acMenuWrap}
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+									}}
 								>
-									<svg
-										viewBox="0 0 14 14"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="1.5"
-										strokeLinecap="round"
-									>
-										<path d="M2 3.5h10M5.5 3.5V2.5h3v1M5 3.5l.5 8M9 3.5l-.5 8" />
-									</svg>
-								</button>
+									<DropMenu>
+										<DropMenu.Trigger>
+											<button
+												type="button"
+												className={s.acMenuBtn}
+												aria-label="More options"
+												onClick={() => setPendingDoc(a)}
+											>
+												<svg
+													viewBox="0 0 16 16"
+													fill="currentColor"
+													aria-hidden="true"
+												>
+													<circle cx="8" cy="3" r="1.4" />
+													<circle cx="8" cy="8" r="1.4" />
+													<circle cx="8" cy="13" r="1.4" />
+												</svg>
+											</button>
+										</DropMenu.Trigger>
+										<DropMenu.Content>
+											<DropMenu.Item onClick={() => setIsEditOpen(true)}>
+												Edit
+											</DropMenu.Item>
+											<DropMenu.Item onClick={() => exportDoc(a.id, a.name)}>
+												Export
+											</DropMenu.Item>
+											<DropMenu.Sub>
+												<DropMenu.SubTrigger>
+													Add to service
+												</DropMenu.SubTrigger>
+												<DropMenu.SubContent>
+													{services.length === 0 ? (
+														<DropMenu.Item disabled>No services</DropMenu.Item>
+													) : (
+														services.map((svc) => (
+															<DropMenu.Item
+																key={svc.id}
+																onClick={() =>
+																	attachDoc({
+																		serviceId: svc.id,
+																		docId: a.id,
+																	})
+																}
+															>
+																{svc.name}
+															</DropMenu.Item>
+														))
+													)}
+												</DropMenu.SubContent>
+											</DropMenu.Sub>
+											<DropMenu.Separator />
+											<DropMenu.Item
+												danger
+												onClick={() => setIsDeleteOpen(true)}
+											>
+												Delete
+											</DropMenu.Item>
+										</DropMenu.Content>
+									</DropMenu>
+								</div>
 							</div>
-							<div className={s.acName}>{a.name}</div>
 							<div className={s.acDesc}>{a.desc}</div>
 							<div className={s.acFooter}>
 								{a.tags.map((t) => (
@@ -58,6 +128,21 @@ const Overview = () => {
 					);
 				})}
 			</div>
+			{pendingDoc && (
+				<>
+					<EditDocModal
+						open={isEditOpen}
+						onOpenChange={setIsEditOpen}
+						doc={pendingDoc}
+						onSave={handleSaveEdit}
+					/>
+					<DeleteDocModal
+						open={isDeleteOpen}
+						onOpenChange={setIsDeleteOpen}
+						doc={pendingDoc}
+					/>
+				</>
+			)}
 		</div>
 	);
 };

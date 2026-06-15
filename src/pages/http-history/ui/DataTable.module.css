@@ -1,0 +1,724 @@
+/* ═══════════════════════════════════════════════════════════════
+   Docpoint · DataTable
+   Переиспользуемый стиль таблиц для больших списков
+   (пользователи, продукты, заказы, токены, что угодно).
+
+   Всё, что нужно от данных, описывается конфигом колонок —
+   разметка и стиль одинаковы для любой сущности. Префикс `dt-`.
+   Построено на токенах Docpoint (colors_and_type.css).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────── Toolbar ─────────────────────────── */
+.dt-toolbar {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 18px;
+	margin-bottom: 20px;
+}
+.dt-title {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 30px;
+	letter-spacing: -0.3px;
+	line-height: 1.2;
+	color: var(--ink);
+	margin: 0;
+}
+.dt-title-count {
+	font-family: var(--font-sans);
+	font-size: 14px;
+	color: var(--ink-low);
+	margin-left: 10px;
+	letter-spacing: 0;
+}
+.dt-sub {
+	font-size: 13px;
+	color: var(--ink-mid);
+	margin: 5px 0 0;
+}
+.dt-tools {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	flex-shrink: 0;
+}
+
+/* ─── Search ─── */
+.dt-search {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+.dt-search svg {
+	position: absolute;
+	left: 10px;
+	width: 13px;
+	height: 13px;
+	color: var(--ink-low);
+	pointer-events: none;
+}
+.dt-search input {
+	width: 230px;
+	padding: 8px 12px 8px 31px;
+	font-size: 12.5px;
+	font-family: var(--font-sans);
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--border-h);
+	border-radius: var(--r-md);
+	outline: none;
+	transition: border-color var(--t-base);
+}
+.dt-search input::placeholder {
+	color: var(--ink-low);
+}
+.dt-search input:focus {
+	border-color: var(--ink);
+}
+
+/* ─── Buttons ─── */
+.dt-btn,
+.dt-btn-primary {
+	font-family: var(--font-sans);
+	font-size: 12.5px;
+	font-weight: 500;
+	padding: 8px 14px;
+	border-radius: var(--r-md);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+	white-space: nowrap;
+}
+.dt-btn {
+	border: 1px solid var(--border-h);
+	background: var(--surface);
+	color: var(--ink);
+}
+.dt-btn:hover {
+	border-color: var(--ink);
+	background: var(--cat-bg);
+}
+.dt-btn-primary {
+	border: 1px solid var(--ink);
+	background: var(--ink);
+	color: var(--surface);
+}
+.dt-btn-primary:hover {
+	background: #333;
+	border-color: #333;
+}
+.dt-btn-danger {
+	color: var(--danger, #d11a2a);
+}
+.dt-btn-danger:hover:not(:disabled) {
+	border-color: var(--danger, #d11a2a);
+	background: color-mix(in srgb, var(--danger, #d11a2a) 8%, transparent);
+}
+.dt-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+/* ─── Filters row ─── */
+.dt-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 16px;
+}
+.dt-filter {
+	padding: 5px 12px;
+	font-size: 12px;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--border-h);
+	background: var(--surface);
+	color: var(--ink-mid);
+	cursor: pointer;
+	font-family: var(--font-sans);
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition: all var(--t-base);
+}
+.dt-filter:hover {
+	border-color: var(--ink);
+	color: var(--ink);
+}
+.dt-filter.active {
+	background: var(--ink);
+	color: var(--surface);
+	border-color: var(--ink);
+}
+.dt-filter .cnt {
+	font-size: 10.5px;
+	color: var(--ink-low);
+	font-variant-numeric: tabular-nums;
+}
+.dt-filter:hover .cnt {
+	color: var(--ink-mid);
+}
+.dt-filter.active .cnt {
+	color: rgba(255, 255, 255, 0.7);
+}
+.dt-filter-sep {
+	width: 1px;
+	height: 16px;
+	background: var(--border);
+	margin: 0 4px;
+}
+
+.dt-filters-right {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* ─── Density toggle ─── */
+.dt-density {
+	display: inline-flex;
+	border: 1px solid var(--border-h);
+	border-radius: var(--r-md);
+	overflow: hidden;
+	background: var(--surface);
+}
+.dt-density button {
+	width: 30px;
+	height: 30px;
+	border: none;
+	background: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition:
+		background var(--t-base),
+		color var(--t-base);
+}
+.dt-density button + button {
+	border-left: 1px solid var(--border);
+}
+.dt-density button:hover {
+	color: var(--ink);
+}
+.dt-density button.active {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+
+/* ─────────────────────────── Table shell ─────────────────────── */
+.dt-table {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	overflow: hidden;
+	position: relative;
+}
+
+/* Header + rows share their grid template via inline gridTemplateColumns */
+.dt-head,
+.dt-row {
+	display: grid;
+	gap: 14px;
+	padding: 11px 18px;
+	align-items: center;
+}
+
+/* Sticky header — sticks to the scroll parent (.pf-main / .dt-scroll) */
+.dt-head {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	background: var(--bg);
+	border-bottom: 1px solid var(--border);
+}
+.dt-th {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+}
+.dt-th.num {
+	justify-content: flex-end;
+}
+.dt-th.center {
+	justify-content: center;
+}
+
+/* Sortable header */
+.dt-th.sortable {
+	cursor: pointer;
+	transition: color var(--t-base);
+	user-select: none;
+}
+.dt-th.sortable:hover {
+	color: var(--ink);
+}
+.dt-th .dt-sort-ico {
+	width: 11px;
+	height: 11px;
+	color: var(--border-h);
+	flex-shrink: 0;
+	transition:
+		color var(--t-base),
+		transform var(--t-base);
+}
+.dt-th.sortable:hover .dt-sort-ico {
+	color: var(--ink-mid);
+}
+.dt-th.sorted {
+	color: var(--ink);
+}
+.dt-th.sorted .dt-sort-ico {
+	color: var(--ink);
+}
+.dt-th.sorted.desc .dt-sort-ico {
+	transform: rotate(180deg);
+}
+
+/* Rows */
+.dt-row {
+	border-bottom: 1px solid var(--border);
+	font-size: 12.5px;
+	color: var(--ink-mid);
+	transition: background var(--t-fast);
+	cursor: default;
+}
+.dt-row:last-child {
+	border-bottom: none;
+}
+.dt-row:hover {
+	background: var(--bg);
+}
+.dt-row.selected {
+	background: var(--blue-bg);
+}
+.dt-row.selected:hover {
+	background: #e2ecf9;
+}
+.dt-row:focus-visible {
+	outline: 1.5px solid var(--ink);
+	outline-offset: -2px;
+}
+.dt-row.clickable {
+	cursor: pointer;
+}
+.dt-row.active {
+	background: var(--cat-bg);
+	box-shadow: inset 3px 0 0 var(--ink);
+}
+.dt-row.active:hover {
+	background: var(--cat-bg);
+}
+
+/* Compact density */
+.dt-table.compact .dt-row,
+.dt-table.compact .dt-head {
+	padding-top: 7px;
+	padding-bottom: 7px;
+}
+.dt-table.compact .dt-cell-primary {
+	gap: 8px;
+}
+.dt-table.compact .dt-avatar {
+	width: 22px;
+	height: 22px;
+	font-size: 9.5px;
+}
+
+/* ─── Cell building blocks ─── */
+.dt-cell {
+	min-width: 0;
+}
+.dt-num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+.dt-mono {
+	font-family: var(--font-mono);
+	font-size: 12px;
+}
+.dt-muted {
+	color: var(--ink-low);
+}
+.dt-truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Primary cell — avatar/thumb + title + sub */
+.dt-cell-primary {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+.dt-avatar {
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background: var(--cat-bg);
+	color: var(--cat-ink);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 10px;
+	font-weight: 500;
+	flex-shrink: 0;
+}
+.dt-avatar.square {
+	border-radius: var(--r-sm);
+}
+.dt-cell-title {
+	font-size: 13px;
+	color: var(--ink);
+	font-weight: 500;
+	line-height: 1.3;
+}
+.dt-cell-sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+	line-height: 1.3;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ─── Badge (reuses semantic palette) ─── */
+.dt-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	font-weight: 500;
+	padding: 2px 9px;
+	border-radius: var(--r-sm);
+	background: var(--cat-bg);
+	color: var(--cat-ink);
+	white-space: nowrap;
+}
+.dt-badge.green {
+	background: var(--green-bg);
+	color: var(--green);
+}
+.dt-badge.red {
+	background: var(--red-bg);
+	color: var(--red);
+}
+.dt-badge.amber {
+	background: var(--amber-bg);
+	color: var(--amber);
+}
+.dt-badge.blue {
+	background: var(--blue-bg);
+	color: var(--blue);
+}
+.dt-badge.purple {
+	background: var(--purple-bg);
+	color: var(--purple);
+}
+
+/* ─── Status (dot + label) ─── */
+.dt-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 12px;
+	color: var(--ink-mid);
+	white-space: nowrap;
+}
+.dt-status-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	background: var(--ink-low);
+}
+.dt-status.green .dt-status-dot {
+	background: var(--green);
+}
+.dt-status.amber .dt-status-dot {
+	background: var(--amber);
+}
+.dt-status.red .dt-status-dot {
+	background: var(--red);
+}
+.dt-status.blue .dt-status-dot {
+	background: var(--blue);
+}
+.dt-status.muted .dt-status-dot {
+	background: var(--ink-low);
+}
+
+/* ─── Checkbox ─── */
+.dt-cb {
+	width: 15px;
+	height: 15px;
+	border: 1.5px solid var(--border-h);
+	border-radius: var(--r-xs);
+	background: var(--surface);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: var(--surface);
+	flex-shrink: 0;
+	transition: all var(--t-fast);
+	padding: 0;
+}
+.dt-cb:hover {
+	border-color: var(--ink);
+}
+.dt-cb.checked,
+.dt-cb.indeterminate {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.dt-cb svg {
+	width: 11px;
+	height: 11px;
+}
+.dt-cb:focus-visible {
+	outline: 1.5px solid var(--ink);
+	outline-offset: 2px;
+}
+
+/* ─── Row actions (revealed on hover) ─── */
+.dt-row-actions {
+	display: inline-flex;
+	gap: 4px;
+	justify-content: flex-end;
+	opacity: 0;
+	transition: opacity var(--t-base);
+}
+.dt-row:hover .dt-row-actions,
+.dt-row:focus-within .dt-row-actions,
+.dt-row.selected .dt-row-actions {
+	opacity: 1;
+}
+
+.dt-iconbtn {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--r-sm);
+	border: 1px solid var(--border-h);
+	background: var(--surface);
+	color: var(--ink-mid);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	transition: all var(--t-base);
+}
+.dt-iconbtn:hover {
+	border-color: var(--ink);
+	color: var(--ink);
+	background: var(--cat-bg);
+}
+.dt-iconbtn.danger:hover {
+	border-color: var(--red);
+	color: var(--red);
+	background: var(--red-bg);
+}
+.dt-iconbtn:focus-visible {
+	outline: 1.5px solid var(--ink);
+	outline-offset: 2px;
+}
+.dt-iconbtn.danger:focus-visible {
+	outline-color: var(--red);
+}
+
+/* ─────────────────────── Selection bar ───────────────────────── */
+/* Overlays the header band when ≥1 row is selected */
+.dt-selbar {
+	position: sticky;
+	top: 0;
+	z-index: 6;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 9px 16px;
+	background: var(--ink);
+	color: var(--surface);
+	border-bottom: 1px solid var(--ink);
+	animation: dt-selbar-in 0.16s var(--ease-out);
+}
+@keyframes dt-selbar-in {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+.dt-selbar-count {
+	font-size: 12.5px;
+	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+}
+.dt-selbar-count .dt-cb {
+	border-color: rgba(255, 255, 255, 0.5);
+	background: var(--surface);
+	color: var(--ink);
+}
+.dt-selbar-clear {
+	background: none;
+	border: none;
+	color: rgba(255, 255, 255, 0.65);
+	font-size: 12px;
+	cursor: pointer;
+	font-family: var(--font-sans);
+	padding: 2px 4px;
+	border-radius: 4px;
+}
+.dt-selbar-clear:hover {
+	color: var(--surface);
+}
+.dt-selbar-actions {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+.dt-selbar-btn {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	padding: 6px 12px;
+	border-radius: var(--r-sm);
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	background: rgba(255, 255, 255, 0.08);
+	color: var(--surface);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition: background var(--t-base);
+}
+.dt-selbar-btn:hover {
+	background: rgba(255, 255, 255, 0.18);
+}
+.dt-selbar-btn.danger:hover {
+	background: var(--red);
+	border-color: var(--red);
+}
+
+/* ─────────────────────────── Empty state ─────────────────────── */
+.dt-empty {
+	padding: 56px 24px;
+	text-align: center;
+	color: var(--ink-low);
+}
+.dt-empty-ico {
+	width: 38px;
+	height: 38px;
+	margin: 0 auto 14px;
+	border-radius: 50%;
+	background: var(--cat-bg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ink-low);
+}
+.dt-empty-title {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	color: var(--ink);
+	margin: 0 0 4px;
+}
+.dt-empty-text {
+	font-size: 13px;
+	color: var(--ink-mid);
+	margin: 0;
+}
+
+/* ─────────────────────────── Footer ──────────────────────────── */
+.dt-foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-top: 14px;
+	font-size: 12px;
+	color: var(--ink-low);
+	flex-wrap: wrap;
+}
+.dt-foot-info {
+	display: inline-flex;
+	align-items: center;
+	gap: 14px;
+}
+.dt-pagesize {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.dt-pagesize select {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--border-h);
+	border-radius: var(--r-sm);
+	padding: 3px 6px;
+	cursor: pointer;
+	outline: none;
+}
+.dt-pag {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+}
+.dt-pag-btn {
+	min-width: 28px;
+	height: 28px;
+	padding: 0 7px;
+	border-radius: var(--r-sm);
+	border: 1px solid var(--border-h);
+	background: var(--surface);
+	color: var(--ink-mid);
+	font-size: 12px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--font-sans);
+	font-variant-numeric: tabular-nums;
+	transition: all var(--t-base);
+}
+.dt-pag-btn:not(:disabled):not(.active):hover {
+	border-color: var(--ink);
+	color: var(--ink);
+}
+.dt-pag-btn.active {
+	background: var(--ink);
+	color: var(--surface);
+	border-color: var(--ink);
+}
+.dt-pag-btn:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+.dt-pag-ellipsis {
+	color: var(--ink-low);
+	padding: 0 2px;
+}

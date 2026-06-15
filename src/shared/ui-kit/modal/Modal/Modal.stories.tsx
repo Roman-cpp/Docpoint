@@ -1,7 +1,12 @@
-import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Modal, ModalBtnCancel, ModalBtnDanger, ModalBtnPrimary } from "./Modal";
-import { Input, Field } from "@/shared/ui-kit/controls";
+import { useState } from "react";
+import { Field, Input } from "@/shared/ui-kit/controls";
+import {
+	Modal,
+	ModalBtnCancel,
+	ModalBtnDanger,
+	ModalBtnPrimary,
+} from "./Modal";
 
 const meta: Meta<typeof Modal> = {
 	title: "UI Kit/Modal",
@@ -19,7 +24,10 @@ const WithTrigger = ({
 	children,
 }: {
 	label: string;
-	children: (onClose: () => void) => React.ReactNode;
+	children: (props: {
+		open: boolean;
+		onOpenChange: (open: boolean) => void;
+	}) => React.ReactNode;
 }) => {
 	const [open, setOpen] = useState(false);
 	return (
@@ -49,7 +57,7 @@ const WithTrigger = ({
 			>
 				{label}
 			</button>
-			{open && children(() => setOpen(false))}
+			{children({ open, onOpenChange: setOpen })}
 		</div>
 	);
 };
@@ -60,14 +68,17 @@ export const CreateForm: Story = {
 	name: "Form — create",
 	render: () => (
 		<WithTrigger label="Новая переменная">
-			{(onClose) => (
+			{({ open, onOpenChange }) => (
 				<Modal
+					open={open}
+					onOpenChange={onOpenChange}
 					title="Новая переменная"
 					subtitle="Подставляется в URL, headers и body как {{NAME}}"
-					onClose={onClose}
 					actions={
 						<>
-							<ModalBtnCancel onClick={onClose}>Отмена</ModalBtnCancel>
+							<ModalBtnCancel onClick={() => onOpenChange(false)}>
+								Отмена
+							</ModalBtnCancel>
 							<ModalBtnPrimary>Создать</ModalBtnPrimary>
 						</>
 					}
@@ -95,14 +106,17 @@ export const EditForm: Story = {
 	name: "Form — edit",
 	render: () => (
 		<WithTrigger label="Редактировать">
-			{(onClose) => (
+			{({ open, onOpenChange }) => (
 				<Modal
+					open={open}
+					onOpenChange={onOpenChange}
 					title="Редактировать переменную"
 					subtitle="Изменения применятся ко всем запросам этого окружения"
-					onClose={onClose}
 					actions={
 						<>
-							<ModalBtnCancel onClick={onClose}>Отмена</ModalBtnCancel>
+							<ModalBtnCancel onClick={() => onOpenChange(false)}>
+								Отмена
+							</ModalBtnCancel>
 							<ModalBtnPrimary>Сохранить</ModalBtnPrimary>
 						</>
 					}
@@ -129,19 +143,29 @@ export const DeleteConfirm: Story = {
 	name: "Confirm — delete",
 	render: () => (
 		<WithTrigger label="Удалить переменную">
-			{(onClose) => (
+			{({ open, onOpenChange }) => (
 				<Modal
+					open={open}
+					onOpenChange={onOpenChange}
 					title="Удалить переменную"
 					subtitle="Действие необратимо. Переменная будет удалена из окружения."
-					onClose={onClose}
 					actions={
 						<>
-							<ModalBtnCancel onClick={onClose}>Отмена</ModalBtnCancel>
+							<ModalBtnCancel onClick={() => onOpenChange(false)}>
+								Отмена
+							</ModalBtnCancel>
 							<ModalBtnDanger autoFocus>Удалить</ModalBtnDanger>
 						</>
 					}
 				>
-					<p style={{ margin: 0, fontSize: 13, color: "var(--ink)", lineHeight: "var(--lh-snug)" }}>
+					<p
+						style={{
+							margin: 0,
+							fontSize: 13,
+							color: "var(--ink)",
+							lineHeight: "var(--lh-snug)",
+						}}
+					>
 						Удалить переменную{" "}
 						<code
 							style={{
@@ -167,15 +191,17 @@ export const WideModal: Story = {
 	name: "Wide — custom width",
 	render: () => (
 		<WithTrigger label="Открыть широкую модалку">
-			{(onClose) => (
+			{({ open, onOpenChange }) => (
 				<Modal
+					open={open}
+					onOpenChange={onOpenChange}
 					title="Новое окружение"
 					subtitle="Базовый URL и тег для группы запросов"
-					onClose={onClose}
-					width={520}
 					actions={
 						<>
-							<ModalBtnCancel onClick={onClose}>Отмена</ModalBtnCancel>
+							<ModalBtnCancel onClick={() => onOpenChange(false)}>
+								Отмена
+							</ModalBtnCancel>
 							<ModalBtnPrimary>Создать</ModalBtnPrimary>
 						</>
 					}
@@ -211,13 +237,29 @@ export const NoActions: Story = {
 	name: "Info — no actions",
 	render: () => (
 		<WithTrigger label="Открыть инфо-модалку">
-			{(onClose) => (
-				<Modal title="О компоненте" subtitle="Шаблон для любых модальных окон" onClose={onClose}>
-					<p style={{ margin: 0, fontSize: 13, color: "var(--ink-mid)", lineHeight: "var(--lh-body)" }}>
-						Компонент <code style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>Modal</code>{" "}
-						принимает <strong>title</strong>, <strong>subtitle</strong>,{" "}
-						<strong>onClose</strong>, <strong>actions</strong> и{" "}
-						<strong>width</strong>. Нажмите Escape или кликните на оверлей чтобы закрыть.
+			{({ open, onOpenChange }) => (
+				<Modal
+					open={open}
+					onOpenChange={onOpenChange}
+					title="О компоненте"
+					subtitle="Шаблон для любых модальных окон"
+				>
+					<p
+						style={{
+							margin: 0,
+							fontSize: 13,
+							color: "var(--ink-mid)",
+							lineHeight: "var(--lh-body)",
+						}}
+					>
+						Компонент{" "}
+						<code style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
+							Modal
+						</code>{" "}
+						принимает <strong>open</strong>, <strong>onOpenChange</strong>,{" "}
+						<strong>title</strong>, <strong>subtitle</strong>,{" "}
+						<strong>actions</strong> и <strong>width</strong>. Нажмите Escape
+						или кликните на оверлей чтобы закрыть.
 					</p>
 				</Modal>
 			)}

@@ -1,10 +1,12 @@
-use super::model::{CreateEntityDTO, Entity, EntityField, EnumValue};
+use super::model::{CreateEntityDTO, Entity, EntityField, EnumValue, UpdateEntityDTO};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
 pub trait EntityRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Entity>, String>;
-    async fn create(&self, doc_id: &str, schemas: &[CreateEntityDTO]) -> Result<(), String>;
+    async fn create(&self, doc_id: &str, schema: &CreateEntityDTO) -> Result<String, String>;
+    async fn update(&self, schema: &UpdateEntityDTO) -> Result<(), String>;
+    async fn delete(&self, entity_id: &str) -> Result<(), String>;
 }
 
 pub struct EntityRepo<'a> {
@@ -22,8 +24,16 @@ impl EntityRepository for EntityRepo<'_> {
         read_schemas(self.db, doc_id).await
     }
 
-    async fn create(&self, doc_id: &str, schemas: &[CreateEntityDTO]) -> Result<(), String> {
-        write_schemas(self.db, doc_id, schemas).await
+    async fn create(&self, doc_id: &str, schema: &CreateEntityDTO) -> Result<String, String> {
+        insert_schema(self.db, doc_id, schema).await
+    }
+
+    async fn update(&self, schema: &UpdateEntityDTO) -> Result<(), String> {
+        update_schema(self.db, schema).await
+    }
+
+    async fn delete(&self, entity_id: &str) -> Result<(), String> {
+        delete_schema(self.db, entity_id).await
     }
 }
 
@@ -114,58 +124,136 @@ async fn read_schemas(db: &SqlitePool, doc_id: &str) -> Result<Vec<Entity>, Stri
         .collect())
 }
 
-async fn write_schemas(
+/// Вставляет одну entity вместе с полями и enum-значениями, возвращает её id.
+async fn insert_schema(
     db: &SqlitePool,
     doc_id: &str,
-    schemas: &[CreateEntityDTO],
-) -> Result<(), String> {
-    for schema in schemas {
-        let entity_id = Uuid::new_v4().to_string();
+    schema: &CreateEntityDTO,
+) -> Result<String, String> {
+    let entity_id = Uuid::new_v4().to_string();
 
-        sqlx::query("INSERT INTO entities (id, doc_id, name, desc) VALUES (?, ?, ?, ?)")
-            .bind(&entity_id)
-            .bind(doc_id)
-            .bind(&schema.name)
-            .bind(&schema.desc)
-            .execute(db)
-            .await
-            .map_err(|e| e.to_string())?;
+    sqlx::query("INSERT INTO entities (id, doc_id, name, desc) VALUES (?, ?, ?, ?)")
+        .bind(&entity_id)
+        .bind(doc_id)
+        .bind(&schema.name)
+        .bind(&schema.desc)
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
 
-        for (fi, field) in schema.fields.iter().enumerate() {
-            let result = sqlx::query(
-                "INSERT INTO entity_field \
-                 (entity_id, name, type, required, nullable, desc, note, example, sort_ord) \
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            )
-            .bind(&entity_id)
-            .bind(&field.name)
-            .bind(&field.type_)
-            .bind(if field.req { 1i64 } else { 0i64 })
-            .bind(if field.nullable { 1i64 } else { 0i64 })
-            .bind(&field.desc)
-            .bind(&field.note)
-            .bind(&field.example)
-            .bind(fi as i64)
-            .execute(db)
-            .await
-            .map_err(|e| e.to_string())?;
+    for (fi, field) in schema.fields.iter().enumerate() {
+        let result = sqlx::query(
+            "INSERT INTO entity_field \
+             (entity_id, name, type, required, nullable, desc, note, example, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&entity_id)
+        .bind(&field.name)
+        .bind(&field.type_)
+        .bind(if field.req { 1i64 } else { 0i64 })
+        .bind(if field.nullable { 1i64 } else { 0i64 })
+        .bind(&field.desc)
+        .bind(&field.note)
+        .bind(&field.example)
+        .bind(fi as i64)
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
 
-            let field_id = result.last_insert_rowid();
+        let field_id = result.last_insert_rowid();
 
-            for enum_val in &field.enum_ {
-                sqlx::query(
-                    "INSERT INTO entity_field_enum (field_id, val, desc) VALUES (?, ?, ?)",
-                )
+        for enum_val in &field.enum_ {
+            sqlx::query("INSERT INTO entity_field_enum (field_id, val, desc) VALUES (?, ?, ?)")
                 .bind(field_id)
                 .bind(&enum_val.val)
                 .bind(&enum_val.desc)
                 .execute(db)
                 .await
                 .map_err(|e| e.to_string())?;
-            }
         }
-
     }
+
+    Ok(entity_id)
+}
+
+async fn delete_schema(db: &SqlitePool, entity_id: &str) -> Result<(), String> {
+    let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
+
+    // Зависимые поля и enum-значения удаляются через ON DELETE CASCADE.
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("DELETE FROM entities WHERE id = ?")
+        .bind(entity_id)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+async fn update_schema(db: &SqlitePool, schema: &UpdateEntityDTO) -> Result<(), String> {
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query("UPDATE entities SET name = ?, desc = ? WHERE id = ?")
+        .bind(&schema.name)
+        .bind(&schema.desc)
+        .bind(&schema.id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Поля редактируемые целиком, поэтому пересоздаём их вместе с enum-значениями.
+    sqlx::query(
+        "DELETE FROM entity_field_enum \
+         WHERE field_id IN (SELECT id FROM entity_field WHERE entity_id = ?)",
+    )
+    .bind(&schema.id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("DELETE FROM entity_field WHERE entity_id = ?")
+        .bind(&schema.id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for (fi, field) in schema.fields.iter().enumerate() {
+        let result = sqlx::query(
+            "INSERT INTO entity_field \
+             (entity_id, name, type, required, nullable, desc, note, example, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&schema.id)
+        .bind(&field.name)
+        .bind(&field.type_)
+        .bind(if field.req { 1i64 } else { 0i64 })
+        .bind(if field.nullable { 1i64 } else { 0i64 })
+        .bind(&field.desc)
+        .bind(&field.note)
+        .bind(&field.example)
+        .bind(fi as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let field_id = result.last_insert_rowid();
+
+        for enum_val in &field.enum_ {
+            sqlx::query("INSERT INTO entity_field_enum (field_id, val, desc) VALUES (?, ?, ?)")
+                .bind(field_id)
+                .bind(&enum_val.val)
+                .bind(&enum_val.desc)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
 
     Ok(())
 }

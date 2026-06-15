@@ -1,23 +1,35 @@
-import type { FC } from "react";
-import { useParams } from "react-router";
+import { type FC, useState } from "react";
+import { useNavigate, useParams } from "react-router";
 import {
 	actionSelectEndpoint,
+	selectDoc,
 	selectSelectedEndpoint,
-	selectSelectedEnvironment,
 	useDocStore,
 } from "@/features/doc";
+import {
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import s from "@/shared/styles/apiDocs.module.css";
-import { SplitPane } from "@/shared/ui-kit";
+import { Button } from "@/shared/ui-kit/controls";
+import { ResizablePanelsLayout } from "@/shared/ui-kit/layout";
 import { Layout } from "@/widgets/layout";
+import { DeleteEndpointModal } from "./DeleteEndpointModal";
+import { EditEndpointModal } from "./EditEndpointModal";
 import { EndpointPage } from "./EndpointPage";
 import { TryItPanel } from "./TryItPanel";
 
 export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
 
+	const doc = useDocStore(selectDoc);
 	const endpoint = useDocStore(selectSelectedEndpoint);
-	const selectedEnvConfig = useDocStore(selectSelectedEnvironment);
+	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
 	const selectEndpoint = useDocStore(actionSelectEndpoint);
+
+	const [editOpen, setEditOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 
 	if (!id) return;
 
@@ -37,6 +49,7 @@ export const EndpointShowPage: FC = () => {
 							strokeWidth="1.5"
 							strokeLinecap="round"
 						>
+							<title>Меню навигации</title>
 							<rect x="8" y="6" width="24" height="28" rx="3" />
 							<path d="M14 14h12M14 19h12M14 24h8" />
 						</svg>
@@ -49,7 +62,7 @@ export const EndpointShowPage: FC = () => {
 
 	return (
 		<Layout>
-			<SplitPane
+			<ResizablePanelsLayout
 				right={<TryItPanel />}
 				rightWidth={348}
 				rightMin={240}
@@ -57,9 +70,37 @@ export const EndpointShowPage: FC = () => {
 				rightVisible={!!selectedEnvConfig}
 			>
 				<div className={s.endpointPanel}>
+					<div
+						style={{
+							display: "flex",
+							justifyContent: "flex-end",
+							gap: 8,
+							marginBottom: 8,
+						}}
+					>
+						<Button variant="subtle" onClick={() => setEditOpen(true)}>
+							Редактировать
+						</Button>
+						<Button variant="danger-ghost" onClick={() => setDeleteOpen(true)}>
+							Удалить
+						</Button>
+					</div>
 					<EndpointPage detail={endpoint} key={id} />
 				</div>
-			</SplitPane>
+			</ResizablePanelsLayout>
+
+			<EditEndpointModal
+				open={editOpen}
+				onOpenChange={setEditOpen}
+				endpoint={endpoint}
+			/>
+
+			<DeleteEndpointModal
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
+				endpoint={endpoint}
+				onDeleted={() => navigate(`/doc-show/${doc?.id}`)}
+			/>
 		</Layout>
 	);
 };

@@ -1,13 +1,13 @@
 import { type FC, useState } from "react";
 import type { Variable } from "@/entities/environment";
 import {
+	StatusBadge,
 	Table,
 	TableActions,
 	TableEmpty,
 	TableGrip,
 	TableHead,
 	TableRow,
-	StatusBadge,
 } from "@/shared/ui-kit/data-display";
 import s from "./EnvironmentPage.module.css";
 import {

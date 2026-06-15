@@ -1,0 +1,36 @@
+/* ═══════════════════════════════════════════════════════════════
+   ФАЙЛОВЫЙ ПРОВОДНИК — зона перетаскивания файлов (FileDropZone).
+   ═══════════════════════════════════════════════════════════════ */
+
+.fe-dropzone {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	width: 100%;
+	min-height: 92px;
+	margin-bottom: 24px;
+	padding: 18px;
+	border: 1.5px dashed var(--border-h);
+	border-radius: var(--r-xl);
+	background: var(--surface);
+	color: var(--ink-low);
+	text-align: center;
+	transition:
+		border-color var(--t-base),
+		background var(--t-base),
+		color var(--t-base);
+}
+.fe-dropzone-over {
+	border-color: var(--blue);
+	background: var(--blue-bg);
+	color: var(--blue);
+}
+.fe-dropzone svg {
+	flex-shrink: 0;
+}
+.fe-dropzone-text {
+	font-family: var(--font-sans);
+	font-size: 13.5px;
+	font-weight: var(--fw-medium);
+}

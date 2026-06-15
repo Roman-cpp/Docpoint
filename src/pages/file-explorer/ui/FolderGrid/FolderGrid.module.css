@@ -1,0 +1,170 @@
+/* ═══════════════════════════════════════════════════════════════
+   ФАЙЛОВЫЙ ПРОВОДНИК — сетка каталогов (FolderGrid).
+   Палитра и токены Docpoint. Префикс `fe-`.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════ SECTION ═══════════════ */
+.fe-section {
+	margin-bottom: 28px;
+}
+/* Doubled-class selector at the foot of this file keeps these properties
+   winning over broad `.wrapper h2` page rules (e.g. the serif heading reset
+   on the platform page). */
+.fe-section-title {
+	font-size: 11px;
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.7px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin: 0 0 12px;
+}
+
+/* ═══════════════ FOLDER ROWS ═══════════════ */
+.fe-folder-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 10px;
+}
+.fe-folder {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--surface);
+	cursor: pointer;
+	text-align: left;
+	font-family: var(--font-sans);
+	transition:
+		border-color var(--t-base),
+		box-shadow var(--t-base),
+		transform var(--t-base);
+}
+.fe-folder:hover {
+	border-color: var(--border-h);
+	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.06);
+	transform: translateY(-1px);
+}
+.fe-folder .fe-tile {
+	margin-bottom: 0;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+}
+.fe-folder-body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.fe-folder-name {
+	font-size: 13.5px;
+	font-weight: var(--fw-medium);
+	color: var(--ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fe-folder-count {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+.fe-folder-go {
+	flex-shrink: 0;
+	display: inline-flex;
+	color: var(--ink-low);
+	opacity: 0;
+	transform: translateX(-4px);
+	transition:
+		opacity var(--t-base),
+		transform var(--t-base);
+}
+.fe-folder:hover .fe-folder-go {
+	opacity: 1;
+	transform: translateX(0);
+	color: var(--ink);
+}
+
+/* ═══════════════ CONTEXT MENU ═══════════════ */
+.fe-folder-menu-backdrop {
+	position: fixed;
+	inset: 0;
+	border: none;
+	padding: 0;
+	background: transparent;
+	cursor: default;
+	z-index: var(--z-panel);
+}
+.fe-folder-menu {
+	position: fixed;
+	z-index: var(--z-panel);
+	min-width: 200px;
+	padding: 6px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	box-shadow: var(--shadow-lg);
+}
+.fe-folder-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--danger, #d8453a);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+	transition: background var(--t-base);
+}
+.fe-folder-menu-item:hover {
+	background: var(--red-bg, rgba(216, 69, 58, 0.08));
+}
+.fe-folder-menu-item svg {
+	flex-shrink: 0;
+}
+
+/* ═══════════════ DELETE DIALOG ═══════════════ */
+.fe-delete-text {
+	margin: 0;
+	font-size: 13.5px;
+	line-height: 1.5;
+	color: var(--ink-mid, var(--ink-low));
+}
+
+/* ═══════════════ ICON TILE ═══════════════ */
+.fe-tile {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: var(--r-lg);
+	margin-bottom: 14px;
+}
+.fe-tile-folder {
+	color: var(--blue);
+	background: var(--blue-bg);
+	border: 1px solid var(--blue-border);
+}
+
+/* ═══════════════ SPECIFICITY GUARD ═══════════════ */
+/* Hold the section-title font against broad `.wrapper h2` page resets (the
+   platform page restyles every h2 to serif). Doubled class wins; placed last
+   to keep selectors in ascending-specificity order. */
+.fe-section-title.fe-section-title {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.7px;
+	line-height: 1.2;
+	color: var(--ink-low);
+}

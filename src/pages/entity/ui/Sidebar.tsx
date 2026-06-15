@@ -1,7 +1,8 @@
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import type { Entity } from "@/entities/entity";
 import {
 	actionSelectEntity,
+	CreateEntityModal,
 	selectSelectedEntity,
 	useDocStore,
 } from "@/features/doc";
@@ -16,10 +17,18 @@ interface SidebarProps {
 export const Sidebar: FC<SidebarProps> = ({ filtered, search, onSearch }) => {
 	const selectEntity = useDocStore(actionSelectEntity);
 	const activeEntity = useDocStore(selectSelectedEntity);
+	const [createOpen, setCreateOpen] = useState(false);
 
 	return (
 		<div className={s.sidebar}>
 			<div className={s.sidebarSearch}>
+				<button
+					type="button"
+					className={s.newSchemaBtn}
+					onClick={() => setCreateOpen(true)}
+				>
+					+ Новая схема
+				</button>
 				<div className={s.searchWrap}>
 					<svg
 						viewBox="0 0 12 12"
@@ -68,6 +77,8 @@ export const Sidebar: FC<SidebarProps> = ({ filtered, search, onSearch }) => {
 					</div>
 				)}
 			</div>
+
+			<CreateEntityModal open={createOpen} onOpenChange={setCreateOpen} />
 		</div>
 	);
 };

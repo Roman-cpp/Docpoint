@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import type { FC } from "react";
 import { Button } from "../../controls/Button/Button";
-import { ToastProvider, useToast, type ToastVariant } from "./Toast";
+import { ToastProvider, type ToastVariant, useToast } from "./Toast";
 
 const meta: Meta = {
 	title: "UI Kit/Toast",
@@ -14,7 +14,12 @@ type Story = StoryObj;
 
 /* ─── Helpers ───────────────────────────────────────────────── */
 
-const VARIANTS: { variant: ToastVariant; label: string; title: string; message: string }[] = [
+const VARIANTS: {
+	variant: ToastVariant;
+	label: string;
+	title: string;
+	message: string;
+}[] = [
 	{
 		variant: "success",
 		label: "Success",
@@ -133,9 +138,29 @@ const StackDemo: FC = () => {
 	const { push } = useToast();
 
 	const pushAll = () => {
-		push({ variant: "info", title: "Сборка запущена", message: "production-v2.1.0" });
-		setTimeout(() => push({ variant: "warning", title: "Предупреждение линтера", message: "3 предупреждения в src/api" }), 200);
-		setTimeout(() => push({ variant: "success", title: "Сборка завершена", message: "Время: 12.4 сек" }), 400);
+		push({
+			variant: "info",
+			title: "Сборка запущена",
+			message: "production-v2.1.0",
+		});
+		setTimeout(
+			() =>
+				push({
+					variant: "warning",
+					title: "Предупреждение линтера",
+					message: "3 предупреждения в src/api",
+				}),
+			200,
+		);
+		setTimeout(
+			() =>
+				push({
+					variant: "success",
+					title: "Сборка завершена",
+					message: "Время: 12.4 сек",
+				}),
+			400,
+		);
 	};
 
 	return (

@@ -1,0 +1,178 @@
+/* Hero header: eyebrow + platform name + description. */
+.hero {
+	margin-bottom: 26px;
+}
+
+/* Right-click context menu for a service card. */
+.svcMenuBackdrop {
+	position: fixed;
+	inset: 0;
+	border: none;
+	padding: 0;
+	background: transparent;
+	cursor: default;
+	z-index: var(--z-panel);
+}
+.svcMenu {
+	position: fixed;
+	z-index: var(--z-panel);
+	min-width: 200px;
+	padding: 6px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	box-shadow: var(--shadow-lg);
+}
+.svcMenuItem {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--red);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+	transition: background var(--t-base);
+}
+.svcMenuItem:hover {
+	background: var(--red-bg);
+}
+.svcMenuItem svg {
+	flex-shrink: 0;
+}
+
+/* Microservice card. Overrides the centred text that a native <button>
+   inherits and leads with a monogram avatar so the card reads as a deliberate
+   object, matching the icon tiles used for files and folders below. */
+.svcCard {
+	text-align: left;
+	gap: 5px;
+}
+.svcAvatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	margin-bottom: 9px;
+	border-radius: 10px;
+	font-family: var(--font-serif);
+	font-size: 17px;
+	line-height: 1;
+	color: var(--blue);
+	background: var(--blue-bg);
+	border: 1px solid var(--blue-border);
+}
+
+/* Count badge shown next to a section title. */
+.titleCount {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	font-weight: var(--fw-medium);
+	color: var(--ink-low);
+	background: var(--cat-bg);
+	border-radius: 100px;
+	padding: 2px 9px;
+	margin-left: 2px;
+	vertical-align: middle;
+}
+
+/* Empty state: a dashed invitation card when no services are attached. */
+.emptyState {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	text-align: center;
+	padding: 36px 24px;
+	border: 1px dashed var(--border-h);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.emptyText {
+	font-size: 13.5px;
+	color: var(--ink-mid);
+	line-height: 1.6;
+	max-width: 320px;
+	margin: 0;
+}
+
+/* A content section in the overview (services, files…). The file-explorer
+   block adds a top divider to separate it from the services above. */
+.section {
+	margin-top: 30px;
+}
+/* The first section sits right under the page's own top padding — no extra gap. */
+.section:first-child {
+	margin-top: 0;
+}
+.fileBrowser {
+	padding-top: 30px;
+}
+.fileBrowserTitle {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	color: var(--ink);
+	line-height: 1.2;
+	margin: 0 0 18px;
+}
+/* Pull the first sub-label (Каталоги) up so it reads as belonging to this
+   heading rather than floating on its own. */
+.fileBrowser > .fileBrowserTitle {
+	margin-bottom: 10px;
+}
+
+/* Section header row: title on the left, an action button on the right. */
+.sectionHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.sectionHead .fileBrowserTitle {
+	margin-bottom: 18px;
+}
+
+/* Breadcrumb trail for navigating back out of sub-folders. */
+.crumbs {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: -6px 0 18px;
+}
+.crumbItem {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+}
+.crumbSep {
+	font-family: var(--font-serif);
+	font-size: 15px;
+	color: var(--ink-low);
+}
+.crumb,
+.crumbCurrent {
+	font-family: var(--font-sans);
+	font-size: 13.5px;
+	background: none;
+	border: none;
+	padding: 0;
+}
+.crumb {
+	color: var(--ink-low);
+	cursor: pointer;
+}
+.crumb:hover {
+	color: var(--ink);
+	text-decoration: underline;
+}
+.crumbCurrent {
+	color: var(--ink);
+	font-weight: var(--fw-medium);
+}

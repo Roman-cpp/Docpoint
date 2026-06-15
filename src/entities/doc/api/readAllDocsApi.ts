@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Doc } from "../model/type";
+import type { Doc } from "../model/doc.type";
 
 export function readAllDocsApi(): Promise<Doc[]> {
 	return invoke("read_docs");

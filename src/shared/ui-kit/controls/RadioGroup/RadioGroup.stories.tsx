@@ -1,12 +1,17 @@
-import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
 import { RadioGroup } from "./RadioGroup";
 
 const PLANS = [
 	{ value: "free", label: "Free", hint: "Up to 3 projects" },
 	{ value: "pro", label: "Pro", hint: "$12 / month, unlimited projects" },
 	{ value: "team", label: "Team", hint: "$49 / month, shared workspace" },
-	{ value: "enterprise", label: "Enterprise", hint: "Contact sales", disabled: true },
+	{
+		value: "enterprise",
+		label: "Enterprise",
+		hint: "Contact sales",
+		disabled: true,
+	},
 ];
 
 const SIZES = [

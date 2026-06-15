@@ -1,16 +1,16 @@
 import { type FC, useState } from "react";
-import { createEnvironmentApi } from "../api/createEnvironmentApi";
 import type { Environment } from "../model/type";
+import { useEnvironmentsStore } from "../store/useEnvironmentsStore";
 import s from "./VariableModal.module.css";
 
 interface EnvironmentModalProps {
-	docId: string;
+	platformId: string;
 	onClose: () => void;
 	onCreated: (env: Environment) => void;
 }
 
 export const EnvironmentModal: FC<EnvironmentModalProps> = ({
-	docId,
+	platformId,
 	onClose,
 	onCreated,
 }) => {
@@ -19,6 +19,7 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 	const [baseUrl, setBaseUrl] = useState("");
 	const [prefix, setPrefix] = useState("");
 	const [loading, setLoading] = useState(false);
+	const { createEnvironmentAsync } = useEnvironmentsStore();
 
 	const save = async () => {
 		const trimmedLabel = label.trim();
@@ -26,12 +27,12 @@ export const EnvironmentModal: FC<EnvironmentModalProps> = ({
 		if (!trimmedLabel || !trimmedEnv) return;
 		setLoading(true);
 		try {
-			const created = await createEnvironmentApi(docId, {
+			const created = await createEnvironmentAsync({
 				env: trimmedEnv,
 				label: trimmedLabel,
 				baseUrl: baseUrl.trim(),
 				prefix: prefix.trim(),
-				value: [],
+				platformId,
 			});
 			onCreated(created);
 			onClose();

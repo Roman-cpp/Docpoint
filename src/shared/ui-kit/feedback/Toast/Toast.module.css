@@ -131,7 +131,9 @@
 	cursor: pointer;
 	color: inherit;
 	opacity: 0.45;
-	transition: opacity var(--t-fast), background var(--t-fast);
+	transition:
+		opacity var(--t-fast),
+		background var(--t-fast);
 }
 
 .close:hover {

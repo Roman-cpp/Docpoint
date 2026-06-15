@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { CreateEntityDTO } from "@/entities/entity";
 import type { CreateEnvironmentDTO } from "@/entities/environment";
 import type { CreateGroupDTO } from "@/entities/group";
-import type { CreateDocDTO } from "../model/type";
+import type { CreateDocDTO } from "../model/doc.dto";
 
 export function importDocApi(payload: {
 	doc: CreateDocDTO;

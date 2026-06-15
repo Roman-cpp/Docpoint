@@ -1,210 +1,269 @@
-use super::model::{CreateEnvironmentDTO, CreateVariableDTO, EnvValue, Environment, UpdateEnvironmentDTO, UpdateVariableDTO};
+use super::model::{
+    CreateEnvironmentDTO, CreateVariableDTO, EnvValue, Environment, UpdateEnvironmentDTO,
+    UpdateVariableDTO,
+};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
-pub async fn read_configs(db: &SqlitePool, doc_id: &str) -> Result<Vec<Environment>, String> {
-    let rows = sqlx::query("SELECT * FROM environments WHERE doc_id = ?")
-        .bind(doc_id)
-        .fetch_all(db)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let mut environments = Vec::new();
-    for row in rows.iter() {
-        let id: String = row.get("id");
-        let var_rows =
-            sqlx::query("SELECT id, key, value FROM variables WHERE environments_id = ?")
-                .bind(&id)
-                .fetch_all(db)
-                .await
-                .map_err(|e| e.to_string())?;
-
-        // let auth = auth_repo::ensure_row(db, &id).await?;
-
-        environments.push(Environment {
-            id,
-            env: row.get("env"),
-            label: row.get("label"),
-            base_url: row.get("base_url"),
-            prefix: row.get("prefix"),
-            value: var_rows
-                .iter()
-                .map(|v| EnvValue {
-                    id: v.get("id"),
-                    name: v.get("key"),
-                    value: v.get("value"),
-                })
-                .collect(),
-            access_token: "".to_string(),
-        });
-    }
-
-    Ok(environments)
+pub trait EnvironmentRepository {
+    async fn write_configs(
+        &self,
+        platform_id: Option<&str>,
+        configs: &[CreateEnvironmentDTO],
+    ) -> Result<(), String>;
+    async fn create(
+        &self,
+        platform_id: &str,
+        env: &CreateEnvironmentDTO,
+    ) -> Result<Environment, String>;
+    async fn duplicate(&self, source_id: &str) -> Result<Environment, String>;
+    async fn update(&self, env: &UpdateEnvironmentDTO) -> Result<(), String>;
+    async fn delete(&self, id: &str) -> Result<(), String>;
+    async fn create_variable(
+        &self,
+        environment_id: &str,
+        variable: &CreateVariableDTO,
+    ) -> Result<EnvValue, String>;
+    async fn update_variable(&self, variable: &UpdateVariableDTO) -> Result<(), String>;
+    async fn delete_variable(&self, id: &str) -> Result<(), String>;
 }
 
-pub async fn write_configs(
-    db: &SqlitePool,
-    doc_id: &str,
-    configs: &[CreateEnvironmentDTO],
-) -> Result<(), String> {
-    for config in configs {
-        let env_id = Uuid::new_v4().to_string();
-        sqlx::query(
-            "INSERT INTO environments (id, doc_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
-        )
-        .bind(&env_id)
-        .bind(doc_id)
-        .bind(&config.env)
-        .bind(&config.label)
-        .bind(&config.base_url)
-        .bind(&config.prefix)
-        .execute(db)
-        .await
-        .map_err(|e| e.to_string())?;
+pub struct EnvironmentRepo<'a> {
+    pub db: &'a SqlitePool,
+}
 
-        for var in &config.value {
+impl<'a> EnvironmentRepo<'a> {
+    pub fn new(db: &'a SqlitePool) -> Self {
+        Self { db }
+    }
+}
+
+impl EnvironmentRepository for EnvironmentRepo<'_> {
+    async fn write_configs(
+        &self,
+        platform_id: Option<&str>,
+        configs: &[CreateEnvironmentDTO],
+    ) -> Result<(), String> {
+        for config in configs {
+            let env_id = Uuid::new_v4().to_string();
             sqlx::query(
-                "INSERT INTO variables (environments_id, key, value) VALUES (?, ?, ?)",
+                "INSERT INTO environments (id, platform_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
             )
             .bind(&env_id)
-            .bind(&var.name)
-            .bind(&var.value)
-            .execute(db)
+            .bind(platform_id)
+            .bind(&config.env)
+            .bind(&config.label)
+            .bind(&config.base_url)
+            .bind(&config.prefix)
+            .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;
+
         }
+
+        Ok(())
     }
 
-    Ok(())
-}
+    async fn create(
+        &self,
+        platform_id: &str,
+        env: &CreateEnvironmentDTO,
+    ) -> Result<Environment, String> {
+        let env_id = Uuid::new_v4().to_string();
 
-pub async fn create_environment(
-    db: &SqlitePool,
-    doc_id: &str,
-    env: &CreateEnvironmentDTO,
-) -> Result<Environment, String> {
-    let env_id = Uuid::new_v4().to_string();
-
-    sqlx::query(
-        "INSERT INTO environments (id, doc_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
-    )
-    .bind(&env_id)
-    .bind(doc_id)
-    .bind(&env.env)
-    .bind(&env.label)
-    .bind(&env.base_url)
-    .bind(&env.prefix)
-    .execute(db)
-    .await
-    .map_err(|e| e.to_string())?;
-
-    let mut values = Vec::new();
-    for var in &env.value {
-        let var_id = Uuid::new_v4().to_string();
         sqlx::query(
-            "INSERT INTO variables (id, environments_id, key, value) VALUES (?, ?, ?, ?)",
+            "INSERT INTO environments (id, platform_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
         )
-        .bind(&var_id)
         .bind(&env_id)
-        .bind(&var.name)
-        .bind(&var.value)
-        .execute(db)
-        .await
-        .map_err(|e| e.to_string())?;
-
-        values.push(EnvValue {
-            id: var_id,
-            name: var.name.clone(),
-            value: var.value.clone(),
-        });
-    }
-
-    // let auth = auth_repo::ensure_row(db, &env_id).await?;
-
-    Ok(Environment {
-        id: env_id,
-        env: env.env.clone(),
-        label: env.label.clone(),
-        base_url: env.base_url.clone(),
-        prefix: env.prefix.clone(),
-        value: values,
-        access_token: "".to_string(),
-    })
-}
-
-pub async fn update_environment(db: &SqlitePool, env: &UpdateEnvironmentDTO) -> Result<(), String> {
-    sqlx::query("UPDATE environments SET label = ?, base_url = ?, prefix = ? WHERE id = ?")
+        .bind(platform_id)
+        .bind(&env.env)
         .bind(&env.label)
         .bind(&env.base_url)
         .bind(&env.prefix)
-        .bind(&env.id)
-        .execute(db)
+        .execute(self.db)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(())
-}
+        Ok(Environment {
+            id: env_id,
+            env: env.env.clone(),
+            label: env.label.clone(),
+            base_url: env.base_url.clone(),
+            prefix: env.prefix.clone(),
+            value: Vec::new(),
+            access_token: "".to_string(),
+        })
+    }
 
-pub async fn create_variable(
-    db: &SqlitePool,
-    environment_id: &str,
-    variable: &CreateVariableDTO,
-) -> Result<EnvValue, String> {
-    let id = Uuid::new_v4().to_string();
+    async fn duplicate(&self, source_id: &str) -> Result<Environment, String> {
+        // Read the source environment.
+        let src = sqlx::query("SELECT platform_id, env, label, base_url, prefix FROM environments WHERE id = ?")
+            .bind(source_id)
+            .fetch_optional(self.db)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Environment not found".to_string())?;
 
-    sqlx::query(
-        "INSERT INTO variables (id, environments_id, key, value) VALUES (?, ?, ?, ?)",
-    )
-    .bind(&id)
-    .bind(environment_id)
-    .bind(&variable.name)
-    .bind(&variable.value)
-    .execute(db)
-    .await
-    .map_err(|e| e.to_string())?;
+        let platform_id: Option<String> = src.get("platform_id");
+        let env: String = src.get("env");
+        let source_label: String = src.get("label");
+        let base_url: String = src.get("base_url");
+        let prefix: String = src.get("prefix");
+        let label = format!("{source_label} (копия)");
 
-    Ok(EnvValue {
-        id,
-        name: variable.name.clone(),
-        value: variable.value.clone(),
-    })
-}
-
-pub async fn update_variable(db: &SqlitePool, variable: &UpdateVariableDTO) -> Result<(), String> {
-    sqlx::query("UPDATE variables SET key = ?, value = ? WHERE id = ?")
-        .bind(&variable.name)
-        .bind(&variable.value)
-        .bind(&variable.id)
-        .execute(db)
+        let new_id = Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO environments (id, platform_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&new_id)
+        .bind(&platform_id)
+        .bind(&env)
+        .bind(&label)
+        .bind(&base_url)
+        .bind(&prefix)
+        .execute(self.db)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(())
-}
+        // Copy variables.
+        let var_rows = sqlx::query("SELECT key, value FROM variables WHERE environments_id = ?")
+            .bind(source_id)
+            .fetch_all(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
-pub async fn delete_variable(db: &SqlitePool, id: &str) -> Result<(), String> {
-    sqlx::query("DELETE FROM variables WHERE id = ?")
-        .bind(id)
-        .execute(db)
-        .await
-        .map_err(|e| e.to_string())?;
+        let mut value = Vec::new();
+        for row in var_rows {
+            let id = Uuid::new_v4().to_string();
+            let name: String = row.get("key");
+            let var_value: String = row.get("value");
+            sqlx::query(
+                "INSERT INTO variables (id, environments_id, key, value) VALUES (?, ?, ?, ?)",
+            )
+            .bind(&id)
+            .bind(&new_id)
+            .bind(&name)
+            .bind(&var_value)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+            value.push(EnvValue {
+                id,
+                name,
+                value: var_value,
+            });
+        }
 
-    Ok(())
-}
+        // Copy auth config (without the access token — the copy needs its own).
+        if let Some(auth) =
+            sqlx::query("SELECT url, method, body, token_path FROM environment_auth WHERE environment_id = ?")
+                .bind(source_id)
+                .fetch_optional(self.db)
+                .await
+                .map_err(|e| e.to_string())?
+        {
+            let auth_id = Uuid::new_v4().to_string();
+            let url: String = auth.get("url");
+            let method: String = auth.get("method");
+            let body: String = auth.get("body");
+            let token_path: String = auth.get("token_path");
+            sqlx::query(
+                "INSERT INTO environment_auth (id, environment_id, url, method, body, token_path) VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(&auth_id)
+            .bind(&new_id)
+            .bind(&url)
+            .bind(&method)
+            .bind(&body)
+            .bind(&token_path)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
 
-pub async fn delete_environment(db: &SqlitePool, id: &str) -> Result<(), String> {
-    let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
+        Ok(Environment {
+            id: new_id,
+            env,
+            label,
+            base_url,
+            prefix,
+            value,
+            access_token: "".to_string(),
+        })
+    }
 
-    sqlx::query("PRAGMA foreign_keys = ON")
-        .execute(&mut *conn)
-        .await
-        .map_err(|e| e.to_string())?;
+    async fn update(&self, env: &UpdateEnvironmentDTO) -> Result<(), String> {
+        sqlx::query("UPDATE environments SET label = ?, base_url = ?, prefix = ? WHERE id = ?")
+            .bind(&env.label)
+            .bind(&env.base_url)
+            .bind(&env.prefix)
+            .bind(&env.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
-    sqlx::query("DELETE FROM environments WHERE id = ?")
-        .bind(id)
-        .execute(&mut *conn)
-        .await
-        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
 
-    Ok(())
+    async fn delete(&self, id: &str) -> Result<(), String> {
+        let mut conn = self.db.acquire().await.map_err(|e| e.to_string())?;
+
+        sqlx::query("PRAGMA foreign_keys = ON")
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM environments WHERE id = ?")
+            .bind(id)
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    async fn create_variable(
+        &self,
+        environment_id: &str,
+        variable: &CreateVariableDTO,
+    ) -> Result<EnvValue, String> {
+        let id = Uuid::new_v4().to_string();
+
+        sqlx::query("INSERT INTO variables (id, environments_id, key, value) VALUES (?, ?, ?, ?)")
+            .bind(&id)
+            .bind(environment_id)
+            .bind(&variable.name)
+            .bind(&variable.value)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(EnvValue {
+            id,
+            name: variable.name.clone(),
+            value: variable.value.clone(),
+        })
+    }
+
+    async fn update_variable(&self, variable: &UpdateVariableDTO) -> Result<(), String> {
+        sqlx::query("UPDATE variables SET key = ?, value = ? WHERE id = ?")
+            .bind(&variable.name)
+            .bind(&variable.value)
+            .bind(&variable.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    async fn delete_variable(&self, id: &str) -> Result<(), String> {
+        sqlx::query("DELETE FROM variables WHERE id = ?")
+            .bind(id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
 }

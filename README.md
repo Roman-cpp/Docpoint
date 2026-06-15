@@ -10,3 +10,6 @@ This template should help get you started developing with Tauri, React and Types
 ```
 rm ~/.local/share/com.roman.docpoint/docpoint.db
 ```
+
+WEBKIT_DISABLE_DMABUF_RENDERER=1 npm run tauri dev
+

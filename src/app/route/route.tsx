@@ -16,12 +16,30 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/doc-show")).DocShowPage,
 				}),
 			},
+			{
+				path: "/platform-show/:id",
+				lazy: async () => ({
+					Component: (await import("@/pages/platform-show")).PlatformShowPage,
+				}),
+			},
+			{
+				path: "/service-show/:id",
+				lazy: async () => ({
+					Component: (await import("@/pages/service-show")).ServiceShowPage,
+				}),
+			},
 			// {
 			// 	path: "/architecture",
 			// 	lazy: async () => ({
 			// 		Component: (await import("@/pages/architecture")).ArchitecturePage,
 			// 	}),
 			// },
+			{
+				path: "/markdown-show",
+				lazy: async () => ({
+					Component: (await import("@/pages/markdown-show")).MarkdownShowPage,
+				}),
+			},
 			{
 				path: "/entity",
 				lazy: async () => ({
@@ -32,6 +50,30 @@ export const router = createBrowserRouter([
 				path: "/http-client",
 				lazy: async () => ({
 					Component: (await import("@/pages/http-client")).HttpClientPage,
+				}),
+			},
+			{
+				path: "/http-history",
+				lazy: async () => ({
+					Component: (await import("@/pages/http-history")).HttpHistoryPage,
+				}),
+			},
+			{
+				path: "/logs",
+				lazy: async () => ({
+					Component: (await import("@/pages/logs")).LogsPage,
+				}),
+			},
+			{
+				path: "/services",
+				lazy: async () => ({
+					Component: (await import("@/pages/services")).ServicesPage,
+				}),
+			},
+			{
+				path: "/files",
+				lazy: async () => ({
+					Component: (await import("@/pages/file-explorer")).FileExplorerPage,
 				}),
 			},
 			{

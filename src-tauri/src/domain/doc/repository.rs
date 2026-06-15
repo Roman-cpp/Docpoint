@@ -1,3 +1,8 @@
+use crate::domain::{
+    doc::model::UpdateDocDTO,
+    environment::model::{EnvValue, Environment},
+};
+
 use super::model::{CreateDocDTO, Doca};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
@@ -6,7 +11,12 @@ pub trait DocRepository {
     async fn all(&self) -> Result<Vec<Doca>, String>;
     async fn find(&self, id: &str) -> Result<Option<Doca>, String>;
     async fn create(&self, doc: &CreateDocDTO) -> Result<String, String>;
+    async fn update(&self, doc: &UpdateDocDTO) -> Result<String, String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
+    async fn environments_by_doc(
+      &self,
+      doc_id: &str,
+  ) -> Result<Vec<Environment>, String>;
 }
 
 pub struct DocRepo<'a> {
@@ -115,6 +125,33 @@ impl DocRepository for DocRepo<'_> {
         Ok(id)
     }
 
+    async fn update(&self, doc: &UpdateDocDTO) -> Result<String, String> {
+        sqlx::query("UPDATE docs SET name = ?, desc = ? WHERE id = ?")
+            .bind(&doc.name)
+            .bind(&doc.desc)
+            .bind(&doc.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM docs_tag WHERE doc_id = ?")
+            .bind(&doc.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for tag in &doc.tags {
+            sqlx::query("INSERT INTO docs_tag (doc_id, tag) VALUES (?, ?)")
+                .bind(&doc.id)
+                .bind(tag)
+                .execute(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+
+        Ok(doc.id.clone())
+    }
+
     async fn delete(&self, id: &str) -> Result<(), String> {
         let mut conn = self.db.acquire().await.map_err(|e| e.to_string())?;
 
@@ -123,6 +160,8 @@ impl DocRepository for DocRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
+        // Environments are owned by platforms, not docs, so deleting a doc does not
+        // touch them (docs.service_id is ON DELETE SET NULL on the service side).
         sqlx::query("DELETE FROM docs WHERE id = ?")
             .bind(id)
             .execute(&mut *conn)
@@ -130,5 +169,50 @@ impl DocRepository for DocRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+
+    async fn environments_by_doc(&self, doc_id: &str) -> Result<Vec<Environment>, String> {
+        // A doc's environments are those of the platform owning the service it
+        // belongs to (docs.service_id -> services.platform_id). Docs with no
+        // service, or a service with no platform, have none.
+        let rows = sqlx::query(
+            "SELECT * FROM environments WHERE platform_id = (\
+                 SELECT platform_id FROM services \
+                 WHERE id = (SELECT service_id FROM docs WHERE id = ?))",
+        )
+        .bind(doc_id)
+        .fetch_all(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let mut environments = Vec::new();
+        for row in rows.iter() {
+            let id: String = row.get("id");
+            let var_rows =
+                sqlx::query("SELECT id, key, value FROM variables WHERE environments_id = ?")
+                    .bind(&id)
+                    .fetch_all(self.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+            environments.push(Environment {
+                id,
+                env: row.get("env"),
+                label: row.get("label"),
+                base_url: row.get("base_url"),
+                prefix: row.get("prefix"),
+                value: var_rows
+                    .iter()
+                    .map(|v| EnvValue {
+                        id: v.get("id"),
+                        name: v.get("key"),
+                        value: v.get("value"),
+                    })
+                    .collect(),
+                access_token: "".to_string(),
+            });
+        }
+
+        Ok(environments)
     }
 }

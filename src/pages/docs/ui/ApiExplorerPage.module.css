@@ -170,7 +170,8 @@
 	border-radius: 7px;
 	transition: background 0.12s;
 }
-.sbApiRow:hover {
+.sbApiRow:hover,
+.sbApiRow.on {
 	background: var(--cat-bg);
 }
 .sbApiRow:hover .sbApiExportBtn {
@@ -208,6 +209,27 @@
 	margin-right: 4px;
 }
 .sbApiExportBtn:hover {
+	color: var(--ink);
+	background: var(--border);
+}
+.sbMenuBtn {
+	flex-shrink: 0;
+	padding: 5px 7px;
+	border: none;
+	background: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	border-radius: 5px;
+	display: flex;
+	align-items: center;
+	transition: all 0.13s;
+	margin-right: 4px;
+}
+.sbMenuBtn svg {
+	width: 14px;
+	height: 14px;
+}
+.sbMenuBtn:hover {
 	color: var(--ink);
 	background: var(--border);
 }
@@ -1108,7 +1130,6 @@
 		box-shadow 0.18s,
 		transform 0.15s;
 	position: relative;
-	overflow: hidden;
 	display: flex;
 	flex-direction: column;
 	gap: 11px;
@@ -1117,6 +1138,11 @@
 	border-color: var(--border-h);
 	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
 	transform: translateY(-2px);
+}
+/* Raise the card whose menu is open above its siblings so the
+   popover (and its submenu) is not overlapped by adjacent cards. */
+.apiCard:has([role="menu"]) {
+	z-index: 1;
 }
 .apiCard.sel {
 	border-color: var(--ink);
@@ -1128,18 +1154,16 @@
 	left: 0;
 	right: 0;
 	height: 3px;
+	border-top-left-radius: 12px;
+	border-top-right-radius: 12px;
 }
 .acTop {
 	display: flex;
-	align-items: flex-start;
-	justify-content: flex-end;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
 }
-.acDeleteBtn {
-	opacity: 0;
-	transition:
-		opacity 0.15s,
-		background 0.13s,
-		color 0.13s;
+.acMenuBtn {
 	padding: 4px 6px;
 	border: none;
 	background: none;
@@ -1148,22 +1172,17 @@
 	cursor: pointer;
 	display: flex;
 	align-items: center;
+	transition:
+		background 0.13s,
+		color 0.13s;
 }
-.acDeleteBtn svg {
-	width: 13px;
-	height: 13px;
+.acMenuBtn svg {
+	width: 14px;
+	height: 14px;
 }
-.acDeleteBtn:hover {
-	background: var(--red-bg);
-	color: var(--red);
-}
-.apiCard:hover .acDeleteBtn {
-	opacity: 1;
-}
-@media (hover: none) {
-	.acDeleteBtn {
-		opacity: 1;
-	}
+.acMenuBtn:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
 }
 @media (max-width: 480px) {
 	.apiCard {
@@ -1201,6 +1220,8 @@
 	font-size: 17px;
 	color: var(--ink);
 	line-height: 1.2;
+	flex: 1;
+	min-width: 0;
 }
 .acDesc {
 	font-size: 13px;

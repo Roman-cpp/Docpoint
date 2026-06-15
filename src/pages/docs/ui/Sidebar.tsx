@@ -1,16 +1,20 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import { readDocApi, useDocsStore } from "@/entities/doc";
-import { readEntitiesApi } from "@/entities/entity";
-import { readEnvironmentsApi } from "@/entities/environment";
-import { readGroupsApi } from "@/entities/group";
+import { type CreateDocDTO, useDocsStore } from "@/entities/doc";
+import { CreateDocModal } from "../../../features/doc/create-doc/ui/CreateDocModal";
 import s from "./ApiExplorerPage.module.css";
+import { PlatformsSection } from "./PlatformsSection";
 
 export const Sidebar = () => {
-	const { docs, importDoc } = useDocsStore();
+	const { importDoc, createDoc, isCreating } = useDocsStore();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [importing, setImporting] = useState(false);
+	const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+	const handleCreate = (dto: CreateDocDTO) => {
+		createDoc(dto);
+		setIsCreateOpen(false);
+	};
 
 	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -52,59 +56,18 @@ export const Sidebar = () => {
 		}
 	};
 
-	const handleExport = async (docId: string, docName: string) => {
-		const [doc, groups, entities, environments] = await Promise.all([
-			readDocApi(docId),
-			readGroupsApi(docId),
-			readEntitiesApi(docId),
-			readEnvironmentsApi(docId),
-		]);
-		const content = JSON.stringify(
-			{ doc, groups, entities, environments },
-			null,
-			2,
-		);
-		const filename = `${docName.replace(/\s+/g, "_")}.json`;
-		await invoke("save_json_file", { content, filename });
-	};
-
 	return (
 		<aside className={s.sidebar}>
-			<div className={s.sbApis}>
-				<span className={s.sbSecLbl}>APIs</span>
-				{docs.map((a) => {
-					return (
-						<div key={a.id} className={s.sbApiRow}>
-							<button className={`${s.sbApiBtn}`} type="button">
-								<span className={s.sbApiName}>{a.name}</span>
-								<div className={s.sbApiDot} />
-							</button>
-							<button
-								type="button"
-								className={s.sbApiExportBtn}
-								title="Скачать как JSON"
-								onClick={() => handleExport(a.id, a.name)}
-							>
-								<svg
-									width="13"
-									height="13"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								>
-									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-									<polyline points="7 10 12 15 17 10" />
-									<line x1="12" y1="15" x2="12" y2="3" />
-								</svg>
-							</button>
-						</div>
-					);
-				})}
-			</div>
+			<PlatformsSection />
 			<div className={s.sbImport}>
+				<button
+					type="button"
+					className={s.sbImportBtn}
+					onClick={() => setIsCreateOpen(true)}
+					disabled={isCreating}
+				>
+					{isCreating ? "Создаём..." : "+ Новый документ"}
+				</button>
 				<input
 					ref={fileInputRef}
 					type="file"
@@ -121,6 +84,12 @@ export const Sidebar = () => {
 					{importing ? "Импорт..." : "+ Import JSON"}
 				</button>
 			</div>
+			<CreateDocModal
+				open={isCreateOpen}
+				onOpenChange={setIsCreateOpen}
+				onCreate={handleCreate}
+				isCreating={isCreating}
+			/>
 		</aside>
 	);
 };

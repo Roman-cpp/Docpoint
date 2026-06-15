@@ -11,11 +11,7 @@ import {
 } from "react";
 import type { HttpMethod } from "@/entities/endpoint";
 import { Header } from "@/widgets/header";
-import {
-	COLLECTIONS,
-	INITIAL_HISTORY,
-	METHOD_CFG,
-} from "../data/httpClientData";
+import { METHOD_CFG } from "../data/httpClientData";
 import type {
 	AuthType,
 	BodyType,
@@ -719,7 +715,7 @@ const Sidebar: FC<SidebarProps> = ({
 				)}
 			</div>
 
-			<div className={s.sidebarCollections}>
+			{/* <div className={s.sidebarCollections}>
 				<div className={s.sidebarCollectionsTitle}>Collections</div>
 				{COLLECTIONS.map((c) => (
 					<div className={s.collectionItem} key={c.name}>
@@ -728,7 +724,7 @@ const Sidebar: FC<SidebarProps> = ({
 						<span className={s.collectionCount}>{c.count}</span>
 					</div>
 				))}
-			</div>
+			</div> */}
 		</div>
 	);
 };
@@ -894,7 +890,7 @@ export const HttpClientPage: FC = () => {
 	const [response, setResponse] = useState<
 		(MockResponse & { time: number }) | null
 	>(null);
-	const [history, setHistory] = useState<HistoryItem[]>(INITIAL_HISTORY);
+	const [history, setHistory] = useState<HistoryItem[]>([]);
 	const [activeHistId, setActiveHistId] = useState<number | null>(null);
 	const [tweaksVisible, setTweaksVisible] = useState(false);
 	const [tweaks, setTweaksState] = useState<Tweaks>(TWEAK_DEFAULTS);
@@ -1209,7 +1205,7 @@ export const HttpClientPage: FC = () => {
 								</button>
 							</div>
 
-							<div className={s.urlMeta}>
+							{/* <div className={s.urlMeta}>
 								<div className={s.urlMetaItem}>
 									<svg
 										viewBox="0 0 11 11"
@@ -1256,7 +1252,7 @@ export const HttpClientPage: FC = () => {
 								>
 									⌘ + Enter to send
 								</div>
-							</div>
+							</div> */}
 						</div>
 
 						<div className={s.contentSplit} ref={contentSplitRef}>

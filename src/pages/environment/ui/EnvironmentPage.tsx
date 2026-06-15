@@ -5,6 +5,7 @@ import type { Variable } from "@/entities/environment";
 import {
 	DeleteVariableModal,
 	deleteEnvironmentApi,
+	duplicateEnvironmentApi,
 	updateEnvironmentApi,
 	VariableModal,
 } from "@/entities/environment";
@@ -14,6 +15,7 @@ import {
 	updateEnvironmentAuthApi,
 } from "@/entities/environment-auth";
 import {
+	actionAddEnvironment,
 	actionaddVariableToEnvironment,
 	actionDeleteEnvironment,
 	actiondeleteVariableFromEnvironment,
@@ -21,15 +23,21 @@ import {
 	actionUpdateEnvironmentToken,
 	actionupdateVariableInEnvironment,
 	selectSelectedEnvironment,
-	useDocStore,
-} from "@/features/doc";
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { Header } from "../../../widgets/header/ui/Header/Header";
 import { AuthRequestSection } from "./AuthRequestSection";
 import { EndpointSection } from "./EndpointSection";
 import s from "./EnvironmentPage.module.css";
 import { IdentificationSection } from "./IdentificationSection";
-import { type AuthMethod, BoltIcon, HTTP_METHODS, TrashIcon } from "./parts";
+import {
+	type AuthMethod,
+	BoltIcon,
+	CopyIcon,
+	HTTP_METHODS,
+	TrashIcon,
+} from "./parts";
 import { Sidebar } from "./Sidebar";
 import { VariablesSection } from "./VariablesSection";
 
@@ -64,19 +72,25 @@ const asMethod = (value: string): AuthMethod => {
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export const EnvironmentPage: FC = () => {
-	const selectedEnv = useDocStore(selectSelectedEnvironment);
-	const patchEnvironment = useDocStore(actionUpdateEnvironment);
-	const removeEnvironment = useDocStore(actionDeleteEnvironment);
-	const addVariable = useDocStore(actionaddVariableToEnvironment);
-	const updateVariableInStore = useDocStore(actionupdateVariableInEnvironment);
-	const removeVariable = useDocStore(actiondeleteVariableFromEnvironment);
-	const patchToken = useDocStore(actionUpdateEnvironmentToken);
+	const selectedEnv = useEnvironmentsStore(selectSelectedEnvironment);
+	const patchEnvironment = useEnvironmentsStore(actionUpdateEnvironment);
+	const removeEnvironment = useEnvironmentsStore(actionDeleteEnvironment);
+	const addEnvironment = useEnvironmentsStore(actionAddEnvironment);
+	const addVariable = useEnvironmentsStore(actionaddVariableToEnvironment);
+	const updateVariableInStore = useEnvironmentsStore(
+		actionupdateVariableInEnvironment,
+	);
+	const removeVariable = useEnvironmentsStore(
+		actiondeleteVariableFromEnvironment,
+	);
+	const patchToken = useEnvironmentsStore(actionUpdateEnvironmentToken);
 
 	// Environment basics
 	const [label, setLabel] = useState("");
 	const [baseUrl, setBaseUrl] = useState("");
 	const [prefix, setPrefix] = useState("");
 	const [envStatus, setEnvStatus] = useState<SaveStatus>("idle");
+	const [duplicating, setDuplicating] = useState(false);
 
 	// Auth config
 	const [authUrl, setAuthUrl] = useState("");
@@ -319,6 +333,24 @@ export const EnvironmentPage: FC = () => {
 		}
 	};
 
+	const handleDuplicateEnvironment = async () => {
+		if (!selectedEnv) return;
+		setDuplicating(true);
+		try {
+			const copy = await duplicateEnvironmentApi(selectedEnv.id);
+			addEnvironment(copy);
+			toast({ variant: "success", title: "Окружение скопировано" });
+		} catch {
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to duplicate environment",
+			});
+		} finally {
+			setDuplicating(false);
+		}
+	};
+
 	const handleDeleteVariable = (variable: Variable) => {
 		setVariableToDelete(variable);
 	};
@@ -375,6 +407,16 @@ export const EnvironmentPage: FC = () => {
 					</div>
 				</div>
 				<div className={s.envHeroActions}>
+					<button
+						type="button"
+						className={s.envBtn}
+						onClick={handleDuplicateEnvironment}
+						disabled={duplicating}
+						title="Создать копию этого окружения"
+					>
+						<CopyIcon />
+						{duplicating ? "Копируем…" : "Дублировать"}
+					</button>
 					<button
 						type="button"
 						className={`${s.envBtn} ${s.envBtnDanger}`}

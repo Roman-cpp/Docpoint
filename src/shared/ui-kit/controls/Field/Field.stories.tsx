@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Field } from "./Field";
 import { Input } from "../Input/Input";
 import { Toggle } from "../Toggle/Toggle";
+import { Field } from "./Field";
 
 const meta: Meta<typeof Field> = {
 	title: "UI Kit/Field",

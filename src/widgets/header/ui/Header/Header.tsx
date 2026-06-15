@@ -4,17 +4,16 @@ import {
 	actionSelectEnvironment,
 	selectEnvironments,
 	selectSelectedEnvironment,
-	useDocStore,
-} from "@/features/doc";
+	useEnvironmentsStore,
+} from "@/features/environment";
+import { selectPlatform, usePlatformStore } from "@/features/platform";
 import { getEnvDotColor } from "@/shared/lib/env-color";
-import { ChevronIcon } from "../../../../pages/environment/ui/parts";
 import s from "./Header.module.css";
 
 const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
-	{ label: "API Docs", href: "/" },
 	{ label: "HTTP Client", href: "/http-client" },
 	{ label: "Entities", href: "/entity" },
-	{ label: "Environments", href: "/environments", active: true },
+	{ label: "Files", href: "/files" },
 ];
 
 interface HeaderProps {
@@ -23,9 +22,10 @@ interface HeaderProps {
 }
 
 export const Header: FC<HeaderProps> = ({ section }) => {
-	const environments = useDocStore(selectEnvironments);
-	const selectedEnv = useDocStore(selectSelectedEnvironment);
-	const selectEnv = useDocStore(actionSelectEnvironment);
+	const environments = useEnvironmentsStore(selectEnvironments);
+	const selectedEnvironment = useEnvironmentsStore(selectSelectedEnvironment);
+	const selectedPlatform = usePlatformStore(selectPlatform);
+	const selectEnvironment = useEnvironmentsStore(actionSelectEnvironment);
 
 	return (
 		<nav className={s.pfNav}>
@@ -37,31 +37,38 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 				</div>
 			</Link>
 
-			<div className={s.pfNavEnv}>
-				{environments.length === 0 ? (
-					<span className={s.pfNavEnvEmpty}>нет окружений</span>
-				) : (
-					environments.map((env) => {
-						const isActive = env.id === selectedEnv?.id;
+			{environments.length > 0 && (
+				<div className={s.pfNavEnv}>
+					{environments.map((env) => {
+						const isActive = env.id === selectedEnvironment?.id;
 						return (
 							<button
 								key={env.id}
 								type="button"
 								className={`${s.pfEnvBtn} ${isActive ? s.active : ""}`}
-								onClick={() => selectEnv(env.id)}
+								onClick={() => selectEnvironment(env.id)}
 							>
 								<span
 									className={s.pfEnvDot}
 									style={{ background: getEnvDotColor(env.env) }}
 								/>
-								{env.env}
+								{env.label}
 							</button>
 						);
-					})
-				)}
-			</div>
+					})}
+				</div>
+			)}
 
 			<div className={s.pfNavLinks}>
+				{selectedPlatform && (
+					<Link
+						key="/environments"
+						to={`/platform-show/${selectedPlatform.id}`}
+						className={`${s.pfNavLink} ${s.active}`}
+					>
+						API Docs
+					</Link>
+				)}
 				{NAV_LINKS.map((link) => (
 					<Link
 						key={link.href}
@@ -71,11 +78,20 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						{link.label}
 					</Link>
 				))}
-				<Link to="/profile" className={s.pfNavUser}>
+				{environments.length > 0 && (
+					<Link
+						key="/environments"
+						to="/environments"
+						className={`${s.pfNavLink} ${s.active}`}
+					>
+						Environments
+					</Link>
+				)}
+				{/* <Link to="/profile" className={s.pfNavUser}>
 					<span className={s.pfNavUserAvatar}>ИП</span>
 					<span className={s.pfNavUserName}>Иван П.</span>
 					<ChevronIcon />
-				</Link>
+				</Link> */}
 			</div>
 		</nav>
 	);

@@ -1,20 +1,20 @@
 import {
+	type ColumnDef,
+	flexRender,
+	getCoreRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	type SortingState,
+	useReactTable,
+} from "@tanstack/react-table";
+import {
+	type CSSProperties,
 	Fragment,
-	useState,
+	type ReactNode,
 	useEffect,
 	useMemo,
-	type CSSProperties,
-	type ReactNode,
+	useState,
 } from "react";
-import {
-	useReactTable,
-	getCoreRowModel,
-	getSortedRowModel,
-	getPaginationRowModel,
-	flexRender,
-	type ColumnDef,
-	type SortingState,
-} from "@tanstack/react-table";
 import s from "./DataTable.module.css";
 
 /* ─── Public types ────────────────────────────────────────────── */
@@ -51,24 +51,56 @@ type DataTableProps<T extends object> = {
 
 const SortIcon = ({ dir }: { dir: "asc" | "desc" | null }) => (
 	<svg
-		width="10" height="12" viewBox="0 0 10 12"
-		fill="none" stroke="currentColor" strokeWidth="1.7"
-		strokeLinecap="round" strokeLinejoin="round" aria-hidden
+		width="10"
+		height="12"
+		viewBox="0 0 10 12"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.7"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden
 	>
-		<path d="M2 4.5L5 1.5L8 4.5" className={dir === "asc"  ? s.sortArrowActive : s.sortArrow} />
-		<path d="M2 7.5L5 10.5L8 7.5" className={dir === "desc" ? s.sortArrowActive : s.sortArrow} />
+		<path
+			d="M2 4.5L5 1.5L8 4.5"
+			className={dir === "asc" ? s.sortArrowActive : s.sortArrow}
+		/>
+		<path
+			d="M2 7.5L5 10.5L8 7.5"
+			className={dir === "desc" ? s.sortArrowActive : s.sortArrow}
+		/>
 	</svg>
 );
 
 const ChevronLeftIcon = () => (
-	<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-		<title>prev</title><path d="M9 11L5 7l4-4" />
+	<svg
+		width="14"
+		height="14"
+		viewBox="0 0 14 14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
+		<title>prev</title>
+		<path d="M9 11L5 7l4-4" />
 	</svg>
 );
 
 const ChevronRightIcon = () => (
-	<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-		<title>next</title><path d="M5 3l4 4-4 4" />
+	<svg
+		width="14"
+		height="14"
+		viewBox="0 0 14 14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+	>
+		<title>next</title>
+		<path d="M5 3l4 4-4 4" />
 	</svg>
 );
 
@@ -171,18 +203,25 @@ export function DataTable<T extends object>({
 		<div className={s.wrapper}>
 			{isMultiSort && (
 				<div className={s.sortHint}>
-					Сортировка по {sorting.length} параметрам — Shift+клик по колонке, чтобы добавить/убрать уровень
+					Сортировка по {sorting.length} параметрам — Shift+клик по колонке,
+					чтобы добавить/убрать уровень
 				</div>
 			)}
 
-			<div className={[s.table, className].filter(Boolean).join(" ")} style={tableStyle}>
+			<div
+				className={[s.table, className].filter(Boolean).join(" ")}
+				style={tableStyle}
+			>
 				{/* Header */}
 				<div className={s.tableHead}>
 					{table.getFlatHeaders().map((header) => {
 						if (!header.column.getCanSort()) {
 							return (
 								<span key={header.id} className={s.thStatic}>
-									{flexRender(header.column.columnDef.header, header.getContext())}
+									{flexRender(
+										header.column.columnDef.header,
+										header.getContext(),
+									)}
 								</span>
 							);
 						}
@@ -192,11 +231,20 @@ export function DataTable<T extends object>({
 							<button
 								key={header.id}
 								type="button"
-								className={[s.thBtn, sorted ? s.thBtnActive : ""].filter(Boolean).join(" ")}
+								className={[s.thBtn, sorted ? s.thBtnActive : ""]
+									.filter(Boolean)
+									.join(" ")}
 								onClick={header.column.getToggleSortingHandler()}
-								title={sorted ? "Shift+клик: убрать из сортировки" : "Shift+клик: добавить к сортировке"}
+								title={
+									sorted
+										? "Shift+клик: убрать из сортировки"
+										: "Shift+клик: добавить к сортировке"
+								}
 							>
-								{flexRender(header.column.columnDef.header, header.getContext())}
+								{flexRender(
+									header.column.columnDef.header,
+									header.getContext(),
+								)}
 								<span className={s.sortIconWrap}>
 									{isMultiSort && sorted && (
 										<span className={s.sortPriority}>{priority}</span>
@@ -224,7 +272,9 @@ export function DataTable<T extends object>({
 				{/* Pagination */}
 				<div className={s.pagination}>
 					<span className={s.paginationInfo}>
-						{totalRows === 0 ? "Нет результатов" : `${from}–${to} из ${totalRows}`}
+						{totalRows === 0
+							? "Нет результатов"
+							: `${from}–${to} из ${totalRows}`}
 					</span>
 					<div className={s.paginationControls}>
 						<button
@@ -236,16 +286,20 @@ export function DataTable<T extends object>({
 						>
 							<ChevronLeftIcon />
 						</button>
-						{Array.from({ length: table.getPageCount() }, (_, i) => i).map((n) => (
-							<button
-								key={n}
-								type="button"
-								className={[s.pageBtn, n === pageIndex ? s.pageBtnActive : ""].filter(Boolean).join(" ")}
-								onClick={() => table.setPageIndex(n)}
-							>
-								{n + 1}
-							</button>
-						))}
+						{Array.from({ length: table.getPageCount() }, (_, i) => i).map(
+							(n) => (
+								<button
+									key={n}
+									type="button"
+									className={[s.pageBtn, n === pageIndex ? s.pageBtnActive : ""]
+										.filter(Boolean)
+										.join(" ")}
+									onClick={() => table.setPageIndex(n)}
+								>
+									{n + 1}
+								</button>
+							),
+						)}
 						<button
 							type="button"
 							className={s.pageBtn}

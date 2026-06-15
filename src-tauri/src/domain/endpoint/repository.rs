@@ -1,6 +1,11 @@
 use super::model::CreateEndpointDTO;
-use sqlx::{SqlitePool};
+use sqlx::SqlitePool;
 use uuid::Uuid;
+
+pub trait EndpointRepository {
+    async fn create(&self, group_id: &str, endpoint: &CreateEndpointDTO) -> Result<(), String>;
+    async fn delete(&self, endpoint_id: &str) -> Result<(), String>;
+}
 
 pub struct EndpointRepo<'a> {
     pub db: &'a SqlitePool,
@@ -10,11 +15,20 @@ impl<'a> EndpointRepo<'a> {
     pub fn new(db: &'a SqlitePool) -> Self {
         Self { db }
     }
+}
 
-    pub async fn create(&self, group_id: &str, endpoint: &CreateEndpointDTO, sort_ord: usize) -> Result<(), String> {
+impl EndpointRepository for EndpointRepo<'_> {
+    async fn create(&self, group_id: &str, endpoint: &CreateEndpointDTO) -> Result<(), String> {
         let db = self.db;
 
         let endpoint_id = Uuid::new_v4().to_string();
+
+        let sort_ord: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM endpoint WHERE group_id = ?")
+                .bind(group_id)
+                .fetch_one(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
 
         sqlx::query(
             "INSERT INTO endpoint (id, group_id, method, path, name, description, auth, sort_ord) \
@@ -106,6 +120,25 @@ impl<'a> EndpointRepo<'a> {
                 .map_err(|e| e.to_string())?;
             }
         }
+
+        Ok(())
+    }
+
+    async fn delete(&self, endpoint_id: &str) -> Result<(), String> {
+        let mut conn = self.db.acquire().await.map_err(|e| e.to_string())?;
+
+        // Ensure dependent rows (tags, params, responses → response fields)
+        // are removed via ON DELETE CASCADE.
+        sqlx::query("PRAGMA foreign_keys = ON")
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM endpoint WHERE id = ?")
+            .bind(endpoint_id)
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Ok(())
     }

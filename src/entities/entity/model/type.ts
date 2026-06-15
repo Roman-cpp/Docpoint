@@ -22,3 +22,5 @@ export interface Entity {
 }
 
 export type CreateEntityDTO = Omit<Entity, "id">;
+
+export type UpdateEntityDTO = Entity;

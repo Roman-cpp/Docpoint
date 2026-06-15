@@ -9,5 +9,9 @@ pub async fn write_schemas(
     doc_id: String,
     schemas: Vec<CreateEntityDTO>,
 ) -> Result<(), String> {
-    EntityRepo::new(&state.db).create(&doc_id, &schemas).await
+    for schema in &schemas {
+        EntityRepo::new(&state.db).create(&doc_id, schema).await?;
+    }
+
+    Ok(())
 }
