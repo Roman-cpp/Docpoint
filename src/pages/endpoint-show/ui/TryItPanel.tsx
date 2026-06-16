@@ -1,6 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
+import {
+	createEndpointRequestApi,
+	deleteEndpointRequestApi,
+	type EndpointRequest,
+	listEndpointRequestsApi,
+	type ParamKind,
+	renameEndpointRequestApi,
+	setRequestParamValueApi,
+} from "@/entities/endpoint-request";
 import type { Environment } from "@/entities/environment";
 import { getEnvironmentAccessTokenApi } from "@/entities/environment-auth/api";
 import {
@@ -17,6 +26,32 @@ import {
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./ApiExplorerPage.module.css";
 import { ResponseCard, type RespState } from "./ResponseCard";
+
+// Один именованный набор значений параметров запроса. Несколько наборов
+// позволяют держать разные варианты одного и того же запроса и быстро
+// переключаться между ними.
+type ParamSet = {
+	id: string;
+	name: string;
+	vals: Record<string, string>;
+};
+
+// Преобразует набор из бэка во внутреннее представление: значения индексируются
+// ключом `${kind}:${name}`, как их ожидают поля формы и buildUrl/buildBody.
+function reqToSet(req: EndpointRequest): ParamSet {
+	const vals: Record<string, string> = {};
+	for (const v of req.values) vals[`${v.kind}:${v.name}`] = v.value;
+	return { id: req.id, name: req.name, vals };
+}
+
+// Разбирает ключ значения (`${kind}:${name}`) обратно на составляющие.
+function splitValKey(key: string): { kind: ParamKind; name: string } {
+	const idx = key.indexOf(":");
+	return {
+		kind: key.slice(0, idx) as ParamKind,
+		name: key.slice(idx + 1),
+	};
+}
 
 function resolveEnvVars(value: string, env: Environment): string {
 	return value.replace(/\{\{(\w+)\}\}/g, (_, name) => {
@@ -141,9 +176,14 @@ export const TryItPanel = () => {
 
 	const [tokenInput, setTokenInput] = useState("");
 	const [settingToken, setSettingToken] = useState(false);
-	const [vals, setVals] = useState<Record<string, string>>({});
+	const [paramSets, setParamSets] = useState<ParamSet[]>([]);
+	const [activeSetId, setActiveSetId] = useState<string | null>(null);
+	const [editingSetId, setEditingSetId] = useState<string | null>(null);
+	const [editName, setEditName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [resp, setResp] = useState<RespState | null>(null);
+	// Таймеры debounce-сохранения значений, по ключу `${setId}|${valKey}`.
+	const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
 	if (!endpoint) return;
 	// if (!doc) return;
@@ -151,10 +191,108 @@ export const TryItPanel = () => {
 	const mc = METHOD_CFG[endpoint.method];
 	const pathParams = extractPathParams(endpoint.path);
 
+	// Загружаем сохранённые наборы при смене эндпоинта. Если их нет — создаём
+	// дефолтный "Set 1", чтобы пользователю всегда было куда вводить значения.
 	useEffect(() => {
-		setVals({});
+		let active = true;
 		setResp(null);
+		setEditingSetId(null);
+		(async () => {
+			try {
+				let list = await listEndpointRequestsApi(endpoint.id);
+				if (list.length === 0) {
+					list = [await createEndpointRequestApi(endpoint.id, "Set 1")];
+				}
+				if (!active) return;
+				setParamSets(list.map(reqToSet));
+				setActiveSetId(list[0].id);
+			} catch (e) {
+				console.error("[TryItPanel] failed to load param sets:", e);
+				if (active) {
+					setParamSets([]);
+					setActiveSetId(null);
+				}
+			}
+		})();
+		return () => {
+			active = false;
+		};
 	}, [endpoint.id]);
+
+	// Текущий активный набор параметров и его значения. Все правки полей
+	// применяются только к активному набору и сохраняются в БД с debounce.
+	const activeSet =
+		paramSets.find((set) => set.id === activeSetId) ?? paramSets[0] ?? null;
+	const vals = activeSet?.vals ?? {};
+
+	const persistValue = (setId: string, key: string, value: string) => {
+		const timerKey = `${setId}|${key}`;
+		clearTimeout(saveTimers.current[timerKey]);
+		saveTimers.current[timerKey] = setTimeout(() => {
+			const { kind, name } = splitValKey(key);
+			setRequestParamValueApi(setId, kind, name, value).catch((e) =>
+				console.error("[TryItPanel] failed to persist param value:", e),
+			);
+		}, 500);
+	};
+
+	const updateField = (key: string, value: string) => {
+		if (!activeSet) return;
+		setParamSets((sets) =>
+			sets.map((set) =>
+				set.id === activeSet.id
+					? { ...set, vals: { ...set.vals, [key]: value } }
+					: set,
+			),
+		);
+		persistValue(activeSet.id, key, value);
+	};
+
+	const addSet = async (cloneFrom?: ParamSet | null) => {
+		try {
+			const name = cloneFrom
+				? `${cloneFrom.name} copy`
+				: `Set ${paramSets.length + 1}`;
+			const created = await createEndpointRequestApi(endpoint.id, name);
+			const vals = cloneFrom ? { ...cloneFrom.vals } : {};
+			setParamSets((sets) => [...sets, { id: created.id, name, vals }]);
+			setActiveSetId(created.id);
+			for (const [key, value] of Object.entries(vals)) {
+				if (!value) continue;
+				const { kind, name: pname } = splitValKey(key);
+				setRequestParamValueApi(created.id, kind, pname, value).catch((e) =>
+					console.error("[TryItPanel] failed to persist cloned value:", e),
+				);
+			}
+		} catch (e) {
+			console.error("[TryItPanel] failed to create param set:", e);
+		}
+	};
+
+	const removeSet = async (id: string) => {
+		if (paramSets.length <= 1) return;
+		try {
+			await deleteEndpointRequestApi(id);
+			const next = paramSets.filter((set) => set.id !== id);
+			setParamSets(next);
+			if (id === activeSetId) setActiveSetId(next[0]?.id ?? null);
+		} catch (e) {
+			console.error("[TryItPanel] failed to delete param set:", e);
+		}
+	};
+
+	const commitRename = () => {
+		const id = editingSetId;
+		const name = editName.trim();
+		setEditingSetId(null);
+		if (!id || !name) return;
+		setParamSets((sets) =>
+			sets.map((set) => (set.id === id ? { ...set, name } : set)),
+		);
+		renameEndpointRequestApi(id, name).catch((e) =>
+			console.error("[TryItPanel] failed to rename param set:", e),
+		);
+	};
 
 	useEffect(() => {
 		const envId = selectedEnvConfig?.id;
@@ -266,6 +404,76 @@ export const TryItPanel = () => {
 				</span>
 			</div>
 			<div className={s.tryBody}>
+				<div className={s.paramSets}>
+					<div className={s.paramSetsTabs}>
+						{paramSets.map((set) => {
+							const active = set.id === activeSetId;
+							return (
+								<div
+									key={set.id}
+									className={`${s.paramSetTab}${active ? ` ${s.active}` : ""}`}
+									onClick={() => setActiveSetId(set.id)}
+									onDoubleClick={() => {
+										setEditingSetId(set.id);
+										setEditName(set.name);
+									}}
+									title="Double-click to rename"
+								>
+									{editingSetId === set.id ? (
+										<input
+											ref={(el) => el?.focus()}
+											className={s.paramSetEdit}
+											value={editName}
+											onChange={(e) => setEditName(e.target.value)}
+											onBlur={commitRename}
+											onKeyDown={(e) => {
+												if (e.key === "Enter") commitRename();
+												if (e.key === "Escape") setEditingSetId(null);
+											}}
+											onClick={(e) => e.stopPropagation()}
+										/>
+									) : (
+										<>
+											<span className={s.paramSetName}>{set.name}</span>
+											{paramSets.length > 1 && (
+												<button
+													type="button"
+													className={s.paramSetClose}
+													title="Delete set"
+													onClick={(e) => {
+														e.stopPropagation();
+														removeSet(set.id);
+													}}
+												>
+													×
+												</button>
+											)}
+										</>
+									)}
+								</div>
+							);
+						})}
+					</div>
+					<div className={s.paramSetsActions}>
+						<button
+							type="button"
+							className={s.paramSetAdd}
+							title="Duplicate current set"
+							onClick={() => addSet(activeSet)}
+						>
+							⧉
+						</button>
+						<button
+							type="button"
+							className={s.paramSetAdd}
+							title="New empty set"
+							onClick={() => addSet()}
+						>
+							+
+						</button>
+					</div>
+				</div>
+
 				<div className={s.urlBar}>
 					<div className={s.urlBarInner}>
 						<span
@@ -361,9 +569,7 @@ export const TryItPanel = () => {
 									className={s.fieldInput}
 									placeholder={name}
 									value={vals[`path:${name}`] ?? ""}
-									onChange={(e) =>
-										setVals((v) => ({ ...v, [`path:${name}`]: e.target.value }))
-									}
+									onChange={(e) => updateField(`path:${name}`, e.target.value)}
 								/>
 							</div>
 						))}
@@ -387,10 +593,7 @@ export const TryItPanel = () => {
 										vals[`query:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
 									}
 									onChange={(e) =>
-										setVals((v) => ({
-											...v,
-											[`query:${p.name}`]: e.target.value,
-										}))
+										updateField(`query:${p.name}`, e.target.value)
 									}
 								/>
 							</div>
@@ -415,10 +618,7 @@ export const TryItPanel = () => {
 										vals[`body:${p.name}`] ?? (p.value ? `{{${p.value}}}` : "")
 									}
 									onChange={(e) =>
-										setVals((v) => ({
-											...v,
-											[`body:${p.name}`]: e.target.value,
-										}))
+										updateField(`body:${p.name}`, e.target.value)
 									}
 								/>
 							</div>

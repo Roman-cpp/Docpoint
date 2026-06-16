@@ -1,5 +1,6 @@
 pub mod doc;
 pub mod endpoint;
+pub mod endpoint_request;
 pub mod entity;
 pub mod environment;
 pub mod environment_auth;
