@@ -1,18 +1,24 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import topLevelAwait from "vite-plugin-top-level-await";
-import wasm from "vite-plugin-wasm";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-	plugins: [react(), wasm(), topLevelAwait()],
+	plugins: [react()],
 	resolve: {
 		alias: {
 			"@": new URL("./src", import.meta.url).pathname,
 		},
+	},
+
+	// `canvas-wasm` is built with wasm-pack's `web` target: its JS locates the
+	// `.wasm` via `new URL("canvas_wasm_bg.wasm", import.meta.url)` and fetches
+	// it at `init()`. esbuild's dep pre-bundling rewrites `import.meta.url` and
+	// breaks that lookup, so exclude it and let Vite serve the module as-is.
+	optimizeDeps: {
+		exclude: ["canvas-wasm"],
 	},
 
 	// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type FC, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { type Doc, useDocsStore } from "@/entities/doc";
+import { useServiceErds } from "@/entities/doc-erd";
 import {
 	serviceKeys,
 	useAllServices,
@@ -10,13 +11,17 @@ import {
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
+import { Button } from "@/shared/ui-kit/controls";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
+import { CreateErdModal } from "./CreateErdModal";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {
 	const { services, isServicesLoading } = useAllServices();
 	const { docs, isDocsLoading } = useServiceDocs(id);
+	const { erds, isErdsLoading, createErdAsync, isCreatingErd } =
+		useServiceErds(id);
 	const { deleteDocAsync, isDeleting } = useDocsStore();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -27,6 +32,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		doc: Doc;
 	} | null>(null);
 	const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
+	const [erdModalOpen, setErdModalOpen] = useState(false);
 
 	const service = services.find((svc) => svc.id === id);
 
@@ -96,6 +102,64 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</div>
 				)}
 			</div>
+
+			<div style={{ marginTop: 32 }}>
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+						marginBottom: 16,
+					}}
+				>
+					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
+						ERD-диаграммы
+					</h2>
+					<Button variant="subtle" onClick={() => setErdModalOpen(true)}>
+						+ Создать ERD
+					</Button>
+				</div>
+				{isErdsLoading ? (
+					<p className={s.ovSub}>Загрузка диаграмм…</p>
+				) : erds.length === 0 ? (
+					<p className={s.ovSub}>
+						К этому микросервису пока не прикреплена ни одна ERD-диаграмма
+					</p>
+				) : (
+					<div className={s.apiCardsGrid}>
+						{erds.map((erd) => (
+							<Link
+								to={`/doc-erd-show/${erd.id}`}
+								key={erd.id}
+								className={s.apiCard}
+							>
+								<div className={s.acAccent} />
+								<div className={s.acTop}>
+									<div className={s.acName}>{erd.name}</div>
+								</div>
+								<div className={s.acDesc}>{erd.desc}</div>
+								<div className={s.acFooter}>
+									<span className={s.acTag}>erd</span>
+								</div>
+							</Link>
+						))}
+					</div>
+				)}
+			</div>
+
+			<CreateErdModal
+				open={erdModalOpen}
+				onOpenChange={setErdModalOpen}
+				isSaving={isCreatingErd}
+				onCreate={async ({ name, desc }) => {
+					try {
+						await createErdAsync({ name, desc, service_id: id });
+						setErdModalOpen(false);
+					} catch {
+						/* error toast handled by the mutation */
+					}
+				}}
+			/>
 
 			{docMenu && (
 				<>

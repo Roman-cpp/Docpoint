@@ -14,6 +14,8 @@ use service::{
     update_environment_auth, update_param_value, update_platform, update_schema, update_service, update_variable,
     write_groups, write_schemas,
     create_markdown, delete_markdown, read_markdown, read_markdowns, update_markdown,
+    read_erds, read_service_erds, create_erd, update_erd, delete_erd,
+    read_relations, create_relation, delete_relation,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
@@ -112,6 +114,14 @@ pub fn run() {
             create_markdown,
             update_markdown,
             delete_markdown,
+            read_erds,
+            read_service_erds,
+            create_erd,
+            update_erd,
+            delete_erd,
+            read_relations,
+            create_relation,
+            delete_relation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

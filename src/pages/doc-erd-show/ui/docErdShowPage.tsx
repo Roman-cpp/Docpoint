@@ -1,7 +1,11 @@
 import { useEffect, useRef } from "react";
+import { useParams } from "react-router";
+import { readEntitiesApi } from "@/entities/entity";
+import { readRelationsApi } from "@/entities/entity-relation";
 import styles from "./CanvasPage.module.css";
 
-export function CanvasPage() {
+export function DocErdShowPage() {
+	const { id } = useParams<{ id: string }>();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	// Holds the live scene and a bound render callback so toolbar actions
 	// (outside the effect) can mutate and repaint the diagram.
@@ -76,11 +80,27 @@ export function CanvasPage() {
 			scene.render(ctx);
 		};
 
-		import("canvas-wasm").then(({ Scene }) => {
+		import("canvas-wasm").then(async ({ default: init, Scene }) => {
+			// `canvas-wasm` is built with wasm-pack's `web` target, so the wasm
+			// module must be fetched and instantiated via `init()` before any
+			// export is callable. `init` is idempotent, so repeated effect runs
+			// reuse the already-instantiated module.
+			await init();
 			if (disposed) return;
 			scene = new Scene();
 			sceneRef.current = scene;
 			renderRef.current = () => scene?.render(ctx);
+
+			// Populate the diagram from the document's persisted schema. Without
+			// an id there is nothing to show, so the scene stays empty.
+			if (id) {
+				const [entities, relations] = await Promise.all([
+					readEntitiesApi(id),
+					readRelationsApi(id),
+				]);
+				if (disposed || scene !== sceneRef.current) return;
+				scene.load(entities, relations);
+			}
 			resize();
 		});
 
@@ -102,7 +122,7 @@ export function CanvasPage() {
 			sceneRef.current = null;
 			renderRef.current = null;
 		};
-	}, []);
+	}, [id]);
 
 	return (
 		<div className={styles.page}>

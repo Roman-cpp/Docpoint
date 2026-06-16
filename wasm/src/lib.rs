@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
 
@@ -5,6 +7,40 @@ mod domain;
 
 use domain::relation::model::{Endpoint, Relation};
 use domain::table::model::{ColKind, Column, Table, HEADER_H, ROW_H};
+
+// ---------------------------------------------------------------------------
+// Wire shapes for `Scene::load`. These mirror the JSON the Tauri commands
+// `read_schemas` and `read_relations` return (see src-tauri domain models), so
+// the JS side can forward the command results verbatim. Only the fields the
+// diagram needs are deserialized; unknown keys (desc, note, example, …) are
+// ignored.
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct EntityDTO {
+    id: String,
+    name: String,
+    #[serde(default)]
+    fields: Vec<FieldDTO>,
+}
+
+#[derive(Deserialize)]
+struct FieldDTO {
+    name: String,
+    #[serde(default)]
+    pk: bool,
+    #[serde(default)]
+    nullable: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RelationDTO {
+    from_entity: String,
+    from_field: String,
+    to_entity: String,
+    to_field: String,
+}
 
 const TAU: f64 = std::f64::consts::PI * 2.0;
 
@@ -178,6 +214,101 @@ impl Scene {
         self.tables.push(table);
         self.selected = Some(self.tables.len() - 1);
         self.laid_out = false;
+    }
+
+    /// Replaces the scene's contents with a diagram built from persisted data:
+    /// the `entities` and `relations` are the JSON returned by the `read_schemas`
+    /// and `read_relations` Tauri commands, forwarded as-is from JS.
+    ///
+    /// Tables are auto-laid-out in a simple column grid (entities carry no stored
+    /// position). A column's icon kind is derived here: primary keys win, then
+    /// any field that is the target (`to`) of a relation is shown as a foreign
+    /// key, then nullability. Relations are remapped from `(entityId, fieldName)`
+    /// addressing to the positional `(tableIndex, columnIndex)` the renderer uses;
+    /// any endpoint that cannot be resolved drops the relation.
+    pub fn load(&mut self, entities: JsValue, relations: JsValue) -> Result<(), JsValue> {
+        let entities: Vec<EntityDTO> = serde_wasm_bindgen::from_value(entities)?;
+        let relations: Vec<RelationDTO> = serde_wasm_bindgen::from_value(relations)?;
+
+        // Fields that sit on the foreign-key side of some relation, by
+        // (entity id, field name) — used to pick the FK icon.
+        let fk_fields: HashSet<(&str, &str)> = relations
+            .iter()
+            .map(|r| (r.to_entity.as_str(), r.to_field.as_str()))
+            .collect();
+
+        // (entity id, field name) -> (table index, column index), so relation
+        // endpoints can be resolved to the positional form the scene uses.
+        let mut endpoint_of: HashMap<(String, String), Endpoint> = HashMap::new();
+
+        let mut tables = Vec::with_capacity(entities.len());
+        for (ti, entity) in entities.iter().enumerate() {
+            let columns = entity
+                .fields
+                .iter()
+                .enumerate()
+                .map(|(ci, f)| {
+                    endpoint_of.insert((entity.id.clone(), f.name.clone()), (ti, ci));
+                    let kind = if f.pk {
+                        ColKind::Pk
+                    } else if fk_fields.contains(&(entity.id.as_str(), f.name.as_str())) {
+                        ColKind::Fk
+                    } else if f.nullable {
+                        ColKind::Nullable
+                    } else {
+                        ColKind::Plain
+                    };
+                    Column {
+                        name: f.name.clone(),
+                        kind,
+                    }
+                })
+                .collect();
+
+            // Column-grid placement; widths are measured later in `ensure_layout`.
+            const ORIGIN: f64 = 40.0;
+            const COL_W: f64 = 260.0;
+            const GAP_Y: f64 = 40.0;
+            let cols = (entities.len() as f64).sqrt().ceil().max(1.0) as usize;
+            let mut table = Table {
+                x: ORIGIN + (ti % cols) as f64 * COL_W,
+                y: 0.0,
+                w: 0.0,
+                name: entity.name.clone(),
+                columns,
+            };
+            // Stack vertically within each grid column so tall tables don't overlap.
+            let col = ti % cols;
+            let y = ORIGIN
+                + tables
+                    .iter()
+                    .skip(col)
+                    .step_by(cols)
+                    .map(|t: &Table| t.height() + GAP_Y)
+                    .sum::<f64>();
+            table.y = y;
+            tables.push(table);
+        }
+
+        let relations = relations
+            .iter()
+            .filter_map(|r| {
+                let from = *endpoint_of.get(&(r.from_entity.clone(), r.from_field.clone()))?;
+                let to = *endpoint_of.get(&(r.to_entity.clone(), r.to_field.clone()))?;
+                Some(Relation::new(from, to))
+            })
+            .collect();
+
+        self.tables = tables;
+        self.relations = relations;
+        self.selected = None;
+        self.selected_rel = None;
+        self.hover_col = None;
+        self.drag = None;
+        self.pan = None;
+        self.link = None;
+        self.laid_out = false;
+        Ok(())
     }
 
     fn screen_to_world(&self, x: f64, y: f64) -> (f64, f64) {

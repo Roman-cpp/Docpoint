@@ -15,6 +15,8 @@ pub struct EntityField {
     pub type_: String,
     pub req: bool,
     pub nullable: bool,
+    #[serde(default)]
+    pub pk: bool,
     pub desc: String,
     pub note: String,
     pub example: String,

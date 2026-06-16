@@ -8,6 +8,7 @@ export interface SchemaField {
 	type: string;
 	req: boolean;
 	nullable: boolean;
+	pk: boolean;
 	desc: string;
 	note: string;
 	example: string;

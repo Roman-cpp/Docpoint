@@ -28,12 +28,6 @@ export const router = createBrowserRouter([
 					Component: (await import("@/pages/service-show")).ServiceShowPage,
 				}),
 			},
-			// {
-			// 	path: "/architecture",
-			// 	lazy: async () => ({
-			// 		Component: (await import("@/pages/architecture")).ArchitecturePage,
-			// 	}),
-			// },
 			{
 				path: "/markdown-show",
 				lazy: async () => ({
@@ -89,9 +83,9 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/canvas",
+				path: "/doc-erd-show/:id",
 				lazy: async () => ({
-					Component: (await import("@/pages/canvas")).CanvasPage,
+					Component: (await import("@/pages/doc-erd-show")).DocErdShowPage,
 				}),
 			},
 		],

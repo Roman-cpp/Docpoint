@@ -1,7 +1,9 @@
 pub mod doc;
+pub mod doc_erd;
 pub mod endpoint;
 pub mod endpoint_request;
 pub mod entity;
+pub mod entity_relation;
 pub mod environment;
 pub mod environment_auth;
 pub mod group;

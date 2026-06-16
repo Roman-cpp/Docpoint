@@ -30,6 +30,7 @@ export const emptyField = (): LocalField => ({
 	type: "string",
 	req: false,
 	nullable: false,
+	pk: false,
 	desc: "",
 	note: "",
 	example: "",
@@ -141,6 +142,11 @@ export const EntityFieldsEditor: FC<EntityFieldsEditorProps> = ({
 						</div>
 
 						<div className={s.fieldFlags}>
+							<Checkbox
+								label="pk"
+								checked={f.pk}
+								onChange={(e) => patchField(f._key, { pk: e.target.checked })}
+							/>
 							<Checkbox
 								label="required"
 								checked={f.req}

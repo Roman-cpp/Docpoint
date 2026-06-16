@@ -106,6 +106,7 @@ async fn read_schemas(db: &SqlitePool, doc_id: &str) -> Result<Vec<Entity>, Stri
                         type_: f.get("type"),
                         req: f.get::<i64, _>("required") != 0,
                         nullable: f.get::<i64, _>("nullable") != 0,
+                        pk: f.get::<i64, _>("is_pk") != 0,
                         desc: f.get("desc"),
                         note: f.get("note"),
                         example: f.get("example"),
@@ -144,14 +145,15 @@ async fn insert_schema(
     for (fi, field) in schema.fields.iter().enumerate() {
         let result = sqlx::query(
             "INSERT INTO entity_field \
-             (entity_id, name, type, required, nullable, desc, note, example, sort_ord) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             (entity_id, name, type, required, nullable, is_pk, desc, note, example, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&entity_id)
         .bind(&field.name)
         .bind(&field.type_)
         .bind(if field.req { 1i64 } else { 0i64 })
         .bind(if field.nullable { 1i64 } else { 0i64 })
+        .bind(if field.pk { 1i64 } else { 0i64 })
         .bind(&field.desc)
         .bind(&field.note)
         .bind(&field.example)
@@ -224,14 +226,15 @@ async fn update_schema(db: &SqlitePool, schema: &UpdateEntityDTO) -> Result<(), 
     for (fi, field) in schema.fields.iter().enumerate() {
         let result = sqlx::query(
             "INSERT INTO entity_field \
-             (entity_id, name, type, required, nullable, desc, note, example, sort_ord) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             (entity_id, name, type, required, nullable, is_pk, desc, note, example, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&schema.id)
         .bind(&field.name)
         .bind(&field.type_)
         .bind(if field.req { 1i64 } else { 0i64 })
         .bind(if field.nullable { 1i64 } else { 0i64 })
+        .bind(if field.pk { 1i64 } else { 0i64 })
         .bind(&field.desc)
         .bind(&field.note)
         .bind(&field.example)
