@@ -1,8 +1,40 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
-import { readEntitiesApi } from "@/entities/entity";
+import {
+	type CreateEntityDTO,
+	createErdEntityApi,
+	readErdEntitiesApi,
+	type SchemaField,
+} from "@/entities/entity";
 import { readRelationsApi } from "@/entities/entity-relation";
+import { Header } from "@/widgets/header";
 import styles from "./CanvasPage.module.css";
+
+/** Builds a schema field with the editor's defaults, overriding as needed. */
+const field = (over: Partial<SchemaField> & { name: string }): SchemaField => ({
+	type: "string",
+	req: false,
+	nullable: false,
+	pk: false,
+	desc: "",
+	note: "",
+	example: "",
+	...over,
+});
+
+/**
+ * Mirrors the wasm `Table::from_template` blank table (DEFAULT_COLUMNS) so the
+ * persisted entity matches what `add_table` draws on the canvas.
+ */
+const blankEntity = (name: string): CreateEntityDTO => ({
+	name,
+	desc: "",
+	fields: [
+		field({ name: "id", type: "uuid", req: true, pk: true }),
+		field({ name: "created_at", type: "timestamp", req: true }),
+		field({ name: "updated_at", type: "timestamp", req: true }),
+	],
+});
 
 export function DocErdShowPage() {
 	const { id } = useParams<{ id: string }>();
@@ -13,8 +45,19 @@ export function DocErdShowPage() {
 	const renderRef = useRef<(() => void) | null>(null);
 
 	const handleAddTable = () => {
-		sceneRef.current?.add_table();
+		const scene = sceneRef.current;
+		if (!scene) return;
+		scene.add_table();
 		renderRef.current?.();
+
+		// Persist the freshly-added table as a new entity. The wasm names it
+		// `new_table_{count}` after pushing, so `table_count()` gives that count.
+		if (id) {
+			createErdEntityApi(
+				id,
+				blankEntity(`new_table_${scene.table_count()}`),
+			).catch((err) => console.error("Failed to persist new entity", err));
+		}
 	};
 
 	useEffect(() => {
@@ -91,11 +134,11 @@ export function DocErdShowPage() {
 			sceneRef.current = scene;
 			renderRef.current = () => scene?.render(ctx);
 
-			// Populate the diagram from the document's persisted schema. Without
-			// an id there is nothing to show, so the scene stays empty.
+			// Populate the diagram from the ERD's persisted schema. Without an id
+			// there is nothing to show, so the scene stays empty.
 			if (id) {
 				const [entities, relations] = await Promise.all([
-					readEntitiesApi(id),
+					readErdEntitiesApi(id),
 					readRelationsApi(id),
 				]);
 				if (disposed || scene !== sceneRef.current) return;
@@ -125,8 +168,11 @@ export function DocErdShowPage() {
 	}, [id]);
 
 	return (
-		<div className={styles.page}>
-			<div className={styles.toolbar}>
+		<div className={styles.frame}>
+			<Header section="Документы / ERD" activeLink="docs" />
+
+			<div className={styles.page}>
+				<div className={styles.toolbar}>
 				<p className={styles.hint}>
 					Тяните от поля к полю — связь · клик по связи, затем ✕ —
 					удалить · колесо — масштаб
@@ -141,8 +187,9 @@ export function DocErdShowPage() {
 					</span>
 					Таблица
 				</button>
+				</div>
+				<canvas ref={canvasRef} className={styles.canvas} />
 			</div>
-			<canvas ref={canvasRef} className={styles.canvas} />
 		</div>
 	);
 }

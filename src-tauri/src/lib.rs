@@ -15,6 +15,7 @@ use service::{
     write_groups, write_schemas,
     create_markdown, delete_markdown, read_markdown, read_markdowns, update_markdown,
     read_erds, read_service_erds, create_erd, update_erd, delete_erd,
+    read_erd_schemas, create_erd_schema,
     read_relations, create_relation, delete_relation,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
@@ -119,6 +120,8 @@ pub fn run() {
             create_erd,
             update_erd,
             delete_erd,
+            read_erd_schemas,
+            create_erd_schema,
             read_relations,
             create_relation,
             delete_relation,

@@ -4,7 +4,13 @@ use uuid::Uuid;
 
 pub trait EntityRepository {
     async fn all(&self, doc_id: &str) -> Result<Vec<Entity>, String>;
+    async fn all_by_erd(&self, doc_erd_id: &str) -> Result<Vec<Entity>, String>;
     async fn create(&self, doc_id: &str, schema: &CreateEntityDTO) -> Result<String, String>;
+    async fn create_for_erd(
+        &self,
+        doc_erd_id: &str,
+        schema: &CreateEntityDTO,
+    ) -> Result<String, String>;
     async fn update(&self, schema: &UpdateEntityDTO) -> Result<(), String>;
     async fn delete(&self, entity_id: &str) -> Result<(), String>;
 }
@@ -21,11 +27,23 @@ impl<'a> EntityRepo<'a> {
 
 impl EntityRepository for EntityRepo<'_> {
     async fn all(&self, doc_id: &str) -> Result<Vec<Entity>, String> {
-        read_schemas(self.db, doc_id).await
+        read_schemas_by(self.db, "doc_id", doc_id).await
+    }
+
+    async fn all_by_erd(&self, doc_erd_id: &str) -> Result<Vec<Entity>, String> {
+        read_schemas_by(self.db, "doc_erd_id", doc_erd_id).await
     }
 
     async fn create(&self, doc_id: &str, schema: &CreateEntityDTO) -> Result<String, String> {
-        insert_schema(self.db, doc_id, schema).await
+        insert_schema(self.db, EntityOwner::Doc(doc_id), schema).await
+    }
+
+    async fn create_for_erd(
+        &self,
+        doc_erd_id: &str,
+        schema: &CreateEntityDTO,
+    ) -> Result<String, String> {
+        insert_schema(self.db, EntityOwner::Erd(doc_erd_id), schema).await
     }
 
     async fn update(&self, schema: &UpdateEntityDTO) -> Result<(), String> {
@@ -37,9 +55,23 @@ impl EntityRepository for EntityRepo<'_> {
     }
 }
 
-async fn read_schemas(db: &SqlitePool, doc_id: &str) -> Result<Vec<Entity>, String> {
-    let entity_rows = sqlx::query("SELECT * FROM entities WHERE doc_id = ?")
-        .bind(doc_id)
+/// Which side an entity is attached to. Entities created from an API doc carry
+/// a `doc_id`; entities drawn on an ERD canvas carry a `doc_erd_id` and no doc.
+enum EntityOwner<'a> {
+    Doc(&'a str),
+    Erd(&'a str),
+}
+
+/// Loads entities (with fields and enum values) filtered by a single owner
+/// column. `column` is a trusted literal (`"doc_id"` / `"doc_erd_id"`), never
+/// user input, so interpolating it into the SQL is safe.
+async fn read_schemas_by(
+    db: &SqlitePool,
+    column: &str,
+    value: &str,
+) -> Result<Vec<Entity>, String> {
+    let entity_rows = sqlx::query(&format!("SELECT * FROM entities WHERE {column} = ?"))
+        .bind(value)
         .fetch_all(db)
         .await
         .map_err(|e| e.to_string())?;
@@ -128,14 +160,20 @@ async fn read_schemas(db: &SqlitePool, doc_id: &str) -> Result<Vec<Entity>, Stri
 /// Вставляет одну entity вместе с полями и enum-значениями, возвращает её id.
 async fn insert_schema(
     db: &SqlitePool,
-    doc_id: &str,
+    owner: EntityOwner<'_>,
     schema: &CreateEntityDTO,
 ) -> Result<String, String> {
     let entity_id = Uuid::new_v4().to_string();
 
-    sqlx::query("INSERT INTO entities (id, doc_id, name, desc) VALUES (?, ?, ?, ?)")
+    let (doc_id, doc_erd_id) = match owner {
+        EntityOwner::Doc(id) => (Some(id), None),
+        EntityOwner::Erd(id) => (None, Some(id)),
+    };
+
+    sqlx::query("INSERT INTO entities (id, doc_id, doc_erd_id, name, desc) VALUES (?, ?, ?, ?, ?)")
         .bind(&entity_id)
         .bind(doc_id)
+        .bind(doc_erd_id)
         .bind(&schema.name)
         .bind(&schema.desc)
         .execute(db)
