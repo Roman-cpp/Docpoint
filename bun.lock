@@ -18,7 +18,7 @@
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-opener": "^2",
         "axios": "^1.16.0",
-        "canvas-wasm": "file:./wasm/pkg",
+        "canvas-wasm": "file:./wasm/pkg/canvas",
         "codemirror": "^6.0.2",
         "rc-dock": "^4.0.0-alpha.2",
         "react": "^19.1.0",
@@ -630,7 +630,7 @@
 
     "caniuse-lite": ["caniuse-lite@1.0.30001791", "", {}, ""],
 
-    "canvas-wasm": ["canvas-wasm@file:wasm/pkg", {}],
+    "canvas-wasm": ["canvas-wasm@file:wasm/pkg/canvas", {}],
 
     "ccount": ["ccount@2.0.1", "", {}, ""],
 

@@ -8,12 +8,14 @@
 		"build": "tsc && vite build",
 		"preview": "vite preview",
 		"tauri": "tauri",
+		"wasm:canvas": "wasm-pack build wasm/crates/canvas --target web --out-dir ../../pkg/canvas",
+		"wasm": "bun run wasm:canvas",
 		"lint": "bunx biome check --write",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},
 	"dependencies": {
-		"canvas-wasm": "file:./wasm/pkg",
+		"canvas-wasm": "file:./wasm/pkg/canvas",
 		"@biomejs/biome": "2.4.15",
 		"@codemirror/lang-markdown": "^6.5.0",
 		"@codemirror/language": "^6.12.3",
