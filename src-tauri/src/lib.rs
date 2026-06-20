@@ -1,5 +1,6 @@
 mod domain;
 mod infrastructure;
+mod repository;
 mod service;
 mod state;
 

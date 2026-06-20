@@ -1,2 +1,3 @@
-pub mod model;
-pub mod repository;
+pub mod doc_erd;
+pub mod entity;
+pub mod entity_relation;

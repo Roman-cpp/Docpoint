@@ -1,6 +1,5 @@
-use super::model::{
-    CreateMarkdownDTO, DirListing, FileEntry, FolderEntry, MarkdownFile, UpdateMarkdownDTO,
-};
+use super::dto::{CreateMarkdownDTO, UpdateMarkdownDTO};
+use super::entity::{DirListing, FileEntry, FolderEntry, MarkdownFile};
 use std::path::{Path, PathBuf};
 
 /// Filesystem-backed store for markdown files. Everything lives under

@@ -1,0 +1,13 @@
+use crate::domain::doc_erd::entity_relation::entity::EntityRelation;
+use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
+use crate::repository::sqlite::entity_relation::RelationRepo;
+use crate::state::AppState;
+use tauri::State;
+
+#[tauri::command]
+pub async fn read_relations(
+    state: State<'_, AppState>,
+    doc_id: String,
+) -> Result<Vec<EntityRelation>, String> {
+    RelationRepo::new(&state.db).by_doc(&doc_id).await
+}

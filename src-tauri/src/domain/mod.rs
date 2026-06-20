@@ -1,12 +1,6 @@
-pub mod doc;
+pub mod doc_api;
 pub mod doc_erd;
-pub mod endpoint;
-pub mod endpoint_request;
-pub mod entity;
-pub mod entity_relation;
 pub mod environment;
-pub mod environment_auth;
-pub mod group;
 pub mod markdown;
 pub mod platform;
 pub mod service;
