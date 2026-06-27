@@ -835,10 +835,10 @@
 	font-family: var(--font-mono);
 	font-size: 11px;
 	color: var(--ink-mid);
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
+	overflow-wrap: anywhere;
+	white-space: normal;
 	flex: 1;
+	min-width: 0;
 	line-height: 1.5;
 }
 
@@ -981,58 +981,6 @@
 	flex-shrink: 0;
 }
 
-/* response card */
-.respCard {
-	border: 1px solid var(--border);
-	border-radius: 9px;
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
-	flex: 1 1 auto;
-	min-height: 400px;
-}
-.respCardHdr {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 9px 13px;
-	background: var(--bg);
-	border-bottom: 1px solid var(--border);
-	gap: 8px;
-	flex-shrink: 0;
-}
-.respStatusBadge {
-	font-size: 11.5px;
-	font-weight: 600;
-	padding: 3px 9px;
-	border-radius: 5px;
-	font-family: var(--font-mono);
-	flex-shrink: 0;
-}
-.respDur {
-	font-size: 11px;
-	color: var(--ink-low);
-}
-.respPre {
-	font-family: var(--font-mono);
-	font-size: 11.5px;
-	line-height: 1.72;
-	color: var(--code-ink);
-	padding: 11px 13px;
-	flex: 1 1 auto;
-	min-height: 0;
-	overflow-y: auto;
-	white-space: pre;
-	background: var(--code-bg);
-	margin: 0;
-}
-.respPre::-webkit-scrollbar {
-	width: 3px;
-}
-.respPre::-webkit-scrollbar-thumb {
-	background: var(--border);
-	border-radius: 2px;
-}
 .jsonKey {
 	color: var(--purple);
 }
@@ -1110,13 +1058,6 @@
 	color: var(--ink-low);
 	font-style: italic;
 	padding: 0 4px;
-}
-.respError {
-	font-size: 12px;
-	color: var(--red);
-	padding: 11px 13px;
-	background: var(--red-bg);
-	line-height: 1.5;
 }
 
 /* ═══════════════ OVERVIEW ═══════════════ */

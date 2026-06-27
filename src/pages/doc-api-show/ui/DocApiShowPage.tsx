@@ -7,7 +7,7 @@ import { Layout } from "@/widgets/layout/ui/Layout";
 import { OverviewPage } from "./OverviewPage";
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
-export const DocShowPage: FC = () => {
+export const DocApiShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 
 	const fetchDoc = useDocStore(actionfetchDoc);

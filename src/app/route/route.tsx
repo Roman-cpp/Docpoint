@@ -13,7 +13,7 @@ export const router = createBrowserRouter([
 			{
 				path: "/doc-show/:id",
 				lazy: async () => ({
-					Component: (await import("@/pages/doc-show")).DocShowPage,
+					Component: (await import("@/pages/doc-api-show")).DocApiShowPage,
 				}),
 			},
 			{

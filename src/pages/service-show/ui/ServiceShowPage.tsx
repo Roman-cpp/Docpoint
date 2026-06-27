@@ -6,8 +6,10 @@ import { useServiceErds } from "@/entities/doc-erd";
 import {
 	serviceKeys,
 	useAllServices,
+	useAttachDoc,
 	useServiceDocs,
 } from "@/entities/service";
+import { CreateDocModal } from "@/features/doc/create-doc";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
@@ -22,7 +24,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const { docs, isDocsLoading } = useServiceDocs(id);
 	const { erds, isErdsLoading, createErdAsync, isCreatingErd } =
 		useServiceErds(id);
-	const { deleteDocAsync, isDeleting } = useDocsStore();
+	const { createDocAsync, deleteDocAsync, isCreating, isDeleting } =
+		useDocsStore();
+	const { attachDocAsync, isAttaching } = useAttachDoc();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 
@@ -33,6 +37,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	} | null>(null);
 	const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
 	const [erdModalOpen, setErdModalOpen] = useState(false);
+	const [docModalOpen, setDocModalOpen] = useState(false);
 
 	const service = services.find((svc) => svc.id === id);
 
@@ -62,9 +67,21 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			)}
 
 			<div style={{ marginTop: 24 }}>
-				<h2 className={s.ovTitle} style={{ fontSize: 18, margin: '0 0 16px' }}>
-					Прикреплённые документы
-				</h2>
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+						marginBottom: 16,
+					}}
+				>
+					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
+						Прикреплённые документы
+					</h2>
+					<Button variant="subtle" onClick={() => setDocModalOpen(true)}>
+						+ Создать документ
+					</Button>
+				</div>
 				{isDocsLoading ? (
 					<p className={s.ovSub}>Загрузка документов…</p>
 				) : docs.length === 0 ? (
@@ -78,6 +95,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 								to={`/doc-show/${doc.id}`}
 								key={doc.id}
 								className={s.apiCard}
+								// Carry the originating service so the doc page can offer a
+								// "back to service" link.
+								state={{ serviceId: id, serviceName: service.name }}
 								onContextMenu={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
@@ -132,6 +152,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 								to={`/doc-erd-show/${erd.id}`}
 								key={erd.id}
 								className={s.apiCard}
+								// Carry the originating service so the ERD page can offer a
+								// "back to service" link.
+								state={{ serviceId: id, serviceName: service.name }}
 							>
 								<div className={s.acAccent} />
 								<div className={s.acTop}>
@@ -146,6 +169,26 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</div>
 				)}
 			</div>
+
+			<CreateDocModal
+				open={docModalOpen}
+				onOpenChange={setDocModalOpen}
+				isCreating={isCreating || isAttaching}
+				onCreate={async (dto) => {
+					try {
+						// Create the doc, then attach it to this microservice so it
+						// shows up under "Прикреплённые документы" right away.
+						const docId = await createDocAsync(dto);
+						await attachDocAsync({ serviceId: id, docId });
+						queryClient.invalidateQueries({
+							queryKey: serviceKeys.docs(id),
+						});
+						setDocModalOpen(false);
+					} catch {
+						/* error toast handled by the mutation */
+					}
+				}}
+			/>
 
 			<CreateErdModal
 				open={erdModalOpen}
@@ -183,7 +226,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 							className={b.svcMenuItem}
 							role="menuitem"
 							onClick={() => {
-								navigate(`/doc-show/${docMenu.doc.id}`);
+								navigate(`/doc-show/${docMenu.doc.id}`, {
+									state: { serviceId: id, serviceName: service.name },
+								});
 								setDocMenu(null);
 							}}
 						>

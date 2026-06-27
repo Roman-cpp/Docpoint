@@ -32,6 +32,21 @@
 	color: var(--ink-low);
 }
 
+.back {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	color: var(--ink-low);
+	text-decoration: none;
+	transition: color var(--t-base);
+}
+
+.back:hover {
+	color: var(--ink);
+}
+
 .addBtn {
 	display: inline-flex;
 	align-items: center;

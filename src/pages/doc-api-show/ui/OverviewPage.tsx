@@ -1,3 +1,4 @@
+import { Link, useLocation } from "react-router";
 import {
 	selectDoc,
 	selectEntities,
@@ -6,10 +7,19 @@ import {
 } from "@/features/doc";
 import s from "@/shared/styles/apiDocs.module.css";
 
+interface DocOrigin {
+	serviceId?: string;
+	serviceName?: string;
+}
+
 export const OverviewPage = () => {
 	const doc = useDocStore(selectDoc);
 	const groups = useDocStore(selectGroups);
 	const entities = useDocStore(selectEntities);
+
+	// When the doc was opened from a microservice page, `state` carries it so we
+	// can offer a link back to that service.
+	const origin = useLocation().state as DocOrigin | null;
 
 	const endpointCount =
 		groups?.reduce((sum, g) => sum + g.endpoints.length, 0) ?? 0;
@@ -20,6 +30,17 @@ export const OverviewPage = () => {
 	return (
 		<div>
 			<div className={s.breadcrumb}>
+				{origin?.serviceId && (
+					<>
+						<Link
+							className={s.bcItem}
+							to={`/service-show/${origin.serviceId}`}
+						>
+							← {origin.serviceName ?? "Микросервис"}
+						</Link>
+						<span className={s.bcSep}>/</span>
+					</>
+				)}
 				<span className={s.bcCurrent}>Overview</span>
 			</div>
 			<div className={s.endpointHeader}>

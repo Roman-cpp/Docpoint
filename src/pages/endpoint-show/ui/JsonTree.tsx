@@ -1,36 +1,5 @@
-import { type FC, type ReactNode, useState } from "react";
+import { type FC, useState } from "react";
 import s from "./ApiExplorerPage.module.css";
-
-export interface RespState {
-	ok?: boolean;
-	status?: number;
-	statusText?: string;
-	dur: number;
-	body?: string;
-	error?: string;
-}
-
-const sBg = (status: number) =>
-	status < 300
-		? "var(--green-bg)"
-		: status < 500
-			? "var(--amber-bg)"
-			: "var(--red-bg)";
-
-const sClr = (status: number) =>
-	status < 300 ? "var(--green)" : status < 500 ? "var(--amber)" : "var(--red)";
-
-function tryParseJson(
-	text: string,
-): { ok: true; value: unknown } | { ok: false } {
-	const t = text.trimStart();
-	if (!t.startsWith("{") && !t.startsWith("[")) return { ok: false };
-	try {
-		return { ok: true, value: JSON.parse(text) };
-	} catch {
-		return { ok: false };
-	}
-}
 
 const Primitive: FC<{ value: unknown }> = ({ value }) => {
 	if (value === null) return <span className={s.jsonNull}>null</span>;
@@ -155,56 +124,8 @@ const JsonNode: FC<JsonNodeProps> = ({ value, name, isLast, defaultOpen }) => {
 	);
 };
 
-const JsonTree: FC<{ value: unknown }> = ({ value }) => (
+export const JsonTree: FC<{ value: unknown }> = ({ value }) => (
 	<div className={s.jsonRoot}>
 		<JsonNode value={value} isLast defaultOpen />
 	</div>
 );
-
-interface ResponseCardProps {
-	resp: RespState;
-	renderCopyBtn: (text: string) => ReactNode;
-}
-
-export const ResponseCard: FC<ResponseCardProps> = ({
-	resp,
-	renderCopyBtn,
-}) => {
-	const parsed = resp.body ? tryParseJson(resp.body) : { ok: false as const };
-
-	return (
-		<div className={s.respCard}>
-			<div className={s.respCardHdr}>
-				{resp.error ? (
-					<span
-						className={s.respStatusBadge}
-						style={{ background: "var(--red-bg)", color: "var(--red)" }}
-					>
-						Error
-					</span>
-				) : (
-					<span
-						className={s.respStatusBadge}
-						style={{
-							background: sBg(resp.status ?? 0),
-							color: sClr(resp.status ?? 0),
-						}}
-					>
-						{resp.status} {resp.statusText}
-					</span>
-				)}
-				<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-					<span className={s.respDur}>{resp.dur}ms</span>
-					{!resp.error && renderCopyBtn(resp.body ?? "")}
-				</div>
-			</div>
-			{resp.error ? (
-				<div className={s.respError}>Network error: {resp.error}</div>
-			) : parsed.ok ? (
-				<JsonTree value={parsed.value} />
-			) : (
-				<pre className={s.respPre}>{resp.body}</pre>
-			)}
-		</div>
-	);
-};

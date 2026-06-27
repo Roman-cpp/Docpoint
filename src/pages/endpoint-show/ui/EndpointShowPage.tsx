@@ -1,19 +1,18 @@
 import { type FC, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { Header } from "@/widgets/header";
+import { Sidebar } from "@/widgets/layout/ui/Sidebar";
 import {
 	actionSelectEndpoint,
 	selectDoc,
 	selectSelectedEndpoint,
 	useDocStore,
 } from "@/features/doc";
-import {
-	selectSelectedEnvironment,
-	useEnvironmentsStore,
-} from "@/features/environment";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Button } from "@/shared/ui-kit/controls";
-import { ResizablePanelsLayout } from "@/shared/ui-kit/layout";
+import { DockLayout } from "@/shared/ui-kit/layout";
 import { Layout } from "@/widgets/layout";
+import { BottomConsolePanel } from "./BottomConsolePanel";
 import { DeleteEndpointModal } from "./DeleteEndpointModal";
 import { EditEndpointModal } from "./EditEndpointModal";
 import { EndpointPage } from "./EndpointPage";
@@ -25,7 +24,6 @@ export const EndpointShowPage: FC = () => {
 
 	const doc = useDocStore(selectDoc);
 	const endpoint = useDocStore(selectSelectedEndpoint);
-	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
 	const selectEndpoint = useDocStore(actionSelectEndpoint);
 
 	const [editOpen, setEditOpen] = useState(false);
@@ -60,36 +58,50 @@ export const EndpointShowPage: FC = () => {
 		);
 	}
 
-	return (
-		<Layout>
-			<ResizablePanelsLayout
-				right={<TryItPanel />}
-				rightWidth={348}
-				rightMin={240}
-				rightMax={600}
-				rightVisible={!!selectedEnvConfig}
-			>
-				<div className={s.endpointPanel}>
-					<div
-						style={{
-							display: "flex",
-							justifyContent: "flex-end",
-							gap: 8,
-							marginBottom: 8,
-						}}
-					>
-						<Button variant="subtle" onClick={() => setEditOpen(true)}>
-							Редактировать
-						</Button>
-						<Button variant="danger-ghost" onClick={() => setDeleteOpen(true)}>
-							Удалить
-						</Button>
-					</div>
-					<EndpointPage detail={endpoint} key={id} />
-				</div>
-			</ResizablePanelsLayout>
+  return (
+    <DockLayout.Root className={s.wrapper}>
+			<DockLayout.Header>
+				<Header section="docs1" activeLink="docs" />
+			</DockLayout.Header>
 
-			<EditEndpointModal
+			<DockLayout.Body>
+				<DockLayout.Left>
+          <Sidebar />
+				</DockLayout.Left>
+
+				<DockLayout.Center>
+					<DockLayout.Main>
+						<div className={s.endpointPanel}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <Button variant="subtle" onClick={() => setEditOpen(true)}>
+                  Редактировать
+                </Button>
+                <Button variant="danger-ghost" onClick={() => setDeleteOpen(true)}>
+                  Удалить
+                </Button>
+              </div>
+              <EndpointPage detail={endpoint} key={id} />
+            </div>
+					</DockLayout.Main>
+
+					<DockLayout.Bottom>
+						<BottomConsolePanel />
+					</DockLayout.Bottom>
+				</DockLayout.Center>
+
+				<DockLayout.Right>
+					<TryItPanel />
+				</DockLayout.Right>
+			</DockLayout.Body>
+
+      <EditEndpointModal
 				open={editOpen}
 				onOpenChange={setEditOpen}
 				endpoint={endpoint}
@@ -101,6 +113,6 @@ export const EndpointShowPage: FC = () => {
 				endpoint={endpoint}
 				onDeleted={() => navigate(`/doc-show/${doc?.id}`)}
 			/>
-		</Layout>
-	);
+		</DockLayout.Root>
+  )
 };

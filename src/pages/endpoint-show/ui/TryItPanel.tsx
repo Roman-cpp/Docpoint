@@ -23,9 +23,9 @@ import {
 	selectSelectedEnvironment,
 	useEnvironmentsStore,
 } from "@/features/environment";
+import { actionSetResponse, useResponseStore } from "@/features/request";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import s from "./ApiExplorerPage.module.css";
-import { ResponseCard, type RespState } from "./ResponseCard";
 
 // Один именованный набор значений параметров запроса. Несколько наборов
 // позволяют держать разные варианты одного и того же запроса и быстро
@@ -181,7 +181,7 @@ export const TryItPanel = () => {
 	const [editingSetId, setEditingSetId] = useState<string | null>(null);
 	const [editName, setEditName] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [resp, setResp] = useState<RespState | null>(null);
+	const setResp = useResponseStore(actionSetResponse);
 	// Таймеры debounce-сохранения значений, по ключу `${setId}|${valKey}`.
 	const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -641,13 +641,6 @@ export const TryItPanel = () => {
 						`Send ${endpoint.method}`
 					)}
 				</button>
-
-				{resp && (
-					<ResponseCard
-						resp={resp}
-						renderCopyBtn={(text) => <CopyBtn text={text} />}
-					/>
-				)}
 			</div>
 		</div>
 	);
