@@ -26,6 +26,7 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "../../../widgets/header/ui/Header/Header";
 import { AuthRequestSection } from "./AuthRequestSection";
 import { EndpointSection } from "./EndpointSection";
@@ -91,6 +92,8 @@ export const EnvironmentPage: FC = () => {
 	const [prefix, setPrefix] = useState("");
 	const [envStatus, setEnvStatus] = useState<SaveStatus>("idle");
 	const [duplicating, setDuplicating] = useState(false);
+	const [confirmDeleteEnv, setConfirmDeleteEnv] = useState(false);
+	const [deletingEnv, setDeletingEnv] = useState(false);
 
 	// Auth config
 	const [authUrl, setAuthUrl] = useState("");
@@ -318,18 +321,26 @@ export const EnvironmentPage: FC = () => {
 		}
 	};
 
-	const handleDeleteEnvironment = async () => {
+	const handleDeleteEnvironment = () => {
 		if (!selectedEnv) return;
-		if (!confirm(`Удалить окружение «${selectedEnv.label}»?`)) return;
+		setConfirmDeleteEnv(true);
+	};
+
+	const confirmDeleteEnvironment = async () => {
+		if (!selectedEnv || deletingEnv) return;
+		setDeletingEnv(true);
 		try {
 			await deleteEnvironmentApi(selectedEnv.id);
 			removeEnvironment(selectedEnv.id);
+			setConfirmDeleteEnv(false);
 		} catch {
 			toast({
 				variant: "error",
 				title: "Error",
 				description: "Failed to delete environment",
 			});
+		} finally {
+			setDeletingEnv(false);
 		}
 	};
 
@@ -546,6 +557,41 @@ export const EnvironmentPage: FC = () => {
 					onDeleted={(id) => removeVariable(id)}
 				/>
 			)}
+			<Dialog.Root
+				open={confirmDeleteEnv}
+				onOpenChange={(open) => !open && !deletingEnv && setConfirmDeleteEnv(false)}
+			>
+				<Dialog.Header>
+					<Dialog.Title>Удалить окружение?</Dialog.Title>
+					<Dialog.Subtitle>
+						Действие необратимо. Окружение и его переменные будут удалены.
+					</Dialog.Subtitle>
+					<Dialog.Close />
+				</Dialog.Header>
+				<Dialog.Body>
+					<p
+						style={{
+							margin: 0,
+							fontSize: 13,
+							color: "var(--ink)",
+							lineHeight: "var(--lh-snug)",
+						}}
+					>
+						Удалить окружение «{selectedEnv?.label}»?
+					</p>
+				</Dialog.Body>
+				<Dialog.Footer>
+					<Dialog.BtnCancel
+						onClick={() => setConfirmDeleteEnv(false)}
+						disabled={deletingEnv}
+					>
+						Отмена
+					</Dialog.BtnCancel>
+					<Dialog.BtnDanger onClick={confirmDeleteEnvironment} disabled={deletingEnv}>
+						{deletingEnv ? "Удаляем…" : "Удалить"}
+					</Dialog.BtnDanger>
+				</Dialog.Footer>
+			</Dialog.Root>
 		</div>
 	);
 };
