@@ -28,7 +28,7 @@ import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
 import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
 import { Button } from "@/shared/ui-kit/controls";
-import { Dialog } from "@/shared/ui-kit/modal";
+import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { CreateErdModal } from "./CreateErdModal";
 
@@ -392,80 +392,48 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				}}
 			/>
 
-			{docMenu && (
-				<>
-					<button
-						type="button"
-						className={b.svcMenuBackdrop}
-						aria-label="Закрыть меню"
-						onClick={() => setDocMenu(null)}
-						onContextMenu={(e) => {
-							e.preventDefault();
-							setDocMenu(null);
-						}}
-					/>
-					<div
-						className={b.svcMenu}
-						style={{ left: docMenu.x, top: docMenu.y }}
-						role="menu"
-					>
-						<button
-							type="button"
-							className={b.svcMenuItem}
-							role="menuitem"
-							onClick={() => {
-								navigate(`/doc-show/${docMenu.doc.id}`, {
-									state: { serviceId: id, serviceName: service.name },
-								});
-								setDocMenu(null);
-							}}
-						>
-							<EyeIcon />
-							Открыть
-						</button>
+			<ContextMenu.Root
+				open={!!docMenu}
+				x={docMenu?.x ?? 0}
+				y={docMenu?.y ?? 0}
+				onClose={() => setDocMenu(null)}
+			>
+				<ContextMenu.Item
+					icon={<EyeIcon />}
+					onSelect={() => {
+						if (!docMenu) return;
+						navigate(`/doc-show/${docMenu.doc.id}`, {
+							state: { serviceId: id, serviceName: service.name },
+						});
+					}}
+				>
+					Открыть
+				</ContextMenu.Item>
 
-						<button
-							type="button"
-							className={b.svcMenuItem}
-							role="menuitem"
-							onClick={() => {
-								openDocInNewWindow(docMenu.doc);
-								setDocMenu(null);
-							}}
-						>
-							<NewWindowIcon />
-							Открыть в новом окне
-						</button>
+				<ContextMenu.Item
+					icon={<NewWindowIcon />}
+					onSelect={() => docMenu && openDocInNewWindow(docMenu.doc)}
+				>
+					Открыть в новом окне
+				</ContextMenu.Item>
 
-						<button
-							type="button"
-							className={b.svcMenuItem}
-							role="menuitem"
-							onClick={() => {
-								setPendingEdit(docMenu.doc);
+				<ContextMenu.Item
+					icon={<PencilIcon />}
+					onSelect={() => docMenu && setPendingEdit(docMenu.doc)}
+				>
+					Редактировать
+				</ContextMenu.Item>
 
-								setDocMenu(null);
-							}}
-						>
-							<PencilIcon />
-							Редактировать
-						</button>
+				<ContextMenu.Separator />
 
-						<button
-							type="button"
-							className={b.svcMenuItem}
-							role="menuitem"
-							onClick={() => {
-								setPendingDelete(docMenu.doc);
-								setDocMenu(null);
-							}}
-						>
-							<TrashIcon />
-							Удалить документ
-						</button>
-					</div>
-				</>
-			)}
+				<ContextMenu.Item
+					danger
+					icon={<TrashIcon />}
+					onSelect={() => docMenu && setPendingDelete(docMenu.doc)}
+				>
+					Удалить документ
+				</ContextMenu.Item>
+			</ContextMenu.Root>
 
 			{pendingEdit && (
 				<EditDocModal

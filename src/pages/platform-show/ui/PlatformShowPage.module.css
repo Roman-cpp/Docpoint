@@ -3,49 +3,6 @@
 	margin-bottom: 26px;
 }
 
-/* Right-click context menu for a service card. */
-.svcMenuBackdrop {
-	position: fixed;
-	inset: 0;
-	border: none;
-	padding: 0;
-	background: transparent;
-	cursor: default;
-	z-index: var(--z-panel);
-}
-.svcMenu {
-	position: fixed;
-	z-index: var(--z-panel);
-	min-width: 200px;
-	padding: 6px;
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: var(--r-lg);
-	box-shadow: var(--shadow-lg);
-}
-.svcMenuItem {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	width: 100%;
-	padding: 8px 10px;
-	border: none;
-	border-radius: var(--r-sm);
-	background: none;
-	color: var(--red);
-	font-family: var(--font-sans);
-	font-size: 13px;
-	text-align: left;
-	cursor: pointer;
-	transition: background var(--t-base);
-}
-.svcMenuItem:hover {
-	background: var(--red-bg);
-}
-.svcMenuItem svg {
-	flex-shrink: 0;
-}
-
 /* Microservice card. Overrides the centred text that a native <button>
    inherits and leads with a monogram avatar so the card reads as a deliberate
    object, matching the icon tiles used for files and folders below. */

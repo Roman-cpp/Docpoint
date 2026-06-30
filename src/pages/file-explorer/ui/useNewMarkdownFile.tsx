@@ -4,7 +4,7 @@ import {
 	createDirectoryApi,
 	createMarkdownApi,
 } from "@/entities/file-explorer";
-import { Dialog } from "@/shared/ui-kit/modal";
+import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileExplorerPage.module.css";
 
 /** What the create dialog is currently asking for, if anything. */
@@ -59,21 +59,25 @@ export function useNewMarkdownFile(
 
 	const element = (
 		<>
-			{menu && (
-				<ContextMenu
-					x={menu.x}
-					y={menu.y}
-					onClose={() => setMenu(null)}
-					onCreateFile={() => {
-						setMenu(null);
-						setPending("file");
-					}}
-					onCreateFolder={() => {
-						setMenu(null);
-						setPending("folder");
-					}}
-				/>
-			)}
+			<ContextMenu.Root
+				open={!!menu}
+				x={menu?.x ?? 0}
+				y={menu?.y ?? 0}
+				onClose={() => setMenu(null)}
+			>
+				<ContextMenu.Item
+					icon={<NewFileIcon />}
+					onSelect={() => setPending("file")}
+				>
+					Создать markdown-файл
+				</ContextMenu.Item>
+				<ContextMenu.Item
+					icon={<NewFolderIcon />}
+					onSelect={() => setPending("folder")}
+				>
+					Создать каталог
+				</ContextMenu.Item>
+			</ContextMenu.Root>
 			{pending === "file" && (
 				<CreateDialog
 					title="Новый markdown-файл"
@@ -99,48 +103,6 @@ export function useNewMarkdownFile(
 
 	return { openMenu, openCreateFile, element };
 }
-
-/* ─── Right-click context menu ─── */
-const ContextMenu: FC<{
-	x: number;
-	y: number;
-	onClose: () => void;
-	onCreateFile: () => void;
-	onCreateFolder: () => void;
-}> = ({ x, y, onClose, onCreateFile, onCreateFolder }) => (
-	<>
-		<button
-			type="button"
-			className={s["fe-menu-backdrop"]}
-			aria-label="Закрыть меню"
-			onClick={onClose}
-			onContextMenu={(e) => {
-				e.preventDefault();
-				onClose();
-			}}
-		/>
-		<div className={s["fe-menu"]} style={{ left: x, top: y }} role="menu">
-			<button
-				type="button"
-				className={s["fe-menu-item"]}
-				onClick={onCreateFile}
-				role="menuitem"
-			>
-				<NewFileIcon />
-				Создать markdown-файл
-			</button>
-			<button
-				type="button"
-				className={s["fe-menu-item"]}
-				onClick={onCreateFolder}
-				role="menuitem"
-			>
-				<NewFolderIcon />
-				Создать каталог
-			</button>
-		</div>
-	</>
-);
 
 /* ─── New file / folder dialog ─── */
 const CreateDialog: FC<{

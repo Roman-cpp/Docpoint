@@ -22,7 +22,7 @@ import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
 import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
 import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import { Button, FileDropZone } from "@/shared/ui-kit/controls";
-import { Dialog } from "@/shared/ui-kit/modal";
+import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { ServiceModal } from "../../../features/service/create-service/ui/ServiceModal";
 import b from "./PlatformShowPage.module.css";
@@ -252,50 +252,29 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				isSaving={editingService ? isUpdatingService : isCreatingService}
 			/>
 
-			{svcMenu && (
-				<>
-					<button
-						type="button"
-						className={b.svcMenuBackdrop}
-						aria-label="Закрыть меню"
-						onClick={() => setSvcMenu(null)}
-						onContextMenu={(e) => {
-							e.preventDefault();
-							setSvcMenu(null);
-						}}
-					/>
-					<div
-						className={b.svcMenu}
-						style={{ left: svcMenu.x, top: svcMenu.y }}
-						role="menu"
-					>
-						<button
-							type="button"
-							className={b.svcMenuItem}
-							role="menuitem"
-							onClick={() => {
-								setEditingService(svcMenu.svc);
-								setSvcMenu(null);
-							}}
-						>
-							<PencilIcon />
-							Редактировать
-						</button>
-						<button
-							type="button"
-							className={b.svcMenuItem}
-							role="menuitem"
-							onClick={() => {
-								setPendingDelete(svcMenu.svc);
-								setSvcMenu(null);
-							}}
-						>
-							<TrashIcon />
-							Удалить микросервис
-						</button>
-					</div>
-				</>
-			)}
+			<ContextMenu.Root
+				open={!!svcMenu}
+				x={svcMenu?.x ?? 0}
+				y={svcMenu?.y ?? 0}
+				onClose={() => setSvcMenu(null)}
+			>
+				<ContextMenu.Item
+					icon={<PencilIcon />}
+					onSelect={() => svcMenu && setEditingService(svcMenu.svc)}
+				>
+					Редактировать
+				</ContextMenu.Item>
+
+				<ContextMenu.Separator />
+
+				<ContextMenu.Item
+					danger
+					icon={<TrashIcon />}
+					onSelect={() => svcMenu && setPendingDelete(svcMenu.svc)}
+				>
+					Удалить микросервис
+				</ContextMenu.Item>
+			</ContextMenu.Root>
 
 			{pendingDelete && (
 				<Dialog.Root

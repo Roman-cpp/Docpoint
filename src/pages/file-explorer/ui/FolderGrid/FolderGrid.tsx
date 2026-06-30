@@ -2,7 +2,7 @@ import { type FC, useState } from "react";
 import type { Folder } from "@/entities/file-explorer";
 import { ChevronIcon, FolderIcon } from "@/shared/icon/icons";
 import { cx } from "@/shared/lib/cx";
-import { Dialog } from "@/shared/ui-kit/modal";
+import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import s from "./FolderGrid.module.css";
 
 export const FolderGrid: FC<{
@@ -58,38 +58,20 @@ export const FolderGrid: FC<{
 				))}
 			</div>
 
-			{menu && (
-				<>
-					<button
-						type="button"
-						className={s["fe-folder-menu-backdrop"]}
-						aria-label="Закрыть меню"
-						onClick={() => setMenu(null)}
-						onContextMenu={(e) => {
-							e.preventDefault();
-							setMenu(null);
-						}}
-					/>
-					<div
-						className={s["fe-folder-menu"]}
-						style={{ left: menu.x, top: menu.y }}
-						role="menu"
-					>
-						<button
-							type="button"
-							className={s["fe-folder-menu-item"]}
-							role="menuitem"
-							onClick={() => {
-								setPending(menu.folder);
-								setMenu(null);
-							}}
-						>
-							<TrashIcon />
-							Удалить каталог
-						</button>
-					</div>
-				</>
-			)}
+			<ContextMenu.Root
+				open={!!menu}
+				x={menu?.x ?? 0}
+				y={menu?.y ?? 0}
+				onClose={() => setMenu(null)}
+			>
+				<ContextMenu.Item
+					danger
+					icon={<TrashIcon />}
+					onSelect={() => menu && setPending(menu.folder)}
+				>
+					Удалить каталог
+				</ContextMenu.Item>
+			</ContextMenu.Root>
 
 			{pending && (
 				<DeleteFolderDialog
