@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { CreateEndpointDTO, HttpMethod } from "@/entities/endpoint";
 import type { Group } from "@/entities/group";
@@ -9,7 +9,7 @@ import {
 	Textarea,
 	Toggle,
 } from "@/shared/ui-kit/controls";
-import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./AddEndpointModal.module.css";
 
 interface AddEndpointModalProps {
@@ -167,23 +167,15 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 		path.trim().length > 0 && name.trim().length > 0 && groupOk && !isSaving;
 
 	return (
-		<div style={{ "--modal-width": "620px" } as CSSProperties}>
-			<Modal
-				open={open}
-				onOpenChange={onOpenChange}
-				title="Новый endpoint"
-				subtitle="Метод, путь, описание и параметры запроса"
-				actions={
-					<>
-						<ModalBtnCancel onClick={close} disabled={isSaving}>
-							Отмена
-						</ModalBtnCancel>
-						<ModalBtnPrimary onClick={submit} disabled={!canSave}>
-							{isSaving ? "Создаём…" : "Создать"}
-						</ModalBtnPrimary>
-					</>
-				}
-			>
+		<Dialog.Root open={open} onOpenChange={onOpenChange} width={620}>
+			<Dialog.Header>
+				<Dialog.Title>Новый endpoint</Dialog.Title>
+				<Dialog.Subtitle>
+					Метод, путь, описание и параметры запроса
+				</Dialog.Subtitle>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
 				<Field label="Группа" required>
 					<Controller
 						control={control}
@@ -388,8 +380,16 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 						))
 					)}
 				</div>
-			</Modal>
-		</div>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={close} disabled={isSaving}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnPrimary onClick={submit} disabled={!canSave}>
+					{isSaving ? "Создаём…" : "Создать"}
+				</Dialog.BtnPrimary>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };
 

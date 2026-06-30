@@ -181,25 +181,28 @@ export function DocErdShowPage() {
 
 			<div className={styles.page}>
 				{origin?.serviceId && (
-					<Link className={styles.back} to={`/service-show/${origin.serviceId}`}>
+					<Link
+						className={styles.back}
+						to={`/service-show/${origin.serviceId}`}
+					>
 						← {origin.serviceName ?? "Микросервис"}
 					</Link>
 				)}
 				<div className={styles.toolbar}>
-				<p className={styles.hint}>
-					Тяните от поля к полю — связь · клик по связи, затем ✕ —
-					удалить · колесо — масштаб
-				</p>
-				<button
-					type="button"
-					className={styles.addBtn}
-					onClick={handleAddTable}
-				>
-					<span className={styles.addBtnIcon} aria-hidden>
-						+
-					</span>
-					Таблица
-				</button>
+					<p className={styles.hint}>
+						Тяните от поля к полю — связь · клик по связи, затем ✕ — удалить ·
+						колесо — масштаб
+					</p>
+					<button
+						type="button"
+						className={styles.addBtn}
+						onClick={handleAddTable}
+					>
+						<span className={styles.addBtnIcon} aria-hidden>
+							+
+						</span>
+						Таблица
+					</button>
 				</div>
 				<canvas ref={canvasRef} className={styles.canvas} />
 			</div>

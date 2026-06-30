@@ -4,7 +4,7 @@ import {
 	selectEntities,
 	selectGroups,
 	useDocStore,
-} from "@/features/doc";
+} from "@/features/doc-api";
 import s from "@/shared/styles/apiDocs.module.css";
 
 interface DocOrigin {
@@ -32,10 +32,7 @@ export const OverviewPage = () => {
 			<div className={s.breadcrumb}>
 				{origin?.serviceId && (
 					<>
-						<Link
-							className={s.bcItem}
-							to={`/service-show/${origin.serviceId}`}
-						>
+						<Link className={s.bcItem} to={`/service-show/${origin.serviceId}`}>
 							← {origin.serviceName ?? "Микросервис"}
 						</Link>
 						<span className={s.bcSep}>/</span>

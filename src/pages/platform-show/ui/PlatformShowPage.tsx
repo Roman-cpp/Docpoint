@@ -22,10 +22,10 @@ import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
 import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
 import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import { Button, FileDropZone } from "@/shared/ui-kit/controls";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
+import { ServiceModal } from "../../../features/service/create-service/ui/ServiceModal";
 import b from "./PlatformShowPage.module.css";
-import { ServiceModal } from "./ServiceModal";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
@@ -199,40 +199,40 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 			<div className={b.fileBrowser}>
 				<h2 className={b.fileBrowserTitle}>Файлы платформы</h2>
-					{path !== "" && (
-						<nav className={b.crumbs} aria-label="Путь">
-							{crumbs.map((c, i) => (
-								<span key={c.id} className={b.crumbItem}>
-									{i > 0 && <span className={b.crumbSep}>/</span>}
-									{i === crumbs.length - 1 ? (
-										<span className={b.crumbCurrent}>{c.name}</span>
-									) : (
-										<button
-											type="button"
-											className={b.crumb}
-											onClick={() => openFolder(c.id)}
-										>
-											{c.name}
-										</button>
-									)}
-								</span>
-							))}
-						</nav>
-					)}
-					<FolderGrid
-						folders={listing.folders}
-						onOpen={openFolder}
-						onDelete={deleteFolder}
-					/>
-					<FileGrid
-						files={listing.files}
-						selectedId={selectedFile?.name ?? null}
-						onSelect={setSelectedFile}
-						onOpen={openFile}
-						onDelete={deleteFile}
-					/>
-					<FileDropZone folder={path} onImported={reloadCurrent} />
-				</div>
+				{path !== "" && (
+					<nav className={b.crumbs} aria-label="Путь">
+						{crumbs.map((c, i) => (
+							<span key={c.id} className={b.crumbItem}>
+								{i > 0 && <span className={b.crumbSep}>/</span>}
+								{i === crumbs.length - 1 ? (
+									<span className={b.crumbCurrent}>{c.name}</span>
+								) : (
+									<button
+										type="button"
+										className={b.crumb}
+										onClick={() => openFolder(c.id)}
+									>
+										{c.name}
+									</button>
+								)}
+							</span>
+						))}
+					</nav>
+				)}
+				<FolderGrid
+					folders={listing.folders}
+					onOpen={openFolder}
+					onDelete={deleteFolder}
+				/>
+				<FileGrid
+					files={listing.files}
+					selectedId={selectedFile?.name ?? null}
+					onSelect={setSelectedFile}
+					onOpen={openFile}
+					onDelete={deleteFile}
+				/>
+				<FileDropZone folder={path} onImported={reloadCurrent} />
+			</div>
 
 			<ServiceModal
 				open={isServiceModalOpen || editingService != null}
@@ -298,42 +298,45 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			)}
 
 			{pendingDelete && (
-				<Modal
+				<Dialog.Root
 					open
 					onOpenChange={(open) =>
 						!open && !isDeletingService && setPendingDelete(null)
 					}
-					title="Удалить микросервис?"
-					actions={
-						<>
-							<ModalBtnCancel
-								onClick={() => setPendingDelete(null)}
-								disabled={isDeletingService}
-							>
-								Отмена
-							</ModalBtnCancel>
-							<ModalBtnDanger
-								onClick={async () => {
-									if (isDeletingService) return;
-									try {
-										await deleteServiceAsync(pendingDelete.id);
-										setPendingDelete(null);
-									} catch {
-										/* error toast handled by the mutation */
-									}
-								}}
-								disabled={isDeletingService}
-							>
-								{isDeletingService ? "Удаляем…" : "Удалить"}
-							</ModalBtnDanger>
-						</>
-					}
 				>
-					<p className={s.ovSub} style={{ margin: 0 }}>
-						Микросервис «{pendingDelete.name}» будет удалён без возможности
-						восстановления.
-					</p>
-				</Modal>
+					<Dialog.Header>
+						<Dialog.Title>Удалить микросервис?</Dialog.Title>
+						<Dialog.Close />
+					</Dialog.Header>
+					<Dialog.Body>
+						<p className={s.ovSub} style={{ margin: 0 }}>
+							Микросервис «{pendingDelete.name}» будет удалён без возможности
+							восстановления.
+						</p>
+					</Dialog.Body>
+					<Dialog.Footer>
+						<Dialog.BtnCancel
+							onClick={() => setPendingDelete(null)}
+							disabled={isDeletingService}
+						>
+							Отмена
+						</Dialog.BtnCancel>
+						<Dialog.BtnDanger
+							onClick={async () => {
+								if (isDeletingService) return;
+								try {
+									await deleteServiceAsync(pendingDelete.id);
+									setPendingDelete(null);
+								} catch {
+									/* error toast handled by the mutation */
+								}
+							}}
+							disabled={isDeletingService}
+						>
+							{isDeletingService ? "Удаляем…" : "Удалить"}
+						</Dialog.BtnDanger>
+					</Dialog.Footer>
+				</Dialog.Root>
 			)}
 
 			{newFileUi}

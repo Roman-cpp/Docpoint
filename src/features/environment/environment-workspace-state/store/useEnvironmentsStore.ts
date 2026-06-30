@@ -1,7 +1,7 @@
 import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { readEnvironmentsByDocApi } from "@/entities/doc";
+import { readEnvironmentsByDocApi } from "@/entities/doc-api";
 import type {
 	Environment,
 	UpdateEnvironmentDTO,

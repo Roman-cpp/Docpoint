@@ -17,7 +17,7 @@ import {
 	// selectDoc,
 	selectSelectedEndpoint,
 	useDocStore,
-} from "@/features/doc";
+} from "@/features/doc-api";
 import {
 	actionUpdateEnvironmentToken,
 	selectSelectedEnvironment,

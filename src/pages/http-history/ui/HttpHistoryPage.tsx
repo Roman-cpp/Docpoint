@@ -17,7 +17,7 @@ import {
 	useRequestStore,
 } from "@/features/request";
 import { cx } from "@/shared/lib/cx";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { Sidebar } from "@/widgets/sidebar";
 import {
@@ -276,27 +276,33 @@ export const HttpHistoryPage: FC = () => {
 
 			{isDialogRequestDetailOpen && <HcDrawer onClose={close} />}
 
-			<Modal
+			<Dialog.Root
 				open={isConfirmDeleteOpen}
 				onOpenChange={(open) => !isDeleting && setIsConfirmDeleteOpen(open)}
-				title="Удалить все логи?"
-				subtitle="Все записи истории запросов будут удалены без возможности восстановления."
-				actions={
-					<>
-						<ModalBtnCancel
-							onClick={() => setIsConfirmDeleteOpen(false)}
-							disabled={isDeleting}
-						>
-							Отмена
-						</ModalBtnCancel>
-						<ModalBtnDanger onClick={confirmDeleteAll} disabled={isDeleting}>
-							{isDeleting ? "Удаляем…" : "Удалить все"}
-						</ModalBtnDanger>
-					</>
-				}
 			>
-				<p className={s["hc-confirm-text"]}>Это действие нельзя отменить.</p>
-			</Modal>
+				<Dialog.Header>
+					<Dialog.Title>Удалить все логи?</Dialog.Title>
+					<Dialog.Subtitle>
+						Все записи истории запросов будут удалены без возможности
+						восстановления.
+					</Dialog.Subtitle>
+					<Dialog.Close />
+				</Dialog.Header>
+				<Dialog.Body>
+					<p className={s["hc-confirm-text"]}>Это действие нельзя отменить.</p>
+				</Dialog.Body>
+				<Dialog.Footer>
+					<Dialog.BtnCancel
+						onClick={() => setIsConfirmDeleteOpen(false)}
+						disabled={isDeleting}
+					>
+						Отмена
+					</Dialog.BtnCancel>
+					<Dialog.BtnDanger onClick={confirmDeleteAll} disabled={isDeleting}>
+						{isDeleting ? "Удаляем…" : "Удалить все"}
+					</Dialog.BtnDanger>
+				</Dialog.Footer>
+			</Dialog.Root>
 		</div>
 	);
 };

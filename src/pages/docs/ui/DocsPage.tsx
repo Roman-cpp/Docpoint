@@ -1,16 +1,16 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
-import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc";
+import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useAllServices, useAttachDoc } from "@/entities/service";
-import { actionResetDoc, useDocStore } from "@/features/doc";
+import { actionResetDoc, useDocStore } from "@/features/doc-api";
 import {
 	actionResetEnvironments,
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
-import { DeleteDocModal } from "../../../features/doc/delete-doc/ui/DeleteDocModal";
-import { EditDocModal } from "../../../features/doc/edit-doc/ui/EditDocModal";
+import { DeleteDocModal } from "../../../features/doc-api/delete-doc/ui/DeleteDocModal";
+import { EditDocModal } from "../../../features/doc-api/edit-doc/ui/EditDocModal";
 import { exportDoc } from "../lib/exportDoc";
 import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";

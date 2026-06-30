@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import {
@@ -8,7 +8,7 @@ import {
 	Textarea,
 	Toggle,
 } from "@/shared/ui-kit/controls";
-import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./EditEndpointModal.module.css";
 
 interface EditEndpointModalProps {
@@ -145,23 +145,15 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	const canSave = path.trim().length > 0 && name.trim().length > 0 && !isSaving;
 
 	return (
-		<div style={{ "--modal-width": "620px" } as CSSProperties}>
-			<Modal
-				open={open}
-				onOpenChange={onOpenChange}
-				title="Редактировать endpoint"
-				subtitle="Метод, путь, описание и параметры запроса"
-				actions={
-					<>
-						<ModalBtnCancel onClick={close} disabled={isSaving}>
-							Отмена
-						</ModalBtnCancel>
-						<ModalBtnPrimary onClick={submit} disabled={!canSave}>
-							{isSaving ? "Сохраняем…" : "Сохранить"}
-						</ModalBtnPrimary>
-					</>
-				}
-			>
+		<Dialog.Root open={open} onOpenChange={onOpenChange} width={620}>
+			<Dialog.Header>
+				<Dialog.Title>Редактировать endpoint</Dialog.Title>
+				<Dialog.Subtitle>
+					Метод, путь, описание и параметры запроса
+				</Dialog.Subtitle>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
 				<Field label="Метод и путь" required>
 					<div style={{ display: "flex", gap: 8 }}>
 						<Controller
@@ -336,8 +328,16 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 						))
 					)}
 				</div>
-			</Modal>
-		</div>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={close} disabled={isSaving}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnPrimary onClick={submit} disabled={!canSave}>
+					{isSaving ? "Сохраняем…" : "Сохранить"}
+				</Dialog.BtnPrimary>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };
 

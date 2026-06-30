@@ -1,4 +1,4 @@
-export { readEnvironmentsByDocApi } from "../../doc/api/readEnvironmentsByDocApi";
+export { readEnvironmentsByDocApi } from "../../doc-api/api/readEnvironmentsByDocApi";
 export { createEnvironmentApi } from "./createEnvironmentApi";
 export { createVariableApi } from "./createVariableApi";
 export { deleteEnvironmentApi } from "./deleteEnvironmentApi";

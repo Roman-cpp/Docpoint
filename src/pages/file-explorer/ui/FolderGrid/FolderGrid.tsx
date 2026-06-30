@@ -2,7 +2,7 @@ import { type FC, useState } from "react";
 import type { Folder } from "@/entities/file-explorer";
 import { ChevronIcon, FolderIcon } from "@/shared/icon/icons";
 import { cx } from "@/shared/lib/cx";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./FolderGrid.module.css";
 
 export const FolderGrid: FC<{
@@ -122,26 +122,26 @@ const DeleteFolderDialog: FC<{
 	};
 
 	return (
-		<Modal
-			open
-			onOpenChange={(open) => !open && !deleting && onClose()}
-			title="Удалить каталог?"
-			actions={
-				<>
-					<ModalBtnCancel onClick={onClose} disabled={deleting}>
-						Отмена
-					</ModalBtnCancel>
-					<ModalBtnDanger onClick={confirm} disabled={deleting}>
-						{deleting ? "Удаляем…" : "Удалить"}
-					</ModalBtnDanger>
-				</>
-			}
-		>
-			<p className={s["fe-delete-text"]}>
-				Каталог «{folder.name}» и всё его содержимое будут удалены без
-				возможности восстановления.
-			</p>
-		</Modal>
+		<Dialog.Root open onOpenChange={(open) => !open && !deleting && onClose()}>
+			<Dialog.Header>
+				<Dialog.Title>Удалить каталог?</Dialog.Title>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
+				<p className={s["fe-delete-text"]}>
+					Каталог «{folder.name}» и всё его содержимое будут удалены без
+					возможности восстановления.
+				</p>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={onClose} disabled={deleting}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnDanger onClick={confirm} disabled={deleting}>
+					{deleting ? "Удаляем…" : "Удалить"}
+				</Dialog.BtnDanger>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };
 

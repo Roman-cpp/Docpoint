@@ -2,7 +2,7 @@ import { type FC, useState } from "react";
 import type { File } from "@/entities/file-explorer";
 import { FileIcon } from "@/shared/icon/icons";
 import { cx } from "@/shared/lib/cx";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import { formatSize } from "../lib";
 import s from "./FileGrid.module.css";
 
@@ -130,25 +130,25 @@ const DeleteFileDialog: FC<{
 	};
 
 	return (
-		<Modal
-			open
-			onOpenChange={(open) => !open && !deleting && onClose()}
-			title="Удалить файл?"
-			actions={
-				<>
-					<ModalBtnCancel onClick={onClose} disabled={deleting}>
-						Отмена
-					</ModalBtnCancel>
-					<ModalBtnDanger onClick={confirm} disabled={deleting}>
-						{deleting ? "Удаляем…" : "Удалить"}
-					</ModalBtnDanger>
-				</>
-			}
-		>
-			<p className={s["fe-delete-text"]}>
-				Файл «{file.name}» будет удалён без возможности восстановления.
-			</p>
-		</Modal>
+		<Dialog.Root open onOpenChange={(open) => !open && !deleting && onClose()}>
+			<Dialog.Header>
+				<Dialog.Title>Удалить файл?</Dialog.Title>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
+				<p className={s["fe-delete-text"]}>
+					Файл «{file.name}» будет удалён без возможности восстановления.
+				</p>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={onClose} disabled={deleting}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnDanger onClick={confirm} disabled={deleting}>
+					{deleting ? "Удаляем…" : "Удалить"}
+				</Dialog.BtnDanger>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };
 

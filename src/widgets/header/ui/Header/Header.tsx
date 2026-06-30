@@ -12,8 +12,6 @@ import s from "./Header.module.css";
 
 const NAV_LINKS: { label: string; href: string; active?: boolean }[] = [
 	{ label: "HTTP Client", href: "/http-client" },
-	{ label: "Entities", href: "/entity" },
-	{ label: "Files", href: "/files" },
 ];
 
 interface HeaderProps {

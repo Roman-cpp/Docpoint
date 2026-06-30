@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import type { Doc } from "@/entities/doc";
+import type { Doc } from "@/entities/doc-api";
 
 import { deletePlatformApi } from "../api/deletePlatformApi";
 import { readAllPlatformsApi } from "../api/readAllPlatformsApi";

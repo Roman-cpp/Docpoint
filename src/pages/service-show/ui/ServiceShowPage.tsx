@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { type FC, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
-import { type Doc, useDocsStore } from "@/entities/doc";
+import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useServiceErds } from "@/entities/doc-erd";
 import {
 	type DirListing,
@@ -18,15 +19,16 @@ import {
 	useAttachDoc,
 	useServiceDocs,
 } from "@/entities/service";
-import { CreateDocModal } from "@/features/doc/create-doc";
+import { EditDocModal } from "@/features/doc-api";
+import { CreateDocModal } from "@/features/doc-api/create-doc";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
 import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
 import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
-import { Button, FileDropZone } from "@/shared/ui-kit/controls";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { Button } from "@/shared/ui-kit/controls";
+import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { CreateErdModal } from "./CreateErdModal";
 
@@ -38,8 +40,14 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const { docs, isDocsLoading } = useServiceDocs(id);
 	const { erds, isErdsLoading, createErdAsync, isCreatingErd } =
 		useServiceErds(id);
-	const { createDocAsync, deleteDocAsync, isCreating, isDeleting } =
-		useDocsStore();
+	const {
+		createDocAsync,
+		deleteDocAsync,
+		isCreating,
+		isDeleting,
+		isUpdating,
+		updateDocAsync,
+	} = useDocsStore();
 	const { attachDocAsync, isAttaching } = useAttachDoc();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -50,6 +58,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		doc: Doc;
 	} | null>(null);
 	const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
+	const [pendingEdit, setPendingEdit] = useState<Doc | null>(null);
 	const [erdModalOpen, setErdModalOpen] = useState(false);
 	const [docModalOpen, setDocModalOpen] = useState(false);
 
@@ -81,10 +90,35 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			.catch(() => setListing(EMPTY_LISTING));
 	};
 
-	const { openMenu, element: newFileUi } = useNewMarkdownFile(
-		path,
-		reloadCurrent,
-	);
+	const {
+		openMenu,
+		openCreateFile,
+		element: newFileUi,
+	} = useNewMarkdownFile(path, reloadCurrent);
+
+	/** Open a doc in a separate native window. Reuses/focuses an existing
+	 *  window for the same doc instead of erroring on the duplicate label. */
+	const openDocInNewWindow = async (doc: Doc) => {
+		const label = `doc-show-${doc.id}`;
+		const existing = await WebviewWindow.getByLabel(label);
+		if (existing) {
+			await existing.setFocus();
+			return;
+		}
+		const win = new WebviewWindow(label, {
+			url: `/doc-show/${doc.id}`,
+			title: doc.name,
+			width: 1100,
+			height: 760,
+		});
+		win.once("tauri://error", (e) => {
+			toast({
+				variant: "error",
+				title: "Не удалось открыть окно",
+				description: String(e.payload),
+			});
+		});
+	};
 
 	const openFolder = (folderId: string) => {
 		setSelectedFile(null);
@@ -275,7 +309,21 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				style={{ marginTop: 32 }}
 				onContextMenu={openMenu}
 			>
-				<h2 className={b.fileBrowserTitle}>Файлы микросервиса</h2>
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+						marginBottom: 16,
+					}}
+				>
+					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
+						ERD-диаграммы
+					</h2>
+					<Button variant="subtle" onClick={openCreateFile}>
+						+ Создать MD
+					</Button>
+				</div>
 				{path !== baseDir && (
 					<nav className={b.crumbs} aria-label="Путь">
 						{crumbs.map((c, i) => (
@@ -308,7 +356,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					onOpen={openFile}
 					onDelete={deleteFile}
 				/>
-				<FileDropZone folder={path} onImported={reloadCurrent} />
 			</div>
 
 			<CreateDocModal
@@ -376,6 +423,34 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 							<EyeIcon />
 							Открыть
 						</button>
+
+						<button
+							type="button"
+							className={b.svcMenuItem}
+							role="menuitem"
+							onClick={() => {
+								openDocInNewWindow(docMenu.doc);
+								setDocMenu(null);
+							}}
+						>
+							<NewWindowIcon />
+							Открыть в новом окне
+						</button>
+
+						<button
+							type="button"
+							className={b.svcMenuItem}
+							role="menuitem"
+							onClick={() => {
+								setPendingEdit(docMenu.doc);
+
+								setDocMenu(null);
+							}}
+						>
+							<PencilIcon />
+							Редактировать
+						</button>
+
 						<button
 							type="button"
 							className={b.svcMenuItem}
@@ -392,46 +467,71 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				</>
 			)}
 
+			{pendingEdit && (
+				<EditDocModal
+					open
+					onOpenChange={(open) => !open && !isUpdating && setPendingEdit(null)}
+					doc={pendingEdit}
+					isSaving={isUpdating}
+					onSave={async (updates: UpdateDocDTO) => {
+						try {
+							await updateDocAsync(updates);
+
+							queryClient.invalidateQueries({
+								queryKey: serviceKeys.docs(id),
+							});
+
+							setPendingEdit(null);
+						} catch {
+							/* error toast handled by the mutation */
+						}
+					}}
+				/>
+			)}
+
 			{pendingDelete && (
-				<Modal
+				<Dialog.Root
 					open
 					onOpenChange={(open) =>
 						!open && !isDeleting && setPendingDelete(null)
 					}
-					title="Удалить документ?"
-					actions={
-						<>
-							<ModalBtnCancel
-								onClick={() => setPendingDelete(null)}
-								disabled={isDeleting}
-							>
-								Отмена
-							</ModalBtnCancel>
-							<ModalBtnDanger
-								onClick={async () => {
-									if (isDeleting) return;
-									try {
-										await deleteDocAsync(pendingDelete.id);
-										queryClient.invalidateQueries({
-											queryKey: serviceKeys.docs(id),
-										});
-										setPendingDelete(null);
-									} catch {
-										/* error toast handled by the mutation */
-									}
-								}}
-								disabled={isDeleting}
-							>
-								{isDeleting ? "Удаляем…" : "Удалить"}
-							</ModalBtnDanger>
-						</>
-					}
 				>
-					<p className={s.ovSub} style={{ margin: 0 }}>
-						Документ «{pendingDelete.name}» будет удалён без возможности
-						восстановления.
-					</p>
-				</Modal>
+					<Dialog.Header>
+						<Dialog.Title>Удалить документ?</Dialog.Title>
+						<Dialog.Close />
+					</Dialog.Header>
+					<Dialog.Body>
+						<p className={s.ovSub} style={{ margin: 0 }}>
+							Документ «{pendingDelete.name}» будет удалён без возможности
+							восстановления.
+						</p>
+					</Dialog.Body>
+					<Dialog.Footer>
+						<Dialog.BtnCancel
+							onClick={() => setPendingDelete(null)}
+							disabled={isDeleting}
+						>
+							Отмена
+						</Dialog.BtnCancel>
+						<Dialog.BtnDanger
+							onClick={async () => {
+								if (isDeleting) return;
+								try {
+									await deleteDocAsync(pendingDelete.id);
+									queryClient.invalidateQueries({
+										queryKey: serviceKeys.docs(id),
+									});
+									setPendingDelete(null);
+								} catch {
+									/* error toast handled by the mutation */
+								}
+							}}
+							disabled={isDeleting}
+						>
+							{isDeleting ? "Удаляем…" : "Удалить"}
+						</Dialog.BtnDanger>
+					</Dialog.Footer>
+				</Dialog.Root>
 			)}
 
 			{newFileUi}
@@ -454,6 +554,42 @@ const EyeIcon: FC = () => (
 		<title>open</title>
 		<path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8Z" />
 		<circle cx="8" cy="8" r="2" />
+	</svg>
+);
+
+const NewWindowIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>open in new window</title>
+		<path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5" />
+		<path d="M12 9.5v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3" />
+	</svg>
+);
+
+const PencilIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>edit</title>
+
+		<path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
 	</svg>
 );
 

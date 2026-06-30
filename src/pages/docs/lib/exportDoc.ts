@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { readDocApi, readEnvironmentsByDocApi } from "@/entities/doc";
+import { readDocApi, readEnvironmentsByDocApi } from "@/entities/doc-api";
 import { readEntitiesApi } from "@/entities/entity";
 import { readGroupsApi } from "@/entities/group";
 

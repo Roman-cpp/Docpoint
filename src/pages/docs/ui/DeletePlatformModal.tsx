@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { usePlatformsStore } from "@/entities/platform";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 
 interface DeletePlatformModalProps {
 	open: boolean;
@@ -26,33 +26,33 @@ export const DeletePlatformModal: FC<DeletePlatformModalProps> = ({
 	};
 
 	return (
-		<Modal
-			open={open}
-			onOpenChange={onOpenChange}
-			title="Удалить платформу"
-			subtitle="Действие необратимо."
-			actions={
-				<>
-					<ModalBtnCancel onClick={close} disabled={isDeleting}>
-						Отмена
-					</ModalBtnCancel>
-					<ModalBtnDanger onClick={confirm} disabled={isDeleting} autoFocus>
-						{isDeleting ? "Удаляем…" : "Удалить"}
-					</ModalBtnDanger>
-				</>
-			}
-		>
-			<p
-				style={{
-					margin: 0,
-					fontSize: 13,
-					color: "var(--ink)",
-					lineHeight: "var(--lh-snug)",
-				}}
-			>
-				Удалить платформу{" "}
-				<strong style={{ fontWeight: 600 }}>{platform.name}</strong>?
-			</p>
-		</Modal>
+		<Dialog.Root open={open} onOpenChange={onOpenChange}>
+			<Dialog.Header>
+				<Dialog.Title>Удалить платформу</Dialog.Title>
+				<Dialog.Subtitle>Действие необратимо.</Dialog.Subtitle>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
+				<p
+					style={{
+						margin: 0,
+						fontSize: 13,
+						color: "var(--ink)",
+						lineHeight: "var(--lh-snug)",
+					}}
+				>
+					Удалить платформу{" "}
+					<strong style={{ fontWeight: 600 }}>{platform.name}</strong>?
+				</p>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={close} disabled={isDeleting}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnDanger onClick={confirm} disabled={isDeleting} autoFocus>
+					{isDeleting ? "Удаляем…" : "Удалить"}
+				</Dialog.BtnDanger>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };

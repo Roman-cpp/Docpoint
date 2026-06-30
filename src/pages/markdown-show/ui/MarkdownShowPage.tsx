@@ -8,7 +8,7 @@ import {
 	useState,
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import remarkGfm from "remark-gfm";
 import type { MarkdownContent } from "@/entities/file-explorer";
 import { cx } from "@/shared/lib/cx";
@@ -20,7 +20,7 @@ import {
 	type SaveStatus,
 	useMarkdownContent,
 } from "../model/useMarkdownContent";
-import { CopyIcon, DocIcon, DownloadIcon } from "./icons";
+import { BackIcon, CopyIcon, DocIcon, DownloadIcon } from "./icons";
 import s from "./MarkdownShowPage.module.css";
 
 type View = "rendered" | "edit";
@@ -117,6 +117,7 @@ const toViewFile = (md: MarkdownContent): MarkdownFile => ({
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const MarkdownShowPage: FC = () => {
 	const [searchParams] = useSearchParams();
+	const navigate = useNavigate();
 	const fileParam = searchParams.get("file");
 	const [view, setView] = useState<View>("rendered");
 	const [activeHeading, setActiveHeading] = useState<string | null>(null);
@@ -204,11 +205,16 @@ export const MarkdownShowPage: FC = () => {
 			<Header section="Документы / Markdown" activeLink="docs" />
 
 			<div className={s.body}>
-
-
 				{/* ─── Reader ─── */}
 				<div className={s.reader} ref={readerRef}>
 					<div className={s.toolbar}>
+						<button
+							type="button"
+							className={s.toolBtn}
+							onClick={() => navigate(-1)}
+						>
+							<BackIcon /> Назад
+						</button>
 						<div className={s.bc}>
 							{file ? (
 								<>

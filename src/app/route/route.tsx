@@ -35,12 +35,6 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/entity",
-				lazy: async () => ({
-					Component: (await import("@/pages/entity")).EntityPage,
-				}),
-			},
-			{
 				path: "/http-client",
 				lazy: async () => ({
 					Component: (await import("@/pages/http-client")).HttpClientPage,
@@ -62,12 +56,6 @@ export const router = createBrowserRouter([
 				path: "/services",
 				lazy: async () => ({
 					Component: (await import("@/pages/services")).ServicesPage,
-				}),
-			},
-			{
-				path: "/files",
-				lazy: async () => ({
-					Component: (await import("@/pages/file-explorer")).FileExplorerPage,
 				}),
 			},
 			{

@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import type { Endpoint } from "@/entities/endpoint";
-import { actionDeleteEndpoint, useDocStore } from "@/features/doc";
-import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
+import { actionDeleteEndpoint, useDocStore } from "@/features/doc-api";
+import { Dialog } from "@/shared/ui-kit/modal";
 
 interface DeleteEndpointModalProps {
 	open: boolean;
@@ -39,36 +39,38 @@ export const DeleteEndpointModal: FC<DeleteEndpointModalProps> = ({
 	};
 
 	return (
-		<Modal
-			open={open}
-			onOpenChange={onOpenChange}
-			title="Удалить endpoint"
-			subtitle="Действие необратимо. Endpoint и все его параметры будут удалены."
-			actions={
-				<>
-					<ModalBtnCancel onClick={close} disabled={isDeleting}>
-						Отмена
-					</ModalBtnCancel>
-					<ModalBtnDanger onClick={confirm} disabled={isDeleting} autoFocus>
-						{isDeleting ? "Удаляем…" : "Удалить"}
-					</ModalBtnDanger>
-				</>
-			}
-		>
-			<p
-				style={{
-					margin: 0,
-					fontSize: 13,
-					color: "var(--ink)",
-					lineHeight: "var(--lh-snug)",
-				}}
-			>
-				Удалить endpoint{" "}
-				<strong style={{ fontWeight: 600 }}>
-					{endpoint.method} {endpoint.path}
-				</strong>
-				?
-			</p>
-		</Modal>
+		<Dialog.Root open={open} onOpenChange={onOpenChange}>
+			<Dialog.Header>
+				<Dialog.Title>Удалить endpoint</Dialog.Title>
+				<Dialog.Subtitle>
+					Действие необратимо. Endpoint и все его параметры будут удалены.
+				</Dialog.Subtitle>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
+				<p
+					style={{
+						margin: 0,
+						fontSize: 13,
+						color: "var(--ink)",
+						lineHeight: "var(--lh-snug)",
+					}}
+				>
+					Удалить endpoint{" "}
+					<strong style={{ fontWeight: 600 }}>
+						{endpoint.method} {endpoint.path}
+					</strong>
+					?
+				</p>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={close} disabled={isDeleting}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnDanger onClick={confirm} disabled={isDeleting} autoFocus>
+					{isDeleting ? "Удаляем…" : "Удалить"}
+				</Dialog.BtnDanger>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };

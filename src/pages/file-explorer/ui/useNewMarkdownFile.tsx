@@ -4,7 +4,7 @@ import {
 	createDirectoryApi,
 	createMarkdownApi,
 } from "@/entities/file-explorer";
-import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileExplorerPage.module.css";
 
 /** What the create dialog is currently asking for, if anything. */
@@ -17,13 +17,23 @@ type Pending = "file" | "folder" | null;
 export function useNewMarkdownFile(
 	folder: string,
 	onCreated?: (id: string) => void,
-): { openMenu: (e: React.MouseEvent) => void; element: ReactNode } {
+): {
+	openMenu: (e: React.MouseEvent) => void;
+	openCreateFile: () => void;
+	element: ReactNode;
+} {
 	const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 	const [pending, setPending] = useState<Pending>(null);
 
 	const openMenu = (e: React.MouseEvent) => {
 		e.preventDefault();
 		setMenu({ x: e.clientX, y: e.clientY });
+	};
+
+	/** Open the "new markdown file" dialog directly, e.g. from a button. */
+	const openCreateFile = () => {
+		setMenu(null);
+		setPending("file");
 	};
 
 	const createFile = async (rawName: string) => {
@@ -87,7 +97,7 @@ export function useNewMarkdownFile(
 		</>
 	);
 
-	return { openMenu, element };
+	return { openMenu, openCreateFile, element };
 }
 
 /* ─── Right-click context menu ─── */
@@ -162,34 +172,34 @@ const CreateDialog: FC<{
 	};
 
 	return (
-		<Modal
-			open
-			onOpenChange={(open) => !open && !saving && onClose()}
-			title={title}
-			subtitle={subtitle}
-			actions={
-				<>
-					<ModalBtnCancel onClick={onClose} disabled={saving}>
-						Отмена
-					</ModalBtnCancel>
-					<ModalBtnPrimary onClick={confirm} disabled={saving || !name.trim()}>
-						{saving ? "Создаём…" : "Создать"}
-					</ModalBtnPrimary>
-				</>
-			}
-		>
-			<input
-				className={s["fe-input"]}
-				type="text"
-				placeholder={placeholder}
-				value={name}
-				onChange={(e) => setName(e.target.value)}
-				onKeyDown={(e) => {
-					if (e.key === "Enter") confirm();
-				}}
-				autoFocus
-			/>
-		</Modal>
+		<Dialog.Root open onOpenChange={(open) => !open && !saving && onClose()}>
+			<Dialog.Header>
+				<Dialog.Title>{title}</Dialog.Title>
+				<Dialog.Subtitle>{subtitle}</Dialog.Subtitle>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
+				<input
+					className={s["fe-input"]}
+					type="text"
+					placeholder={placeholder}
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") confirm();
+					}}
+					autoFocus
+				/>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={onClose} disabled={saving}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnPrimary onClick={confirm} disabled={saving || !name.trim()}>
+					{saving ? "Создаём…" : "Создать"}
+				</Dialog.BtnPrimary>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };
 

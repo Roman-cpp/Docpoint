@@ -1,17 +1,17 @@
 import { type FC, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { Header } from "@/widgets/header";
-import { Sidebar } from "@/widgets/layout/ui/Sidebar";
 import {
 	actionSelectEndpoint,
 	selectDoc,
 	selectSelectedEndpoint,
 	useDocStore,
-} from "@/features/doc";
+} from "@/features/doc-api";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { DockLayout } from "@/shared/ui-kit/layout";
+import { Header } from "@/widgets/header";
 import { Layout } from "@/widgets/layout";
+import { Sidebar } from "@/widgets/layout/ui/Sidebar";
 import { BottomConsolePanel } from "./BottomConsolePanel";
 import { DeleteEndpointModal } from "./DeleteEndpointModal";
 import { EditEndpointModal } from "./EditEndpointModal";
@@ -58,37 +58,40 @@ export const EndpointShowPage: FC = () => {
 		);
 	}
 
-  return (
-    <DockLayout.Root className={s.wrapper}>
+	return (
+		<DockLayout.Root className={s.wrapper}>
 			<DockLayout.Header>
 				<Header section="docs1" activeLink="docs" />
 			</DockLayout.Header>
 
 			<DockLayout.Body>
 				<DockLayout.Left>
-          <Sidebar />
+					<Sidebar />
 				</DockLayout.Left>
 
 				<DockLayout.Center>
 					<DockLayout.Main>
 						<div className={s.endpointPanel}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 8,
-                  marginBottom: 8,
-                }}
-              >
-                <Button variant="subtle" onClick={() => setEditOpen(true)}>
-                  Редактировать
-                </Button>
-                <Button variant="danger-ghost" onClick={() => setDeleteOpen(true)}>
-                  Удалить
-                </Button>
-              </div>
-              <EndpointPage detail={endpoint} key={id} />
-            </div>
+							<div
+								style={{
+									display: "flex",
+									justifyContent: "flex-end",
+									gap: 8,
+									marginBottom: 8,
+								}}
+							>
+								<Button variant="subtle" onClick={() => setEditOpen(true)}>
+									Редактировать
+								</Button>
+								<Button
+									variant="danger-ghost"
+									onClick={() => setDeleteOpen(true)}
+								>
+									Удалить
+								</Button>
+							</div>
+							<EndpointPage detail={endpoint} key={id} />
+						</div>
 					</DockLayout.Main>
 
 					<DockLayout.Bottom>
@@ -101,7 +104,7 @@ export const EndpointShowPage: FC = () => {
 				</DockLayout.Right>
 			</DockLayout.Body>
 
-      <EditEndpointModal
+			<EditEndpointModal
 				open={editOpen}
 				onOpenChange={setEditOpen}
 				endpoint={endpoint}
@@ -114,5 +117,5 @@ export const EndpointShowPage: FC = () => {
 				onDeleted={() => navigate(`/doc-show/${doc?.id}`)}
 			/>
 		</DockLayout.Root>
-  )
+	);
 };

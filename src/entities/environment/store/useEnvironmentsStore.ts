@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import { readEnvironmentsByDocApi } from "@/entities/doc";
+import { readEnvironmentsByDocApi } from "@/entities/doc-api";
 import { createEnvironmentApi } from "../api/createEnvironmentApi";
 import { createVariableApi } from "../api/createVariableApi";
 import { deleteEnvironmentApi } from "../api/deleteEnvironmentApi";

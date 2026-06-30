@@ -7,7 +7,7 @@ import {
 	selectGroups,
 	selectSelectedEndpoint,
 	useDocStore,
-} from "@/features/doc";
+} from "@/features/doc-api";
 import s from "@/shared/styles/apiDocs.module.css";
 import { AddEndpointModal } from "./AddEndpointModal";
 

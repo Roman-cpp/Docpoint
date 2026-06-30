@@ -5,7 +5,7 @@ import type {
 	UpdatePlatformDTO,
 } from "@/entities/platform";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
-import { Modal, ModalBtnCancel, ModalBtnPrimary } from "@/shared/ui-kit/modal";
+import { Dialog } from "@/shared/ui-kit/modal";
 
 interface PlatformModalProps {
 	open: boolean;
@@ -54,43 +54,45 @@ export const PlatformModal: FC<PlatformModalProps> = ({
 	const canSave = name.trim().length > 0 && !isSaving;
 
 	return (
-		<Modal
-			open={open}
-			onOpenChange={onOpenChange}
-			title={isEdit ? "Редактировать платформу" : "Новая платформа"}
-			subtitle={
-				isEdit
-					? "Изменения применятся ко всем связанным сущностям"
-					: "Добавьте платформу для группировки документов"
-			}
-			actions={
-				<>
-					<ModalBtnCancel onClick={close} disabled={isSaving}>
-						Отмена
-					</ModalBtnCancel>
-					<ModalBtnPrimary onClick={submit} disabled={!canSave} autoFocus>
-						{isSaving ? "Сохраняем…" : isEdit ? "Сохранить" : "Создать"}
-					</ModalBtnPrimary>
-				</>
-			}
-		>
-			<Field label="Название" required>
-				<Input
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					placeholder="Например, iOS"
-					style={{ width: "100%" }}
-				/>
-			</Field>
-			<Field label="Описание">
-				<Textarea
-					value={desc}
-					onChange={(e) => setDesc(e.target.value)}
-					placeholder="Краткое описание платформы"
-					rows={3}
-					style={{ width: "100%" }}
-				/>
-			</Field>
-		</Modal>
+		<Dialog.Root open={open} onOpenChange={onOpenChange}>
+			<Dialog.Header>
+				<Dialog.Title>
+					{isEdit ? "Редактировать платформу" : "Новая платформа"}
+				</Dialog.Title>
+				<Dialog.Subtitle>
+					{isEdit
+						? "Изменения применятся ко всем связанным сущностям"
+						: "Добавьте платформу для группировки документов"}
+				</Dialog.Subtitle>
+				<Dialog.Close />
+			</Dialog.Header>
+			<Dialog.Body>
+				<Field label="Название" required>
+					<Input
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						placeholder="Например, iOS"
+						style={{ width: "100%" }}
+					/>
+				</Field>
+				<Field label="Описание">
+					<Textarea
+						value={desc}
+						onChange={(e) => setDesc(e.target.value)}
+						placeholder="Краткое описание платформы"
+						rows={3}
+						style={{ width: "100%" }}
+					/>
+				</Field>
+			</Dialog.Body>
+			<Dialog.Footer>
+				<Dialog.BtnCancel onClick={close} disabled={isSaving}>
+					Отмена
+				</Dialog.BtnCancel>
+				<Dialog.BtnPrimary onClick={submit} disabled={!canSave} autoFocus>
+					{isSaving ? "Сохраняем…" : isEdit ? "Сохранить" : "Создать"}
+				</Dialog.BtnPrimary>
+			</Dialog.Footer>
+		</Dialog.Root>
 	);
 };
