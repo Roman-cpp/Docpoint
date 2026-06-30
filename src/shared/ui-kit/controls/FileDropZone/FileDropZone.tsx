@@ -29,16 +29,23 @@ export const FileDropZone: FC<{
 	useEffect(() => {
 		let unlisten: (() => void) | undefined;
 		let disposed = false;
+		// On Linux/webkit2gtk the `drop` event's position often arrives as (0,0),
+		// so we can't recompute the hit test there. Track whether the pointer was
+		// last seen inside our bounds during enter/over and trust that on drop.
+		let insideZone = false;
 
-		/** Is a physical-pixel pointer position inside our element? */
+		/** Is a drag pointer position inside our element? Tauri reports a
+		 *  `PhysicalPosition` (CSS px × dpr) on most platforms, but webkit2gtk
+		 *  (Linux) reports values already in CSS px. Accept a hit under either
+		 *  interpretation so the drop lands everywhere. */
 		const inZone = (x: number, y: number) => {
 			const el = ref.current;
 			if (!el) return false;
 			const r = el.getBoundingClientRect();
 			const dpr = window.devicePixelRatio || 1;
-			const cx = x / dpr;
-			const cy = y / dpr;
-			return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+			const hit = (px: number, py: number) =>
+				px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+			return hit(x, y) || hit(x / dpr, y / dpr);
 		};
 
 		const importPaths = async (paths: string[]) => {
@@ -70,11 +77,17 @@ export const FileDropZone: FC<{
 			.onDragDropEvent((event) => {
 				const p = event.payload;
 				if (p.type === "enter" || p.type === "over") {
-					setOver(inZone(p.position.x, p.position.y));
+					insideZone = inZone(p.position.x, p.position.y);
+					setOver(insideZone);
 				} else if (p.type === "leave") {
+					insideZone = false;
 					setOver(false);
 				} else if (p.type === "drop") {
-					const landed = inZone(p.position.x, p.position.y);
+					// webkit2gtk (Linux) doesn't emit enter/over, so `insideZone` is
+					// never set there — fall back to hit-testing the drop position,
+					// which does carry real coordinates.
+					const landed = insideZone || inZone(p.position.x, p.position.y);
+					insideZone = false;
 					setOver(false);
 					if (landed && p.paths.length > 0) void importPaths(p.paths);
 				}

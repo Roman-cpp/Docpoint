@@ -197,11 +197,8 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				)}
 			</section>
 
-			{(path !== "" ||
-				listing.folders.length > 0 ||
-				listing.files.length > 0) && (
-				<div className={b.fileBrowser}>
-					<h2 className={b.fileBrowserTitle}>Файлы платформы</h2>
+			<div className={b.fileBrowser}>
+				<h2 className={b.fileBrowserTitle}>Файлы платформы</h2>
 					{path !== "" && (
 						<nav className={b.crumbs} aria-label="Путь">
 							{crumbs.map((c, i) => (
@@ -236,7 +233,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					/>
 					<FileDropZone folder={path} onImported={reloadCurrent} />
 				</div>
-			)}
 
 			<ServiceModal
 				open={isServiceModalOpen || editingService != null}

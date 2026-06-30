@@ -1,8 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { type FC, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { toast } from "@/core/toast";
 import { type Doc, useDocsStore } from "@/entities/doc";
 import { useServiceErds } from "@/entities/doc-erd";
+import {
+	type DirListing,
+	deleteDirectoryApi,
+	deleteMarkdownApi,
+	type File,
+	type Folder,
+	readDirectoryApi,
+} from "@/entities/file-explorer";
 import {
 	serviceKeys,
 	useAllServices,
@@ -12,11 +21,16 @@ import {
 import { CreateDocModal } from "@/features/doc/create-doc";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
+import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
+import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
+import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
-import { Button } from "@/shared/ui-kit/controls";
+import { Button, FileDropZone } from "@/shared/ui-kit/controls";
 import { Modal, ModalBtnCancel, ModalBtnDanger } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { CreateErdModal } from "./CreateErdModal";
+
+const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {
@@ -38,6 +52,92 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
 	const [erdModalOpen, setErdModalOpen] = useState(false);
 	const [docModalOpen, setDocModalOpen] = useState(false);
+
+	/** Vault folder holding this microservice's files. */
+	const baseDir = `services/${id}`;
+	const [listing, setListing] = useState<DirListing>(EMPTY_LISTING);
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	/** Current folder: a vault-relative path, always under `baseDir`. */
+	const [path, setPath] = useState(baseDir);
+
+	useEffect(() => {
+		let cancelled = false;
+		readDirectoryApi(path)
+			.then((data) => {
+				if (!cancelled) setListing(data);
+			})
+			.catch(() => {
+				if (!cancelled) setListing(EMPTY_LISTING);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [path]);
+
+	/** Re-read the current folder after a mutation (e.g. creating a file). */
+	const reloadCurrent = () => {
+		readDirectoryApi(path)
+			.then(setListing)
+			.catch(() => setListing(EMPTY_LISTING));
+	};
+
+	const { openMenu, element: newFileUi } = useNewMarkdownFile(
+		path,
+		reloadCurrent,
+	);
+
+	const openFolder = (folderId: string) => {
+		setSelectedFile(null);
+		setPath(folderId);
+	};
+
+	const deleteFolder = async (folder: Folder) => {
+		try {
+			await deleteDirectoryApi(folder.id);
+			reloadCurrent();
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось удалить каталог",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	const deleteFile = async (file: File) => {
+		try {
+			await deleteMarkdownApi(`${path}/${file.name}`);
+			if (selectedFile?.name === file.name) setSelectedFile(null);
+			reloadCurrent();
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось удалить файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	/** Double-click a file: `.md` files open in the markdown viewer. */
+	const openFile = (file: File) => {
+		if (!file.name.toLowerCase().endsWith(".md")) return;
+		const fileId = `${path}/${file.name}`;
+		navigate(`/markdown-show?file=${encodeURIComponent(fileId)}`);
+	};
+
+	/** Breadcrumb chain relative to the service root (the `baseDir` prefix is
+	 *  hidden from the user). */
+	const crumbs: { name: string; id: string }[] = [
+		{ name: "Файлы", id: baseDir },
+	];
+	{
+		const rel = path === baseDir ? "" : path.slice(baseDir.length + 1);
+		let prefix = baseDir;
+		for (const segment of rel.split("/").filter(Boolean)) {
+			prefix = `${prefix}/${segment}`;
+			crumbs.push({ name: segment, id: prefix });
+		}
+	}
 
 	const service = services.find((svc) => svc.id === id);
 
@@ -170,6 +270,47 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				)}
 			</div>
 
+			<div
+				className={b.fileBrowser}
+				style={{ marginTop: 32 }}
+				onContextMenu={openMenu}
+			>
+				<h2 className={b.fileBrowserTitle}>Файлы микросервиса</h2>
+				{path !== baseDir && (
+					<nav className={b.crumbs} aria-label="Путь">
+						{crumbs.map((c, i) => (
+							<span key={c.id} className={b.crumbItem}>
+								{i > 0 && <span className={b.crumbSep}>/</span>}
+								{i === crumbs.length - 1 ? (
+									<span className={b.crumbCurrent}>{c.name}</span>
+								) : (
+									<button
+										type="button"
+										className={b.crumb}
+										onClick={() => openFolder(c.id)}
+									>
+										{c.name}
+									</button>
+								)}
+							</span>
+						))}
+					</nav>
+				)}
+				<FolderGrid
+					folders={listing.folders}
+					onOpen={openFolder}
+					onDelete={deleteFolder}
+				/>
+				<FileGrid
+					files={listing.files}
+					selectedId={selectedFile?.name ?? null}
+					onSelect={setSelectedFile}
+					onOpen={openFile}
+					onDelete={deleteFile}
+				/>
+				<FileDropZone folder={path} onImported={reloadCurrent} />
+			</div>
+
 			<CreateDocModal
 				open={docModalOpen}
 				onOpenChange={setDocModalOpen}
@@ -292,6 +433,8 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</p>
 				</Modal>
 			)}
+
+			{newFileUi}
 		</div>
 	);
 };
