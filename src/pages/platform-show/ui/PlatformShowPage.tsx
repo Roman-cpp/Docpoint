@@ -4,7 +4,6 @@ import { toast } from "@/core/toast";
 import {
 	type DirListing,
 	deleteDirectoryApi,
-	deleteMarkdownApi,
 	type File,
 	type Folder,
 	readDirectoryApi,
@@ -26,6 +25,7 @@ import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { ServiceModal } from "../../../features/service/create-service/ui/ServiceModal";
 import b from "./PlatformShowPage.module.css";
+import { deleteMarkdownApi } from "@/entities/markdown";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 

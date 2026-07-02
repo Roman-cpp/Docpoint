@@ -1,4 +1,5 @@
-use crate::domain::markdown::repository::MarkdownRepo;
+use crate::domain::markdown::repository::MarkdownRepository;
+use crate::repository::filesystem::markdown::MarkdownRepo;
 use crate::state::AppState;
 use std::path::Path;
 use tauri::State;

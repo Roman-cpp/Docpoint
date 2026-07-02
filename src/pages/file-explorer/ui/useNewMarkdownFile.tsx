@@ -2,10 +2,10 @@ import { type FC, type ReactNode, useState } from "react";
 import { toast } from "@/core/toast";
 import {
 	createDirectoryApi,
-	createMarkdownApi,
 } from "@/entities/file-explorer";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileExplorerPage.module.css";
+import { createMarkdownApi } from "@/entities/markdown";
 
 /** What the create dialog is currently asking for, if anything. */
 type Pending = "file" | "folder" | null;
@@ -44,7 +44,6 @@ export function useNewMarkdownFile(
 		const id = await createMarkdownApi({
 			folder,
 			name,
-			author: "",
 			content: `# ${trimmed.replace(/\.md$/i, "")}\n`,
 		});
 		onCreated?.(id);

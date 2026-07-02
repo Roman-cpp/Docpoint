@@ -88,7 +88,9 @@ export const DocMenu: Story = {
 					setMenu({ x: e.clientX, y: e.clientY });
 				}}
 			>
-				<span style={{ color: "var(--ink-low)", fontFamily: "var(--font-sans)" }}>
+				<span
+					style={{ color: "var(--ink-low)", fontFamily: "var(--font-sans)" }}
+				>
 					Кликните правой кнопкой в любом месте
 				</span>
 				<ContextMenu.Root

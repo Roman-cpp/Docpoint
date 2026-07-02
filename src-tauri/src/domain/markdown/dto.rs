@@ -7,7 +7,6 @@ pub struct CreateMarkdownDTO {
     pub folder: String,
     /// File name including the `.md` extension.
     pub name: String,
-    pub author: String,
     pub content: String,
 }
 
@@ -15,6 +14,5 @@ pub struct CreateMarkdownDTO {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMarkdownDTO {
     pub id: String,
-    pub author: String,
     pub content: String,
 }

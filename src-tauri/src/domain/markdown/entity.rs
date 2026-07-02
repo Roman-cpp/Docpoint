@@ -1,8 +1,8 @@
 use serde::Serialize;
 
 /// A markdown file as it lives on disk. `folder`/`name`/`id` are derived from
-/// the path inside the vault, `author` comes from the YAML frontmatter, and
-/// `size`/`updated` are read from filesystem metadata.
+/// the path inside the vault, and `size`/`updated` are read from filesystem
+/// metadata.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MarkdownFile {
@@ -11,8 +11,7 @@ pub struct MarkdownFile {
     /// Parent directory inside the vault, empty string for files at the root.
     pub folder: String,
     pub name: String,
-    pub author: String,
-    /// Body of the document, frontmatter stripped.
+    /// Body of the document.
     pub content: String,
     /// Size of the file on disk, in bytes. Format for display on the frontend.
     pub size: u64,
@@ -25,7 +24,6 @@ pub struct MarkdownFile {
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub name: String,
-    /// Size of the file on disk, in bytes. Format for display on the frontend.
     pub size: u64,
 }
 
@@ -36,7 +34,6 @@ pub struct FolderEntry {
     /// Vault-relative path with `/` separators, used as a stable id.
     pub id: String,
     pub name: String,
-    /// Number of direct children (files + sub-folders) inside the folder.
     pub children_count: u64,
 }
 

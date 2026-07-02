@@ -1,4 +1,4 @@
-use crate::domain::doc_api::doc_api::dto::CreateDocDTO;
+use crate::domain::doc_api::doc_api::dto::CreateDocApiDTO;
 use crate::domain::doc_api::doc_api::repository::DocRepository;
 use crate::repository::sqlite::doc_api::DocRepo;
 use crate::domain::doc_erd::entity::dto::CreateEntityDTO;
@@ -16,7 +16,7 @@ use tauri::State;
 #[tauri::command]
 pub async fn import_doc(
     state: State<'_, AppState>,
-    doc: CreateDocDTO,
+    doc: CreateDocApiDTO,
     groups: Vec<CreateGroupDTO>,
     entities: Vec<CreateEntityDTO>,
     environments: Vec<CreateEnvironmentDTO>,

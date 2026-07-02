@@ -4,7 +4,6 @@ import { toast } from "@/core/toast";
 import {
 	type DirListing,
 	deleteDirectoryApi,
-	deleteMarkdownApi,
 	type File,
 	type Folder,
 	readDirectoryApi,
@@ -18,6 +17,7 @@ import { FileGrid } from "./FileGrid/FileGrid";
 import { FolderGrid } from "./FolderGrid/FolderGrid";
 import { formatSize, KIND_LABEL } from "./lib";
 import { useNewMarkdownFile } from "./useNewMarkdownFile";
+import { deleteMarkdownApi } from "@/entities/markdown";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 

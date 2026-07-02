@@ -1,5 +1,6 @@
 use crate::domain::markdown::dto::UpdateMarkdownDTO;
-use crate::domain::markdown::repository::MarkdownRepo;
+use crate::domain::markdown::repository::MarkdownRepository;
+use crate::repository::filesystem::markdown::MarkdownRepo;
 use crate::state::AppState;
 use tauri::State;
 

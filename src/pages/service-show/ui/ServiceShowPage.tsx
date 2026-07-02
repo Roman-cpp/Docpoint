@@ -8,7 +8,6 @@ import { useServiceErds } from "@/entities/doc-erd";
 import {
 	type DirListing,
 	deleteDirectoryApi,
-	deleteMarkdownApi,
 	type File,
 	type Folder,
 	readDirectoryApi,
@@ -31,6 +30,7 @@ import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { CreateErdModal } from "./CreateErdModal";
+import { deleteMarkdownApi } from "@/entities/markdown";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 

@@ -1,9 +1,9 @@
 use crate::domain::{
-    doc_api::doc_api::dto::UpdateDocDTO,
+    doc_api::doc_api::dto::UpdateDocApiDTO,
     environment::environment::entity::{EnvValue, Environment},
 };
 
-use crate::domain::doc_api::doc_api::dto::CreateDocDTO;
+use crate::domain::doc_api::doc_api::dto::CreateDocApiDTO;
 use crate::domain::doc_api::doc_api::entity::DocApi;
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
@@ -91,7 +91,7 @@ impl DocRepository for DocRepo<'_> {
         }))
     }
 
-    async fn create(&self, doc: &CreateDocDTO) -> Result<String, String> {
+    async fn create(&self, doc: &CreateDocApiDTO) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
 
         sqlx::query("INSERT INTO docs (id, name, version, desc) VALUES (?, ?, ?, ?)")
@@ -115,7 +115,7 @@ impl DocRepository for DocRepo<'_> {
         Ok(id)
     }
 
-    async fn update(&self, doc: &UpdateDocDTO) -> Result<String, String> {
+    async fn update(&self, doc: &UpdateDocApiDTO) -> Result<String, String> {
         sqlx::query("UPDATE docs SET name = ?, desc = ? WHERE id = ?")
             .bind(&doc.name)
             .bind(&doc.desc)

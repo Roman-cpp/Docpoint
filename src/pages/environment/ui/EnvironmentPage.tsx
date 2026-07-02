@@ -559,7 +559,9 @@ export const EnvironmentPage: FC = () => {
 			)}
 			<Dialog.Root
 				open={confirmDeleteEnv}
-				onOpenChange={(open) => !open && !deletingEnv && setConfirmDeleteEnv(false)}
+				onOpenChange={(open) =>
+					!open && !deletingEnv && setConfirmDeleteEnv(false)
+				}
 			>
 				<Dialog.Header>
 					<Dialog.Title>Удалить окружение?</Dialog.Title>
@@ -587,7 +589,10 @@ export const EnvironmentPage: FC = () => {
 					>
 						Отмена
 					</Dialog.BtnCancel>
-					<Dialog.BtnDanger onClick={confirmDeleteEnvironment} disabled={deletingEnv}>
+					<Dialog.BtnDanger
+						onClick={confirmDeleteEnvironment}
+						disabled={deletingEnv}
+					>
 						{deletingEnv ? "Удаляем…" : "Удалить"}
 					</Dialog.BtnDanger>
 				</Dialog.Footer>

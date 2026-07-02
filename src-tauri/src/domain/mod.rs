@@ -1,3 +1,4 @@
+pub mod directory;
 pub mod doc_api;
 pub mod doc_erd;
 pub mod environment;

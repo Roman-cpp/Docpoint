@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import {
-	type MarkdownContent,
-	readMarkdownApi,
-	updateMarkdownApi,
-} from "@/entities/file-explorer";
+import { type Markdown, readMarkdownApi, updateMarkdownApi } from "@/entities/markdown";
 
 export type SaveStatus = "loading" | "idle" | "saving" | "saved" | "error";
 
@@ -17,15 +13,15 @@ const SAVE_DEBOUNCE_MS = 600;
  * drops the last keystrokes.
  */
 export function useMarkdownContent(fileId: string | null) {
-	const [file, setFile] = useState<MarkdownContent | null>(null);
+	const [file, setFile] = useState<Markdown | null>(null);
 	const [content, setContent] = useState("");
 	const [status, setStatus] = useState<SaveStatus>("idle");
 
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	// Latest text not yet confirmed written — used to flush on unmount/file switch.
 	const pending = useRef<string | null>(null);
-	// Id + author needed to persist edits, captured from the loaded file.
-	const meta = useRef<{ id: string; author: string } | null>(null);
+	// Id needed to persist edits, captured from the loaded file.
+	const meta = useRef<{ id: string } | null>(null);
 
 	const flush = useCallback(() => {
 		if (timer.current) {
@@ -34,9 +30,9 @@ export function useMarkdownContent(fileId: string | null) {
 		}
 		if (pending.current === null || !meta.current) return;
 		const text = pending.current;
-		const { id, author } = meta.current;
+		const { id } = meta.current;
 		pending.current = null;
-		void updateMarkdownApi({ id, author, content: text }).catch(() => {
+		void updateMarkdownApi({ id, content: text }).catch(() => {
 			setStatus("error");
 			toast({ title: "Не удалось сохранить файл", variant: "error" });
 		});
@@ -58,7 +54,7 @@ export function useMarkdownContent(fileId: string | null) {
 				if (cancelled) return;
 				setFile(md);
 				setContent(md?.content ?? "");
-				meta.current = md ? { id: md.id, author: md.author } : null;
+				meta.current = md ? { id: md.id } : null;
 				setStatus("idle");
 			})
 			.catch(() => {
@@ -76,7 +72,7 @@ export function useMarkdownContent(fileId: string | null) {
 	const onChange = useCallback((next: string) => {
 		setContent(next);
 		if (!meta.current) return;
-		const { id, author } = meta.current;
+		const { id } = meta.current;
 		setStatus("saving");
 		pending.current = next;
 
@@ -85,7 +81,7 @@ export function useMarkdownContent(fileId: string | null) {
 			timer.current = null;
 			pending.current = null;
 			try {
-				await updateMarkdownApi({ id, author, content: next });
+				await updateMarkdownApi({ id, content: next });
 				setStatus("saved");
 			} catch {
 				setStatus("error");

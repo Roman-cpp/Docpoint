@@ -54,6 +54,22 @@ export const DocIcon: FC = () => (
 	</svg>
 );
 
+export const FolderIcon: FC = () => (
+	<svg
+		viewBox="0 0 14 14"
+		width="13"
+		height="13"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<path d="M1.5 3.5h4l1.5 1.5h5.5v6.5a.5.5 0 01-.5.5h-10a.5.5 0 01-.5-.5z" />
+	</svg>
+);
+
 export const BackIcon: FC = () => (
 	<svg
 		viewBox="0 0 14 14"

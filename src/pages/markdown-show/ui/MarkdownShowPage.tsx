@@ -10,7 +10,7 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import { useNavigate, useSearchParams } from "react-router";
 import remarkGfm from "remark-gfm";
-import type { MarkdownContent } from "@/entities/file-explorer";
+import type { Markdown } from "@/entities/markdown";
 import { cx } from "@/shared/lib/cx";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { Header } from "@/widgets/header";
@@ -20,6 +20,7 @@ import {
 	type SaveStatus,
 	useMarkdownContent,
 } from "../model/useMarkdownContent";
+import { FileSidebar } from "./FileSidebar";
 import { BackIcon, CopyIcon, DocIcon, DownloadIcon } from "./icons";
 import s from "./MarkdownShowPage.module.css";
 
@@ -101,7 +102,7 @@ const formatBytes = (bytes: number): string => {
 };
 
 /* Map a file read from the vault into the viewer's display shape. */
-const toViewFile = (md: MarkdownContent): MarkdownFile => ({
+const toViewFile = (md: Markdown): MarkdownFile => ({
 	id: md.id,
 	folder: md.folder || "Файлы",
 	name: md.name,
@@ -110,7 +111,6 @@ const toViewFile = (md: MarkdownContent): MarkdownFile => ({
 		dateStyle: "medium",
 		timeStyle: "short",
 	}),
-	author: md.author || "—",
 	content: md.content,
 });
 
@@ -200,11 +200,15 @@ export const MarkdownShowPage: FC = () => {
 		setTimeout(() => setCopied(false), 1500);
 	};
 
+	console.log("file:", file);
 	return (
 		<div className={s.frame}>
 			<Header section="Документы / Markdown" activeLink="docs" />
 
 			<div className={s.body}>
+				{/* ─── File browser ─── */}
+				<FileSidebar activeFileId={fileParam} />
+
 				{/* ─── Reader ─── */}
 				<div className={s.reader} ref={readerRef}>
 					<div className={s.toolbar}>
@@ -271,8 +275,6 @@ export const MarkdownShowPage: FC = () => {
 											<span>{file.size}</span>
 											<span className={s.sep}>·</span>
 											<span>обновлён {file.updated}</span>
-											<span className={s.sep}>·</span>
-											<span>{file.author}</span>
 										</div>
 
 										{effectiveView === "edit" ? (

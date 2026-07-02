@@ -1,4 +1,5 @@
-use crate::domain::markdown::repository::MarkdownRepo;
+use crate::domain::directory::repository::DirectoryRepository;
+use crate::repository::filesystem::directory::DirectoryRepo;
 use crate::state::AppState;
 use tauri::State;
 
@@ -10,7 +11,7 @@ pub async fn create_directory(
     parent: String,
     name: String,
 ) -> Result<String, String> {
-    MarkdownRepo::new(&state.vault_dir)
+    DirectoryRepo::new(&state.vault_dir)
         .create_dir(&parent, &name)
         .await
 }

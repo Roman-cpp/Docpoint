@@ -1,4 +1,5 @@
-mod doc;
+mod directory;
+mod doc_api;
 mod endpoint;
 mod env_auth;
 mod environment;
@@ -8,7 +9,8 @@ mod platform;
 mod service_svc;
 mod shared;
 
-pub use doc::*;
+pub use directory::*;
+pub use doc_api::*;
 pub use endpoint::*;
 pub use env_auth::*;
 pub use environment::*;

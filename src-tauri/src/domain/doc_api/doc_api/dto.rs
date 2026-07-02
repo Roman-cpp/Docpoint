@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct CreateDocDTO {
+pub struct CreateDocApiDTO {
     pub name: String,
     pub version: String,
     pub desc: String,
@@ -9,7 +9,7 @@ pub struct CreateDocDTO {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateDocDTO {
+pub struct UpdateDocApiDTO {
     pub id: String,
     pub name: String,
     pub desc: String,
