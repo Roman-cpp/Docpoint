@@ -23,7 +23,7 @@ import {
 import type { Group } from "@/entities/group";
 import { deleteGroupApi, readGroupsApi } from "@/entities/group";
 
-type DocState = {
+type DocApiState = {
 	doc: Doc | null;
 	groups: Group[] | null;
 	entities: Entity[];
@@ -33,9 +33,9 @@ type DocState = {
 	selectedEntity: Entity | null;
 };
 
-type DocActions = {
-	fetchDoc: (id: string) => Promise<void>;
-	resetDoc: () => void;
+type DocApiActions = {
+	fetchDocApi: (id: string) => Promise<void>;
+	resetDocApi: () => void;
 
 	selectGroup: (groupId: string) => void;
 	selectEndpoint: (endpointId: string) => void;
@@ -63,7 +63,7 @@ type DocActions = {
 	deleteEntity: (entityId: string) => Promise<void>;
 };
 
-const initialState: DocState = {
+const initialState: DocApiState = {
 	doc: null,
 	groups: [],
 	entities: [],
@@ -73,12 +73,12 @@ const initialState: DocState = {
 	selectedEntity: null,
 };
 
-export type DocStore = DocState & DocActions;
+export type DocApiStore = DocApiState & DocApiActions;
 
-const createDocSlice: StateCreator<DocStore> = (set, get) => ({
+const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 	...initialState,
 
-	resetDoc: () => set(initialState),
+	resetDocApi: () => set(initialState),
 
 	selectGroup: (groupId: string) => {
 		const { groups } = get();
@@ -133,15 +133,15 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 
 	addEndpoint: async ({ groupId, groupLabel, endpoint }) => {
 		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocStore] addEndpoint: no doc loaded");
+		if (!docId) throw new Error("[DocApiStore] addEndpoint: no doc loaded");
 
 		await createEndpointApi({ docId, groupId, groupLabel, endpoint });
-		await get().fetchDoc(docId);
+		await get().fetchDocApi(docId);
 	},
 
 	deleteEndpoint: async (endpointId) => {
 		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocStore] deleteEndpoint: no doc loaded");
+		if (!docId) throw new Error("[DocApiStore] deleteEndpoint: no doc loaded");
 
 		await deleteEndpointApi(endpointId);
 
@@ -150,12 +150,12 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 			set({ selectedEndpoint: null });
 		}
 
-		await get().fetchDoc(docId);
+		await get().fetchDocApi(docId);
 	},
 
 	deleteGroup: async (groupId) => {
 		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocStore] deleteGroup: no doc loaded");
+		if (!docId) throw new Error("[DocApiStore] deleteGroup: no doc loaded");
 
 		await deleteGroupApi(groupId);
 
@@ -164,12 +164,12 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 			set({ selectedGroup: null });
 		}
 
-		await get().fetchDoc(docId);
+		await get().fetchDocApi(docId);
 	},
 
 	updateEntity: async (entity) => {
 		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocStore] updateEntity: no doc loaded");
+		if (!docId) throw new Error("[DocApiStore] updateEntity: no doc loaded");
 
 		await updateEntityApi(entity);
 
@@ -180,15 +180,15 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 				state.selectedEntity?.id === entity.id ? entity : state.selectedEntity,
 		}));
 
-		await get().fetchDoc(docId);
+		await get().fetchDocApi(docId);
 	},
 
 	addEntity: async (schema) => {
 		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocStore] addEntity: no doc loaded");
+		if (!docId) throw new Error("[DocApiStore] addEntity: no doc loaded");
 
 		const newId = await createEntityApi(docId, schema);
-		await get().fetchDoc(docId);
+		await get().fetchDocApi(docId);
 
 		// Сразу выделяем созданную entity.
 		get().selectEntity(newId);
@@ -198,7 +198,7 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 
 	deleteEntity: async (entityId) => {
 		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocStore] deleteEntity: no doc loaded");
+		if (!docId) throw new Error("[DocApiStore] deleteEntity: no doc loaded");
 
 		await deleteEntityApi(entityId);
 
@@ -207,10 +207,10 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 			set({ selectedEntity: null });
 		}
 
-		await get().fetchDoc(docId);
+		await get().fetchDocApi(docId);
 	},
 
-	fetchDoc: async (id) => {
+	fetchDocApi: async (id) => {
 		try {
 			const [doc, groups, entities] = await Promise.all([
 				readDocApi(id),
@@ -219,16 +219,16 @@ const createDocSlice: StateCreator<DocStore> = (set, get) => ({
 			]);
 			set({ doc, groups, entities });
 		} catch (e) {
-			console.error("[DocStore] fetchDoc failed:", e);
+			console.error("[DocApiStore] fetchDocApi failed:", e);
 			throw e;
 		}
 	},
 });
 
-export const useDocStore = create<DocStore>()(
+export const useDocApiStore = create<DocApiStore>()(
 	devtools(
-		persist(createDocSlice, {
-			name: "DocStore",
+		persist(createDocApiSlice, {
+			name: "DocApiStore",
 			storage: createJSONStorage(() => localStorage),
 			partialize: (state) => ({
 				doc: state.doc,
@@ -236,6 +236,6 @@ export const useDocStore = create<DocStore>()(
 				entities: state.entities,
 			}),
 		}),
-		{ name: "DocStore" },
+		{ name: "DocApiStore" },
 	),
 );

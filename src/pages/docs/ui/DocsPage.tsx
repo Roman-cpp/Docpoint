@@ -2,15 +2,15 @@ import { type FC, useState } from "react";
 import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useAllServices, useAttachDoc } from "@/entities/service";
-import { actionResetDoc, useDocStore } from "@/features/doc-api";
+import { actionResetDocApi, useDocApiStore } from "@/features/doc-api";
 import {
 	actionResetEnvironments,
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
-import { DeleteDocModal } from "../../../features/doc-api/delete-doc/ui/DeleteDocModal";
-import { EditDocModal } from "../../../features/doc-api/edit-doc/ui/EditDocModal";
+import { DeleteDocApiModal } from "../../../features/doc-api/delete-doc-api/ui/DeleteDocApiModal";
+import { EditDocApiModal } from "../../../features/doc-api/edit-doc-api/ui/EditDocApiModal";
 import { exportDoc } from "../lib/exportDoc";
 import s from "./ApiExplorerPage.module.css";
 import { Sidebar } from "./Sidebar";
@@ -23,7 +23,7 @@ const Overview = () => {
 	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEditOpen, setIsEditOpen] = useState(false);
-	const resetDoc = useDocStore(actionResetDoc);
+	const resetDoc = useDocApiStore(actionResetDocApi);
 	const resetEnvironments = useEnvironmentsStore(actionResetEnvironments);
 
 	resetDoc();
@@ -130,13 +130,13 @@ const Overview = () => {
 			</div>
 			{pendingDoc && (
 				<>
-					<EditDocModal
+					<EditDocApiModal
 						open={isEditOpen}
 						onOpenChange={setIsEditOpen}
 						doc={pendingDoc}
 						onSave={handleSaveEdit}
 					/>
-					<DeleteDocModal
+					<DeleteDocApiModal
 						open={isDeleteOpen}
 						onOpenChange={setIsDeleteOpen}
 						doc={pendingDoc}

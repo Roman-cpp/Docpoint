@@ -4,22 +4,22 @@ export {
 	actionDeleteEndpoint,
 	actionDeleteEntity,
 	actionDeleteGroup,
-	actionfetchDoc,
-	actionResetDoc,
+	actionfetchDocApi,
+	actionResetDocApi,
 	actionSelectEndpoint,
 	actionSelectEntity,
 	actionSelectGroup,
 	actionUpdateEndpointParamValue,
 	actionUpdateEntity,
-} from "./store/docStore.actions";
+} from "./store/docApiStore.actions";
 
 export {
-	selectDoc,
+	selectDocApi,
 	selectEntities,
 	selectGroups,
 	selectSelectedEndpoint,
 	selectSelectedEntity,
 	selectSelectedGroup,
-} from "./store/docStore.selectors";
+} from "./store/docApiStore.selectors";
 
-export { useDocStore } from "./store/useDocStore";
+export { useDocApiStore } from "./store/useDocApiStore";

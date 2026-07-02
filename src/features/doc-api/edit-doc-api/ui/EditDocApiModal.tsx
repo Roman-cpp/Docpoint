@@ -3,7 +3,7 @@ import type { Doc, UpdateDocDTO } from "@/entities/doc-api";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 
-interface EditDocModalProps {
+interface EditDocApiModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	doc: Doc;
@@ -11,7 +11,7 @@ interface EditDocModalProps {
 	isSaving?: boolean;
 }
 
-export const EditDocModal: FC<EditDocModalProps> = ({
+export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 	open,
 	onOpenChange,
 	doc,

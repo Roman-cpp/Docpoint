@@ -3,10 +3,10 @@ import { Link, useMatch } from "react-router";
 import {
 	actionAddEndpoint,
 	DeleteGroupModal,
-	selectDoc,
+	selectDocApi,
 	selectGroups,
 	selectSelectedEndpoint,
-	useDocStore,
+	useDocApiStore,
 } from "@/features/doc-api";
 import s from "@/shared/styles/apiDocs.module.css";
 import { AddEndpointModal } from "./AddEndpointModal";
@@ -20,10 +20,10 @@ const METHOD_STYLES: Record<string, { color: string; bg: string }> = {
 };
 
 export const Sidebar = () => {
-	const doc = useDocStore(selectDoc);
-	const groups = useDocStore(selectGroups);
-	const selectedEndpoint = useDocStore(selectSelectedEndpoint);
-	const addEndpoint = useDocStore(actionAddEndpoint);
+	const doc = useDocApiStore(selectDocApi);
+	const groups = useDocApiStore(selectGroups);
+	const selectedEndpoint = useDocApiStore(selectSelectedEndpoint);
+	const addEndpoint = useDocApiStore(actionAddEndpoint);
 	const isOverviewActive = !!useMatch("/doc-show/:id");
 	const [search, setSearch] = useState("");
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});

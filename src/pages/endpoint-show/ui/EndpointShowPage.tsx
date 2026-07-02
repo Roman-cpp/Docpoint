@@ -2,9 +2,9 @@ import { type FC, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
 	actionSelectEndpoint,
-	selectDoc,
+	selectDocApi,
 	selectSelectedEndpoint,
-	useDocStore,
+	useDocApiStore,
 } from "@/features/doc-api";
 import s from "@/shared/styles/apiDocs.module.css";
 import { Button } from "@/shared/ui-kit/controls";
@@ -22,9 +22,9 @@ export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 
-	const doc = useDocStore(selectDoc);
-	const endpoint = useDocStore(selectSelectedEndpoint);
-	const selectEndpoint = useDocStore(actionSelectEndpoint);
+	const doc = useDocApiStore(selectDocApi);
+	const endpoint = useDocApiStore(selectSelectedEndpoint);
+	const selectEndpoint = useDocApiStore(actionSelectEndpoint);
 
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);

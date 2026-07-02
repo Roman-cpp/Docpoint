@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router";
 import {
-	selectDoc,
+	selectDocApi,
 	selectEntities,
 	selectGroups,
-	useDocStore,
+	useDocApiStore,
 } from "@/features/doc-api";
 import s from "@/shared/styles/apiDocs.module.css";
 
@@ -13,9 +13,9 @@ interface DocOrigin {
 }
 
 export const OverviewPage = () => {
-	const doc = useDocStore(selectDoc);
-	const groups = useDocStore(selectGroups);
-	const entities = useDocStore(selectEntities);
+	const doc = useDocApiStore(selectDocApi);
+	const groups = useDocApiStore(selectGroups);
+	const entities = useDocApiStore(selectEntities);
 
 	// When the doc was opened from a microservice page, `state` carries it so we
 	// can offer a link back to that service.

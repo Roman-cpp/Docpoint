@@ -20,8 +20,8 @@ import {
 	useAttachDoc,
 	useServiceDocs,
 } from "@/entities/service";
-import { EditDocModal } from "@/features/doc-api";
-import { CreateDocModal } from "@/features/doc-api/create-doc";
+import { EditDocApiModal } from "@/features/doc-api";
+import { CreateDocApiModal } from "@/features/doc-api/create-doc-api";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
@@ -357,7 +357,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				/>
 			</div>
 
-			<CreateDocModal
+			<CreateDocApiModal
 				open={docModalOpen}
 				onOpenChange={setDocModalOpen}
 				isCreating={isCreating || isAttaching}
@@ -435,7 +435,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			</ContextMenu.Root>
 
 			{pendingEdit && (
-				<EditDocModal
+				<EditDocApiModal
 					open
 					onOpenChange={(open) => !open && !isUpdating && setPendingEdit(null)}
 					doc={pendingEdit}

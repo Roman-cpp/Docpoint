@@ -1,6 +1,6 @@
-export { CreateDocModal } from "./create-doc";
+export { CreateDocApiModal } from "./create-doc-api";
 export { CreateEntityModal } from "./create-entity";
-export { DeleteDocModal } from "./delete-doc";
+export { DeleteDocApiModal } from "./delete-doc-api";
 export { DeleteEntityModal } from "./delete-entity";
 export { DeleteGroupModal } from "./delete-group";
 export {
@@ -9,20 +9,20 @@ export {
 	actionDeleteEndpoint,
 	actionDeleteEntity,
 	actionDeleteGroup,
-	actionfetchDoc,
-	actionResetDoc,
+	actionfetchDocApi,
+	actionResetDocApi,
 	actionSelectEndpoint,
 	actionSelectEntity,
 	actionSelectGroup,
 	actionUpdateEndpointParamValue,
 	actionUpdateEntity,
-	selectDoc,
+	selectDocApi,
 	selectEntities,
 	selectGroups,
 	selectSelectedEndpoint,
 	selectSelectedEntity,
 	selectSelectedGroup,
-	useDocStore,
+	useDocApiStore,
 } from "./doc-workspace-state";
-export { EditDocModal } from "./edit-doc";
+export { EditDocApiModal } from "./edit-doc-api";
 export { EditEntityModal } from "./edit-entity";

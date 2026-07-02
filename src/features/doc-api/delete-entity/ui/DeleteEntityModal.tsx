@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
 import { Dialog } from "@/shared/ui-kit/modal";
-import { actionDeleteEntity, useDocStore } from "../../doc-workspace-state";
+import { actionDeleteEntity, useDocApiStore } from "../../doc-workspace-state";
 
 interface DeleteEntityModalProps {
 	open: boolean;
@@ -14,7 +14,7 @@ export const DeleteEntityModal: FC<DeleteEntityModalProps> = ({
 	onOpenChange,
 	entity,
 }) => {
-	const deleteEntity = useDocStore(actionDeleteEntity);
+	const deleteEntity = useDocApiStore(actionDeleteEntity);
 	const [isDeleting, setIsDeleting] = useState(false);
 
 	const close = () => {

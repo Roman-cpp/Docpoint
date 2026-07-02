@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
 import { Dialog } from "@/shared/ui-kit/modal";
-import { actionDeleteGroup, useDocStore } from "../../doc-workspace-state";
+import { actionDeleteGroup, useDocApiStore } from "../../doc-workspace-state";
 
 interface DeleteGroupModalProps {
 	open: boolean;
@@ -14,7 +14,7 @@ export const DeleteGroupModal: FC<DeleteGroupModalProps> = ({
 	onOpenChange,
 	group,
 }) => {
-	const deleteGroup = useDocStore(actionDeleteGroup);
+	const deleteGroup = useDocApiStore(actionDeleteGroup);
 	const [isDeleting, setIsDeleting] = useState(false);
 
 	const close = () => {

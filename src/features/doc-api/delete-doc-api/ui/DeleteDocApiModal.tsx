@@ -2,13 +2,13 @@ import type { FC } from "react";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { useDocsStore } from "../../../../entities/doc-api/store/useDocApisStore";
 
-interface DeleteDocModalProps {
+interface DeleteDocApiModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	doc: { id: string; name: string };
 }
 
-export const DeleteDocModal: FC<DeleteDocModalProps> = ({
+export const DeleteDocApiModal: FC<DeleteDocApiModalProps> = ({
 	open,
 	onOpenChange,
 	doc,

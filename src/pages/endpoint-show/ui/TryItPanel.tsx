@@ -14,9 +14,9 @@ import type { Environment } from "@/entities/environment";
 import { getEnvironmentAccessTokenApi } from "@/entities/environment-auth/api";
 import {
 	actionUpdateEndpointParamValue,
-	// selectDoc,
+	// selectDocApi,
 	selectSelectedEndpoint,
-	useDocStore,
+	useDocApiStore,
 } from "@/features/doc-api";
 import {
 	actionUpdateEnvironmentToken,
@@ -167,12 +167,14 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 };
 
 export const TryItPanel = () => {
-	const endpoint = useDocStore(selectSelectedEndpoint);
-	// const doc = useDocStore(selectDoc);
+	const endpoint = useDocApiStore(selectSelectedEndpoint);
+	// const doc = useDocApiStore(selectDocApi);
 	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
 	const [authToken, setAuthToken] = useState("");
 	const setAccessToken = useEnvironmentsStore(actionUpdateEnvironmentToken);
-	const updateEndpointParamValue = useDocStore(actionUpdateEndpointParamValue);
+	const updateEndpointParamValue = useDocApiStore(
+		actionUpdateEndpointParamValue,
+	);
 
 	const [tokenInput, setTokenInput] = useState("");
 	const [settingToken, setSettingToken] = useState(false);

@@ -4,7 +4,7 @@ import type { LocalField } from "@/entities/entity";
 import { EntityFieldsEditor, serializeFields } from "@/entities/entity";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
-import { actionAddEntity, useDocStore } from "../../doc-workspace-state";
+import { actionAddEntity, useDocApiStore } from "../../doc-workspace-state";
 
 interface CreateEntityModalProps {
 	open: boolean;
@@ -15,7 +15,7 @@ export const CreateEntityModal: FC<CreateEntityModalProps> = ({
 	open,
 	onOpenChange,
 }) => {
-	const addEntity = useDocStore(actionAddEntity);
+	const addEntity = useDocApiStore(actionAddEntity);
 
 	const [name, setName] = useState("");
 	const [desc, setDesc] = useState("");

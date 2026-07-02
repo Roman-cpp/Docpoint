@@ -3,14 +3,14 @@ import type { CreateDocDTO } from "@/entities/doc-api";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 
-interface CreateDocModalProps {
+interface CreateDocApiModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onCreate: (dto: CreateDocDTO) => void;
 	isCreating?: boolean;
 }
 
-export const CreateDocModal: FC<CreateDocModalProps> = ({
+export const CreateDocApiModal: FC<CreateDocApiModalProps> = ({
 	open,
 	onOpenChange,
 	onCreate,

@@ -11,7 +11,7 @@ const SAVE_DEBOUNCE_MS = 600;
  * still pending when the doc changes or the component unmounts is flushed so a
  * quick navigation never drops the last keystrokes.
  */
-export function useDocContent(docId: string) {
+export function useDocApiContent(docId: string) {
 	const [content, setContent] = useState("");
 	const [status, setStatus] = useState<SaveStatus>("loading");
 

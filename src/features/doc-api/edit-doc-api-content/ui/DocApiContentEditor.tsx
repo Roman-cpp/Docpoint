@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
-import { type SaveStatus, useDocContent } from "../model/useDocContent";
-import s from "./DocContentEditor.module.css";
+import { type SaveStatus, useDocApiContent } from "../model/useDocApiContent";
+import s from "./DocApiContentEditor.module.css";
 
 const STATUS_LABEL: Record<SaveStatus, string> = {
 	loading: "Загрузка…",
@@ -11,13 +11,15 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 	error: "Ошибка сохранения",
 };
 
-interface DocContentEditorProps {
+interface DocApiContentEditorProps {
 	docId: string;
 }
 
 /** Markdown body editor for a doc: live-preview editing with autosave to disk. */
-export const DocContentEditor: FC<DocContentEditorProps> = ({ docId }) => {
-	const { content, status, onChange } = useDocContent(docId);
+export const DocApiContentEditor: FC<DocApiContentEditorProps> = ({
+	docId,
+}) => {
+	const { content, status, onChange } = useDocApiContent(docId);
 	const [rawSource, setRawSource] = useState(false);
 
 	return (
