@@ -1,5 +1,6 @@
 mod create_markdown;
 mod delete_markdown;
+mod export_markdown;
 mod import_file;
 mod read_directory;
 mod read_markdown;
@@ -8,6 +9,7 @@ mod update_markdown;
 
 pub use create_markdown::*;
 pub use delete_markdown::*;
+pub use export_markdown::*;
 pub use import_file::*;
 pub use read_directory::*;
 pub use read_markdown::*;

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import { type Markdown, readMarkdownApi, updateMarkdownApi } from "@/entities/markdown";
+import {
+	type Markdown,
+	readMarkdownApi,
+	updateMarkdownApi,
+} from "@/entities/markdown";
 
 export type SaveStatus = "loading" | "idle" | "saving" | "saved" | "error";
 

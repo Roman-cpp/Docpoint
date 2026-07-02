@@ -1,11 +1,9 @@
 import { type FC, type ReactNode, useState } from "react";
 import { toast } from "@/core/toast";
-import {
-	createDirectoryApi,
-} from "@/entities/file-explorer";
+import { createDirectoryApi } from "@/entities/file-explorer";
+import { createMarkdownApi } from "@/entities/markdown";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileExplorerPage.module.css";
-import { createMarkdownApi } from "@/entities/markdown";
 
 /** What the create dialog is currently asking for, if anything. */
 type Pending = "file" | "folder" | null;

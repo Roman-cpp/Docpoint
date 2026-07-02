@@ -10,7 +10,8 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import { useNavigate, useSearchParams } from "react-router";
 import remarkGfm from "remark-gfm";
-import type { Markdown } from "@/entities/markdown";
+import { toast } from "@/core/toast";
+import { exportMarkdownApi, type Markdown } from "@/entities/markdown";
 import { cx } from "@/shared/lib/cx";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { Header } from "@/widgets/header";
@@ -200,7 +201,23 @@ export const MarkdownShowPage: FC = () => {
 		setTimeout(() => setCopied(false), 1500);
 	};
 
-	console.log("file:", file);
+	// Export the current document through the native "save file" dialog.
+	const exportFile = async () => {
+		if (!file) return;
+		const name = file.name.toLowerCase().endsWith(".md")
+			? file.name
+			: `${file.name}.md`;
+		try {
+			await exportMarkdownApi(file.content, name);
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось экспортировать файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
 	return (
 		<div className={s.frame}>
 			<Header section="Документы / Markdown" activeLink="docs" />
@@ -256,8 +273,13 @@ export const MarkdownShowPage: FC = () => {
 							<button type="button" className={s.toolBtn} onClick={copyAll}>
 								<CopyIcon /> {copied ? "Скопировано" : "Копировать"}
 							</button>
-							<button type="button" className={s.toolBtn}>
-								<DownloadIcon /> Скачать
+							<button
+								type="button"
+								className={s.toolBtn}
+								onClick={exportFile}
+								disabled={!file}
+							>
+								<DownloadIcon /> Экспортировать
 							</button>
 						</div>
 					</div>

@@ -3,8 +3,20 @@ import type { File } from "@/entities/file-explorer";
 import { FileIcon } from "@/shared/icon/icons";
 import { cx } from "@/shared/lib/cx";
 import { Dialog } from "@/shared/ui-kit/modal";
-import { formatSize } from "../lib";
 import s from "./FileGrid.module.css";
+
+export function formatSize(bytes: number): string {
+	const units = ["Б", "КБ", "МБ", "ГБ"];
+	let value = bytes;
+	let unit = 0;
+	while (value >= 1024 && unit < units.length - 1) {
+		value /= 1024;
+		unit += 1;
+	}
+	const rounded =
+		value >= 10 || unit === 0 ? Math.round(value) : Math.round(value * 10) / 10;
+	return `${rounded.toLocaleString("ru-RU")} ${units[unit]}`;
+}
 
 /* ─── Files — content tiles ─── */
 export const FileGrid: FC<{

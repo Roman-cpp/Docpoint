@@ -8,16 +8,16 @@ import {
 	type Folder,
 	readDirectoryApi,
 } from "@/entities/file-explorer";
+import { deleteMarkdownApi } from "@/entities/markdown";
 import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
+import { useNewMarkdownFile } from "../../../entities/markdown/model/useNewMarkdownFile";
 import { CloseIcon, FileIcon, SearchIcon } from "../../../shared/icon/icons";
 import { FileDropZone } from "../../../shared/ui-kit/controls/FileDropZone/FileDropZone";
+import { FileGrid } from "../../../widgets/file-explorer/ui/FileGrid/FileGrid";
+import { FolderGrid } from "../../../widgets/file-explorer/ui/FolderGrid/FolderGrid";
 import s from "./FileExplorerPage.module.css";
-import { FileGrid } from "./FileGrid/FileGrid";
-import { FolderGrid } from "./FolderGrid/FolderGrid";
 import { formatSize, KIND_LABEL } from "./lib";
-import { useNewMarkdownFile } from "./useNewMarkdownFile";
-import { deleteMarkdownApi } from "@/entities/markdown";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 

@@ -12,6 +12,8 @@ import {
 	type Folder,
 	readDirectoryApi,
 } from "@/entities/file-explorer";
+import { deleteMarkdownApi } from "@/entities/markdown";
+import { useNewMarkdownFile } from "@/entities/markdown/model/useNewMarkdownFile";
 import {
 	serviceKeys,
 	useAllServices,
@@ -22,15 +24,12 @@ import { EditDocModal } from "@/features/doc-api";
 import { CreateDocModal } from "@/features/doc-api/create-doc";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Sidebar } from "@/pages/docs/ui/Sidebar";
-import { FileGrid } from "@/pages/file-explorer/ui/FileGrid/FileGrid";
-import { FolderGrid } from "@/pages/file-explorer/ui/FolderGrid/FolderGrid";
-import { useNewMarkdownFile } from "@/pages/file-explorer/ui/useNewMarkdownFile";
 import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
+import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
 import { Header } from "@/widgets/header";
 import { CreateErdModal } from "./CreateErdModal";
-import { deleteMarkdownApi } from "@/entities/markdown";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
