@@ -101,6 +101,67 @@
 	color: var(--ink);
 	font-weight: 500;
 }
+.pfNavMenu {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+.pfNavDropdown {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	margin-top: 8px;
+	min-width: 180px;
+	padding: 4px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	box-shadow: var(--shadow-popover);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(-4px);
+	transition:
+		opacity var(--t-base),
+		transform var(--t-base),
+		visibility var(--t-base);
+	z-index: 20;
+}
+/* keep an invisible bridge so the menu doesn't close while moving the cursor */
+.pfNavDropdown::before {
+	content: "";
+	position: absolute;
+	top: -8px;
+	left: 0;
+	right: 0;
+	height: 8px;
+}
+.pfNavMenu:hover .pfNavDropdown,
+.pfNavMenu:focus-within .pfNavDropdown {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+}
+.pfNavDropdownItem {
+	display: block;
+	width: 100%;
+	padding: 7px 10px;
+	font-family: inherit;
+	font-size: 13px;
+	text-align: left;
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		color var(--t-base),
+		background var(--t-base);
+}
+.pfNavDropdownItem:hover {
+	color: var(--ink);
+	background: var(--cat-bg);
+}
 .pfNavUser {
 	display: inline-flex;
 	align-items: center;

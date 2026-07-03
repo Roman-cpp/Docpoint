@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 import s from "@/shared/styles/apiDocs.module.css";
+import { EditJsonModal } from "./EditJsonModal";
 
 const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -80,10 +81,17 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 	const [activeResponse, setActiveResponse] = useState(
 		Object.keys(detail.responses)[0],
 	);
+	const [jsonModalOpen, setJsonModalOpen] = useState(false);
+	// Локальные правки примеров ответа (ключ ответа -> отредактированный JSON).
+	const [exampleOverrides, setExampleOverrides] = useState<
+		Record<string, string>
+	>({});
 
 	const params = detail.queryParams ?? detail.bodyParams ?? [];
 	const responseKeys = Object.keys(detail.responses);
 	const activeResp = detail.responses[activeResponse];
+	const activeExample =
+		exampleOverrides[activeResponse] ?? activeResp?.example ?? "";
 
 	return (
 		<div>
@@ -199,18 +207,52 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 								}}
 							>
 								<span className={s.codeLang}>JSON</span>
-								<CopyBtn text={activeResp.example} />
+								<div style={{ display: "flex", gap: 8 }}>
+									<button
+										type="button"
+										className={s.copyBtn}
+										onClick={() => setJsonModalOpen(true)}
+									>
+										<svg
+											viewBox="0 0 12 12"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.5"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
+											<title>edit</title>
+											<path d="M8 1.5l2.5 2.5M2 10l6-6 2 2-6 6H2z" />
+										</svg>
+										Edit
+									</button>
+									<CopyBtn text={activeExample} />
+								</div>
 							</div>
 							<div
 								className={s.codeBody}
 								style={{ borderRadius: "0 0 10px 10px" }}
 							>
-								<pre style={{ fontSize: "12px" }}>{activeResp.example}</pre>
+								<pre style={{ fontSize: "12px" }}>{activeExample}</pre>
 							</div>
 						</>
 					)}
 				</div>
 			</div>
+
+			<EditJsonModal
+				open={jsonModalOpen}
+				onOpenChange={setJsonModalOpen}
+				value={activeExample}
+				subtitle={
+					activeResp
+						? `Пример ответа «${activeResp.label}»`
+						: "Пример ответа в формате JSON"
+				}
+				onSave={(json) =>
+					setExampleOverrides((prev) => ({ ...prev, [activeResponse]: json }))
+				}
+			/>
 		</div>
 	);
 };

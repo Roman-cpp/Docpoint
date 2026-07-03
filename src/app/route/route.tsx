@@ -7,6 +7,12 @@ export const router = createBrowserRouter([
 			{
 				path: "/",
 				lazy: async () => ({
+					Component: (await import("@/pages/home")).HomePage,
+				}),
+			},
+			{
+				path: "/docs",
+				lazy: async () => ({
 					Component: (await import("@/pages/docs")).DocsPage,
 				}),
 			},
@@ -41,6 +47,12 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
+				path: "/json-viewer",
+				lazy: async () => ({
+					Component: (await import("@/pages/json-viewer")).JsonViewerPage,
+				}),
+			},
+			{
 				path: "/http-history",
 				lazy: async () => ({
 					Component: (await import("@/pages/http-history")).HttpHistoryPage,
@@ -68,6 +80,12 @@ export const router = createBrowserRouter([
 				path: "/environments",
 				lazy: async () => ({
 					Component: (await import("@/pages/environment")).EnvironmentPage,
+				}),
+			},
+			{
+				path: "/websocket",
+				lazy: async () => ({
+					Component: (await import("@/pages/websocket-show")).WebSocketPage,
 				}),
 			},
 			{
