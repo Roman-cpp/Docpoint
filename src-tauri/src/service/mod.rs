@@ -8,6 +8,7 @@ mod markdown;
 mod platform;
 mod service_svc;
 mod shared;
+mod websocket;
 
 pub use directory::*;
 pub use doc_api::*;
@@ -19,3 +20,4 @@ pub use markdown::*;
 pub use platform::*;
 pub use service_svc::*;
 pub use shared::*;
+pub use websocket::*;

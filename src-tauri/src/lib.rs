@@ -18,6 +18,7 @@ use service::{
     read_erds, read_service_erds, create_erd, update_erd, delete_erd,
     read_erd_schemas, create_erd_schema,
     read_relations, create_relation, delete_relation,
+    ws_connect, ws_send, ws_disconnect,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
@@ -50,6 +51,7 @@ pub fn run() {
                 db: pool,
                 selected_environment_id: Default::default(),
                 vault_dir,
+                ws_conns: Default::default(),
             });
             Ok(())
         })
@@ -127,6 +129,9 @@ pub fn run() {
             read_relations,
             create_relation,
             delete_relation,
+            ws_connect,
+            ws_send,
+            ws_disconnect,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -5,3 +5,4 @@ pub mod environment;
 pub mod markdown;
 pub mod platform;
 pub mod service;
+pub mod websocket;
