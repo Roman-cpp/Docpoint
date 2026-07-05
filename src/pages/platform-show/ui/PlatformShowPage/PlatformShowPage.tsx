@@ -133,102 +133,118 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	if (!platform) {
 		return (
 			<div className={b.overview}>
-				<span className={b.ovEyebrow}>Platform</span>
-				<h1 className={b.ovTitle}>Платформа не найдена</h1>
+				<div className={b.content}>
+					<header className={b.hero}>
+						<div className={b.ovEyebrow}>Платформа</div>
+						<h1 className={b.ovTitle}>Платформа не найдена</h1>
+					</header>
+				</div>
 			</div>
 		);
 	}
 
 	return (
 		<div className={b.overview} onContextMenu={openMenu}>
-			<section className={b.section}>
-				<div className={b.sectionHead}>
-					<h2 className={b.fileBrowserTitle}>
-						Микросервисы
-						{services.length > 0 && (
-							<span className={b.titleCount}>{services.length}</span>
-						)}
-					</h2>
-					<Button
-						variant="subtle"
-						size="sm"
-						onClick={() => setIsServiceModalOpen(true)}
-					>
-						+ Добавить
-					</Button>
-				</div>
-				{isServicesLoading ? (
-					<p className={b.ovSub}>Загрузка микросервисов…</p>
-				) : services.length === 0 ? (
-					<div className={b.emptyState}>
-						<p className={b.emptyText}>
-							К этой платформе пока не прикреплён ни один микросервис
-						</p>
+			<div className={b.content}>
+				<header className={b.hero}>
+					<div className={b.ovEyebrow}>Платформа</div>
+					<h1 className={b.ovTitle}>{platform.name}</h1>
+					{platform.desc && <p className={b.ovSub}>{platform.desc}</p>}
+				</header>
+
+				<section className={b.section}>
+					<div className={b.sectionHead}>
+						<div className={b.sectionLabel}>
+							<span>Микросервисы</span>
+							{services.length > 0 && (
+								<span className={b.sectionCount}>{services.length}</span>
+							)}
+							<span className={b.sectionRule} />
+						</div>
 						<Button
-							variant="primary"
+							variant="subtle"
 							size="sm"
 							onClick={() => setIsServiceModalOpen(true)}
 						>
-							+ Добавить микросервис
+							+ Добавить
 						</Button>
 					</div>
-				) : (
-					<div className={b.apiCardsGrid}>
-						{services.map((svc) => (
-							<button
-								type="button"
-								key={svc.id}
-								className={`${b.apiCard} ${b.svcCard}`}
-								onClick={() => navigate(`/service-show/${svc.id}`)}
-								onContextMenu={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									setSvcMenu({ x: e.clientX, y: e.clientY, svc });
-								}}
+					{isServicesLoading ? (
+						<p className={b.ovSub}>Загрузка микросервисов…</p>
+					) : services.length === 0 ? (
+						<div className={b.emptyState}>
+							<p className={b.emptyText}>
+								К этой платформе пока не прикреплён ни один микросервис
+							</p>
+							<Button
+								variant="primary"
+								size="sm"
+								onClick={() => setIsServiceModalOpen(true)}
 							>
-								<div className={b.acName}>{svc.name}</div>
-								{svc.desc && <div className={b.acDesc}>{svc.desc}</div>}
-							</button>
-						))}
-					</div>
-				)}
-			</section>
+								+ Добавить микросервис
+							</Button>
+						</div>
+					) : (
+						<div className={b.apiCardsGrid}>
+							{services.map((svc) => (
+								<button
+									type="button"
+									key={svc.id}
+									className={`${b.apiCard} ${b.svcCard}`}
+									onClick={() => navigate(`/service-show/${svc.id}`)}
+									onContextMenu={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										setSvcMenu({ x: e.clientX, y: e.clientY, svc });
+									}}
+								>
+									<div className={b.acName}>{svc.name}</div>
+									{svc.desc && <div className={b.acDesc}>{svc.desc}</div>}
+								</button>
+							))}
+						</div>
+					)}
+				</section>
 
-			<div className={b.fileBrowser}>
-				<h2 className={b.fileBrowserTitle}>Файлы платформы</h2>
-				{path !== "" && (
-					<nav className={b.crumbs} aria-label="Путь">
-						{crumbs.map((c, i) => (
-							<span key={c.id} className={b.crumbItem}>
-								{i > 0 && <span className={b.crumbSep}>/</span>}
-								{i === crumbs.length - 1 ? (
-									<span className={b.crumbCurrent}>{c.name}</span>
-								) : (
-									<button
-										type="button"
-										className={b.crumb}
-										onClick={() => openFolder(c.id)}
-									>
-										{c.name}
-									</button>
-								)}
-							</span>
-						))}
-					</nav>
-				)}
-				<FolderGrid
-					folders={listing.folders}
-					onOpen={openFolder}
-					onDelete={deleteFolder}
-				/>
-				<FileGrid
-					files={listing.files}
-					selectedId={selectedFile?.name ?? null}
-					onSelect={setSelectedFile}
-					onOpen={openFile}
-					onDelete={deleteFile}
-				/>
-				<FileDropZone folder={path} onImported={reloadCurrent} />
+				<div className={b.fileBrowser}>
+					<div className={b.sectionLabel}>
+						<span>Файлы платформы</span>
+						<span className={b.sectionRule} />
+					</div>
+					{path !== "" && (
+						<nav className={b.crumbs} aria-label="Путь">
+							{crumbs.map((c, i) => (
+								<span key={c.id} className={b.crumbItem}>
+									{i > 0 && <span className={b.crumbSep}>/</span>}
+									{i === crumbs.length - 1 ? (
+										<span className={b.crumbCurrent}>{c.name}</span>
+									) : (
+										<button
+											type="button"
+											className={b.crumb}
+											onClick={() => openFolder(c.id)}
+										>
+											{c.name}
+										</button>
+									)}
+								</span>
+							))}
+						</nav>
+					)}
+					<FolderGrid
+						folders={listing.folders}
+						onOpen={openFolder}
+						onDelete={deleteFolder}
+					/>
+					<FileGrid
+						files={listing.files}
+						selectedId={selectedFile?.name ?? null}
+						onSelect={setSelectedFile}
+						onOpen={openFile}
+						onDelete={deleteFile}
+					/>
+					<FileDropZone folder={path} onImported={reloadCurrent} />
+				</div>
 			</div>
 
 			<ServiceModal

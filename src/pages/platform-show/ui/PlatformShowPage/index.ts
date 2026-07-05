@@ -1,1 +1,1 @@
-export { PlatformShowPage } from "./PlatformShowPage"
+export { PlatformShowPage } from "./PlatformShowPage";
