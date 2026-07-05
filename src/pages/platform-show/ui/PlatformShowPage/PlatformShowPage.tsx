@@ -17,7 +17,6 @@ import {
 } from "@/features/environment";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
 import { ServiceModal } from "@/features/service";
-import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Button, FileDropZone } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
@@ -133,15 +132,15 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 	if (!platform) {
 		return (
-			<div className={s.overview}>
-				<span className={s.ovEyebrow}>Platform</span>
-				<h1 className={s.ovTitle}>Платформа не найдена</h1>
+			<div className={b.overview}>
+				<span className={b.ovEyebrow}>Platform</span>
+				<h1 className={b.ovTitle}>Платформа не найдена</h1>
 			</div>
 		);
 	}
 
 	return (
-		<div className={s.overview} onContextMenu={openMenu}>
+		<div className={b.overview} onContextMenu={openMenu}>
 			<section className={b.section}>
 				<div className={b.sectionHead}>
 					<h2 className={b.fileBrowserTitle}>
@@ -159,7 +158,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</Button>
 				</div>
 				{isServicesLoading ? (
-					<p className={s.ovSub}>Загрузка микросервисов…</p>
+					<p className={b.ovSub}>Загрузка микросервисов…</p>
 				) : services.length === 0 ? (
 					<div className={b.emptyState}>
 						<p className={b.emptyText}>
@@ -174,12 +173,12 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						</Button>
 					</div>
 				) : (
-					<div className={s.apiCardsGrid}>
+					<div className={b.apiCardsGrid}>
 						{services.map((svc) => (
 							<button
 								type="button"
 								key={svc.id}
-								className={`${s.apiCard} ${b.svcCard}`}
+								className={`${b.apiCard} ${b.svcCard}`}
 								onClick={() => navigate(`/service-show/${svc.id}`)}
 								onContextMenu={(e) => {
 									e.preventDefault();
@@ -187,8 +186,8 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 									setSvcMenu({ x: e.clientX, y: e.clientY, svc });
 								}}
 							>
-								<div className={s.acName}>{svc.name}</div>
-								{svc.desc && <div className={s.acDesc}>{svc.desc}</div>}
+								<div className={b.acName}>{svc.name}</div>
+								{svc.desc && <div className={b.acDesc}>{svc.desc}</div>}
 							</button>
 						))}
 					</div>
@@ -286,7 +285,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						<Dialog.Close />
 					</Dialog.Header>
 					<Dialog.Body>
-						<p className={s.ovSub} style={{ margin: 0 }}>
+						<p className={b.ovSub} style={{ margin: 0 }}>
 							Микросервис «{pendingDelete.name}» будет удалён без возможности
 							восстановления.
 						</p>
@@ -369,10 +368,10 @@ export const PlatformShowPage: FC = () => {
 	fetchPlatform(id);
 
 	return (
-		<div className={s.wrapper}>
+		<div className={b.wrapper}>
 			<Header section="platform" activeLink="docs" />
 
-			<div className={s.shell}>
+			<div className={b.shell}>
 				<SidebarPlatform />
 				<Overview id={id} />
 			</div>

@@ -29,6 +29,8 @@
 .overview {
 	flex: 1;
 	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
 	padding: 44px 44px 60px;
 }
 @media (max-width: 900px) {
@@ -41,6 +43,13 @@
 		padding: 20px 14px 40px;
 	}
 }
+
+/* Centered content column within the free space */
+.content {
+	width: 100%;
+	max-width: 900px;
+	margin: auto;
+}
 .overview::-webkit-scrollbar {
 	width: 4px;
 }
@@ -48,27 +57,89 @@
 	background: var(--border);
 	border-radius: 2px;
 }
+/* ─── Hero ─── */
+.hero {
+	position: relative;
+	margin-bottom: 34px;
+	padding-left: 18px;
+}
+.hero::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 4px;
+	bottom: 4px;
+	width: 3px;
+	border-radius: 3px;
+	background: linear-gradient(
+		to bottom,
+		var(--blue),
+		var(--cat-ink) 55%,
+		var(--amber)
+	);
+	opacity: 0.85;
+}
+@media (max-width: 480px) {
+	.hero {
+		padding-left: 14px;
+	}
+}
 .ovEyebrow {
 	font-size: 11px;
 	font-weight: 500;
-	letter-spacing: 1px;
+	letter-spacing: 1.5px;
 	text-transform: uppercase;
 	color: var(--ink-low);
 	margin-bottom: 10px;
 }
 .ovTitle {
 	font-family: var(--font-serif);
-	font-size: 28px;
+	font-size: 30px;
 	color: var(--ink);
-	line-height: 1.2;
-	margin-bottom: 9px;
+	line-height: 1.15;
+	margin-bottom: 11px;
+	letter-spacing: -0.01em;
 }
 .ovSub {
 	font-size: 14px;
 	color: var(--ink-mid);
 	line-height: 1.75;
 	max-width: 500px;
-	margin-bottom: 32px;
+}
+
+/* ─── Section label ─── */
+.sectionLabel {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin-bottom: 16px;
+	max-width: 900px;
+}
+.sectionLabel::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--border);
+}
+.sectionCount {
+	flex: none;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--r-pill);
+	background: var(--cat-bg);
+	color: var(--ink-mid);
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0;
 }
 
 .toolsGrid {
@@ -93,48 +164,95 @@
 	text-decoration: none;
 	background: var(--surface);
 	border: 1px solid var(--border);
-	border-radius: 12px;
+	border-radius: var(--r-xl);
 	padding: 20px 22px;
 	cursor: pointer;
 	transition:
-		border-color 0.18s,
-		box-shadow 0.18s,
-		transform 0.15s;
+		border-color var(--t-slow),
+		box-shadow var(--t-slow),
+		transform var(--t-base);
 	position: relative;
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	overflow: hidden;
 }
+.toolCard::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(160deg, var(--accent), transparent 45%);
+	opacity: 0;
+	transition: opacity var(--t-slow);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	pointer-events: none;
+}
+.toolCard::after {
+	content: "";
+	position: absolute;
+	top: -40%;
+	right: -30%;
+	width: 160px;
+	height: 160px;
+	border-radius: var(--r-circle);
+	background: radial-gradient(circle, var(--accent), transparent 70%);
+	opacity: 0;
+	transition: opacity var(--t-slow);
+	pointer-events: none;
+}
 .toolCard:hover {
 	border-color: var(--border-h);
-	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
-	transform: translateY(-2px);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-3px);
+}
+.toolCard:hover::before {
+	opacity: 0.5;
+}
+.toolCard:hover::after {
+	opacity: 0.06;
 }
 @media (max-width: 480px) {
 	.toolCard {
 		padding: 16px 16px;
-		border-radius: 10px;
+		border-radius: var(--r-lg);
 	}
 }
-.tcAccent {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 3px;
-	border-top-left-radius: 12px;
-	border-top-right-radius: 12px;
+
+.tcTop {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
 }
 .tcIcon {
-	width: 40px;
-	height: 40px;
-	border-radius: 10px;
+	width: 42px;
+	height: 42px;
+	border-radius: var(--r-lg);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-size: 19px;
 	flex-shrink: 0;
+	transition: transform var(--t-slow) var(--ease-out);
+}
+.toolCard:hover .tcIcon {
+	transform: scale(1.06) rotate(-3deg);
+}
+.tcTag {
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	background: var(--cat-bg);
+	padding: 3px 8px;
+	border-radius: var(--r-pill);
 }
 .tcName {
 	font-family: var(--font-serif);
@@ -151,11 +269,24 @@
 .tcFooter {
 	display: flex;
 	align-items: center;
-	padding-top: 10px;
+	gap: 6px;
+	padding-top: 12px;
 	border-top: 1px solid var(--border);
 }
 .tcOpen {
-	margin-left: auto;
-	font-size: 11px;
-	color: var(--ink-low);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--ink-mid);
+	transition: color var(--t-base);
+}
+.tcArrow {
+	font-size: 13px;
+	color: var(--accent);
+	transition: transform var(--t-slow) var(--ease-out);
+}
+.toolCard:hover .tcOpen {
+	color: var(--accent);
+}
+.toolCard:hover .tcArrow {
+	transform: translateX(4px);
 }
