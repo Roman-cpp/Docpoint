@@ -2,18 +2,21 @@ import { type FC, useState } from "react";
 import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useAllServices, useAttachDoc } from "@/entities/service";
-import { actionResetDocApi, useDocApiStore } from "@/features/doc-api";
+import {
+	actionResetDocApi,
+	DeleteDocApiModal,
+	EditDocApiModal,
+	useDocApiStore,
+} from "@/features/doc-api";
 import {
 	actionResetEnvironments,
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
-import { DeleteDocApiModal } from "../../../features/doc-api/delete-doc-api/ui/DeleteDocApiModal";
-import { EditDocApiModal } from "../../../features/doc-api/edit-doc-api/ui/EditDocApiModal";
+import { SidebarPlatform } from "@/widgets/sidebar";
 import { exportDoc } from "../lib/exportDoc";
 import s from "./ApiExplorerPage.module.css";
-import { Sidebar } from "./Sidebar";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
@@ -154,7 +157,7 @@ export const DocsPage: FC = () => {
 			<Header section="docs" activeLink="docs" />
 
 			<div className={s.shell}>
-				<Sidebar />
+				<SidebarPlatform />
 				<Overview />
 			</div>
 		</div>

@@ -75,9 +75,7 @@ export const EditJsonModal: FC<EditJsonModalProps> = ({
 					>
 						Форматировать
 					</button>
-					<span
-						className={`${s.status} ${error ? s.statusError : s.statusOk}`}
-					>
+					<span className={`${s.status} ${error ? s.statusError : s.statusOk}`}>
 						{error ? `Ошибка: ${error}` : "Валидный JSON"}
 					</span>
 				</div>

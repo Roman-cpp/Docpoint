@@ -1,7 +1,7 @@
-import s from "./ApiExplorerPage.module.css";
 import { PlatformsSection } from "./PlatformsSection";
+import s from "./SidebarPlatform.module.css";
 
-export const Sidebar = () => {
+export const SidebarPlatform = () => {
 	return (
 		<aside className={s.sidebar}>
 			<PlatformsSection />

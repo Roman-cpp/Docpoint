@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { type Platform, usePlatformsStore } from "@/entities/platform";
+import { DeletePlatformModal, PlatformModal } from "@/features/platform";
 import { DropMenu } from "@/shared/ui-kit/controls";
-import s from "./ApiExplorerPage.module.css";
-import { DeletePlatformModal } from "./DeletePlatformModal";
-import { PlatformModal } from "./PlatformModal";
+import s from "./SidebarPlatform.module.css";
 
 export const PlatformsSection = () => {
 	const { platforms, createPlatform, updatePlatform, isCreating, isUpdating } =

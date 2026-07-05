@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { Link } from "react-router";
-import { Sidebar } from "@/pages/docs";
 import { Header } from "@/widgets/header";
+import { SidebarPlatform } from "@/widgets/sidebar";
 import s from "./HomePage.module.css";
 
 interface Tool {
@@ -84,7 +84,7 @@ export const HomePage: FC = () => {
 			<Header section="home" activeLink="home" />
 
 			<div className={s.shell}>
-				<Sidebar />
+				<SidebarPlatform />
 				<Overview />
 			</div>
 		</div>

@@ -18,11 +18,11 @@ import {
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
 import { ServiceModal } from "@/features/service";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
-import { Sidebar } from "@/pages/docs/ui/Sidebar";
 import { Button, FileDropZone } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
 import { Header } from "@/widgets/header";
+import { SidebarPlatform } from "@/widgets/sidebar";
 import b from "./PlatformShowPage.module.css";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
@@ -373,7 +373,7 @@ export const PlatformShowPage: FC = () => {
 			<Header section="platform" activeLink="docs" />
 
 			<div className={s.shell}>
-				<Sidebar />
+				<SidebarPlatform />
 				<Overview id={id} />
 			</div>
 		</div>
