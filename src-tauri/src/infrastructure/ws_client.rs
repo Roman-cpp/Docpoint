@@ -19,19 +19,44 @@ pub async fn connect(
     url: String,
     headers: Option<HashMap<String, String>>,
 ) -> Result<WsConn, String> {
-    let mut request = url.into_client_request().map_err(|e| e.to_string())?;
-    if let Some(headers) = headers {
-        let h = request.headers_mut();
-        for (k, v) in headers {
-            let name = HeaderName::from_bytes(k.as_bytes()).map_err(|e| e.to_string())?;
-            let value = HeaderValue::from_str(&v).map_err(|e| e.to_string())?;
-            h.insert(name, value);
-        }
-    }
+    // Some endpoints (e.g. Binance's AWS load balancers) intermittently close
+    // the TCP connection mid-TLS-handshake ("tls handshake eof"). That is a
+    // transient, retryable condition, so make a few attempts before giving up.
+    // Each attempt is bounded by a timeout so an unreachable host can't leave
+    // the frontend stuck on "Connecting…" indefinitely.
+    const MAX_ATTEMPTS: u32 = 4;
+    let mut last_err;
+    let mut attempt = 0;
+    let ws = loop {
+        attempt += 1;
 
-    let (ws, _resp) = tokio_tungstenite::connect_async(request)
+        let mut request = url.as_str().into_client_request().map_err(|e| e.to_string())?;
+        if let Some(headers) = &headers {
+            let h = request.headers_mut();
+            for (k, v) in headers {
+                let name = HeaderName::from_bytes(k.as_bytes()).map_err(|e| e.to_string())?;
+                let value = HeaderValue::from_str(v).map_err(|e| e.to_string())?;
+                h.insert(name, value);
+            }
+        }
+
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            tokio_tungstenite::connect_async(request),
+        )
         .await
-        .map_err(|e| e.to_string())?;
+        {
+            Ok(Ok((ws, _resp))) => break ws,
+            Ok(Err(e)) => last_err = e.to_string(),
+            Err(_) => last_err = "connection timed out after 15s".to_string(),
+        }
+
+        if attempt >= MAX_ATTEMPTS {
+            return Err(last_err);
+        }
+        // Small backoff before retrying the handshake.
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    };
     let (mut sink, mut stream) = ws.split();
 
     let event = format!("ws://{id}");

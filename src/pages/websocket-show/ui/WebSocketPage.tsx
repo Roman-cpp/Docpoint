@@ -1,8 +1,12 @@
+import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
 	type FC,
 	type KeyboardEvent,
 	type MouseEvent as ReactMouseEvent,
 	useCallback,
+	useEffect,
+	useRef,
 	useState,
 } from "react";
 import { Header } from "@/widgets/header";
@@ -10,31 +14,70 @@ import s from "./WebSocketPage.module.css";
 
 /* ─── TYPES ──────────────────────────────────── */
 type Direction = "in" | "out";
+type EntryKind = Direction | "system" | "error";
 
 interface WsMessage {
 	id: number;
-	dir: Direction;
+	kind: EntryKind;
 	text: string;
 	ts: string;
 }
 
-/* ─── MOCK DATA (template only) ──────────────── */
-const OUTGOING = `{ "op": "unsubscribe", "id": "init", "streams": "kline.exchange.symbol.interval"}`;
-const INCOMING = `{"channel":"","event":"error","data":"unknown action"}`;
+/** Events pushed from the backend over the `ws://{id}` channel. Mirrors the
+ *  Rust `WsEvent` enum (`#[serde(tag = "kind", rename_all = "lowercase")]`). */
+type WsEvent =
+	| { kind: "open" }
+	| { kind: "message"; text: string }
+	| { kind: "closed"; code: number | null; reason: string }
+	| { kind: "error"; message: string };
 
-const MOCK_MESSAGES: WsMessage[] = [
-	{ id: 1, dir: "out", text: OUTGOING, ts: "15:12:05.759" },
-	{ id: 2, dir: "in", text: INCOMING, ts: "15:12:05.765" },
-	{ id: 3, dir: "out", text: OUTGOING, ts: "15:12:06.809" },
-	{ id: 4, dir: "in", text: INCOMING, ts: "15:12:06.815" },
-	{ id: 5, dir: "out", text: OUTGOING, ts: "15:12:07.287" },
-	{ id: 6, dir: "in", text: INCOMING, ts: "15:12:07.293" },
+const DEFAULT_DRAFT = `{ "op": "subscribe", "id": "init", "streams": "kline.exchange.symbol.interval" }`;
+
+/* ─── EXAMPLE MESSAGES ───────────────────────── */
+interface Example {
+	name: string;
+	payload: string;
+}
+
+const EXAMPLES: Example[] = [
+	{
+		name: "Subscribe",
+		payload: `{ "op": "subscribe", "id": "init", "streams": "kline.exchange.symbol.interval" }`,
+	},
+	{
+		name: "Unsubscribe",
+		payload: `{ "op": "unsubscribe", "id": "init", "streams": "kline.exchange.symbol.interval" }`,
+	},
+	{
+		name: "Ping",
+		payload: `{ "op": "ping" }`,
+	},
+	{
+		name: "Auth",
+		payload: `{ "op": "auth", "apiKey": "YOUR_API_KEY", "signature": "…" }`,
+	},
+	{
+		name: "Subscribe ticker",
+		payload: `{ "op": "subscribe", "streams": "ticker.exchange.symbol" }`,
+	},
+	{
+		name: "Subscribe trades",
+		payload: `{ "op": "subscribe", "streams": "trade.exchange.symbol" }`,
+	},
+	{
+		name: "Order book",
+		payload: `{ "op": "subscribe", "streams": "orderbook.exchange.symbol.depth" }`,
+	},
 ];
 
 const TABS = ["Message", "Params", "Headers", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
-const now = () => new Date().toTimeString().slice(0, 8) + ".000";
+const now = () => {
+	const d = new Date();
+	const ms = String(d.getMilliseconds()).padStart(3, "0");
+	return `${d.toTimeString().slice(0, 8)}.${ms}`;
+};
 
 /** Try to pretty-print a JSON string; fall back to the raw text. */
 function prettyJson(text: string): string {
@@ -76,17 +119,61 @@ const ArrowDown: FC = () => (
 	</svg>
 );
 
+/* ─── SYSTEM ROW (open / closed / error / status) ── */
+const SystemRow: FC<{ msg: WsMessage }> = ({ msg }) => (
+	<div className={s.systemRow}>
+		<span className={`${s.systemIcon}${msg.kind === "error" ? " " + s.systemError : ""}`}>
+			{msg.kind === "error" ? (
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.4"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
+					<circle cx="8" cy="8" r="6.5" />
+					<path d="M8 5v3.5M8 11h.01" />
+				</svg>
+			) : (
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.4"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
+					<circle cx="8" cy="8" r="6.5" />
+					<path d="M5 8l2 2 4-4" />
+				</svg>
+			)}
+		</span>
+		<span className={s.systemText}>{msg.text}</span>
+		<span className={s.logTime}>{msg.ts}</span>
+	</div>
+);
+
 /* ─── LOG ROW ────────────────────────────────── */
 const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 	const [open, setOpen] = useState(false);
+
+	if (msg.kind === "system" || msg.kind === "error") {
+		return <SystemRow msg={msg} />;
+	}
+
 	const pretty = prettyJson(msg.text);
 	const lines = pretty.split("\n");
 
 	return (
 		<div className={s.logRow}>
 			<div className={s.logRowHead} onClick={() => setOpen((o) => !o)}>
-				<span className={`${s.dirIcon} ${msg.dir === "out" ? s.out : s.in}`}>
-					{msg.dir === "out" ? <ArrowUp /> : <ArrowDown />}
+				<span className={`${s.dirIcon} ${msg.kind === "out" ? s.out : s.in}`}>
+					{msg.kind === "out" ? <ArrowUp /> : <ArrowDown />}
 				</span>
 				<span className={s.logText}>{msg.text}</span>
 				<span className={s.logTime}>{msg.ts}</span>
@@ -131,23 +218,117 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 
 /* ─── PAGE ───────────────────────────────────── */
 export const WebSocketPage: FC = () => {
-	const [url, setUrl] = useState("http://localhost:8080/ws");
-	const [connected, setConnected] = useState(true);
+	const [url, setUrl] = useState("ws://localhost:8080/ws");
+	const [connId, setConnId] = useState<string | null>(null);
+	const [connecting, setConnecting] = useState(false);
 	const [tab, setTab] = useState<Tab>("Message");
-	const [draft, setDraft] = useState(OUTGOING);
-	const [messages, setMessages] = useState<WsMessage[]>(MOCK_MESSAGES);
+	const [draft, setDraft] = useState(DEFAULT_DRAFT);
+	const [messages, setMessages] = useState<WsMessage[]>([]);
 	const [search, setSearch] = useState("");
+	const [filter, setFilter] = useState<"all" | "in" | "out">("all");
 	const [editorHeight, setEditorHeight] = useState(300);
 
-	/* NOTE: template only — no real WebSocket connection yet */
-	const toggleConnection = () => setConnected((c) => !c);
+	const connected = connId !== null;
 
-	const send = () => {
-		if (!draft.trim() || !connected) return;
+	/* Refs so unmount cleanup and event handlers see the latest values. */
+	const unlistenRef = useRef<UnlistenFn | null>(null);
+	const connIdRef = useRef<string | null>(null);
+	connIdRef.current = connId;
+	const seqRef = useRef(0);
+
+	const push = useCallback((kind: EntryKind, text: string) => {
 		setMessages((m) => [
 			...m,
-			{ id: Date.now(), dir: "out", text: draft.trim(), ts: now() },
+			{ id: ++seqRef.current, kind, text, ts: now() },
 		]);
+	}, []);
+
+	const teardown = useCallback(() => {
+		unlistenRef.current?.();
+		unlistenRef.current = null;
+		setConnId(null);
+	}, []);
+
+	const connect = useCallback(async () => {
+		if (connIdRef.current || connecting) return;
+		setConnecting(true);
+		try {
+			// Generate the id up front so the listener is registered *before* the
+			// socket opens — otherwise the initial Open/first frames can be missed.
+			// NB: avoid crypto.randomUUID() — it requires a secure context, which
+			// the Tauri webview is not on Linux, and would throw here.
+			const id = `ws-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+			const unlisten = await listen<WsEvent>(`ws://${id}`, (evt) => {
+				const p = evt.payload;
+				switch (p.kind) {
+					case "open":
+						push("system", `Connected to ${url}`);
+						break;
+					case "message":
+						push("in", p.text);
+						break;
+					case "closed":
+						push(
+							"system",
+							`Disconnected${p.code != null ? ` (${p.code})` : ""}${
+								p.reason ? `: ${p.reason}` : ""
+							}`,
+						);
+						teardown();
+						break;
+					case "error":
+						push("error", p.message);
+						teardown();
+						break;
+				}
+			});
+			unlistenRef.current = unlisten;
+			await invoke<string>("ws_connect", { url, id });
+			setConnId(id);
+		} catch (err) {
+			unlistenRef.current?.();
+			unlistenRef.current = null;
+			push("error", String(err));
+		} finally {
+			setConnecting(false);
+		}
+	}, [url, connecting, teardown, push]);
+
+	const disconnect = useCallback(async () => {
+		const id = connIdRef.current;
+		if (!id) return;
+		try {
+			await invoke("ws_disconnect", { id });
+		} catch (err) {
+			push("error", String(err));
+		}
+		teardown();
+	}, [teardown, push]);
+
+	const toggleConnection = () => {
+		if (connected) disconnect();
+		else connect();
+	};
+
+	/* Close the socket and drop the listener when the page unmounts. */
+	useEffect(
+		() => () => {
+			unlistenRef.current?.();
+			const id = connIdRef.current;
+			if (id) invoke("ws_disconnect", { id });
+		},
+		[],
+	);
+
+	const send = async () => {
+		const text = draft.trim();
+		if (!text || !connId) return;
+		try {
+			await invoke("ws_send", { id: connId, text });
+			push("out", text);
+		} catch (err) {
+			push("error", String(err));
+		}
 	};
 
 	const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -183,18 +364,42 @@ export const WebSocketPage: FC = () => {
 
 	const draftLines = draft.split("\n");
 
-	const shown =
-		messages.filter((m) =>
-			search.trim() ? m.text.toLowerCase().includes(search.toLowerCase()) : true,
-		) ?? [];
+	const shown = messages.filter((m) => {
+		if (filter === "in" && m.kind !== "in") return false;
+		if (filter === "out" && m.kind !== "out") return false;
+		if (search.trim())
+			return m.text.toLowerCase().includes(search.toLowerCase());
+		return true;
+	});
 	// newest first, like the reference
 	const ordered = [...shown].reverse();
+
+	const applyExample = (payload: string) => setDraft(payload);
 
 	return (
 		<div className={s.wrapper}>
 			<Header section="websocket" activeLink="websocket" />
 
-			<div className={s.main}>
+			<div className={s.body}>
+				{/* ─── EXAMPLES SIDEBAR ─── */}
+				<aside className={s.sidebar}>
+					<div className={s.sidebarHead}>Examples</div>
+					<div className={s.exampleList}>
+						{EXAMPLES.map((ex) => (
+							<button
+								key={ex.name}
+								className={s.exampleItem}
+								onClick={() => applyExample(ex.payload)}
+								title={ex.payload}
+							>
+								<span className={s.exampleName}>{ex.name}</span>
+								<span className={s.examplePreview}>{ex.payload}</span>
+							</button>
+						))}
+					</div>
+				</aside>
+
+				<div className={s.main}>
 				{/* ─── CONNECT BAR ─── */}
 				<div className={s.connectBar}>
 					<span className={s.schemeTag}>WS</span>
@@ -207,8 +412,9 @@ export const WebSocketPage: FC = () => {
 					<button
 						className={`${s.connectBtn}${connected ? " " + s.disconnect : ""}`}
 						onClick={toggleConnection}
+						disabled={connecting}
 					>
-						{connected ? "Disconnect" : "Connect"}
+						{connecting ? "Connecting…" : connected ? "Disconnect" : "Connect"}
 					</button>
 				</div>
 
@@ -317,7 +523,13 @@ export const WebSocketPage: FC = () => {
 								onChange={(e) => setSearch(e.target.value)}
 							/>
 						</div>
-						<select className={s.filterSelect} defaultValue="all">
+						<select
+							className={s.filterSelect}
+							value={filter}
+							onChange={(e) =>
+								setFilter(e.target.value as "all" | "in" | "out")
+							}
+						>
 							<option value="all">All Messages</option>
 							<option value="in">Received</option>
 							<option value="out">Sent</option>
@@ -340,32 +552,18 @@ export const WebSocketPage: FC = () => {
 					</div>
 
 					<div className={s.log}>
+						{ordered.length === 0 && (
+							<div className={s.emptyLog}>
+								{connected
+									? "Connected — send a message to get started."
+									: "Not connected. Enter a URL and press Connect."}
+							</div>
+						)}
 						{ordered.map((m) => (
 							<LogRow key={m.id} msg={m} />
 						))}
-
-						{connected && (
-							<div className={s.systemRow}>
-								<span className={s.systemIcon}>
-									<svg
-										width="16"
-										height="16"
-										viewBox="0 0 16 16"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="1.4"
-										strokeLinecap="round"
-										strokeLinejoin="round"
-									>
-										<circle cx="8" cy="8" r="6.5" />
-										<path d="M5 8l2 2 4-4" />
-									</svg>
-								</span>
-								<span className={s.systemText}>Connected to {url}</span>
-								<span className={s.logTime}>15:10:35.265</span>
-							</div>
-						)}
 					</div>
+				</div>
 				</div>
 			</div>
 		</div>

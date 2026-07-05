@@ -25,6 +25,13 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Pin the rustls crypto provider explicitly. Today only `ring` is in the
+    // tree so it is auto-selected, but the moment a second provider (e.g.
+    // aws-lc-rs) is pulled in transitively, rustls 0.23 would panic on the
+    // first wss:// handshake with "no process-level CryptoProvider". Installing
+    // one up front keeps TLS deterministic regardless of the dependency graph.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
