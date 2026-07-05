@@ -19,6 +19,8 @@ use service::{
     read_erd_schemas, create_erd_schema,
     read_relations, create_relation, delete_relation,
     ws_connect, ws_send, ws_disconnect,
+    read_websockets, read_service_websockets, create_websocket, update_websocket, delete_websocket,
+    read_websocket_messages, create_websocket_message, update_websocket_message, delete_websocket_message,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use tauri::Manager;
@@ -139,6 +141,15 @@ pub fn run() {
             ws_connect,
             ws_send,
             ws_disconnect,
+            read_websockets,
+            read_service_websockets,
+            create_websocket,
+            update_websocket,
+            delete_websocket,
+            read_websocket_messages,
+            create_websocket_message,
+            update_websocket_message,
+            delete_websocket_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

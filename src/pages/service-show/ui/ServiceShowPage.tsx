@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useServiceErds } from "@/entities/doc-erd";
+import { useServiceWebsockets } from "@/entities/doc-websocket";
 import {
 	type DirListing,
 	deleteDirectoryApi,
@@ -30,6 +31,7 @@ import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
 import { Header } from "@/widgets/header";
 import { CreateErdModal } from "./CreateErdModal";
+import { CreateWebsocketModal } from "./CreateWebsocketModal";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
@@ -39,6 +41,12 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const { docs, isDocsLoading } = useServiceDocs(id);
 	const { erds, isErdsLoading, createErdAsync, isCreatingErd } =
 		useServiceErds(id);
+	const {
+		websockets,
+		isWebsocketsLoading,
+		createWebsocketAsync,
+		isCreatingWebsocket,
+	} = useServiceWebsockets(id);
 	const {
 		createDocAsync,
 		deleteDocAsync,
@@ -60,6 +68,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const [pendingEdit, setPendingEdit] = useState<Doc | null>(null);
 	const [erdModalOpen, setErdModalOpen] = useState(false);
 	const [docModalOpen, setDocModalOpen] = useState(false);
+	const [wsModalOpen, setWsModalOpen] = useState(false);
 
 	/** Vault folder holding this microservice's files. */
 	const baseDir = `services/${id}`;
@@ -303,6 +312,52 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				)}
 			</div>
 
+			<div style={{ marginTop: 32 }}>
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+						marginBottom: 16,
+					}}
+				>
+					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
+						Прикреплённые WebSocket
+					</h2>
+					<Button variant="subtle" onClick={() => setWsModalOpen(true)}>
+						+ Создать WS
+					</Button>
+				</div>
+				{isWebsocketsLoading ? (
+					<p className={s.ovSub}>Загрузка WebSocket…</p>
+				) : websockets.length === 0 ? (
+					<p className={s.ovSub}>
+						К этому микросервису пока не прикреплён ни один WebSocket
+					</p>
+				) : (
+					<div className={s.apiCardsGrid}>
+						{websockets.map((ws) => (
+							<Link
+								to="/websocket"
+								key={ws.id}
+								className={s.apiCard}
+								// Carry the socket's URL so the tester page can prefill it.
+								state={{ url: ws.url, name: ws.name }}
+							>
+								<div className={s.acAccent} />
+								<div className={s.acTop}>
+									<div className={s.acName}>{ws.name}</div>
+								</div>
+								<div className={s.acDesc}>{ws.desc || ws.url}</div>
+								<div className={s.acFooter}>
+									<span className={s.acTag}>ws</span>
+								</div>
+							</Link>
+						))}
+					</div>
+				)}
+			</div>
+
 			<div
 				className={b.fileBrowser}
 				style={{ marginTop: 32 }}
@@ -385,6 +440,20 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					try {
 						await createErdAsync({ name, desc, service_id: id });
 						setErdModalOpen(false);
+					} catch {
+						/* error toast handled by the mutation */
+					}
+				}}
+			/>
+
+			<CreateWebsocketModal
+				open={wsModalOpen}
+				onOpenChange={setWsModalOpen}
+				isSaving={isCreatingWebsocket}
+				onCreate={async ({ name, desc, url }) => {
+					try {
+						await createWebsocketAsync({ name, desc, url, service_id: id });
+						setWsModalOpen(false);
 					} catch {
 						/* error toast handled by the mutation */
 					}

@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useLocation } from "react-router";
 import { Header } from "@/widgets/header";
 import s from "./WebSocketPage.module.css";
 
@@ -122,7 +123,9 @@ const ArrowDown: FC = () => (
 /* ─── SYSTEM ROW (open / closed / error / status) ── */
 const SystemRow: FC<{ msg: WsMessage }> = ({ msg }) => (
 	<div className={s.systemRow}>
-		<span className={`${s.systemIcon}${msg.kind === "error" ? " " + s.systemError : ""}`}>
+		<span
+			className={`${s.systemIcon}${msg.kind === "error" ? " " + s.systemError : ""}`}
+		>
 			{msg.kind === "error" ? (
 				<svg
 					width="16"
@@ -218,7 +221,12 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 
 /* ─── PAGE ───────────────────────────────────── */
 export const WebSocketPage: FC = () => {
-	const [url, setUrl] = useState("ws://localhost:8080/ws");
+	// A card on the service page links here with the socket's URL in router state.
+	const location = useLocation();
+	const initialUrl =
+		(location.state as { url?: string } | null)?.url ??
+		"ws://localhost:8080/ws";
+	const [url, setUrl] = useState(initialUrl);
 	const [connId, setConnId] = useState<string | null>(null);
 	const [connecting, setConnecting] = useState(false);
 	const [tab, setTab] = useState<Tab>("Message");
@@ -237,10 +245,7 @@ export const WebSocketPage: FC = () => {
 	const seqRef = useRef(0);
 
 	const push = useCallback((kind: EntryKind, text: string) => {
-		setMessages((m) => [
-			...m,
-			{ id: ++seqRef.current, kind, text, ts: now() },
-		]);
+		setMessages((m) => [...m, { id: ++seqRef.current, kind, text, ts: now() }]);
 	}, []);
 
 	const teardown = useCallback(() => {
@@ -400,170 +405,179 @@ export const WebSocketPage: FC = () => {
 				</aside>
 
 				<div className={s.main}>
-				{/* ─── CONNECT BAR ─── */}
-				<div className={s.connectBar}>
-					<span className={s.schemeTag}>WS</span>
-					<input
-						className={s.urlInput}
-						placeholder="ws://localhost:8080/ws"
-						value={url}
-						onChange={(e) => setUrl(e.target.value)}
-					/>
-					<button
-						className={`${s.connectBtn}${connected ? " " + s.disconnect : ""}`}
-						onClick={toggleConnection}
-						disabled={connecting}
-					>
-						{connecting ? "Connecting…" : connected ? "Disconnect" : "Connect"}
-					</button>
-				</div>
-
-				{/* ─── EDITOR SECTION ─── */}
-				<div className={s.editorSection} style={{ height: editorHeight }}>
-					<div className={s.tabsBar}>
-						{TABS.map((t) => (
-							<button
-								key={t}
-								className={`${s.tab}${tab === t ? " " + s.active : ""}`}
-								onClick={() => setTab(t)}
-							>
-								{t}
-							</button>
-						))}
-						<div className={s.tabsSpacer} />
-						<span className={s.cookiesLink}>Cookies</span>
-					</div>
-
-					<div className={s.editor}>
-						<div className={s.gutter}>
-							{draftLines.map((_, i) => (
-								<div className={s.gutterLine} key={i}>
-									{i + 1}
-								</div>
-							))}
-						</div>
-						<textarea
-							className={s.codeArea}
-							value={draft}
-							onChange={(e) => setDraft(e.target.value)}
-							onKeyDown={onKey}
-							spellCheck={false}
-							placeholder='{ "op": "subscribe", "streams": "…" }'
+					{/* ─── CONNECT BAR ─── */}
+					<div className={s.connectBar}>
+						<span className={s.schemeTag}>WS</span>
+						<input
+							className={s.urlInput}
+							placeholder="ws://localhost:8080/ws"
+							value={url}
+							onChange={(e) => setUrl(e.target.value)}
 						/>
-					</div>
-
-					<div className={s.editorFooter}>
-						<select className={s.formatSelect} defaultValue="JSON">
-							<option>JSON</option>
-							<option>Raw</option>
-						</select>
-						<button className={s.iconBtn} title="Clear">
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 14 14"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.3"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							>
-								<path d="M2 3.5h10M4.5 3.5V2.5h5v1M5 6v4M7 6v4M9 6v4M3 3.5l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-8" />
-							</svg>
-						</button>
-						<div className={s.footerSpacer} />
 						<button
-							className={s.sendBtn}
-							onClick={send}
-							disabled={!connected || !draft.trim()}
+							className={`${s.connectBtn}${connected ? " " + s.disconnect : ""}`}
+							onClick={toggleConnection}
+							disabled={connecting}
 						>
-							Send
-						</button>
-					</div>
-				</div>
-
-				<div className={s.vResize} onMouseDown={startVResize} />
-
-				{/* ─── RESPONSE SECTION ─── */}
-				<div className={s.responseSection}>
-					<div className={s.responseHeader}>
-						<span className={s.responseTitle}>Response</span>
-						<span
-							className={`${s.statusPill} ${connected ? s.online : s.offline}`}
-						>
-							{connected ? "Connected" : "Disconnected"}
-						</span>
-						<button className={s.headerDots} title="More">
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-								<circle cx="3" cy="8" r="1.4" />
-								<circle cx="8" cy="8" r="1.4" />
-								<circle cx="13" cy="8" r="1.4" />
-							</svg>
+							{connecting
+								? "Connecting…"
+								: connected
+									? "Disconnect"
+									: "Connect"}
 						</button>
 					</div>
 
-					<div className={s.toolbar}>
-						<div className={s.searchWrap}>
-							<svg
-								width="13"
-								height="13"
-								viewBox="0 0 13 13"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.4"
-								strokeLinecap="round"
-							>
-								<circle cx="5.5" cy="5.5" r="3.8" />
-								<path d="M8.5 8.5L11 11" />
-							</svg>
-							<input
-								className={s.searchInput}
-								placeholder="Search"
-								value={search}
-								onChange={(e) => setSearch(e.target.value)}
+					{/* ─── EDITOR SECTION ─── */}
+					<div className={s.editorSection} style={{ height: editorHeight }}>
+						<div className={s.tabsBar}>
+							{TABS.map((t) => (
+								<button
+									key={t}
+									className={`${s.tab}${tab === t ? " " + s.active : ""}`}
+									onClick={() => setTab(t)}
+								>
+									{t}
+								</button>
+							))}
+							<div className={s.tabsSpacer} />
+							<span className={s.cookiesLink}>Cookies</span>
+						</div>
+
+						<div className={s.editor}>
+							<div className={s.gutter}>
+								{draftLines.map((_, i) => (
+									<div className={s.gutterLine} key={i}>
+										{i + 1}
+									</div>
+								))}
+							</div>
+							<textarea
+								className={s.codeArea}
+								value={draft}
+								onChange={(e) => setDraft(e.target.value)}
+								onKeyDown={onKey}
+								spellCheck={false}
+								placeholder='{ "op": "subscribe", "streams": "…" }'
 							/>
 						</div>
-						<select
-							className={s.filterSelect}
-							value={filter}
-							onChange={(e) =>
-								setFilter(e.target.value as "all" | "in" | "out")
-							}
-						>
-							<option value="all">All Messages</option>
-							<option value="in">Received</option>
-							<option value="out">Sent</option>
-						</select>
-						<button className={s.clearBtn} onClick={() => setMessages([])}>
-							<svg
-								width="12"
-								height="12"
-								viewBox="0 0 14 14"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.3"
-								strokeLinecap="round"
-								strokeLinejoin="round"
+
+						<div className={s.editorFooter}>
+							<select className={s.formatSelect} defaultValue="JSON">
+								<option>JSON</option>
+								<option>Raw</option>
+							</select>
+							<button className={s.iconBtn} title="Clear">
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 14 14"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.3"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
+									<path d="M2 3.5h10M4.5 3.5V2.5h5v1M5 6v4M7 6v4M9 6v4M3 3.5l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-8" />
+								</svg>
+							</button>
+							<div className={s.footerSpacer} />
+							<button
+								className={s.sendBtn}
+								onClick={send}
+								disabled={!connected || !draft.trim()}
 							>
-								<path d="M2 3.5h10M4.5 3.5V2.5h5v1M5 6v4M7 6v4M9 6v4M3 3.5l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-8" />
-							</svg>
-							Clear Messages
-						</button>
+								Send
+							</button>
+						</div>
 					</div>
 
-					<div className={s.log}>
-						{ordered.length === 0 && (
-							<div className={s.emptyLog}>
-								{connected
-									? "Connected — send a message to get started."
-									: "Not connected. Enter a URL and press Connect."}
+					<div className={s.vResize} onMouseDown={startVResize} />
+
+					{/* ─── RESPONSE SECTION ─── */}
+					<div className={s.responseSection}>
+						<div className={s.responseHeader}>
+							<span className={s.responseTitle}>Response</span>
+							<span
+								className={`${s.statusPill} ${connected ? s.online : s.offline}`}
+							>
+								{connected ? "Connected" : "Disconnected"}
+							</span>
+							<button className={s.headerDots} title="More">
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="currentColor"
+								>
+									<circle cx="3" cy="8" r="1.4" />
+									<circle cx="8" cy="8" r="1.4" />
+									<circle cx="13" cy="8" r="1.4" />
+								</svg>
+							</button>
+						</div>
+
+						<div className={s.toolbar}>
+							<div className={s.searchWrap}>
+								<svg
+									width="13"
+									height="13"
+									viewBox="0 0 13 13"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.4"
+									strokeLinecap="round"
+								>
+									<circle cx="5.5" cy="5.5" r="3.8" />
+									<path d="M8.5 8.5L11 11" />
+								</svg>
+								<input
+									className={s.searchInput}
+									placeholder="Search"
+									value={search}
+									onChange={(e) => setSearch(e.target.value)}
+								/>
 							</div>
-						)}
-						{ordered.map((m) => (
-							<LogRow key={m.id} msg={m} />
-						))}
+							<select
+								className={s.filterSelect}
+								value={filter}
+								onChange={(e) =>
+									setFilter(e.target.value as "all" | "in" | "out")
+								}
+							>
+								<option value="all">All Messages</option>
+								<option value="in">Received</option>
+								<option value="out">Sent</option>
+							</select>
+							<button className={s.clearBtn} onClick={() => setMessages([])}>
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 14 14"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.3"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
+									<path d="M2 3.5h10M4.5 3.5V2.5h5v1M5 6v4M7 6v4M9 6v4M3 3.5l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-8" />
+								</svg>
+								Clear Messages
+							</button>
+						</div>
+
+						<div className={s.log}>
+							{ordered.length === 0 && (
+								<div className={s.emptyLog}>
+									{connected
+										? "Connected — send a message to get started."
+										: "Not connected. Enter a URL and press Connect."}
+								</div>
+							)}
+							{ordered.map((m) => (
+								<LogRow key={m.id} msg={m} />
+							))}
+						</div>
 					</div>
-				</div>
 				</div>
 			</div>
 		</div>
