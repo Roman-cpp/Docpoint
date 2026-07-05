@@ -5,7 +5,7 @@
 
 /* ═══════════════ SECTION ═══════════════ */
 .fe-section {
-	margin-bottom: 28px;
+	margin-bottom: 22px;
 }
 .fe-section-title {
 	font-size: 11px;
@@ -13,7 +13,7 @@
 	letter-spacing: 0.7px;
 	text-transform: uppercase;
 	color: var(--ink-low);
-	margin: 0 0 12px;
+	margin: 0 0 8px;
 }
 
 /* ═══════════════ GRID ═══════════════ */

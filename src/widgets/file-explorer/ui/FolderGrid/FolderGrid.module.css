@@ -5,7 +5,7 @@
 
 /* ═══════════════ SECTION ═══════════════ */
 .fe-section {
-	margin-bottom: 28px;
+	margin-bottom: 22px;
 }
 /* Doubled-class selector at the foot of this file keeps these properties
    winning over broad `.wrapper h2` page rules (e.g. the serif heading reset
@@ -16,7 +16,7 @@
 	letter-spacing: 0.7px;
 	text-transform: uppercase;
 	color: var(--ink-low);
-	margin: 0 0 12px;
+	margin: 0 0 8px;
 }
 
 /* ═══════════════ FOLDER ROWS ═══════════════ */
