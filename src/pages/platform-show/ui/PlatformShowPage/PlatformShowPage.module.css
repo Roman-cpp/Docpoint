@@ -181,6 +181,112 @@
 	}
 }
 
+/* ═══════════════ TABS ═══════════════ */
+/* Switch between the microservices list and the platform file browser. Rides
+   on a hairline baseline; the active tab lifts with an underline accent. */
+.tabs {
+	display: flex;
+	align-items: stretch;
+	gap: 4px;
+	margin-bottom: 28px;
+	border-bottom: 1px solid var(--border);
+}
+.tab {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 4px;
+	margin-bottom: -1px;
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	font-family: var(--font-sans);
+	font-size: 14px;
+	color: var(--ink-low);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		border-color var(--t-base);
+}
+.tab:not(:first-child) {
+	margin-left: 20px;
+}
+.tab:hover {
+	color: var(--ink-mid);
+}
+.tabActive {
+	color: var(--ink);
+	font-weight: var(--fw-medium);
+	border-bottom-color: var(--ink);
+}
+.tabCount {
+	flex: none;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--r-pill);
+	background: var(--cat-bg);
+	color: var(--ink-mid);
+	font-size: 10px;
+	font-weight: var(--fw-semibold);
+}
+
+/* ═══════════════ DETAILS PANEL ═══════════════ */
+/* Full platform description followed by a definition list of metadata. */
+.detailsDesc {
+	font-size: 15px;
+	color: var(--ink-mid);
+	line-height: 1.75;
+	max-width: 620px;
+	margin: 0 0 28px;
+}
+.metaGrid {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	margin: 0;
+	max-width: 620px;
+}
+.metaRow {
+	display: flex;
+	gap: 16px;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--border);
+}
+.metaRow:first-child {
+	border-top: 1px solid var(--border);
+}
+.metaKey {
+	flex: none;
+	width: 160px;
+	font-size: 12px;
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.metaVal {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	font-size: 14px;
+	color: var(--ink);
+	word-break: break-word;
+}
+@media (max-width: 480px) {
+	.metaRow {
+		flex-direction: column;
+		gap: 4px;
+	}
+	.metaKey {
+		width: auto;
+	}
+}
+
 /* Section label row: uppercase caption + optional count, then a hairline that
    fills the remaining width. Shared by the services and files sections. */
 .sectionLabel {
@@ -268,7 +374,7 @@
 	margin-top: 0;
 }
 .fileBrowser {
-	margin-top: 34px;
+	margin-top: 0;
 }
 
 /* Section header row: the label row on the left, an action button on the right.
