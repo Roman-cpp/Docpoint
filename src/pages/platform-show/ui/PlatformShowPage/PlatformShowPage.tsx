@@ -51,6 +51,8 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	/** Current folder inside the vault: a vault-relative path, "" for the root. */
 	const [path, setPath] = useState("");
+	/** Which section is shown: platform details, microservices, or files. */
+	const [tab, setTab] = useState<"details" | "services" | "files">("services");
 	const navigate = useNavigate();
 
 	useEffect(() => {
@@ -146,12 +148,64 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	return (
 		<div className={b.overview} onContextMenu={openMenu}>
 			<div className={b.content}>
-				<header className={b.hero}>
-					<div className={b.ovEyebrow}>Платформа</div>
-					<h1 className={b.ovTitle}>{platform.name}</h1>
-					{platform.desc && <p className={b.ovSub}>{platform.desc}</p>}
-				</header>
+				<div className={b.tabs} role="tablist">
+					<button
+						type="button"
+						role="tab"
+						aria-selected={tab === "details"}
+						className={`${b.tab} ${tab === "details" ? b.tabActive : ""}`}
+						onClick={() => setTab("details")}
+					>
+						Подробности
+					</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={tab === "services"}
+						className={`${b.tab} ${tab === "services" ? b.tabActive : ""}`}
+						onClick={() => setTab("services")}
+					>
+						Микросервисы
+						{services.length > 0 && (
+							<span className={b.tabCount}>{services.length}</span>
+						)}
+					</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={tab === "files"}
+						className={`${b.tab} ${tab === "files" ? b.tabActive : ""}`}
+						onClick={() => setTab("files")}
+					>
+						Файлы платформы
+					</button>
+				</div>
 
+				{tab === "details" && (
+				<section className={b.section}>
+					<div className={b.sectionLabel}>
+						<span>Подробности о платформе</span>
+						<span className={b.sectionRule} />
+					</div>
+					{platform.desc ? (
+						<p className={b.detailsDesc}>{platform.desc}</p>
+					) : (
+						<p className={b.ovSub}>Описание платформы не задано</p>
+					)}
+					<dl className={b.metaGrid}>
+						<div className={b.metaRow}>
+							<dt className={b.metaKey}>Название</dt>
+							<dd className={b.metaVal}>{platform.name}</dd>
+						</div>
+						<div className={b.metaRow}>
+							<dt className={b.metaKey}>Микросервисов</dt>
+							<dd className={b.metaVal}>{services.length}</dd>
+						</div>
+					</dl>
+				</section>
+				)}
+
+				{tab === "services" && (
 				<section className={b.section}>
 					<div className={b.sectionHead}>
 						<div className={b.sectionLabel}>
@@ -205,12 +259,10 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						</div>
 					)}
 				</section>
+				)}
 
+				{tab === "files" && (
 				<div className={b.fileBrowser}>
-					<div className={b.sectionLabel}>
-						<span>Файлы платформы</span>
-						<span className={b.sectionRule} />
-					</div>
 					{path !== "" && (
 						<nav className={b.crumbs} aria-label="Путь">
 							{crumbs.map((c, i) => (
@@ -245,6 +297,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					/>
 					<FileDropZone folder={path} onImported={reloadCurrent} />
 				</div>
+				)}
 			</div>
 
 			<ServiceModal

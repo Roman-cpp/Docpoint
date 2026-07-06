@@ -151,8 +151,7 @@
 }
 
 .sbApis {
-	border-bottom: 1px solid var(--border);
-	padding: 8px 8px 6px;
+	padding: 14px 12px 10px;
 	flex-shrink: 0;
 }
 .sbSecLbl {
@@ -161,42 +160,111 @@
 	letter-spacing: 0.9px;
 	text-transform: uppercase;
 	color: var(--ink-low);
-	padding: 3px 8px 4px;
+	padding: 3px 4px 10px;
 	display: block;
 }
-.sbApiRow {
+
+/* ═══════════════ PLATFORM CARDS ═══════════════ */
+.pfList {
 	display: flex;
-	align-items: center;
-	border-radius: 7px;
-	transition: background 0.12s;
+	flex-direction: column;
+	gap: 8px;
 }
-.sbApiRow:hover,
-.sbApiRow.on {
-	background: var(--cat-bg);
+
+/* локальный индиго-акцент активной карточки */
+.pfCard {
+	--pf-accent: #6366f1;
+	--pf-accent-bg: #eef0fe;
+	position: relative;
+	display: flex;
+	align-items: stretch;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--surface);
+	transition:
+		border-color 0.13s,
+		background 0.13s,
+		box-shadow 0.13s;
 }
-.sbApiRow:hover .sbApiExportBtn {
+.pfCard:hover {
+	border-color: var(--border-h);
+}
+.pfCard:hover .sbMenuBtn {
 	opacity: 1;
 }
-.sbApiBtn {
+.pfCardActive {
+	border-color: var(--pf-accent);
+	background: var(--pf-accent-bg);
+	box-shadow: 0 0 0 1px var(--pf-accent);
+}
+
+.pfCardLink {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 7px 9px;
-	border-radius: 7px;
-	cursor: pointer;
-	border: none;
-	background: none;
+	gap: 11px;
 	flex: 1;
 	min-width: 0;
-	text-align: left;
+	padding: 11px 12px;
+	text-decoration: none;
+	cursor: pointer;
 	font-family: var(--font-sans);
 }
-.sbApiBtn.on {
-	background: var(--cat-bg);
-}
-.sbApiExportBtn {
+
+/* иконка-заглушка со штриховкой */
+.pfCardIcon {
+	width: 38px;
+	height: 38px;
 	flex-shrink: 0;
-	padding: 5px 7px;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background-color: var(--bg);
+	background-image: repeating-linear-gradient(
+		-45deg,
+		var(--border) 0,
+		var(--border) 1px,
+		transparent 1px,
+		transparent 7px
+	);
+}
+.pfCardActive .pfCardIcon {
+	border-color: #c7cbfb;
+	background-color: #f7f8ff;
+}
+
+.pfCardBody {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+}
+.pfCardName {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.pfCardMeta {
+	font-size: 11.5px;
+	color: var(--ink-low);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.pfCardActive .pfCardMeta {
+	color: var(--ink-mid);
+}
+
+/* меню действий — появляется по наведению */
+.pfCardMenu {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+}
+.sbMenuBtn {
+	flex-shrink: 0;
+	padding: 4px 5px;
 	border: none;
 	background: none;
 	color: var(--ink-low);
@@ -205,25 +273,10 @@
 	display: flex;
 	align-items: center;
 	opacity: 0;
-	transition: all 0.13s;
-	margin-right: 4px;
-}
-.sbApiExportBtn:hover {
-	color: var(--ink);
-	background: var(--border);
-}
-.sbMenuBtn {
-	flex-shrink: 0;
-	padding: 5px 7px;
-	border: none;
-	background: none;
-	color: var(--ink-low);
-	cursor: pointer;
-	border-radius: 5px;
-	display: flex;
-	align-items: center;
-	transition: all 0.13s;
-	margin-right: 4px;
+	transition:
+		opacity 0.13s,
+		color 0.13s,
+		background 0.13s;
 }
 .sbMenuBtn svg {
 	width: 14px;
@@ -231,33 +284,19 @@
 }
 .sbMenuBtn:hover {
 	color: var(--ink);
-	background: var(--border);
+	background: var(--cat-bg);
 }
-.sbApiIcon {
-	width: 26px;
-	height: 26px;
-	border-radius: 6px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 13px;
-	flex-shrink: 0;
+.pfCardActive .sbMenuBtn {
+	opacity: 1;
 }
-.sbApiName {
-	font-size: 13px;
-	font-weight: 500;
-	color: var(--ink);
-	flex: 1;
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+
+:global(.dark) .pfCard {
+	--pf-accent: #818cf8;
+	--pf-accent-bg: #1e1b33;
 }
-.sbApiDot {
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	flex-shrink: 0;
+:global(.dark) .pfCardActive .pfCardIcon {
+	border-color: #4a4a7a;
+	background-color: #26243d;
 }
 
 .sbImport {
