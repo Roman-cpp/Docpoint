@@ -29,11 +29,29 @@
 }
 .inputPane {
 	width: 44%;
-	border-right: 1px solid var(--border);
+	flex-shrink: 0;
 }
 .viewPane {
 	flex: 1;
 	background: var(--surface);
+}
+
+/* ─── Разделитель панелей ─── */
+.resizer {
+	flex-shrink: 0;
+	width: 5px;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-left: 1px solid var(--border);
+	background: transparent;
+	cursor: col-resize;
+	align-self: stretch;
+	transition: background var(--t-base);
+}
+.resizer:hover,
+.resizer:active {
+	background: var(--border-h);
 }
 
 .toolbar {

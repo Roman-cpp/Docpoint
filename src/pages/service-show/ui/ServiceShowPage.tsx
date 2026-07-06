@@ -24,7 +24,7 @@ import {
 import { EditDocApiModal } from "@/features/doc-api";
 import { CreateDocApiModal } from "@/features/doc-api/create-doc-api";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
-import b from "@/pages/platform-show/ui/PlatformShowPage.module.css";
+import b from "@/pages/platform-show/ui/PlatformShowPage/PlatformShowPage.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
@@ -341,8 +341,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 								to="/websocket"
 								key={ws.id}
 								className={s.apiCard}
-								// Carry the socket's URL so the tester page can prefill it.
-								state={{ url: ws.url, name: ws.name }}
+								// Carry the socket's id and URL so the tester page can prefill
+								// the connection and load its saved example messages.
+								state={{ id: ws.id, url: ws.url, name: ws.name }}
 							>
 								<div className={s.acAccent} />
 								<div className={s.acTop}>

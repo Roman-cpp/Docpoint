@@ -1,25 +1,7 @@
-import { type FC, useMemo, useState } from "react";
+import { type FC, useCallback, useMemo, useRef, useState } from "react";
 import { Header } from "@/widgets/header";
 import { type Json, JsonTree } from "./JsonTree";
 import s from "./JsonViewerPage.module.css";
-
-const SAMPLE = `{
-  "id": "pay_1a2b3c",
-  "amount": 4200,
-  "currency": "RUB",
-  "paid": true,
-  "customer": {
-    "name": "Иван Петров",
-    "email": "ivan@example.com",
-    "vip": false
-  },
-  "items": [
-    { "sku": "A-100", "qty": 2, "price": 1500 },
-    { "sku": "B-220", "qty": 1, "price": 1200 }
-  ],
-  "metadata": null,
-  "tags": ["online", "card"]
-}`;
 
 interface ParseResult {
 	data: Json | null;
@@ -52,6 +34,32 @@ export const JsonViewerPage: FC = () => {
 	// Толкаем при «развернуть/свернуть всё», чтобы пересобрать дерево.
 	const [treeKey, setTreeKey] = useState(0);
 	const [allOpen, setAllOpen] = useState(true);
+
+	// Ширина левой панели в процентах; двигается перетаскиванием разделителя.
+	const [inputWidth, setInputWidth] = useState(44);
+	const bodyRef = useRef<HTMLDivElement>(null);
+
+	const startResize = useCallback((e: React.PointerEvent) => {
+		e.preventDefault();
+		const onMove = (ev: PointerEvent) => {
+			const body = bodyRef.current;
+			if (!body) return;
+			const rect = body.getBoundingClientRect();
+			const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+			// Не даём панелям схлопнуться полностью.
+			setInputWidth(Math.min(80, Math.max(20, pct)));
+		};
+		const onUp = () => {
+			window.removeEventListener("pointermove", onMove);
+			window.removeEventListener("pointerup", onUp);
+			document.body.style.cursor = "";
+			document.body.style.userSelect = "";
+		};
+		document.body.style.cursor = "col-resize";
+		document.body.style.userSelect = "none";
+		window.addEventListener("pointermove", onMove);
+		window.addEventListener("pointerup", onUp);
+	}, []);
 
 	const { data, error } = useMemo(() => parseJson(raw), [raw]);
 	const hasData = data !== null && !error;
@@ -87,9 +95,9 @@ export const JsonViewerPage: FC = () => {
 		<div className={s.frame}>
 			<Header section="Инструменты / JSON" activeLink="json" />
 
-			<div className={s.body}>
+			<div className={s.body} ref={bodyRef}>
 				{/* ─── Ввод ─── */}
-				<section className={s.inputPane}>
+				<section className={s.inputPane} style={{ width: `${inputWidth}%` }}>
 					<div className={s.toolbar}>
 						<span className={s.paneTitle}>Исходный JSON</span>
 						<div className={s.toolActions}>
@@ -108,13 +116,6 @@ export const JsonViewerPage: FC = () => {
 								disabled={!!error || !raw.trim()}
 							>
 								Свернуть
-							</button>
-							<button
-								type="button"
-								className={s.toolBtn}
-								onClick={() => setRaw(SAMPLE)}
-							>
-								Пример
 							</button>
 							<button
 								type="button"
@@ -141,6 +142,14 @@ export const JsonViewerPage: FC = () => {
 								: "Ожидание ввода"}
 					</div>
 				</section>
+
+				{/* ─── Разделитель ─── */}
+				<button
+					type="button"
+					className={s.resizer}
+					onPointerDown={startResize}
+					aria-label="Изменить ширину панелей"
+				/>
 
 				{/* ─── Просмотр ─── */}
 				<section className={s.viewPane}>

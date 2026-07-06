@@ -10,7 +10,13 @@ import {
 	useState,
 } from "react";
 import { useLocation } from "react-router";
+import {
+	useWebsocketMessages,
+	type WebsocketMessage,
+} from "@/entities/websocket-message";
 import { Header } from "@/widgets/header";
+import { CreateWebsocketMessageModal } from "./CreateWebsocketMessageModal";
+import { EditWebsocketMessageModal } from "./EditWebsocketMessageModal";
 import s from "./WebSocketPage.module.css";
 
 /* ─── TYPES ──────────────────────────────────── */
@@ -33,43 +39,6 @@ type WsEvent =
 	| { kind: "error"; message: string };
 
 const DEFAULT_DRAFT = `{ "op": "subscribe", "id": "init", "streams": "kline.exchange.symbol.interval" }`;
-
-/* ─── EXAMPLE MESSAGES ───────────────────────── */
-interface Example {
-	name: string;
-	payload: string;
-}
-
-const EXAMPLES: Example[] = [
-	{
-		name: "Subscribe",
-		payload: `{ "op": "subscribe", "id": "init", "streams": "kline.exchange.symbol.interval" }`,
-	},
-	{
-		name: "Unsubscribe",
-		payload: `{ "op": "unsubscribe", "id": "init", "streams": "kline.exchange.symbol.interval" }`,
-	},
-	{
-		name: "Ping",
-		payload: `{ "op": "ping" }`,
-	},
-	{
-		name: "Auth",
-		payload: `{ "op": "auth", "apiKey": "YOUR_API_KEY", "signature": "…" }`,
-	},
-	{
-		name: "Subscribe ticker",
-		payload: `{ "op": "subscribe", "streams": "ticker.exchange.symbol" }`,
-	},
-	{
-		name: "Subscribe trades",
-		payload: `{ "op": "subscribe", "streams": "trade.exchange.symbol" }`,
-	},
-	{
-		name: "Order book",
-		payload: `{ "op": "subscribe", "streams": "orderbook.exchange.symbol.depth" }`,
-	},
-];
 
 const TABS = ["Message", "Params", "Headers", "Settings"] as const;
 type Tab = (typeof TABS)[number];
@@ -221,11 +190,13 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 
 /* ─── PAGE ───────────────────────────────────── */
 export const WebSocketPage: FC = () => {
-	// A card on the service page links here with the socket's URL in router state.
+	// A card on the service page links here with the socket's id and URL in
+	// router state. The id ties this page to its saved example messages; it is
+	// absent when the page is opened straight from the top nav.
 	const location = useLocation();
-	const initialUrl =
-		(location.state as { url?: string } | null)?.url ??
-		"ws://localhost:8080/ws";
+	const navState = location.state as { id?: string; url?: string } | null;
+	const websocketId = navState?.id ?? "";
+	const initialUrl = navState?.url ?? "ws://localhost:8080/ws";
 	const [url, setUrl] = useState(initialUrl);
 	const [connId, setConnId] = useState<string | null>(null);
 	const [connecting, setConnecting] = useState(false);
@@ -235,6 +206,23 @@ export const WebSocketPage: FC = () => {
 	const [search, setSearch] = useState("");
 	const [filter, setFilter] = useState<"all" | "in" | "out">("all");
 	const [editorHeight, setEditorHeight] = useState(300);
+
+	/* Saved example frames, loaded from `websocket_message` for this socket. */
+	const {
+		messages: examples,
+		isMessagesLoading,
+		createMessageAsync,
+		isCreatingMessage,
+		updateMessageAsync,
+		isUpdatingMessage,
+		deleteMessageAsync,
+		isDeletingMessage,
+	} = useWebsocketMessages(websocketId);
+
+	// `undefined` = modal closed, `null` = creating, object = editing that row.
+	const [editing, setEditing] = useState<WebsocketMessage | null | undefined>(
+		undefined,
+	);
 
 	const connected = connId !== null;
 
@@ -381,6 +369,34 @@ export const WebSocketPage: FC = () => {
 
 	const applyExample = (payload: string) => setDraft(payload);
 
+	/* Create (editing === null) or update (editing is a row) an example frame. */
+	const submitMessage = async (data: {
+		name: string;
+		payload: string;
+		desc: string;
+	}) => {
+		try {
+			if (editing) {
+				await updateMessageAsync({ id: editing.id, ...data });
+			} else {
+				await createMessageAsync({ websocket_id: websocketId, ...data });
+			}
+			setEditing(undefined);
+		} catch {
+			/* error toast handled by the mutation */
+		}
+	};
+
+	const deleteMessage = async () => {
+		if (!editing) return;
+		try {
+			await deleteMessageAsync(editing.id);
+			setEditing(undefined);
+		} catch {
+			/* error toast handled by the mutation */
+		}
+	};
+
 	return (
 		<div className={s.wrapper}>
 			<Header section="websocket" activeLink="websocket" />
@@ -388,19 +404,75 @@ export const WebSocketPage: FC = () => {
 			<div className={s.body}>
 				{/* ─── EXAMPLES SIDEBAR ─── */}
 				<aside className={s.sidebar}>
-					<div className={s.sidebarHead}>Examples</div>
-					<div className={s.exampleList}>
-						{EXAMPLES.map((ex) => (
+					<div className={s.sidebarHead}>
+						<span>Examples</span>
+						{websocketId && (
 							<button
-								key={ex.name}
-								className={s.exampleItem}
-								onClick={() => applyExample(ex.payload)}
-								title={ex.payload}
+								className={s.addBtn}
+								onClick={() => setEditing(null)}
+								title="Добавить сообщение"
 							>
-								<span className={s.exampleName}>{ex.name}</span>
-								<span className={s.examplePreview}>{ex.payload}</span>
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 14 14"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.6"
+									strokeLinecap="round"
+								>
+									<title>Добавить сообщение</title>
+									<path d="M7 2.5v9M2.5 7h9" />
+								</svg>
 							</button>
-						))}
+						)}
+					</div>
+					<div className={s.exampleList}>
+						{!websocketId ? (
+							<div className={s.emptyExamples}>
+								Откройте WebSocket из карточки сервиса, чтобы хранить сообщения.
+							</div>
+						) : isMessagesLoading ? (
+							<div className={s.emptyExamples}>Загрузка…</div>
+						) : examples.length === 0 ? (
+							<div className={s.emptyExamples}>
+								Пока нет сохранённых сообщений. Нажмите «+», чтобы добавить.
+							</div>
+						) : (
+							examples.map((ex) => (
+								<div key={ex.id} className={s.exampleItem}>
+									<button
+										type="button"
+										className={s.exampleMain}
+										onClick={() => applyExample(ex.payload)}
+										title={ex.desc || ex.payload}
+									>
+										<span className={s.exampleName}>{ex.name}</span>
+										<span className={s.examplePreview}>{ex.payload}</span>
+									</button>
+									<button
+										type="button"
+										className={s.exampleEdit}
+										onClick={() => setEditing(ex)}
+										title="Редактировать"
+									>
+										<svg
+											width="13"
+											height="13"
+											viewBox="0 0 14 14"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.4"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
+											<title>Редактировать</title>
+											<path d="M9.5 2.5l2 2L5 11l-2.5.5L3 9z" />
+										</svg>
+									</button>
+								</div>
+							))
+						)}
 					</div>
 				</aside>
 
@@ -580,6 +652,24 @@ export const WebSocketPage: FC = () => {
 					</div>
 				</div>
 			</div>
+
+			<CreateWebsocketMessageModal
+				open={editing === null}
+				onOpenChange={(o) => !o && setEditing(undefined)}
+				onSubmit={submitMessage}
+				isSaving={isCreatingMessage}
+			/>
+			{editing && (
+				<EditWebsocketMessageModal
+					open
+					onOpenChange={(o) => !o && setEditing(undefined)}
+					message={editing}
+					onSubmit={submitMessage}
+					onDelete={deleteMessage}
+					isSaving={isUpdatingMessage}
+					isDeleting={isDeletingMessage}
+				/>
+			)}
 		</div>
 	);
 };

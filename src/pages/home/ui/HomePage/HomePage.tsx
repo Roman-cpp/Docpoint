@@ -1,7 +1,7 @@
 import type { CSSProperties, FC } from "react";
 import { Link } from "react-router";
-import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
+import { Header } from "./../Header";
 import s from "./HomePage.module.css";
 
 interface Tool {
@@ -54,47 +54,47 @@ const Overview = () => {
 	return (
 		<div className={s.overview}>
 			<div className={s.content}>
-			<header className={s.hero}>
-				<div className={s.ovEyebrow}>Toolbox</div>
-				<h1 className={s.ovTitle}>Инструменты</h1>
-				<p className={s.ovSub}>
-					Набор инструментов для работы с API: HTTP-клиент, WebSocket и JSON.
-				</p>
-			</header>
+				<header className={s.hero}>
+					<div className={s.ovEyebrow}>Toolbox</div>
+					<h1 className={s.ovTitle}>Инструменты</h1>
+					<p className={s.ovSub}>
+						Набор инструментов для работы с API: HTTP-клиент, WebSocket и JSON.
+					</p>
+				</header>
 
-			<div className={s.sectionLabel}>
-				<span>Всё для работы с API</span>
-				<span className={s.sectionCount}>{TOOLS.length}</span>
-			</div>
+				<div className={s.sectionLabel}>
+					<span>Всё для работы с API</span>
+					<span className={s.sectionCount}>{TOOLS.length}</span>
+				</div>
 
-			<div className={s.toolsGrid}>
-				{TOOLS.map((t) => (
-					<Link
-						to={t.href}
-						key={t.href}
-						className={s.toolCard}
-						style={{ "--accent": t.accent } as CSSProperties}
-					>
-						<div className={s.tcTop}>
-							<div
-								className={s.tcIcon}
-								style={{ background: t.iconBg, color: t.iconColor }}
-							>
-								{t.icon}
+				<div className={s.toolsGrid}>
+					{TOOLS.map((t) => (
+						<Link
+							to={t.href}
+							key={t.href}
+							className={s.toolCard}
+							style={{ "--accent": t.accent } as CSSProperties}
+						>
+							<div className={s.tcTop}>
+								<div
+									className={s.tcIcon}
+									style={{ background: t.iconBg, color: t.iconColor }}
+								>
+									{t.icon}
+								</div>
+								<span className={s.tcTag}>{t.tag}</span>
 							</div>
-							<span className={s.tcTag}>{t.tag}</span>
-						</div>
-						<div className={s.tcName}>{t.name}</div>
-						<div className={s.tcDesc}>{t.desc}</div>
-						<div className={s.tcFooter}>
-							<span className={s.tcOpen}>Открыть</span>
-							<span className={s.tcArrow} aria-hidden>
-								→
-							</span>
-						</div>
-					</Link>
-				))}
-			</div>
+							<div className={s.tcName}>{t.name}</div>
+							<div className={s.tcDesc}>{t.desc}</div>
+							<div className={s.tcFooter}>
+								<span className={s.tcOpen}>Открыть</span>
+								<span className={s.tcArrow} aria-hidden>
+									→
+								</span>
+							</div>
+						</Link>
+					))}
+				</div>
 			</div>
 		</div>
 	);
@@ -104,7 +104,7 @@ const Overview = () => {
 export const HomePage: FC = () => {
 	return (
 		<div className={s.wrapper}>
-			<Header section="home" activeLink="home" />
+			<Header section="home" />
 
 			<div className={s.shell}>
 				<SidebarPlatform />

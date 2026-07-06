@@ -34,7 +34,11 @@
 	background: var(--surface);
 }
 .sidebarHead {
-	padding: 12px 16px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 10px 12px 10px 16px;
 	font-size: 12px;
 	font-weight: 600;
 	text-transform: uppercase;
@@ -42,6 +46,25 @@
 	color: var(--ink-mid);
 	border-bottom: 1px solid var(--border);
 	flex-shrink: 0;
+}
+.addBtn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: var(--ink-mid);
+	cursor: pointer;
+	transition:
+		background 0.12s,
+		color 0.12s;
+}
+.addBtn:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
 }
 .exampleList {
 	flex: 1;
@@ -51,21 +74,33 @@
 	flex-direction: column;
 	gap: 2px;
 }
+.emptyExamples {
+	padding: 14px 12px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--ink-low);
+}
 .exampleItem {
 	display: flex;
-	flex-direction: column;
-	gap: 3px;
+	align-items: stretch;
 	width: 100%;
-	padding: 8px 10px;
-	text-align: left;
-	background: none;
-	border: none;
 	border-radius: 7px;
-	cursor: pointer;
 	transition: background 0.12s;
 }
 .exampleItem:hover {
 	background: var(--cat-bg);
+}
+.exampleMain {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 8px 10px;
+	text-align: left;
+	background: none;
+	border: none;
+	cursor: pointer;
 }
 .exampleName {
 	font-size: 13px;
@@ -79,6 +114,27 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.exampleEdit {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	border: none;
+	background: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity 0.12s,
+		color 0.12s;
+}
+.exampleItem:hover .exampleEdit {
+	opacity: 1;
+}
+.exampleEdit:hover {
+	color: var(--ink);
 }
 
 /* ═══════════════ CONNECT BAR ═══════════════ */
