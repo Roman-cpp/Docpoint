@@ -173,8 +173,9 @@
 
 /* локальный индиго-акцент активной карточки */
 .pfCard {
-	--pf-accent: #6366f1;
-	--pf-accent-bg: #eef0fe;
+	--pf-accent: var(--ink);
+	--pf-accent-bg: var(--cat-bg);
+	--pf-accent-border: var(--border-h);
 	position: relative;
 	display: flex;
 	align-items: stretch;
@@ -193,9 +194,9 @@
 	opacity: 1;
 }
 .pfCardActive {
-	border-color: var(--pf-accent);
+	border-color: var(--pf-accent-border);
 	background: var(--pf-accent-bg);
-	box-shadow: 0 0 0 1px var(--pf-accent);
+	box-shadow: inset 3px 0 0 var(--pf-accent);
 }
 
 .pfCardLink {
@@ -227,8 +228,8 @@
 	);
 }
 .pfCardActive .pfCardIcon {
-	border-color: #c7cbfb;
-	background-color: #f7f8ff;
+	border-color: var(--border-h);
+	background-color: var(--surface);
 }
 
 .pfCardBody {
@@ -290,14 +291,6 @@
 	opacity: 1;
 }
 
-:global(.dark) .pfCard {
-	--pf-accent: #818cf8;
-	--pf-accent-bg: #1e1b33;
-}
-:global(.dark) .pfCardActive .pfCardIcon {
-	border-color: #4a4a7a;
-	background-color: #26243d;
-}
 
 .sbImport {
 	padding: 8px 10px;

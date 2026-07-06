@@ -1,5 +1,5 @@
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import type { FC } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
 	actionSelectEnvironment,
@@ -47,28 +47,59 @@ const openInWindow = async (label: string, url: string, title: string) => {
 	});
 };
 
-/** Навигационная ссылка с выпадающим пунктом «Открыть в отдельном окне» */
+/** Навигационная ссылка с контекстным меню «Открыть в отдельном окне» (ПКМ) */
 const NavMenuLink: FC<{
 	to: string;
 	label: string;
 	active?: boolean;
 	onOpenWindow: () => void;
-}> = ({ to, label, active, onOpenWindow }) => (
-	<div className={s.pfNavMenu}>
-		<Link to={to} className={`${s.pfNavLink} ${active ? s.active : ""}`}>
-			{label}
-		</Link>
-		<div className={s.pfNavDropdown}>
-			<button
-				type="button"
-				className={s.pfNavDropdownItem}
-				onClick={onOpenWindow}
+}> = ({ to, label, active, onOpenWindow }) => {
+	const [open, setOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const close = (e: MouseEvent) => {
+			if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
+		};
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") setOpen(false);
+		};
+		document.addEventListener("mousedown", close);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", close);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [open]);
+
+	return (
+		<div className={s.pfNavMenu} ref={menuRef}>
+			<Link
+				to={to}
+				className={`${s.pfNavLink} ${active ? s.active : ""}`}
+				onContextMenu={(e) => {
+					e.preventDefault();
+					setOpen((v) => !v);
+				}}
 			>
-				Открыть в отдельном окне
-			</button>
+				{label}
+			</Link>
+			<div className={`${s.pfNavDropdown} ${open ? s.open : ""}`}>
+				<button
+					type="button"
+					className={s.pfNavDropdownItem}
+					onClick={() => {
+						setOpen(false);
+						onOpenWindow();
+					}}
+				>
+					Открыть в отдельном окне
+				</button>
+			</div>
 		</div>
-	</div>
-);
+	);
+};
 
 export const Header: FC<HeaderProps> = ({ section }) => {
 	const environments = useEnvironmentsStore(selectEnvironments);

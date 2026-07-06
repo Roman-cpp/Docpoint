@@ -126,17 +126,7 @@
 		visibility var(--t-base);
 	z-index: 20;
 }
-/* keep an invisible bridge so the menu doesn't close while moving the cursor */
-.pfNavDropdown::before {
-	content: "";
-	position: absolute;
-	top: -8px;
-	left: 0;
-	right: 0;
-	height: 8px;
-}
-.pfNavMenu:hover .pfNavDropdown,
-.pfNavMenu:focus-within .pfNavDropdown {
+.pfNavDropdown.open {
 	opacity: 1;
 	visibility: visible;
 	transform: translateY(0);
