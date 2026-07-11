@@ -182,121 +182,121 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				</div>
 
 				{tab === "details" && (
-				<section className={b.section}>
-					<div className={b.sectionLabel}>
-						<span>Подробности о платформе</span>
-						<span className={b.sectionRule} />
-					</div>
-					{platform.desc ? (
-						<p className={b.detailsDesc}>{platform.desc}</p>
-					) : (
-						<p className={b.ovSub}>Описание платформы не задано</p>
-					)}
-					<dl className={b.metaGrid}>
-						<div className={b.metaRow}>
-							<dt className={b.metaKey}>Название</dt>
-							<dd className={b.metaVal}>{platform.name}</dd>
+					<section className={b.section}>
+						<div className={b.sectionLabel}>
+							<span>Подробности о платформе</span>
+							<span className={b.sectionRule} />
 						</div>
-						<div className={b.metaRow}>
-							<dt className={b.metaKey}>Микросервисов</dt>
-							<dd className={b.metaVal}>{services.length}</dd>
-						</div>
-					</dl>
-				</section>
+						{platform.desc ? (
+							<p className={b.detailsDesc}>{platform.desc}</p>
+						) : (
+							<p className={b.ovSub}>Описание платформы не задано</p>
+						)}
+						<dl className={b.metaGrid}>
+							<div className={b.metaRow}>
+								<dt className={b.metaKey}>Название</dt>
+								<dd className={b.metaVal}>{platform.name}</dd>
+							</div>
+							<div className={b.metaRow}>
+								<dt className={b.metaKey}>Микросервисов</dt>
+								<dd className={b.metaVal}>{services.length}</dd>
+							</div>
+						</dl>
+					</section>
 				)}
 
 				{tab === "services" && (
-				<section className={b.section}>
-					<div className={b.sectionHead}>
-						<div className={b.sectionLabel}>
-							<span>Микросервисы</span>
-							{services.length > 0 && (
-								<span className={b.sectionCount}>{services.length}</span>
-							)}
-							<span className={b.sectionRule} />
-						</div>
-						<Button
-							variant="subtle"
-							size="sm"
-							onClick={() => setIsServiceModalOpen(true)}
-						>
-							+ Добавить
-						</Button>
-					</div>
-					{isServicesLoading ? (
-						<p className={b.ovSub}>Загрузка микросервисов…</p>
-					) : services.length === 0 ? (
-						<div className={b.emptyState}>
-							<p className={b.emptyText}>
-								К этой платформе пока не прикреплён ни один микросервис
-							</p>
+					<section className={b.section}>
+						<div className={b.sectionHead}>
+							<div className={b.sectionLabel}>
+								<span>Микросервисы</span>
+								{services.length > 0 && (
+									<span className={b.sectionCount}>{services.length}</span>
+								)}
+								<span className={b.sectionRule} />
+							</div>
 							<Button
-								variant="primary"
+								variant="subtle"
 								size="sm"
 								onClick={() => setIsServiceModalOpen(true)}
 							>
-								+ Добавить микросервис
+								+ Добавить
 							</Button>
 						</div>
-					) : (
-						<div className={b.apiCardsGrid}>
-							{services.map((svc) => (
-								<button
-									type="button"
-									key={svc.id}
-									className={`${b.apiCard} ${b.svcCard}`}
-									onClick={() => navigate(`/service-show/${svc.id}`)}
-									onContextMenu={(e) => {
-										e.preventDefault();
-										e.stopPropagation();
-										setSvcMenu({ x: e.clientX, y: e.clientY, svc });
-									}}
+						{isServicesLoading ? (
+							<p className={b.ovSub}>Загрузка микросервисов…</p>
+						) : services.length === 0 ? (
+							<div className={b.emptyState}>
+								<p className={b.emptyText}>
+									К этой платформе пока не прикреплён ни один микросервис
+								</p>
+								<Button
+									variant="primary"
+									size="sm"
+									onClick={() => setIsServiceModalOpen(true)}
 								>
-									<div className={b.acName}>{svc.name}</div>
-									{svc.desc && <div className={b.acDesc}>{svc.desc}</div>}
-								</button>
-							))}
-						</div>
-					)}
-				</section>
+									+ Добавить микросервис
+								</Button>
+							</div>
+						) : (
+							<div className={b.apiCardsGrid}>
+								{services.map((svc) => (
+									<button
+										type="button"
+										key={svc.id}
+										className={`${b.apiCard} ${b.svcCard}`}
+										onClick={() => navigate(`/service-show/${svc.id}`)}
+										onContextMenu={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											setSvcMenu({ x: e.clientX, y: e.clientY, svc });
+										}}
+									>
+										<div className={b.acName}>{svc.name}</div>
+										{svc.desc && <div className={b.acDesc}>{svc.desc}</div>}
+									</button>
+								))}
+							</div>
+						)}
+					</section>
 				)}
 
 				{tab === "files" && (
-				<div className={b.fileBrowser}>
-					{path !== "" && (
-						<nav className={b.crumbs} aria-label="Путь">
-							{crumbs.map((c, i) => (
-								<span key={c.id} className={b.crumbItem}>
-									{i > 0 && <span className={b.crumbSep}>/</span>}
-									{i === crumbs.length - 1 ? (
-										<span className={b.crumbCurrent}>{c.name}</span>
-									) : (
-										<button
-											type="button"
-											className={b.crumb}
-											onClick={() => openFolder(c.id)}
-										>
-											{c.name}
-										</button>
-									)}
-								</span>
-							))}
-						</nav>
-					)}
-					<FolderGrid
-						folders={listing.folders}
-						onOpen={openFolder}
-						onDelete={deleteFolder}
-					/>
-					<FileGrid
-						files={listing.files}
-						selectedId={selectedFile?.name ?? null}
-						onSelect={setSelectedFile}
-						onOpen={openFile}
-						onDelete={deleteFile}
-					/>
-					<FileDropZone folder={path} onImported={reloadCurrent} />
-				</div>
+					<div className={b.fileBrowser}>
+						{path !== "" && (
+							<nav className={b.crumbs} aria-label="Путь">
+								{crumbs.map((c, i) => (
+									<span key={c.id} className={b.crumbItem}>
+										{i > 0 && <span className={b.crumbSep}>/</span>}
+										{i === crumbs.length - 1 ? (
+											<span className={b.crumbCurrent}>{c.name}</span>
+										) : (
+											<button
+												type="button"
+												className={b.crumb}
+												onClick={() => openFolder(c.id)}
+											>
+												{c.name}
+											</button>
+										)}
+									</span>
+								))}
+							</nav>
+						)}
+						<FolderGrid
+							folders={listing.folders}
+							onOpen={openFolder}
+							onDelete={deleteFolder}
+						/>
+						<FileGrid
+							files={listing.files}
+							selectedId={selectedFile?.name ?? null}
+							onSelect={setSelectedFile}
+							onOpen={openFile}
+							onDelete={deleteFile}
+						/>
+						<FileDropZone folder={path} onImported={reloadCurrent} />
+					</div>
 				)}
 			</div>
 

@@ -66,10 +66,7 @@ const Overview = () => {
 							className={s.toolCard}
 							style={{ "--accent": t.accent } as CSSProperties}
 						>
-							<div
-								className={s.tcIcon}
-								style={{ color: t.iconColor }}
-							>
+							<div className={s.tcIcon} style={{ color: t.iconColor }}>
 								{t.icon}
 							</div>
 							<div className={s.tcName}>{t.name}</div>
