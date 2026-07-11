@@ -61,28 +61,6 @@
 .hero {
 	position: relative;
 	margin-bottom: 34px;
-	padding-left: 18px;
-}
-.hero::before {
-	content: "";
-	position: absolute;
-	left: 0;
-	top: 4px;
-	bottom: 4px;
-	width: 3px;
-	border-radius: 3px;
-	background: linear-gradient(
-		to bottom,
-		var(--blue),
-		var(--cat-ink) 55%,
-		var(--amber)
-	);
-	opacity: 0.85;
-}
-@media (max-width: 480px) {
-	.hero {
-		padding-left: 14px;
-	}
 }
 .ovEyebrow {
 	font-size: 11px;
@@ -125,21 +103,6 @@
 	flex: 1;
 	height: 1px;
 	background: var(--border);
-}
-.sectionCount {
-	flex: none;
-	min-width: 18px;
-	height: 18px;
-	padding: 0 5px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: var(--r-pill);
-	background: var(--cat-bg);
-	color: var(--ink-mid);
-	font-size: 10px;
-	font-weight: 600;
-	letter-spacing: 0;
 }
 
 .toolsGrid {
@@ -224,16 +187,11 @@
 	}
 }
 
-.tcTop {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 10px;
-}
 .tcIcon {
 	width: 42px;
 	height: 42px;
 	border-radius: var(--r-lg);
+	background: var(--cat-bg);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -243,16 +201,6 @@
 }
 .toolCard:hover .tcIcon {
 	transform: scale(1.06) rotate(-3deg);
-}
-.tcTag {
-	font-size: 10px;
-	font-weight: 600;
-	letter-spacing: 0.5px;
-	text-transform: uppercase;
-	color: var(--ink-low);
-	background: var(--cat-bg);
-	padding: 3px 8px;
-	border-radius: var(--r-pill);
 }
 .tcName {
 	font-family: var(--font-serif);

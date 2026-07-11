@@ -6,11 +6,9 @@ import s from "./HomePage.module.css";
 
 interface Tool {
 	name: string;
-	tag: string;
 	desc: string;
 	href: string;
 	icon: string;
-	iconBg: string;
 	iconColor: string;
 	accent: string;
 }
@@ -19,32 +17,26 @@ interface Tool {
 const TOOLS: Tool[] = [
 	{
 		name: "HTTP Client",
-		tag: "REST",
 		desc: "Send HTTP requests, inspect responses and debug your APIs.",
 		href: "/http-client",
 		icon: "⇄",
-		iconBg: "var(--blue-bg)",
-		iconColor: "var(--blue)",
+		iconColor: "var(--ink)",
 		accent: "var(--blue)",
 	},
 	{
 		name: "WebSocket",
-		tag: "Realtime",
 		desc: "Open WebSocket connections and exchange messages in real time.",
 		href: "/websocket",
 		icon: "⚡",
-		iconBg: "var(--cat-bg)",
-		iconColor: "var(--cat-ink)",
+		iconColor: "var(--amber)",
 		accent: "var(--cat-ink)",
 	},
 	{
 		name: "JSON",
-		tag: "Format",
 		desc: "Format, validate and explore JSON payloads with ease.",
 		href: "/json-viewer",
 		icon: "{ }",
-		iconBg: "var(--amber-bg)",
-		iconColor: "var(--amber)",
+		iconColor: "var(--ink)",
 		accent: "var(--amber)",
 	},
 ];
@@ -64,7 +56,6 @@ const Overview = () => {
 
 				<div className={s.sectionLabel}>
 					<span>Всё для работы с API</span>
-					<span className={s.sectionCount}>{TOOLS.length}</span>
 				</div>
 
 				<div className={s.toolsGrid}>
@@ -75,14 +66,11 @@ const Overview = () => {
 							className={s.toolCard}
 							style={{ "--accent": t.accent } as CSSProperties}
 						>
-							<div className={s.tcTop}>
-								<div
-									className={s.tcIcon}
-									style={{ background: t.iconBg, color: t.iconColor }}
-								>
-									{t.icon}
-								</div>
-								<span className={s.tcTag}>{t.tag}</span>
+							<div
+								className={s.tcIcon}
+								style={{ color: t.iconColor }}
+							>
+								{t.icon}
 							</div>
 							<div className={s.tcName}>{t.name}</div>
 							<div className={s.tcDesc}>{t.desc}</div>

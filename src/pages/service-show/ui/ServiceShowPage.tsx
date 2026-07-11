@@ -1,9 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
-import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
+import {
+	type Doc,
+	type ImportDocPayload,
+	type UpdateDocDTO,
+	useDocsStore,
+} from "@/entities/doc-api";
 import { useServiceErds } from "@/entities/doc-erd";
 import { useServiceWebsockets } from "@/entities/doc-websocket";
 import {
@@ -50,8 +55,10 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const {
 		createDocAsync,
 		deleteDocAsync,
+		importDocAsync,
 		isCreating,
 		isDeleting,
+		isImporting,
 		isUpdating,
 		updateDocAsync,
 	} = useDocsStore();
@@ -69,6 +76,28 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const [erdModalOpen, setErdModalOpen] = useState(false);
 	const [docModalOpen, setDocModalOpen] = useState(false);
 	const [wsModalOpen, setWsModalOpen] = useState(false);
+	const importInputRef = useRef<HTMLInputElement>(null);
+
+	/** Read a previously exported doc JSON, import it, and immediately attach the
+	 *  new doc to this microservice so it appears under "Прикреплённые документы". */
+	const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		// Reset the input so picking the same file again still fires onChange.
+		e.target.value = "";
+		if (!file) return;
+		try {
+			const payload = JSON.parse(await file.text()) as ImportDocPayload;
+			const docId = await importDocAsync(payload);
+			await attachDocAsync({ serviceId: id, docId });
+			queryClient.invalidateQueries({ queryKey: serviceKeys.docs(id) });
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось импортировать документ",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
 
 	/** Vault folder holding this microservice's files. */
 	const baseDir = `services/${id}`;
@@ -220,9 +249,25 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
 						Прикреплённые документы
 					</h2>
-					<Button variant="subtle" onClick={() => setDocModalOpen(true)}>
-						+ Создать документ
-					</Button>
+					<div style={{ display: "flex", gap: 8 }}>
+						<Button
+							variant="subtle"
+							disabled={isImporting || isAttaching}
+							onClick={() => importInputRef.current?.click()}
+						>
+							{isImporting ? "Импорт…" : "↓ Импортировать"}
+						</Button>
+						<Button variant="subtle" onClick={() => setDocModalOpen(true)}>
+							+ Создать документ
+						</Button>
+					</div>
+					<input
+						ref={importInputRef}
+						type="file"
+						accept="application/json,.json"
+						style={{ display: "none" }}
+						onChange={handleImportFile}
+					/>
 				</div>
 				{isDocsLoading ? (
 					<p className={s.ovSub}>Загрузка документов…</p>
