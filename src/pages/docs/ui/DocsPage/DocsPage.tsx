@@ -1,6 +1,11 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
-import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
+import {
+	type Doc,
+	exportDoc,
+	type UpdateDocDTO,
+	useDocsStore,
+} from "@/entities/doc-api";
 import { useAllServices, useAttachDoc } from "@/entities/service";
 import {
 	actionResetDocApi,
@@ -15,7 +20,6 @@ import {
 import { DropMenu } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
-import { exportDoc } from "../../lib/exportDoc";
 import s from "../ApiExplorerPage.module.css";
 
 /* ═══════════════ OVERVIEW ═══════════════ */

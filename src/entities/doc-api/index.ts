@@ -7,6 +7,7 @@ export { readEnvironmentsByDocApi } from "./api/readEnvironmentsByDocApi";
 export { updateDocApi } from "./api/updateDocApi";
 export { writeDocApi } from "./api/writeDocApi";
 export { writeDocContentApi } from "./api/writeDocContentApi";
+export { exportDoc } from "./lib/exportDoc";
 export type { CreateDocDTO, UpdateDocDTO } from "./model/doc-api.dto";
 export type { Doc } from "./model/doc-api.type";
 export type {

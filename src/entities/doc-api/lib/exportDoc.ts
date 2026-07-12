@@ -1,9 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
-import { readDocApi, readEnvironmentsByDocApi } from "@/entities/doc-api";
 import { readEntitiesApi } from "@/entities/entity";
 import { readGroupsApi } from "@/entities/group";
+import { readDocApi } from "../api/readDocApi";
+import { readEnvironmentsByDocApi } from "../api/readEnvironmentsByDocApi";
 
-/** Собирает документ со всеми связанными данными и сохраняет его как JSON-файл. */
+/** Собирает документ со всеми связанными данными и сохраняет его как JSON-файл
+ *  в том же формате, что принимает importDocApi (ImportDocPayload). */
 export async function exportDoc(docId: string, docName: string): Promise<void> {
 	const [doc, groups, entities, environments] = await Promise.all([
 		readDocApi(docId),

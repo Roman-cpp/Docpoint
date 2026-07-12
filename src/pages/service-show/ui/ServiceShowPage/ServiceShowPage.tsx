@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
 import {
 	type Doc,
+	exportDoc,
 	type ImportDocPayload,
 	type UpdateDocDTO,
 	useDocsStore,
@@ -94,6 +95,19 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			toast({
 				variant: "error",
 				title: "Не удалось импортировать документ",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	/** Export a doc to JSON, in the same format handleImportFile accepts. */
+	const handleExportDoc = async (doc: Doc) => {
+		try {
+			await exportDoc(doc.id, doc.name);
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось экспортировать документ",
 				description: err instanceof Error ? err.message : String(err),
 			});
 		}
@@ -538,6 +552,13 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					Редактировать
 				</ContextMenu.Item>
 
+				<ContextMenu.Item
+					icon={<DownloadIcon />}
+					onSelect={() => docMenu && handleExportDoc(docMenu.doc)}
+				>
+					Экспортировать
+				</ContextMenu.Item>
+
 				<ContextMenu.Separator />
 
 				<ContextMenu.Item
@@ -672,6 +693,24 @@ const PencilIcon: FC = () => (
 		<title>edit</title>
 
 		<path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
+	</svg>
+);
+
+const DownloadIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>export</title>
+		<path d="M8 1.5v8.5M4.5 6.5 8 10l3.5-3.5" />
+		<path d="M2.5 12.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" />
 	</svg>
 );
 
