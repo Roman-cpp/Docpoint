@@ -3,10 +3,15 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Doc } from "@/entities/doc-api";
 import { readDocApi } from "@/entities/doc-api";
-import type { CreateEndpointDTO, Endpoint } from "@/entities/endpoint";
+import type {
+	CreateEndpointDTO,
+	Endpoint,
+	UpdateEndpointDTO,
+} from "@/entities/endpoint";
 import {
 	createEndpointApi,
 	deleteEndpointApi,
+	updateEndpointApi,
 	updateParamValueApi,
 } from "@/entities/endpoint";
 import type {
@@ -53,6 +58,8 @@ type DocApiActions = {
 		groupLabel?: string;
 		endpoint: CreateEndpointDTO;
 	}) => Promise<void>;
+
+	updateEndpoint: (endpoint: UpdateEndpointDTO) => Promise<void>;
 
 	deleteEndpoint: (endpointId: string) => Promise<void>;
 
@@ -136,6 +143,33 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 		if (!docId) throw new Error("[DocApiStore] addEndpoint: no doc loaded");
 
 		await createEndpointApi({ docId, groupId, groupLabel, endpoint });
+		await get().fetchDocApi(docId);
+	},
+
+	updateEndpoint: async (endpoint) => {
+		const docId = get().doc?.id;
+		if (!docId) throw new Error("[DocApiStore] updateEndpoint: no doc loaded");
+
+		await updateEndpointApi(endpoint);
+
+		// Оптимистично обновляем выбранный endpoint, чтобы UI не моргал до refetch.
+		set((state) => {
+			const patchEndpoint = (ep: Endpoint): Endpoint =>
+				ep.id === endpoint.id ? { ...ep, ...endpoint } : ep;
+
+			return {
+				groups: state.groups
+					? state.groups.map((g) => ({
+							...g,
+							endpoints: g.endpoints.map(patchEndpoint),
+						}))
+					: state.groups,
+				selectedEndpoint: state.selectedEndpoint
+					? patchEndpoint(state.selectedEndpoint)
+					: state.selectedEndpoint,
+			};
+		});
+
 		await get().fetchDocApi(docId);
 	},
 

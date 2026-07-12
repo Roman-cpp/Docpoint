@@ -9,6 +9,7 @@ export {
 	actionSelectEndpoint,
 	actionSelectEntity,
 	actionSelectGroup,
+	actionUpdateEndpoint,
 	actionUpdateEndpointParamValue,
 	actionUpdateEntity,
 } from "./store/docApiStore.actions";

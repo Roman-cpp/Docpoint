@@ -9,6 +9,8 @@ export const actionUpdateEndpointParamValue = (state: DocApiStore) =>
 	state.updateEndpointParamValue;
 export const actionResetDocApi = (state: DocApiStore) => state.resetDocApi;
 export const actionAddEndpoint = (state: DocApiStore) => state.addEndpoint;
+export const actionUpdateEndpoint = (state: DocApiStore) =>
+	state.updateEndpoint;
 export const actionDeleteEndpoint = (state: DocApiStore) =>
 	state.deleteEndpoint;
 export const actionDeleteGroup = (state: DocApiStore) => state.deleteGroup;

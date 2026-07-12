@@ -1,6 +1,10 @@
 import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import type { Endpoint, HttpMethod } from "@/entities/endpoint";
+import type { Environment } from "@/entities/environment";
+import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
+import { selectSelectedEnvironment, useEnvironmentsStore } from "@/features/environment";
+import { getEnvDotColor } from "@/shared/lib/env-color";
 import {
 	Field,
 	Input,
@@ -15,8 +19,6 @@ interface EditEndpointModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	endpoint: Endpoint;
-	onSave?: (updates: Endpoint) => void;
-	isSaving?: boolean;
 }
 
 const METHOD_OPTIONS: { value: HttpMethod; label: HttpMethod }[] = [
@@ -78,7 +80,7 @@ const fromDraft = (d: ParamDraft): Endpoint["queryParams"][number] => ({
 	required: d.required,
 	desc: d.desc.trim(),
 	default: d.default.trim() || undefined,
-	value: null,
+	value: "",
 });
 
 const toFormValues = (endpoint: Endpoint): FormValues => ({
@@ -96,9 +98,11 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	open,
 	onOpenChange,
 	endpoint,
-	onSave,
-	isSaving = false,
 }) => {
+	const updateEndpoint = useDocApiStore(actionUpdateEndpoint);
+	const selectedEnv = useEnvironmentsStore(selectSelectedEnvironment);
+	const [isSaving, setIsSaving] = useState(false);
+
 	const { control, handleSubmit, watch, reset } = useForm<FormValues>({
 		defaultValues: toFormValues(endpoint),
 	});
@@ -120,28 +124,36 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 		onOpenChange(false);
 	};
 
-	const submit = handleSubmit((values) => {
+	const submit = handleSubmit(async (values) => {
 		const tags = values.tagsInput
 			.split(",")
 			.map((t) => t.trim())
 			.filter(Boolean);
 
-		onSave?.({
-			...endpoint,
-			method: values.method,
-			path: values.path.trim(),
-			name: values.name.trim(),
-			description: values.description.trim(),
-			tags,
-			auth: values.auth,
-			queryParams: values.queryParams.map(fromDraft),
-			bodyParams: values.bodyParams.map(fromDraft),
-		});
-		onOpenChange(false);
+		try {
+			setIsSaving(true);
+			await updateEndpoint({
+				...endpoint,
+				method: values.method,
+				path: values.path.trim(),
+				name: values.name.trim(),
+				description: values.description.trim(),
+				tags,
+				auth: values.auth,
+				queryParams: values.queryParams.map(fromDraft),
+				bodyParams: values.bodyParams.map(fromDraft),
+			});
+			onOpenChange(false);
+		} catch (e) {
+			console.error("[EditEndpointModal] updateEndpoint failed:", e);
+		} finally {
+			setIsSaving(false);
+		}
 	});
 
 	const path = watch("path");
 	const name = watch("name");
+	const authValue = watch("auth");
 	const canSave = path.trim().length > 0 && name.trim().length > 0 && !isSaving;
 
 	return (
@@ -237,6 +249,7 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 						/>
 					)}
 				/>
+				<EnvDependencyBadge active={authValue} env={selectedEnv} />
 
 				{/* ─── Параметры ─────────────────────────────── */}
 				<div className={s.tabs}>
@@ -338,6 +351,44 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				</Dialog.BtnPrimary>
 			</Dialog.Footer>
 		</Dialog.Root>
+	);
+};
+
+/* ─── Env dependency indicator ──────────────────────────────
+ * "Требуется авторизация" не хранит токен на самом endpoint — токен
+ * приходит из текущего Environment. Показываем, из какого именно и
+ * есть ли он там, чтобы не удивляться 401 при переключении окружения.
+ */
+const EnvDependencyBadge: FC<{
+	active: boolean;
+	env: Environment | null;
+}> = ({ active, env }) => {
+	if (!active) {
+		return (
+			<div className={`${s.envDepend} ${s.muted}`}>
+				Не зависит от Environment — токен не используется
+			</div>
+		);
+	}
+
+	if (!env) {
+		return (
+			<div className={`${s.envDepend} ${s.warn}`}>
+				Окружение не выбрано — авторизованные запросы не будут работать
+			</div>
+		);
+	}
+
+	const hasToken = Boolean(env.accessToken);
+	return (
+		<div className={`${s.envDepend} ${hasToken ? s.ok : s.warn}`}>
+			<span
+				className={s.envDependDot}
+				style={{ background: getEnvDotColor(env.env) }}
+			/>
+			Токен берётся из Environment «{env.label}»
+			{hasToken ? " — токен получен" : " — токен не получен, запросы будут 401"}
+		</div>
 	);
 };
 

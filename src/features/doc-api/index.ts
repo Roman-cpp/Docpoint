@@ -14,6 +14,7 @@ export {
 	actionSelectEndpoint,
 	actionSelectEntity,
 	actionSelectGroup,
+	actionUpdateEndpoint,
 	actionUpdateEndpointParamValue,
 	actionUpdateEntity,
 	selectDocApi,

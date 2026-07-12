@@ -23,4 +23,7 @@ pub struct AppState {
     pub vault_dir: PathBuf,
     /// Live WebSocket connections keyed by connection id.
     pub ws_conns: DashMap<String, WsConn>,
+    /// Shared HTTP client with a cookie jar that lives for the app session,
+    /// so `Set-Cookie` from an auth request is replayed on later requests.
+    pub http_client: reqwest::Client,
 }

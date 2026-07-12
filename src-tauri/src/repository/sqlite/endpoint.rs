@@ -1,4 +1,4 @@
-use crate::domain::doc_api::endpoint::dto::CreateEndpointDTO;
+use crate::domain::doc_api::endpoint::dto::{CreateEndpointDTO, UpdateEndpointDTO};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
@@ -116,6 +116,90 @@ impl EndpointRepository for EndpointRepo<'_> {
                 .map_err(|e| e.to_string())?;
             }
         }
+
+        Ok(())
+    }
+
+    async fn update(&self, endpoint: &UpdateEndpointDTO) -> Result<(), String> {
+        let mut tx = self.db.begin().await.map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "UPDATE endpoint SET method = ?, path = ?, name = ?, description = ?, auth = ? \
+             WHERE id = ?",
+        )
+        .bind(&endpoint.method)
+        .bind(&endpoint.path)
+        .bind(&endpoint.name)
+        .bind(&endpoint.description)
+        .bind(if endpoint.auth { 1i64 } else { 0i64 })
+        .bind(&endpoint.id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        // Теги и параметры редактируются целиком, поэтому пересоздаём их.
+        sqlx::query("DELETE FROM endpoint_tag WHERE endpoint_id = ?")
+            .bind(&endpoint.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for tag in &endpoint.tags {
+            sqlx::query("INSERT INTO endpoint_tag (endpoint_id, tag) VALUES (?, ?)")
+                .bind(&endpoint.id)
+                .bind(tag)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+
+        sqlx::query("DELETE FROM param WHERE endpoint_id = ? AND kind = 'query'")
+            .bind(&endpoint.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM param WHERE endpoint_id = ? AND kind = 'body'")
+            .bind(&endpoint.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for (pi, param) in endpoint.query_params.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
+                 VALUES (?, 'query', ?, ?, ?, ?, ?, ?)",
+            )
+            .bind(&endpoint.id)
+            .bind(&param.name)
+            .bind(&param.type_)
+            .bind(if param.required { 1i64 } else { 0i64 })
+            .bind(&param.desc)
+            .bind(&param.default)
+            .bind(pi as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        for (pi, param) in endpoint.body_params.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
+                 VALUES (?, 'body', ?, ?, ?, ?, ?, ?)",
+            )
+            .bind(&endpoint.id)
+            .bind(&param.name)
+            .bind(&param.type_)
+            .bind(if param.required { 1i64 } else { 0i64 })
+            .bind(&param.desc)
+            .bind(&param.default)
+            .bind(pi as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        tx.commit().await.map_err(|e| e.to_string())?;
 
         Ok(())
     }

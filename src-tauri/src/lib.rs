@@ -11,7 +11,7 @@ use service::{
     create_endpoint_request, delete_endpoint_request, list_endpoint_requests, rename_endpoint_request, set_request_param_value,
     environments_by_platform, read_directory, read_environment_auth, read_environments_by_doc, read_groups,
     read_all_services, read_platform, read_platform_docs, read_platform_services, read_platforms, read_schemas, read_service_docs,
-    save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_environment,
+    save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_endpoint, update_environment,
     update_environment_auth, update_param_value, update_platform, update_schema, update_service, update_variable,
     write_groups, write_schemas,
     create_markdown, delete_markdown, export_markdown, read_markdown, read_markdowns, update_markdown,
@@ -61,6 +61,7 @@ pub fn run() {
                 selected_environment_id: Default::default(),
                 vault_dir,
                 ws_conns: Default::default(),
+                http_client: infrastructure::http_client::build_client(),
             });
             Ok(())
         })
@@ -79,6 +80,7 @@ pub fn run() {
             read_groups,
             write_groups,
             create_endpoint,
+            update_endpoint,
             delete_endpoint,
             delete_group,
             update_param_value,

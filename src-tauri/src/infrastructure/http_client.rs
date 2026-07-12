@@ -36,9 +36,19 @@ pub struct ResponsePayload {
     pub duration_ms: u64,
 }
 
-pub async fn send(payload: RequestPayload) -> Result<ResponsePayload, String> {
-    let client = reqwest::Client::new();
+/// Builds the app-wide HTTP client. Cookies are persisted in the client's
+/// jar for its whole lifetime (the app session) and replayed automatically
+/// by reqwest on later requests to the same host, so a `Set-Cookie` from an
+/// auth endpoint keeps working across `send` calls without any manual
+/// header wiring.
+pub fn build_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .cookie_store(true)
+        .build()
+        .expect("failed to build reqwest client")
+}
 
+pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<ResponsePayload, String> {
     let mut header_map = HeaderMap::new();
     for (key, value) in &payload.headers {
         if key.is_empty() {

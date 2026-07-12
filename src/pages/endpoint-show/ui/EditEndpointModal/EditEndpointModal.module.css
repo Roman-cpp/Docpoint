@@ -123,3 +123,36 @@
 	color: var(--ink);
 	border-bottom-color: var(--ink);
 }
+
+.envDepend {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: -6px;
+	padding: 6px 10px;
+	border-radius: var(--r-md);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.envDependDot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.envDepend.muted {
+	color: var(--ink-low);
+}
+
+.envDepend.ok {
+	color: var(--green);
+	background: var(--green-bg);
+}
+
+.envDepend.warn {
+	color: var(--amber);
+	background: var(--amber-bg);
+}

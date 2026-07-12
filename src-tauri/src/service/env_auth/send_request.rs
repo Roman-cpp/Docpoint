@@ -32,14 +32,14 @@ pub async fn send_request(
         }
     }
 
-    let response = http_client::send(payload.clone()).await?;
+    let response = http_client::send(&state.http_client, payload.clone()).await?;
 
     // If unauthorized and the token was managed by us, refresh it and retry once.
     if response.status == 401 && !had_explicit_auth {
         if let Some(env_id) = &env_id {
-            if let Some(token) = refresh_access_token(&state.db, env_id).await? {
+            if let Some(token) = refresh_access_token(&state.http_client, &state.db, env_id).await? {
                 set_auth_header(&mut payload.headers, &token);
-                return http_client::send(payload).await;
+                return http_client::send(&state.http_client, payload).await;
             }
         }
     }
@@ -55,6 +55,7 @@ fn set_auth_header(headers: &mut HashMap<String, String>, token: &str) {
 /// Runs the auth request configured in `environment_auth`, extracts the token
 /// from the response body via `token_path`, persists it, and returns it.
 async fn refresh_access_token(
+    client: &reqwest::Client,
     db: &SqlitePool,
     environment_id: &str,
 ) -> Result<Option<String>, String> {
@@ -63,7 +64,7 @@ async fn refresh_access_token(
         _ => return Ok(None),
     };
 
-    let response = http_client::send(build_auth_request(&auth)).await?;
+    let response = http_client::send(client, build_auth_request(&auth)).await?;
     if response.status >= 300 {
         return Err(format!(
             "Token refresh failed: {} {}",
