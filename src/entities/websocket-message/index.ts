@@ -7,6 +7,7 @@ export type {
 	UpdateWebsocketMessageDTO,
 	WebsocketMessage,
 } from "./model/type";
+export type { ImportWebsocketMessagesPayload } from "./store/useWebsocketMessages";
 export {
 	useWebsocketMessages,
 	websocketMessageKeys,

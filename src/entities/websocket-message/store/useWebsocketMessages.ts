@@ -16,6 +16,15 @@ export const websocketMessageKeys = {
 		[...websocketMessageKeys.all, "websocket", id] as const,
 };
 
+/** Shape of a previously exported example-frames file. `websocket` is purely
+ *  informational (e.g. shown in a confirmation toast) — imported messages are
+ *  always attached to the currently open socket. */
+export interface ImportWebsocketMessagesPayload {
+	version: number;
+	websocket?: { name?: string; url?: string };
+	messages: { name: string; desc?: string; payload: string }[];
+}
+
 /** Saved example frames for a single WebSocket doc, plus create/update/delete. */
 export const useWebsocketMessages = (websocketId: string) => {
 	const queryClient = useQueryClient();
@@ -66,6 +75,30 @@ export const useWebsocketMessages = (websocketId: string) => {
 		},
 	});
 
+	const importMessages = useMutation({
+		mutationFn: (payload: ImportWebsocketMessagesPayload) =>
+			Promise.all(
+				payload.messages.map((m) =>
+					createWebsocketMessageApi({
+						websocket_id: websocketId,
+						name: m.name,
+						payload: m.payload,
+						desc: m.desc ?? "",
+					}),
+				),
+			),
+		onSuccess: (created) => {
+			toast({
+				title: "OK",
+				description: `Импортировано сообщений: ${created.length}`,
+			});
+			invalidate();
+		},
+		onError: (error: Error) => {
+			toast({ title: "Ошибка", description: error.message, variant: "error" });
+		},
+	});
+
 	return {
 		messages: messages.data ?? [],
 		isMessagesLoading: messages.isLoading,
@@ -82,5 +115,9 @@ export const useWebsocketMessages = (websocketId: string) => {
 		deleteMessage: remove.mutate,
 		deleteMessageAsync: remove.mutateAsync,
 		isDeletingMessage: remove.isPending,
+
+		importMessages: importMessages.mutate,
+		importMessagesAsync: importMessages.mutateAsync,
+		isImportingMessages: importMessages.isPending,
 	};
 };

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
+	type ChangeEvent,
 	type FC,
 	type KeyboardEvent,
 	type MouseEvent as ReactMouseEvent,
@@ -10,7 +11,9 @@ import {
 	useState,
 } from "react";
 import { useLocation } from "react-router";
+import { toast } from "@/core/toast";
 import {
+	type ImportWebsocketMessagesPayload,
 	useWebsocketMessages,
 	type WebsocketMessage,
 } from "@/entities/websocket-message";
@@ -217,7 +220,10 @@ export const WebSocketPage: FC = () => {
 		isUpdatingMessage,
 		deleteMessageAsync,
 		isDeletingMessage,
+		importMessagesAsync,
+		isImportingMessages,
 	} = useWebsocketMessages(websocketId);
+	const importInputRef = useRef<HTMLInputElement>(null);
 
 	// `undefined` = modal closed, `null` = creating, object = editing that row.
 	const [editing, setEditing] = useState<WebsocketMessage | null | undefined>(
@@ -397,6 +403,30 @@ export const WebSocketPage: FC = () => {
 		}
 	};
 
+	/** Read a previously exported example-frames JSON and bulk-create its
+	 *  messages for this socket. Same `{ version, websocket?, messages[] }`
+	 *  shape produced by an eventual export. */
+	const handleImportMessages = async (e: ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		e.target.value = "";
+		if (!file) return;
+		try {
+			const payload = JSON.parse(
+				await file.text(),
+			) as ImportWebsocketMessagesPayload;
+			if (!Array.isArray(payload.messages) || payload.messages.length === 0) {
+				throw new Error("Файл не содержит сообщений");
+			}
+			await importMessagesAsync(payload);
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось импортировать сообщения",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
 	return (
 		<div className={s.wrapper}>
 			<Header section="websocket" activeLink="websocket" />
@@ -407,24 +437,53 @@ export const WebSocketPage: FC = () => {
 					<div className={s.sidebarHead}>
 						<span>Examples</span>
 						{websocketId && (
-							<button
-								className={s.addBtn}
-								onClick={() => setEditing(null)}
-								title="Добавить сообщение"
-							>
-								<svg
-									width="14"
-									height="14"
-									viewBox="0 0 14 14"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.6"
-									strokeLinecap="round"
+							<div className={s.sidebarHeadActions}>
+								<input
+									ref={importInputRef}
+									type="file"
+									accept=".json,application/json"
+									hidden
+									onChange={handleImportMessages}
+								/>
+								<button
+									className={s.addBtn}
+									onClick={() => importInputRef.current?.click()}
+									disabled={isImportingMessages}
+									title="Импортировать сообщения"
 								>
-									<title>Добавить сообщение</title>
-									<path d="M7 2.5v9M2.5 7h9" />
-								</svg>
-							</button>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 14 14"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.6"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
+										<title>Импортировать сообщения</title>
+										<path d="M7 1.5v7M4.2 6.3L7 9l2.8-2.7M2 10.5v1a1 1 0 001 1h8a1 1 0 001-1v-1" />
+									</svg>
+								</button>
+								<button
+									className={s.addBtn}
+									onClick={() => setEditing(null)}
+									title="Добавить сообщение"
+								>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 14 14"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.6"
+										strokeLinecap="round"
+									>
+										<title>Добавить сообщение</title>
+										<path d="M7 2.5v9M2.5 7h9" />
+									</svg>
+								</button>
+							</div>
 						)}
 					</div>
 					<div className={s.exampleList}>

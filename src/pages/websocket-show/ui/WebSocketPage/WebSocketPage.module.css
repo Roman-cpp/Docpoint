@@ -47,6 +47,11 @@
 	border-bottom: 1px solid var(--border);
 	flex-shrink: 0;
 }
+.sidebarHeadActions {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
 .addBtn {
 	display: flex;
 	align-items: center;
@@ -65,6 +70,10 @@
 .addBtn:hover {
 	background: var(--cat-bg);
 	color: var(--ink);
+}
+.addBtn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
 .exampleList {
 	flex: 1;
