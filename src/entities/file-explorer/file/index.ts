@@ -1,1 +1,1 @@
-export type { File } from "./model/file.type";
+export type { File } from "./model/file.entity";

@@ -1,4 +1,4 @@
-import type { Platform } from "./platform.type";
+import type { Platform } from "./platform.entity";
 
 export type CreatePlatformDTO = Omit<Platform, "id">;
 

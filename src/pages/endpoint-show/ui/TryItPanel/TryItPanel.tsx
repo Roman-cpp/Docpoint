@@ -1,17 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
 import { type FC, useEffect, useRef, useState } from "react";
-import type { Endpoint, HttpMethod } from "@/entities/endpoint";
 import {
 	createEndpointRequestApi,
 	deleteEndpointRequestApi,
+	type Endpoint,
 	type EndpointRequest,
 	listEndpointRequestsApi,
 	type ParamKind,
 	renameEndpointRequestApi,
 	setRequestParamValueApi,
-} from "@/entities/endpoint-request";
-import type { Environment } from "@/entities/environment";
-import { getEnvironmentAccessTokenApi } from "@/entities/environment-auth/api";
+} from "@/entities/doc-api";
+import {
+	type Environment,
+	getEnvironmentAccessTokenApi,
+} from "@/entities/environment";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import {
 	actionUpdateEndpointParamValue,
 	// selectDocApi,

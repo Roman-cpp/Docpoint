@@ -9,9 +9,9 @@ import {
 	readDirectoryApi,
 } from "@/entities/file-explorer";
 import { deleteMarkdownApi } from "@/entities/markdown";
+import { useNewMarkdownFile } from "@/features/markdown";
 import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
-import { useNewMarkdownFile } from "../../../../entities/markdown/model/useNewMarkdownFile";
 import { CloseIcon, FileIcon, SearchIcon } from "../../../../shared/icon/icons";
 import { FileDropZone } from "../../../../shared/ui-kit/controls/FileDropZone/FileDropZone";
 import { FileGrid } from "../../../../widgets/file-explorer/ui/FileGrid/FileGrid";

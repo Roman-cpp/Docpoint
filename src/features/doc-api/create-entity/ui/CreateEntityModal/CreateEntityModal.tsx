@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
-import type { LocalField } from "@/entities/entity";
-import { EntityFieldsEditor, serializeFields } from "@/entities/entity";
+import type { LocalField } from "@/entities/doc-erd";
+import { EntityFieldsEditor, serializeFields } from "@/entities/doc-erd";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { actionAddEntity, useDocApiStore } from "../../../doc-workspace-state";

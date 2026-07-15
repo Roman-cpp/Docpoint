@@ -1,19 +1,17 @@
-export { attachDocApi } from "./api/attachDocApi";
-export { createServiceApi } from "./api/createServiceApi";
-export { deleteServiceApi } from "./api/deleteServiceApi";
-export { readAllServicesApi } from "./api/readAllServicesApi";
-export { readPlatformServicesApi } from "./api/readPlatformServicesApi";
-export { readServiceDocsApi } from "./api/readServiceDocsApi";
-export { updateServiceApi } from "./api/updateServiceApi";
+export { attachDocApi } from "./api/attach-doc-api";
+export { createServiceApi } from "./api/create-service-api";
+export { deleteServiceApi } from "./api/delete-service-api";
+export { readAllServicesApi } from "./api/read-all-services-api";
+export { readPlatformServicesApi } from "./api/read-platform-services-api";
+export { updateServiceApi } from "./api/update-service-api";
 export type {
 	CreateServiceDTO,
 	UpdateServiceDTO,
 } from "./model/service.dto";
-export type { Service } from "./model/service.type";
+export type { Service } from "./model/service.entity";
 export {
 	serviceKeys,
 	useAllServices,
 	useAttachDoc,
 	usePlatformServices,
-	useServiceDocs,
 } from "./store/useServicesStore";

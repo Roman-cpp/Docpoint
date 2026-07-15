@@ -1,8 +1,8 @@
-export { deleteAllRequestsApi } from "./api/deleteAllRequestsApi";
-export { getRequestByIdApi } from "./api/getRequestByIdApi";
-export { getRequestsApi } from "./api/getRequestsApi";
+export { deleteAllRequestsApi } from "./api/delete-all-requests-api";
+export { getRequestByIdApi } from "./api/get-request-by-id-api";
+export { getRequestsApi } from "./api/get-requests-api";
 export type {
 	HistoryHeaderPair,
 	Request,
 	RequestSummary,
-} from "./model/types";
+} from "./model/request.entity";

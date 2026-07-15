@@ -1,18 +1,13 @@
-export { deletePlatformApi } from "./api/deletePlatformApi";
-export { readAllPlatformsApi } from "./api/readAllPlatformsApi";
-export { readPlatformApi } from "./api/readPlatformApi";
-export { readPlatformDocsApi } from "./api/readPlatformDocsApi";
-export { updatePlatformApi } from "./api/updatePlatformApi";
-export { writePlatformApi } from "./api/writePlatformApi";
+export { deletePlatformApi } from "./api/delete-platform-api";
+export { readAllPlatformsApi } from "./api/read-all-platforms-api";
+export { readPlatformApi } from "./api/read-platform-api";
+export { updatePlatformApi } from "./api/update-platform-api";
+export { writePlatformApi } from "./api/write-platform-api";
 
 export type {
 	CreatePlatformDTO,
 	UpdatePlatformDTO,
 } from "./model/platform.dto";
-export type { Platform } from "./model/platform.type";
+export type { Platform } from "./model/platform.entity";
 
-export {
-	platformKeys,
-	usePlatformDocs,
-	usePlatformsStore,
-} from "./store/usePlatformsStore";
+export { platformKeys, usePlatformsStore } from "./store/usePlatformsStore";

@@ -6,14 +6,12 @@ import {
 	DeleteVariableModal,
 	deleteEnvironmentApi,
 	duplicateEnvironmentApi,
-	updateEnvironmentApi,
-	VariableModal,
-} from "@/entities/environment";
-import {
 	readEnvironmentAuthApi,
 	setEnvironmentAccessTokenApi,
+	updateEnvironmentApi,
 	updateEnvironmentAuthApi,
-} from "@/entities/environment-auth";
+	VariableModal,
+} from "@/entities/environment";
 import {
 	actionAddEnvironment,
 	actionaddVariableToEnvironment,

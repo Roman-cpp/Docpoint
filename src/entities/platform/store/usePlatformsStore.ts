@@ -1,39 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import type { Doc } from "@/entities/doc-api";
 
-import { deletePlatformApi } from "../api/deletePlatformApi";
-import { readAllPlatformsApi } from "../api/readAllPlatformsApi";
-import { readPlatformDocsApi } from "../api/readPlatformDocsApi";
-import { updatePlatformApi } from "../api/updatePlatformApi";
-import { writePlatformApi } from "../api/writePlatformApi";
+import { deletePlatformApi } from "../api/delete-platform-api";
+import { readAllPlatformsApi } from "../api/read-all-platforms-api";
+import { updatePlatformApi } from "../api/update-platform-api";
+import { writePlatformApi } from "../api/write-platform-api";
 import type {
 	CreatePlatformDTO,
 	UpdatePlatformDTO,
 } from "../model/platform.dto";
-import type { Platform } from "../model/platform.type";
+import type { Platform } from "../model/platform.entity";
 
 export const platformKeys = {
 	all: ["platforms"] as const,
 	lists: () => [...platformKeys.all, "list"] as const,
 	list: () => [...platformKeys.lists()] as const,
-	docs: (id: string) => [...platformKeys.all, "docs", id] as const,
-};
-
-export const usePlatformDocs = (platformId: string) => {
-	const docs = useQuery<Doc[]>({
-		queryKey: platformKeys.docs(platformId),
-		queryFn: () => readPlatformDocsApi(platformId),
-		enabled: !!platformId,
-	});
-
-	return {
-		docs: docs.data ?? [],
-		isDocsLoading: docs.isLoading,
-		isDocsFetching: docs.isFetching,
-		isDocsError: docs.isError,
-		docsError: docs.error,
-	};
 };
 
 export const usePlatformsStore = () => {

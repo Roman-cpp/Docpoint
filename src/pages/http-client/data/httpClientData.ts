@@ -1,4 +1,4 @@
-import type { HttpMethod } from "@/entities/endpoint";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import type { MockResponse } from "../model/types";
 
 export const METHOD_CFG: Record<HttpMethod, { color: string; bg: string }> = {

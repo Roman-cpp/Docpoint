@@ -1,32 +1,33 @@
 import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import type { Doc } from "@/entities/doc-api";
-import { readDocApi } from "@/entities/doc-api";
 import type {
 	CreateEndpointDTO,
+	Doc,
 	Endpoint,
+	Group,
 	UpdateEndpointDTO,
-} from "@/entities/endpoint";
+} from "@/entities/doc-api";
 import {
 	createEndpointApi,
 	deleteEndpointApi,
+	deleteGroupApi,
+	readDocApi,
+	readGroupsApi,
 	updateEndpointApi,
 	updateParamValueApi,
-} from "@/entities/endpoint";
+} from "@/entities/doc-api";
 import type {
 	CreateEntityDTO,
 	Entity,
 	UpdateEntityDTO,
-} from "@/entities/entity";
+} from "@/entities/doc-erd";
 import {
 	createEntityApi,
 	deleteEntityApi,
 	readEntitiesApi,
 	updateEntityApi,
-} from "@/entities/entity";
-import type { Group } from "@/entities/group";
-import { deleteGroupApi, readGroupsApi } from "@/entities/group";
+} from "@/entities/doc-erd";
 
 type DocApiState = {
 	doc: Doc | null;

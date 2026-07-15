@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { useState } from "react";
-import type { Endpoint, HttpMethod } from "@/entities/endpoint";
+import type { Endpoint } from "@/entities/doc-api";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 import s from "@/shared/styles/apiDocs.module.css";
 import { EditJsonModal } from "../EditJsonModal";

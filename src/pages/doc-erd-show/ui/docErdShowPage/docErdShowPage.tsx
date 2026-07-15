@@ -4,9 +4,9 @@ import {
 	type CreateEntityDTO,
 	createErdEntityApi,
 	readErdEntitiesApi,
+	readRelationsApi,
 	type SchemaField,
-} from "@/entities/entity";
-import { readRelationsApi } from "@/entities/entity-relation";
+} from "@/entities/doc-erd";
 import { Header } from "@/widgets/header";
 import styles from "../CanvasPage.module.css";
 

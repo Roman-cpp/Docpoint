@@ -3,15 +3,8 @@ import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { type FC, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
-import {
-	type Doc,
-	exportDoc,
-	type ImportDocPayload,
-	type UpdateDocDTO,
-	useDocsStore,
-} from "@/entities/doc-api";
+import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useServiceErds } from "@/entities/doc-erd";
-import { useServiceWebsockets } from "@/entities/doc-websocket";
 import {
 	type DirListing,
 	deleteDirectoryApi,
@@ -20,15 +13,17 @@ import {
 	readDirectoryApi,
 } from "@/entities/file-explorer";
 import { deleteMarkdownApi } from "@/entities/markdown";
-import { useNewMarkdownFile } from "@/entities/markdown/model/useNewMarkdownFile";
+import { useAllServices, useAttachDoc } from "@/entities/service";
+import { useServiceWebsockets } from "@/entities/websocket";
 import {
-	serviceKeys,
-	useAllServices,
-	useAttachDoc,
-	useServiceDocs,
-} from "@/entities/service";
-import { EditDocApiModal } from "@/features/doc-api";
+	EditDocApiModal,
+	exportDoc,
+	type ImportDocPayload,
+	useImportExportDoc,
+} from "@/features/doc-api";
 import { CreateDocApiModal } from "@/features/doc-api/create-doc-api";
+import { useNewMarkdownFile } from "@/features/markdown";
+import { serviceDocsKeys, useServiceDocs } from "@/features/service";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import b from "@/pages/platform-show/ui/PlatformShowPage/PlatformShowPage.module.css";
 import { Button } from "@/shared/ui-kit/controls";
@@ -56,13 +51,12 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const {
 		createDocAsync,
 		deleteDocAsync,
-		importDocAsync,
 		isCreating,
 		isDeleting,
-		isImporting,
 		isUpdating,
 		updateDocAsync,
 	} = useDocsStore();
+	const { importDocAsync, isImporting } = useImportExportDoc();
 	const { attachDocAsync, isAttaching } = useAttachDoc();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -90,7 +84,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			const payload = JSON.parse(await file.text()) as ImportDocPayload;
 			const docId = await importDocAsync(payload);
 			await attachDocAsync({ serviceId: id, docId });
-			queryClient.invalidateQueries({ queryKey: serviceKeys.docs(id) });
+			queryClient.invalidateQueries({
+				queryKey: serviceDocsKeys.byService(id),
+			});
 		} catch (err) {
 			toast({
 				variant: "error",
@@ -483,7 +479,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						const docId = await createDocAsync(dto);
 						await attachDocAsync({ serviceId: id, docId });
 						queryClient.invalidateQueries({
-							queryKey: serviceKeys.docs(id),
+							queryKey: serviceDocsKeys.byService(id),
 						});
 						setDocModalOpen(false);
 					} catch {
@@ -581,7 +577,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 							await updateDocAsync(updates);
 
 							queryClient.invalidateQueries({
-								queryKey: serviceKeys.docs(id),
+								queryKey: serviceDocsKeys.byService(id),
 							});
 
 							setPendingEdit(null);
@@ -622,7 +618,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 								try {
 									await deleteDocAsync(pendingDelete.id);
 									queryClient.invalidateQueries({
-										queryKey: serviceKeys.docs(id),
+										queryKey: serviceDocsKeys.byService(id),
 									});
 									setPendingDelete(null);
 								} catch {

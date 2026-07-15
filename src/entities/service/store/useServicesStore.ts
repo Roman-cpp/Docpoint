@@ -1,39 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import type { Doc } from "@/entities/doc-api";
 
-import { attachDocApi } from "../api/attachDocApi";
-import { createServiceApi } from "../api/createServiceApi";
-import { deleteServiceApi } from "../api/deleteServiceApi";
-import { readAllServicesApi } from "../api/readAllServicesApi";
-import { readPlatformServicesApi } from "../api/readPlatformServicesApi";
-import { readServiceDocsApi } from "../api/readServiceDocsApi";
-import { updateServiceApi } from "../api/updateServiceApi";
+import { attachDocApi } from "../api/attach-doc-api";
+import { createServiceApi } from "../api/create-service-api";
+import { deleteServiceApi } from "../api/delete-service-api";
+import { readAllServicesApi } from "../api/read-all-services-api";
+import { readPlatformServicesApi } from "../api/read-platform-services-api";
+import { updateServiceApi } from "../api/update-service-api";
 import type { CreateServiceDTO, UpdateServiceDTO } from "../model/service.dto";
-import type { Service } from "../model/service.type";
+import type { Service } from "../model/service.entity";
 
 export const serviceKeys = {
 	all: ["services"] as const,
 	list: () => [...serviceKeys.all, "list"] as const,
 	byPlatform: (id: string) => [...serviceKeys.all, "platform", id] as const,
-	docs: (id: string) => [...serviceKeys.all, "docs", id] as const,
-};
-
-/** Docs attached to a single microservice. */
-export const useServiceDocs = (serviceId: string) => {
-	const docs = useQuery<Doc[]>({
-		queryKey: serviceKeys.docs(serviceId),
-		queryFn: () => readServiceDocsApi(serviceId),
-		enabled: !!serviceId,
-	});
-
-	return {
-		docs: docs.data ?? [],
-		isDocsLoading: docs.isLoading,
-		isDocsFetching: docs.isFetching,
-		isDocsError: docs.isError,
-		docsError: docs.error,
-	};
 };
 
 export const useAllServices = () => {

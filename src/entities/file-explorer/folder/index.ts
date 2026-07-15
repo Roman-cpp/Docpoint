@@ -1,1 +1,1 @@
-export type { Folder } from "./model/folder.type";
+export type { Folder } from "./model/folder.entity";

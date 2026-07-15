@@ -8,13 +8,14 @@ import {
 	type Folder,
 	readDirectoryApi,
 } from "@/entities/file-explorer";
-import { deleteMarkdownApi, useNewMarkdownFile } from "@/entities/markdown";
+import { deleteMarkdownApi } from "@/entities/markdown";
 import { usePlatformsStore } from "@/entities/platform";
 import { type Service, usePlatformServices } from "@/entities/service";
 import {
 	actionFetchEnvironmentsPlatform,
 	useEnvironmentsStore,
 } from "@/features/environment";
+import { useNewMarkdownFile } from "@/features/markdown";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
 import { ServiceModal } from "@/features/service";
 import { Button, FileDropZone } from "@/shared/ui-kit/controls";

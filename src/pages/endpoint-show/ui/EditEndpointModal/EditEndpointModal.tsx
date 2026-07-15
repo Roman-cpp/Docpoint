@@ -1,9 +1,13 @@
 import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import type { Endpoint, HttpMethod } from "@/entities/endpoint";
+import type { Endpoint } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
-import { selectSelectedEnvironment, useEnvironmentsStore } from "@/features/environment";
+import {
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import {
 	Field,

@@ -1,10 +1,10 @@
 import { type FC, useState } from "react";
-import type { Entity, LocalField, UpdateEntityDTO } from "@/entities/entity";
+import type { Entity, LocalField, UpdateEntityDTO } from "@/entities/doc-erd";
 import {
 	EntityFieldsEditor,
 	serializeFields,
 	toLocal,
-} from "@/entities/entity";
+} from "@/entities/doc-erd";
 import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 

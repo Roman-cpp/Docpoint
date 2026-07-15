@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import {
-	type Platform,
-	usePlatformDocs,
-	usePlatformsStore,
-} from "@/entities/platform";
+import { type Platform, usePlatformsStore } from "@/entities/platform";
 import { useAllServices } from "@/entities/service";
-import { DeletePlatformModal, PlatformModal } from "@/features/platform";
+import {
+	DeletePlatformModal,
+	PlatformModal,
+	usePlatformDocs,
+} from "@/features/platform";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import s from "./SidebarPlatform.module.css";
 

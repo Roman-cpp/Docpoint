@@ -16,7 +16,7 @@ import {
 	type ImportWebsocketMessagesPayload,
 	useWebsocketMessages,
 	type WebsocketMessage,
-} from "@/entities/websocket-message";
+} from "@/entities/websocket";
 import { Header } from "@/widgets/header";
 import { CreateWebsocketMessageModal } from "../CreateWebsocketMessageModal";
 import { EditWebsocketMessageModal } from "../EditWebsocketMessageModal";

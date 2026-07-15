@@ -1,16 +1,12 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
-import {
-	type Doc,
-	exportDoc,
-	type UpdateDocDTO,
-	useDocsStore,
-} from "@/entities/doc-api";
+import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useAllServices, useAttachDoc } from "@/entities/service";
 import {
 	actionResetDocApi,
 	DeleteDocApiModal,
 	EditDocApiModal,
+	exportDoc,
 	useDocApiStore,
 } from "@/features/doc-api";
 import {

@@ -1,6 +1,6 @@
 import { type FC, useEffect, useState } from "react";
-import type { HttpMethod } from "@/entities/endpoint";
 import type { RequestSummary } from "@/entities/request";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import {
 	actionDeleteAllRequests,
 	actionFetchRequests,

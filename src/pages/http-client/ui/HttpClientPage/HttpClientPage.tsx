@@ -9,7 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type { HttpMethod } from "@/entities/endpoint";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import { Header } from "@/widgets/header";
 import { METHOD_CFG } from "../../data/httpClientData";
 import type {

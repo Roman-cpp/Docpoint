@@ -1,5 +1,5 @@
 import { type FC, useState } from "react";
-import type { Endpoint } from "@/entities/endpoint";
+import type { Endpoint } from "@/entities/doc-api";
 import { actionDeleteEndpoint, useDocApiStore } from "@/features/doc-api";
 import { Dialog } from "@/shared/ui-kit/modal";
 

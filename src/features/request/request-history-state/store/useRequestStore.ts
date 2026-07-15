@@ -1,14 +1,14 @@
 import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import type { HttpMethod } from "@/entities/endpoint";
 import type { Request, RequestSummary } from "@/entities/request";
 import {
 	deleteAllRequestsApi,
 	getRequestByIdApi,
 	getRequestsApi,
 } from "@/entities/request";
-import type { RequestFilters } from "@/entities/request/api/getRequestsApi";
+import type { RequestFilters } from "@/entities/request/api/get-requests-api";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import type { Pagination } from "@/shared/model/http-response.type";
 
 type RequestState = {

@@ -27,3 +27,5 @@ export {
 } from "./doc-workspace-state";
 export { EditDocApiModal } from "./edit-doc-api";
 export { EditEntityModal } from "./edit-entity";
+export type { ImportDocPayload } from "./import-export-doc";
+export { exportDoc, useImportExportDoc } from "./import-export-doc";

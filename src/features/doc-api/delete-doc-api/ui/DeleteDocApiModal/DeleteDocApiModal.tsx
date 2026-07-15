@@ -1,6 +1,6 @@
 import type { FC } from "react";
+import { useDocsStore } from "@/entities/doc-api";
 import { Dialog } from "@/shared/ui-kit/modal";
-import { useDocsStore } from "../../../../../entities/doc-api/store/useDocApisStore";
 
 interface DeleteDocApiModalProps {
 	open: boolean;

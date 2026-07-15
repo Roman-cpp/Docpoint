@@ -1,7 +1,7 @@
 import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import type { CreateEndpointDTO, HttpMethod } from "@/entities/endpoint";
-import type { Group } from "@/entities/group";
+import type { CreateEndpointDTO, Group } from "@/entities/doc-api";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import {
 	Field,
 	Input,

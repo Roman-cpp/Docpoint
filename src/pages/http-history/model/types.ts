@@ -1,4 +1,4 @@
-import type { HttpMethod } from "@/entities/endpoint";
+import type { HttpMethod } from "@/entities/shared/http-method";
 
 /** A header pair as stored / returned by the API. */
 export interface HistoryHeaderPair {

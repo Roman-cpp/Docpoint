@@ -1,5 +1,5 @@
 import { type FC, useEffect, useState } from "react";
-import type { WebsocketMessage } from "@/entities/websocket-message";
+import type { WebsocketMessage } from "@/entities/websocket";
 import { Dialog } from "@/shared/ui-kit/modal";
 import {
 	isValid,
