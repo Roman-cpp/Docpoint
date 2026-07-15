@@ -1,8 +1,8 @@
+export { createPlatformApi } from "./api/create-platform-api";
 export { deletePlatformApi } from "./api/delete-platform-api";
-export { readAllPlatformsApi } from "./api/read-all-platforms-api";
-export { readPlatformApi } from "./api/read-platform-api";
+export { getAllPlatformsApi } from "./api/get-all-platforms-api";
+export { getPlatformApi } from "./api/get-platform-api";
 export { updatePlatformApi } from "./api/update-platform-api";
-export { writePlatformApi } from "./api/write-platform-api";
 
 export type {
 	CreatePlatformDTO,

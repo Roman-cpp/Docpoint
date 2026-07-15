@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
 import {
+	getMarkdownApi,
 	type Markdown,
-	readMarkdownApi,
 	updateMarkdownApi,
 } from "@/entities/markdown";
 
@@ -53,7 +53,7 @@ export function useMarkdownContent(fileId: string | null) {
 
 		let cancelled = false;
 		setStatus("loading");
-		readMarkdownApi(fileId)
+		getMarkdownApi(fileId)
 			.then((md) => {
 				if (cancelled) return;
 				setFile(md);

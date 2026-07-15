@@ -1,6 +1,6 @@
 import { type FC, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { type DirListing, readDirectoryApi } from "@/entities/file-explorer";
+import { type DirListing, getDirectoryApi } from "@/entities/file-explorer";
 import { cx } from "@/shared/lib/cx";
 import { ChevronIcon, DocIcon, FolderIcon } from "../icons";
 import s from "../MarkdownShowPage.module.css";
@@ -41,7 +41,7 @@ export const FileSidebar: FC<{ activeFileId: string | null }> = ({
 		let cancelled = false;
 		setLoading(true);
 		setError(null);
-		readDirectoryApi(dir)
+		getDirectoryApi(dir)
 			.then((data) => {
 				if (!cancelled) setListing(data);
 			})

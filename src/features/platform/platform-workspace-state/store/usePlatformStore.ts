@@ -2,7 +2,7 @@ import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Platform } from "@/entities/platform";
-import { readPlatformApi } from "@/entities/platform";
+import { getPlatformApi } from "@/entities/platform";
 
 type PlatformState = {
 	platform: Platform | null;
@@ -26,7 +26,7 @@ const createPlatformSlice: StateCreator<PlatformStore> = (set) => ({
 
 	fetchPlatform: async (id) => {
 		try {
-			const platform = await readPlatformApi(id);
+			const platform = await getPlatformApi(id);
 			set({ platform });
 		} catch (e) {
 			console.error("[PlatformStore] fetchPlatform failed:", e);

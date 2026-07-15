@@ -3,8 +3,8 @@ import { Link, useLocation, useParams } from "react-router";
 import {
 	type CreateEntityDTO,
 	createErdEntityApi,
-	readErdEntitiesApi,
-	readRelationsApi,
+	getErdEntitiesApi,
+	getRelationsApi,
 	type SchemaField,
 } from "@/entities/doc-erd";
 import { Header } from "@/widgets/header";
@@ -146,8 +146,8 @@ export function DocErdShowPage() {
 			// there is nothing to show, so the scene stays empty.
 			if (id) {
 				const [entities, relations] = await Promise.all([
-					readErdEntitiesApi(id),
-					readRelationsApi(id),
+					getErdEntitiesApi(id),
+					getRelationsApi(id),
 				]);
 				if (disposed || scene !== sceneRef.current) return;
 				scene.load(entities, relations);

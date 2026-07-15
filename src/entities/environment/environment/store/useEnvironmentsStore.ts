@@ -4,7 +4,7 @@ import { createEnvironmentApi } from "../api/create-environment-api";
 import { createVariableApi } from "../api/create-variable-api";
 import { deleteEnvironmentApi } from "../api/delete-environment-api";
 import { deleteVariableApi } from "../api/delete-variable-api";
-import { readEnvironmentsByDocApi } from "../api/read-environments-by-doc-api";
+import { getEnvironmentsByDocApi } from "../api/get-environments-by-doc-api";
 import { updateEnvironmentApi } from "../api/update-environment-api";
 import { updateEnvironmentTokenApi } from "../api/update-environment-token-api";
 import { updateVariableApi } from "../api/update-variable-api";
@@ -33,7 +33,7 @@ export const useEnvironmentsStore = ({
 
 	const environments = useQuery<Environment[]>({
 		queryKey: environmentKeys.list(docId ?? ""),
-		queryFn: () => readEnvironmentsByDocApi(docId!),
+		queryFn: () => getEnvironmentsByDocApi(docId!),
 		enabled: !!docId,
 	});
 

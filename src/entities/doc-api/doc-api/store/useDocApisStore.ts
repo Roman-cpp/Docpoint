@@ -1,11 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-
+import { createDocApi } from "../api/create-doc-api";
 import { deleteDocApi } from "../api/delete-doc-api";
-import { readAllDocsApi } from "../api/read-all-docs-api";
-import { readDocApi } from "../api/read-doc-api";
+import { getAllDocsApi } from "../api/get-all-docs-api";
+import { getDocApi } from "../api/get-doc-api";
 import { updateDocApi } from "../api/update-doc-api";
-import { writeDocApi } from "../api/write-doc-api";
 import type { CreateDocDTO, UpdateDocDTO } from "../model/doc-api.dto";
 import type { Doc } from "../model/doc-api.entity";
 
@@ -26,17 +25,17 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 
 	const docs = useQuery<Doc[]>({
 		queryKey: docKeys.list(),
-		queryFn: () => readAllDocsApi(),
+		queryFn: () => getAllDocsApi(),
 	});
 
 	const doc = useQuery<Doc | null>({
 		queryKey: docKeys.detail(id ?? ""),
-		queryFn: () => readDocApi(id!),
+		queryFn: () => getDocApi(id!),
 		enabled: Boolean(id),
 	});
 
 	const createDoc = useMutation({
-		mutationFn: (dto: CreateDocDTO) => writeDocApi(dto),
+		mutationFn: (dto: CreateDocDTO) => createDocApi(dto),
 		onSuccess: () => {
 			toast({ title: "OK", description: "Документ создан" });
 			queryClient.invalidateQueries({ queryKey: docKeys.lists() });

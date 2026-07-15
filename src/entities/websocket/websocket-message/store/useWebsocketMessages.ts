@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import { createWebsocketMessageApi } from "../api/create-websocket-message-api";
 import { deleteWebsocketMessageApi } from "../api/delete-websocket-message-api";
-import { readWebsocketMessagesApi } from "../api/read-websocket-messages-api";
+import { getWebsocketMessagesApi } from "../api/get-websocket-messages-api";
 import { updateWebsocketMessageApi } from "../api/update-websocket-message-api";
 import type {
 	CreateWebsocketMessageDTO,
@@ -36,7 +36,7 @@ export const useWebsocketMessages = (websocketId: string) => {
 
 	const messages = useQuery<WebsocketMessage[]>({
 		queryKey: websocketMessageKeys.byWebsocket(websocketId),
-		queryFn: () => readWebsocketMessagesApi(websocketId),
+		queryFn: () => getWebsocketMessagesApi(websocketId),
 		enabled: !!websocketId,
 	});
 

@@ -6,7 +6,7 @@ import {
 	DeleteVariableModal,
 	deleteEnvironmentApi,
 	duplicateEnvironmentApi,
-	readEnvironmentAuthApi,
+	getEnvironmentAuthApi,
 	setEnvironmentAccessTokenApi,
 	updateEnvironmentApi,
 	updateEnvironmentAuthApi,
@@ -130,7 +130,7 @@ export const EnvironmentPage: FC = () => {
 		setEnvStatus("idle");
 
 		let cancelled = false;
-		readEnvironmentAuthApi(envId).then((auth) => {
+		getEnvironmentAuthApi(envId).then((auth) => {
 			if (cancelled) return;
 			const method = asMethod(auth.method || "POST");
 			setAuthUrl(auth.url);

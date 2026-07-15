@@ -12,8 +12,8 @@ import {
 	createEndpointApi,
 	deleteEndpointApi,
 	deleteGroupApi,
-	readDocApi,
-	readGroupsApi,
+	getDocApi,
+	getGroupsApi,
 	updateEndpointApi,
 	updateParamValueApi,
 } from "@/entities/doc-api";
@@ -25,7 +25,7 @@ import type {
 import {
 	createEntityApi,
 	deleteEntityApi,
-	readEntitiesApi,
+	getEntitiesApi,
 	updateEntityApi,
 } from "@/entities/doc-erd";
 
@@ -248,9 +248,9 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 	fetchDocApi: async (id) => {
 		try {
 			const [doc, groups, entities] = await Promise.all([
-				readDocApi(id),
-				readGroupsApi(id),
-				readEntitiesApi(id),
+				getDocApi(id),
+				getGroupsApi(id),
+				getEntitiesApi(id),
 			]);
 			set({ doc, groups, entities });
 		} catch (e) {

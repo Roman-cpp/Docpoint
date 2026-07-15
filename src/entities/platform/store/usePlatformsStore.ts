@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-
+import { createPlatformApi } from "../api/create-platform-api";
 import { deletePlatformApi } from "../api/delete-platform-api";
-import { readAllPlatformsApi } from "../api/read-all-platforms-api";
+import { getAllPlatformsApi } from "../api/get-all-platforms-api";
 import { updatePlatformApi } from "../api/update-platform-api";
-import { writePlatformApi } from "../api/write-platform-api";
 import type {
 	CreatePlatformDTO,
 	UpdatePlatformDTO,
@@ -22,11 +21,11 @@ export const usePlatformsStore = () => {
 
 	const platforms = useQuery<Platform[]>({
 		queryKey: platformKeys.list(),
-		queryFn: () => readAllPlatformsApi(),
+		queryFn: () => getAllPlatformsApi(),
 	});
 
 	const createPlatform = useMutation({
-		mutationFn: (dto: CreatePlatformDTO) => writePlatformApi(dto),
+		mutationFn: (dto: CreatePlatformDTO) => createPlatformApi(dto),
 		onSuccess: () => {
 			toast({ title: "OK", description: "Платформа создана" });
 			queryClient.invalidateQueries({ queryKey: platformKeys.lists() });

@@ -6,7 +6,7 @@ import {
 	deleteDirectoryApi,
 	type File,
 	type Folder,
-	readDirectoryApi,
+	getDirectoryApi,
 } from "@/entities/file-explorer";
 import { deleteMarkdownApi } from "@/entities/markdown";
 import { usePlatformsStore } from "@/entities/platform";
@@ -58,7 +58,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 	useEffect(() => {
 		let cancelled = false;
-		readDirectoryApi(path)
+		getDirectoryApi(path)
 			.then((data) => {
 				if (!cancelled) setListing(data);
 			})
@@ -72,7 +72,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 	/** Re-read the current folder after a mutation (e.g. creating a file). */
 	const reloadCurrent = () => {
-		readDirectoryApi(path)
+		getDirectoryApi(path)
 			.then(setListing)
 			.catch(() => setListing(EMPTY_LISTING));
 	};

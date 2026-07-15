@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { DocWebsocket } from "../model/doc-websocket.entity";
 
 /** List the WebSocket docs attached to a single microservice. */
-export function readServiceWebsocketsApi(
+export function getServiceWebsocketsApi(
 	serviceId: string,
 ): Promise<DocWebsocket[]> {
 	return invoke("read_service_websockets", { serviceId });

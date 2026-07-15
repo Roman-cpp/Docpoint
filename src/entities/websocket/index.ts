@@ -1,5 +1,5 @@
 export { createWebsocketApi } from "./doc-websocket/api/create-websocket-api";
-export { readServiceWebsocketsApi } from "./doc-websocket/api/read-service-websockets-api";
+export { getServiceWebsocketsApi } from "./doc-websocket/api/get-service-websockets-api";
 export type { CreateDocWebsocketDTO } from "./doc-websocket/model/doc-websocket.dto";
 export type { DocWebsocket } from "./doc-websocket/model/doc-websocket.entity";
 export {
@@ -8,7 +8,7 @@ export {
 } from "./doc-websocket/store/useDocWebsockets";
 export { createWebsocketMessageApi } from "./websocket-message/api/create-websocket-message-api";
 export { deleteWebsocketMessageApi } from "./websocket-message/api/delete-websocket-message-api";
-export { readWebsocketMessagesApi } from "./websocket-message/api/read-websocket-messages-api";
+export { getWebsocketMessagesApi } from "./websocket-message/api/get-websocket-messages-api";
 export { updateWebsocketMessageApi } from "./websocket-message/api/update-websocket-message-api";
 export type {
 	CreateWebsocketMessageDTO,

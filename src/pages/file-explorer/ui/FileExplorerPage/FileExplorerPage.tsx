@@ -6,7 +6,7 @@ import {
 	deleteDirectoryApi,
 	type File,
 	type Folder,
-	readDirectoryApi,
+	getDirectoryApi,
 } from "@/entities/file-explorer";
 import { deleteMarkdownApi } from "@/entities/markdown";
 import { useNewMarkdownFile } from "@/features/markdown";
@@ -36,7 +36,7 @@ export const FileExplorerPage: FC = () => {
 		let cancelled = false;
 		setLoading(true);
 		setError(null);
-		readDirectoryApi(path)
+		getDirectoryApi(path)
 			.then((data) => {
 				if (!cancelled) setListing(data);
 			})
@@ -56,7 +56,7 @@ export const FileExplorerPage: FC = () => {
 
 	/** Re-read the current folder after a mutation (best-effort, no spinner). */
 	const reloadCurrent = () => {
-		readDirectoryApi(path)
+		getDirectoryApi(path)
 			.then(setListing)
 			.catch((err) => setError(String(err)));
 	};

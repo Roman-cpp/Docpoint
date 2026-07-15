@@ -4,8 +4,8 @@ import { toast } from "@/core/toast";
 import { attachDocApi } from "../api/attach-doc-api";
 import { createServiceApi } from "../api/create-service-api";
 import { deleteServiceApi } from "../api/delete-service-api";
-import { readAllServicesApi } from "../api/read-all-services-api";
-import { readPlatformServicesApi } from "../api/read-platform-services-api";
+import { getAllServicesApi } from "../api/get-all-services-api";
+import { getPlatformServicesApi } from "../api/get-platform-services-api";
 import { updateServiceApi } from "../api/update-service-api";
 import type { CreateServiceDTO, UpdateServiceDTO } from "../model/service.dto";
 import type { Service } from "../model/service.entity";
@@ -19,7 +19,7 @@ export const serviceKeys = {
 export const useAllServices = () => {
 	const services = useQuery<Service[]>({
 		queryKey: serviceKeys.list(),
-		queryFn: () => readAllServicesApi(),
+		queryFn: () => getAllServicesApi(),
 	});
 
 	return {
@@ -62,7 +62,7 @@ export const usePlatformServices = (platformId: string) => {
 
 	const services = useQuery<Service[]>({
 		queryKey: serviceKeys.byPlatform(platformId),
-		queryFn: () => readPlatformServicesApi(platformId),
+		queryFn: () => getPlatformServicesApi(platformId),
 		enabled: !!platformId,
 	});
 

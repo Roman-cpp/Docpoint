@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import { createErdApi } from "../api/create-erd-api";
-import { readServiceErdsApi } from "../api/read-service-erds-api";
+import { getServiceErdsApi } from "../api/get-service-erds-api";
 import type { CreateDocErdDTO } from "../model/doc-erd.dto";
 import type { DocErd } from "../model/doc-erd.entity";
 
@@ -16,7 +16,7 @@ export const useServiceErds = (serviceId: string) => {
 
 	const erds = useQuery<DocErd[]>({
 		queryKey: docErdKeys.byService(serviceId),
-		queryFn: () => readServiceErdsApi(serviceId),
+		queryFn: () => getServiceErdsApi(serviceId),
 		enabled: !!serviceId,
 	});
 

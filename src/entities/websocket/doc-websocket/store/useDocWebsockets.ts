@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import { createWebsocketApi } from "../api/create-websocket-api";
-import { readServiceWebsocketsApi } from "../api/read-service-websockets-api";
+import { getServiceWebsocketsApi } from "../api/get-service-websockets-api";
 import type { CreateDocWebsocketDTO } from "../model/doc-websocket.dto";
 import type { DocWebsocket } from "../model/doc-websocket.entity";
 
@@ -16,7 +16,7 @@ export const useServiceWebsockets = (serviceId: string) => {
 
 	const websockets = useQuery<DocWebsocket[]>({
 		queryKey: docWebsocketKeys.byService(serviceId),
-		queryFn: () => readServiceWebsocketsApi(serviceId),
+		queryFn: () => getServiceWebsocketsApi(serviceId),
 		enabled: !!serviceId,
 	});
 

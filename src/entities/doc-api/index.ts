@@ -1,10 +1,10 @@
+export { createDocApi } from "./doc-api/api/create-doc-api";
 export { deleteDocApi } from "./doc-api/api/delete-doc-api";
-export { readAllDocsApi } from "./doc-api/api/read-all-docs-api";
-export { readDocApi } from "./doc-api/api/read-doc-api";
-export { readDocContentApi } from "./doc-api/api/read-doc-content-api";
+export { getAllDocsApi } from "./doc-api/api/get-all-docs-api";
+export { getDocApi } from "./doc-api/api/get-doc-api";
+export { getDocContentApi } from "./doc-api/api/get-doc-content-api";
 export { updateDocApi } from "./doc-api/api/update-doc-api";
-export { writeDocApi } from "./doc-api/api/write-doc-api";
-export { writeDocContentApi } from "./doc-api/api/write-doc-content-api";
+export { updateDocContentApi } from "./doc-api/api/update-doc-content-api";
 export type { CreateDocDTO, UpdateDocDTO } from "./doc-api/model/doc-api.dto";
 export type { Doc } from "./doc-api/model/doc-api.entity";
 export type { UseDocsStoreParams } from "./doc-api/store/useDocApisStore";
@@ -31,7 +31,7 @@ export type {
 	RequestParamValue,
 } from "./endpoint-request/model/endpoint-request.entity";
 export { deleteGroupApi } from "./group/api/delete-group-api";
-export { readGroupsApi } from "./group/api/read-groups-api";
-export { writeGroupsApi } from "./group/api/write-groups-api";
+export { getGroupsApi } from "./group/api/get-groups-api";
+export { updateGroupsApi } from "./group/api/update-groups-api";
 export type { CreateGroupDTO } from "./group/model/group.dto";
 export type { Group } from "./group/model/group.entity";

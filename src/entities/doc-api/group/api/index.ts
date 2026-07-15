@@ -1,3 +1,3 @@
 export { deleteGroupApi } from "./delete-group-api";
-export { readGroupsApi } from "./read-groups-api";
-export { writeGroupsApi } from "./write-groups-api";
+export { getGroupsApi } from "./get-groups-api";
+export { updateGroupsApi } from "./update-groups-api";

@@ -10,6 +10,6 @@ export interface DirListing {
 
 /** List the sub-folders and files directly inside a vault folder.
  *  Pass an empty string (the default) to list the vault root. */
-export function readDirectoryApi(folder = ""): Promise<DirListing> {
+export function getDirectoryApi(folder = ""): Promise<DirListing> {
 	return invoke("read_directory", { folder });
 }

@@ -1,6 +1,6 @@
 export { createWebsocketMessageApi } from "./api/create-websocket-message-api";
 export { deleteWebsocketMessageApi } from "./api/delete-websocket-message-api";
-export { readWebsocketMessagesApi } from "./api/read-websocket-messages-api";
+export { getWebsocketMessagesApi } from "./api/get-websocket-messages-api";
 export { updateWebsocketMessageApi } from "./api/update-websocket-message-api";
 export type {
 	CreateWebsocketMessageDTO,

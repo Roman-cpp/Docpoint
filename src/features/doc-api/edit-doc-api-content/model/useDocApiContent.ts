@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import { readDocContentApi, writeDocContentApi } from "@/entities/doc-api";
+import { getDocContentApi, updateDocContentApi } from "@/entities/doc-api";
 
 export type SaveStatus = "loading" | "idle" | "saving" | "saved" | "error";
 
@@ -27,7 +27,7 @@ export function useDocApiContent(docId: string) {
 		if (pending.current === null) return;
 		const text = pending.current;
 		pending.current = null;
-		void writeDocContentApi(id, text).catch(() => {
+		void updateDocContentApi(id, text).catch(() => {
 			setStatus("error");
 			toast({ title: "Не удалось сохранить документ", variant: "error" });
 		});
@@ -36,7 +36,7 @@ export function useDocApiContent(docId: string) {
 	useEffect(() => {
 		let cancelled = false;
 		setStatus("loading");
-		readDocContentApi(docId)
+		getDocContentApi(docId)
 			.then((text) => {
 				if (cancelled) return;
 				setContent(text);
@@ -65,7 +65,7 @@ export function useDocApiContent(docId: string) {
 				timer.current = null;
 				pending.current = null;
 				try {
-					await writeDocContentApi(docId, next);
+					await updateDocContentApi(docId, next);
 					setStatus("saved");
 				} catch {
 					setStatus("error");

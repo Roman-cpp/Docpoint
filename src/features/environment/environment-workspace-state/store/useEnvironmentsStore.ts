@@ -7,8 +7,8 @@ import type {
 	Variable,
 } from "@/entities/environment";
 import {
-	readEnvironmentsByDocApi,
-	readEnvironmentsByPlatformApi,
+	getEnvironmentsByDocApi,
+	getEnvironmentsByPlatformApi,
 	setSelectedEnvironmentApi,
 	updateEnvironmentTokenApi,
 } from "@/entities/environment";
@@ -47,7 +47,7 @@ const createEnvironmentSlice: StateCreator<EnvironmentsStore> = (set, get) => ({
 
 	fetchEnvironmentsPlatform: async (platformId: string) => {
 		try {
-			const environments = await readEnvironmentsByPlatformApi(platformId);
+			const environments = await getEnvironmentsByPlatformApi(platformId);
 			set({ environments });
 		} catch (e) {
 			console.error("[DocStore] fetchDoc failed:", e);
@@ -56,7 +56,7 @@ const createEnvironmentSlice: StateCreator<EnvironmentsStore> = (set, get) => ({
 	},
 	fetchEnvironmentsDoc: async (docId: string) => {
 		try {
-			const environments = await readEnvironmentsByDocApi(docId);
+			const environments = await getEnvironmentsByDocApi(docId);
 			set({ environments });
 		} catch (e) {
 			console.error("[DocStore] fetchDoc failed:", e);
