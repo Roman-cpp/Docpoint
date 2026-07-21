@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { type FC, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import type { Variable } from "@/entities/environment";
+import type { TokenPlacement, Variable } from "@/entities/environment";
 import {
 	DeleteVariableModal,
 	deleteEnvironmentApi,
@@ -68,6 +68,9 @@ const asMethod = (value: string): AuthMethod => {
 		: "POST";
 };
 
+const asTokenPlacement = (value: string): TokenPlacement =>
+	value === "cookie" ? "cookie" : "header";
+
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export const EnvironmentPage: FC = () => {
@@ -98,6 +101,9 @@ export const EnvironmentPage: FC = () => {
 	const [authMethod, setAuthMethod] = useState<AuthMethod>("POST");
 	const [authBody, setAuthBody] = useState("");
 	const [authTokenPath, setAuthTokenPath] = useState("");
+	const [authTokenPlacement, setAuthTokenPlacement] =
+		useState<TokenPlacement>("header");
+	const [authCookieName, setAuthCookieName] = useState("token");
 	const [authStatus, setAuthStatus] = useState<SaveStatus>("idle");
 	const [fetchingToken, setFetchingToken] = useState(false);
 	const loadedAuthRef = useRef<{
@@ -105,6 +111,8 @@ export const EnvironmentPage: FC = () => {
 		method: AuthMethod;
 		body: string;
 		tokenPath: string;
+		tokenPlacement: TokenPlacement;
+		cookieName: string;
 	} | null>(null);
 
 	// Variable modal
@@ -133,16 +141,22 @@ export const EnvironmentPage: FC = () => {
 		getEnvironmentAuthApi(envId).then((auth) => {
 			if (cancelled) return;
 			const method = asMethod(auth.method || "POST");
+			const tokenPlacement = asTokenPlacement(auth.tokenPlacement);
+			const cookieName = auth.cookieName || "token";
 			setAuthUrl(auth.url);
 			setAuthMethod(method);
 			setAuthBody(auth.body);
 			setAuthTokenPath(auth.tokenPath);
+			setAuthTokenPlacement(tokenPlacement);
+			setAuthCookieName(cookieName);
 			setAuthStatus("idle");
 			loadedAuthRef.current = {
 				url: auth.url,
 				method,
 				body: auth.body,
 				tokenPath: auth.tokenPath,
+				tokenPlacement,
+				cookieName,
 			};
 		});
 		return () => {
@@ -193,6 +207,8 @@ export const EnvironmentPage: FC = () => {
 		method?: AuthMethod;
 		body?: string;
 		tokenPath?: string;
+		tokenPlacement?: TokenPlacement;
+		cookieName?: string;
 	}) => {
 		if (!selectedEnv) return;
 		const loaded = loadedAuthRef.current;
@@ -201,13 +217,17 @@ export const EnvironmentPage: FC = () => {
 			method: overrides?.method ?? authMethod,
 			body: overrides?.body ?? authBody,
 			tokenPath: (overrides?.tokenPath ?? authTokenPath).trim(),
+			tokenPlacement: overrides?.tokenPlacement ?? authTokenPlacement,
+			cookieName: (overrides?.cookieName ?? authCookieName).trim() || "token",
 		};
 		if (
 			loaded &&
 			next.url === loaded.url &&
 			next.method === loaded.method &&
 			next.body === loaded.body &&
-			next.tokenPath === loaded.tokenPath
+			next.tokenPath === loaded.tokenPath &&
+			next.tokenPlacement === loaded.tokenPlacement &&
+			next.cookieName === loaded.cookieName
 		) {
 			return;
 		}
@@ -496,6 +516,14 @@ export const EnvironmentPage: FC = () => {
 									tokenPath={authTokenPath}
 									onTokenPathChange={setAuthTokenPath}
 									onTokenPathBlur={() => saveAuth()}
+									tokenPlacement={authTokenPlacement}
+									onTokenPlacementChange={(p) => {
+										setAuthTokenPlacement(p);
+										saveAuth({ tokenPlacement: p });
+									}}
+									cookieName={authCookieName}
+									onCookieNameChange={setAuthCookieName}
+									onCookieNameBlur={() => saveAuth()}
 									onFetchToken={handleFetchToken}
 									onClearToken={handleClearToken}
 									fetchingToken={fetchingToken}

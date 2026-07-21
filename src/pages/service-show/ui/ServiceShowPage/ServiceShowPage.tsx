@@ -14,6 +14,7 @@ import {
 } from "@/entities/file-explorer";
 import { deleteMarkdownApi } from "@/entities/markdown";
 import { useAllServices, useAttachDoc } from "@/entities/service";
+import type { DocWebsocket } from "@/entities/websocket";
 import { useServiceWebsockets } from "@/entities/websocket";
 import {
 	EditDocApiModal,
@@ -33,6 +34,7 @@ import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
 import { CreateErdModal } from "../CreateErdModal";
 import { CreateWebsocketModal } from "../CreateWebsocketModal";
+import { EditWebsocketModal } from "../EditWebsocketModal";
 
 const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
@@ -47,6 +49,8 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		isWebsocketsLoading,
 		createWebsocketAsync,
 		isCreatingWebsocket,
+		updateWebsocketAsync,
+		isUpdatingWebsocket,
 	} = useServiceWebsockets(id);
 	const {
 		createDocAsync,
@@ -71,6 +75,12 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	const [erdModalOpen, setErdModalOpen] = useState(false);
 	const [docModalOpen, setDocModalOpen] = useState(false);
 	const [wsModalOpen, setWsModalOpen] = useState(false);
+	const [wsMenu, setWsMenu] = useState<{
+		x: number;
+		y: number;
+		ws: DocWebsocket;
+	} | null>(null);
+	const [pendingWsEdit, setPendingWsEdit] = useState<DocWebsocket | null>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
 
 	/** Read a previously exported doc JSON, import it, and immediately attach the
@@ -399,6 +409,11 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 								// Carry the socket's id and URL so the tester page can prefill
 								// the connection and load its saved example messages.
 								state={{ id: ws.id, url: ws.url, name: ws.name }}
+								onContextMenu={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									setWsMenu({ x: e.clientX, y: e.clientY, ws });
+								}}
 							>
 								<div className={s.acAccent} />
 								<div className={s.acTop}>
@@ -515,6 +530,39 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					}
 				}}
 			/>
+
+			<ContextMenu.Root
+				open={!!wsMenu}
+				x={wsMenu?.x ?? 0}
+				y={wsMenu?.y ?? 0}
+				onClose={() => setWsMenu(null)}
+			>
+				<ContextMenu.Item
+					icon={<PencilIcon />}
+					onSelect={() => wsMenu && setPendingWsEdit(wsMenu.ws)}
+				>
+					Редактировать
+				</ContextMenu.Item>
+			</ContextMenu.Root>
+
+			{pendingWsEdit && (
+				<EditWebsocketModal
+					open
+					onOpenChange={(open) =>
+						!open && !isUpdatingWebsocket && setPendingWsEdit(null)
+					}
+					websocket={pendingWsEdit}
+					isSaving={isUpdatingWebsocket}
+					onSave={async (updates) => {
+						try {
+							await updateWebsocketAsync(updates);
+							setPendingWsEdit(null);
+						} catch {
+							/* error toast handled by the mutation */
+						}
+					}}
+				/>
+			)}
 
 			<ContextMenu.Root
 				open={!!docMenu}

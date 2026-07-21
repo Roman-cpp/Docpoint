@@ -1,3 +1,5 @@
+export type TokenPlacement = "header" | "cookie";
+
 export interface EnvironmentAuth {
 	id: string;
 	environmentId: string;
@@ -5,4 +7,6 @@ export interface EnvironmentAuth {
 	method: string;
 	body: string;
 	tokenPath: string;
+	tokenPlacement: TokenPlacement;
+	cookieName: string;
 }

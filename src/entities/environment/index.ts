@@ -28,4 +28,7 @@ export { getEnvironmentAuthApi } from "./environment-auth/api/get-environment-au
 export { setEnvironmentAccessTokenApi } from "./environment-auth/api/set-environment-access-token-api";
 export { updateEnvironmentAuthApi } from "./environment-auth/api/update-environment-auth-api";
 export type { UpdateEnvironmentAuthDTO } from "./environment-auth/model/environment-auth.dto";
-export type { EnvironmentAuth } from "./environment-auth/model/environment-auth.entity";
+export type {
+	EnvironmentAuth,
+	TokenPlacement,
+} from "./environment-auth/model/environment-auth.entity";

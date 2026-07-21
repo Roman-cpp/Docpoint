@@ -21,6 +21,8 @@ pub async fn ensure_row(db: &SqlitePool, environment_id: &str) -> Result<Environ
         method: "POST".to_string(),
         body: String::new(),
         token_path: String::new(),
+        token_placement: "header".to_string(),
+        cookie_name: "token".to_string(),
         access_token: None,
     })
 }
@@ -42,6 +44,8 @@ pub async fn read_by_env_id(
         method: r.get("method"),
         body: r.get("body"),
         token_path: r.get("token_path"),
+        token_placement: r.get("token_placement"),
+        cookie_name: r.get("cookie_name"),
         access_token: r.get("access_token"),
     }))
 }
@@ -62,12 +66,14 @@ pub async fn get_access_token(
 pub async fn upsert(db: &SqlitePool, dto: &UpdateEnvironmentAuthDTO) -> Result<(), String> {
     ensure_row(db, &dto.environment_id).await?;
     sqlx::query(
-        "UPDATE environment_auth SET url = ?, method = ?, body = ?, token_path = ? WHERE environment_id = ?",
+        "UPDATE environment_auth SET url = ?, method = ?, body = ?, token_path = ?, token_placement = ?, cookie_name = ? WHERE environment_id = ?",
     )
     .bind(&dto.url)
     .bind(&dto.method)
     .bind(&dto.body)
     .bind(&dto.token_path)
+    .bind(&dto.token_placement)
+    .bind(&dto.cookie_name)
     .bind(&dto.environment_id)
     .execute(db)
     .await

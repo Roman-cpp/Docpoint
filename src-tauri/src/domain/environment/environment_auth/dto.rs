@@ -10,6 +10,10 @@ pub struct EnvironmentAuthDTO {
     pub body: String,
     #[serde(rename = "tokenPath")]
     pub token_path: String,
+    #[serde(rename = "tokenPlacement")]
+    pub token_placement: String,
+    #[serde(rename = "cookieName")]
+    pub cookie_name: String,
     #[serde(rename = "accessToken")]
     pub access_token: Option<String>,
 }
@@ -23,4 +27,8 @@ pub struct UpdateEnvironmentAuthDTO {
     pub body: String,
     #[serde(rename = "tokenPath")]
     pub token_path: String,
+    #[serde(rename = "tokenPlacement")]
+    pub token_placement: String,
+    #[serde(rename = "cookieName")]
+    pub cookie_name: String,
 }

@@ -17,16 +17,28 @@ pub async fn send_request(
         .map_err(|e| e.to_string())?
         .clone();
 
-    let had_explicit_auth = payload
-        .headers
-        .keys()
-        .any(|k| k.eq_ignore_ascii_case("authorization"));
+    let auth = match &env_id {
+        Some(env_id) => repository::read_by_env_id(&state.db, env_id).await?,
+        None => None,
+    };
+    let uses_cookie = auth
+        .as_ref()
+        .map(|a| a.token_placement == "cookie")
+        .unwrap_or(false);
+
+    let had_explicit_auth = payload.headers.keys().any(|k| {
+        if uses_cookie {
+            k.eq_ignore_ascii_case("cookie")
+        } else {
+            k.eq_ignore_ascii_case("authorization")
+        }
+    });
 
     if !had_explicit_auth {
-        if let Some(env_id) = &env_id {
-            if let Some(token) = repository::get_access_token(&state.db, env_id).await? {
+        if let Some(auth) = &auth {
+            if let Some(token) = &auth.access_token {
                 if !token.is_empty() {
-                    set_auth_header(&mut payload.headers, &token);
+                    apply_token(&mut payload.headers, auth, token);
                 }
             }
         }
@@ -36,9 +48,9 @@ pub async fn send_request(
 
     // If unauthorized and the token was managed by us, refresh it and retry once.
     if response.status == 401 && !had_explicit_auth {
-        if let Some(env_id) = &env_id {
+        if let (Some(env_id), Some(auth)) = (&env_id, &auth) {
             if let Some(token) = refresh_access_token(&state.http_client, &state.db, env_id).await? {
-                set_auth_header(&mut payload.headers, &token);
+                apply_token(&mut payload.headers, auth, &token);
                 return http_client::send(&state.http_client, payload).await;
             }
         }
@@ -47,9 +59,47 @@ pub async fn send_request(
     Ok(response)
 }
 
+fn apply_token(headers: &mut HashMap<String, String>, auth: &EnvironmentAuthDTO, token: &str) {
+    if auth.token_placement == "cookie" {
+        set_auth_cookie(headers, &auth.cookie_name, token);
+    } else {
+        set_auth_header(headers, token);
+    }
+}
+
 fn set_auth_header(headers: &mut HashMap<String, String>, token: &str) {
     headers.retain(|k, _| !k.eq_ignore_ascii_case("authorization"));
     headers.insert("Authorization".to_string(), format!("Bearer {token}"));
+}
+
+/// Sets/merges the token into the `Cookie` header as `<cookie_name>=<token>`,
+/// preserving any other cookies already present and replacing a stale value
+/// for the same cookie name.
+fn set_auth_cookie(headers: &mut HashMap<String, String>, cookie_name: &str, token: &str) {
+    let name = cookie_name.trim();
+    let name = if name.is_empty() { "token" } else { name };
+
+    let existing_key = headers
+        .keys()
+        .find(|k| k.eq_ignore_ascii_case("cookie"))
+        .cloned();
+    let mut pairs: Vec<String> = existing_key
+        .as_ref()
+        .and_then(|k| headers.get(k))
+        .map(|v| {
+            v.split(';')
+                .map(str::trim)
+                .filter(|p| !p.is_empty() && !p.starts_with(&format!("{name}=")))
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
+    pairs.push(format!("{name}={token}"));
+
+    if let Some(k) = existing_key {
+        headers.remove(&k);
+    }
+    headers.insert("Cookie".to_string(), pairs.join("; "));
 }
 
 /// Runs the auth request configured in `environment_auth`, extracts the token

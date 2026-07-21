@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import type { TokenPlacement } from "@/entities/environment";
 import s from "../EnvironmentPage.module.css";
 import {
 	type AuthMethod,
@@ -7,6 +8,8 @@ import {
 	HTTP_METHODS,
 	RefreshIcon,
 	Section,
+	TOKEN_PLACEMENT_LABEL,
+	TOKEN_PLACEMENTS,
 	TrashIcon,
 } from "../parts";
 
@@ -22,6 +25,11 @@ type Props = {
 	tokenPath: string;
 	onTokenPathChange: (value: string) => void;
 	onTokenPathBlur: () => void;
+	tokenPlacement: TokenPlacement;
+	onTokenPlacementChange: (value: TokenPlacement) => void;
+	cookieName: string;
+	onCookieNameChange: (value: string) => void;
+	onCookieNameBlur: () => void;
 	onFetchToken: () => void;
 	onClearToken: () => void;
 	fetchingToken: boolean;
@@ -32,6 +40,9 @@ type Props = {
 
 const isMethod = (value: string): value is AuthMethod =>
 	(HTTP_METHODS as readonly string[]).includes(value);
+
+const isTokenPlacement = (value: string): value is TokenPlacement =>
+	(TOKEN_PLACEMENTS as readonly string[]).includes(value);
 
 const methodClass = (method: AuthMethod) => {
 	const mod = method.toLowerCase();
@@ -50,6 +61,11 @@ export const AuthRequestSection: FC<Props> = ({
 	tokenPath,
 	onTokenPathChange,
 	onTokenPathBlur,
+	tokenPlacement,
+	onTokenPlacementChange,
+	cookieName,
+	onCookieNameChange,
+	onCookieNameBlur,
 	onFetchToken,
 	onClearToken,
 	fetchingToken,
@@ -130,6 +146,40 @@ export const AuthRequestSection: FC<Props> = ({
 					placeholder="data.accessToken"
 				/>
 			</Field>
+			<Field
+				label="Куда подставлять токен"
+				help="как полученный токен добавляется к запросам этого окружения"
+			>
+				<div className={`${s.envSelect} ${s.method}`}>
+					<select
+						value={tokenPlacement}
+						onChange={(e) =>
+							isTokenPlacement(e.target.value) &&
+							onTokenPlacementChange(e.target.value)
+						}
+					>
+						{TOKEN_PLACEMENTS.map((p) => (
+							<option key={p} value={p}>
+								{TOKEN_PLACEMENT_LABEL[p]}
+							</option>
+						))}
+					</select>
+				</div>
+			</Field>
+			{tokenPlacement === "cookie" && (
+				<Field
+					label="Cookie name"
+					help="имя cookie, в которую попадёт токен (например session_id)"
+				>
+					<input
+						className={s.envInput}
+						value={cookieName}
+						onChange={(e) => onCookieNameChange(e.target.value)}
+						onBlur={onCookieNameBlur}
+						placeholder="token"
+					/>
+				</Field>
+			)}
 			<div className={s.envAuthFoot}>
 				<button
 					type="button"

@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import { createWebsocketApi } from "../api/create-websocket-api";
 import { getServiceWebsocketsApi } from "../api/get-service-websockets-api";
-import type { CreateDocWebsocketDTO } from "../model/doc-websocket.dto";
+import { updateWebsocketApi } from "../api/update-websocket-api";
+import type {
+	CreateDocWebsocketDTO,
+	UpdateDocWebsocketDTO,
+} from "../model/doc-websocket.dto";
 import type { DocWebsocket } from "../model/doc-websocket.entity";
 
 export const docWebsocketKeys = {
@@ -33,6 +37,19 @@ export const useServiceWebsockets = (serviceId: string) => {
 		},
 	});
 
+	const update = useMutation({
+		mutationFn: (dto: UpdateDocWebsocketDTO) => updateWebsocketApi(dto),
+		onSuccess: () => {
+			toast({ title: "OK", description: "WebSocket обновлён" });
+			queryClient.invalidateQueries({
+				queryKey: docWebsocketKeys.byService(serviceId),
+			});
+		},
+		onError: (error: Error) => {
+			toast({ title: "Ошибка", description: error.message, variant: "error" });
+		},
+	});
+
 	return {
 		websockets: websockets.data ?? [],
 		isWebsocketsLoading: websockets.isLoading,
@@ -41,5 +58,9 @@ export const useServiceWebsockets = (serviceId: string) => {
 		createWebsocket: create.mutate,
 		createWebsocketAsync: create.mutateAsync,
 		isCreatingWebsocket: create.isPending,
+
+		updateWebsocket: update.mutate,
+		updateWebsocketAsync: update.mutateAsync,
+		isUpdatingWebsocket: update.isPending,
 	};
 };

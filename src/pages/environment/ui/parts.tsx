@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from "react";
+import type { TokenPlacement } from "@/entities/environment";
 import s from "./EnvironmentPage.module.css";
 
 export type EnvKey = "prod" | "staging" | "local" | "dev";
@@ -30,6 +31,13 @@ export const HTTP_METHODS: AuthMethod[] = [
 	"PATCH",
 	"DELETE",
 ];
+
+export const TOKEN_PLACEMENTS: TokenPlacement[] = ["header", "cookie"];
+
+export const TOKEN_PLACEMENT_LABEL: Record<TokenPlacement, string> = {
+	header: "Header (Authorization: Bearer)",
+	cookie: "Cookie",
+};
 
 export type VarType = "string" | "number" | "secret";
 
