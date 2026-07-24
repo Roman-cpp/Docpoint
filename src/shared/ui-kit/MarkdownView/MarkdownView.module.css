@@ -3,6 +3,8 @@
    viewer so every place showing a document reads the same. */
 .rendered {
 	color: var(--ink);
+	/* Long URLs, ids and inline code must wrap rather than widen the document. */
+	overflow-wrap: break-word;
 }
 
 .rendered h1 {
@@ -213,15 +215,32 @@
 	white-space: pre;
 }
 
-/* Tables */
+/* Tables
+   The frame (border, radius) lives on the wrapper so a table too wide for the
+   document scrolls horizontally inside it instead of spilling over the edge. */
+.tableWrap {
+	max-width: 100%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	margin: 0 0 18px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+}
+.tableWrap::-webkit-scrollbar {
+	height: 6px;
+}
+.tableWrap::-webkit-scrollbar-thumb {
+	background: var(--border-h);
+	border-radius: 3px;
+}
+.tableWrap::-webkit-scrollbar-track {
+	background: transparent;
+}
 .rendered table {
 	width: 100%;
 	border-collapse: collapse;
-	margin: 0 0 18px;
+	margin: 0;
 	font-size: 13.5px;
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	overflow: hidden;
 }
 .rendered thead {
 	background: var(--cat-bg);

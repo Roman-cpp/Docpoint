@@ -94,11 +94,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</button>
 				</div>
 
-				{tab === "details" && (
-					<PlatformDetails
-						platform={platform}
-					/>
-				)}
+				{tab === "details" && <PlatformDetails platform={platform} />}
 
 				{tab === "services" && (
 					<section className={b.section}>

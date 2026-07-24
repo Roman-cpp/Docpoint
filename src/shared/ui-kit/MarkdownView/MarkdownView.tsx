@@ -46,6 +46,13 @@ const mdComponents: Components = {
 	h4: heading("h4"),
 	// `pre` is rendered by the code block itself — pass through to avoid nesting.
 	pre: ({ children }: { children?: ReactNode }) => <>{children}</>,
+	// A table wider than the column scrolls inside its own box instead of
+	// pushing past the document's edge.
+	table: ({ children }: { children?: ReactNode }) => (
+		<div className={s.tableWrap}>
+			<table>{children}</table>
+		</div>
+	),
 	code: ({ className, children }: ComponentPropsWithoutRef<"code">) => {
 		const text = nodeToText(children);
 		const match = /language-(\w+)/.exec(className ?? "");
