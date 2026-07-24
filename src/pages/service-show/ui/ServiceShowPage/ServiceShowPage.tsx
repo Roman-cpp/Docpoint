@@ -1,19 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
 import { useServiceErds } from "@/entities/doc-erd";
-import {
-	type DirListing,
-	deleteDirectoryApi,
-	type File,
-	type Folder,
-	getDirectoryApi,
-} from "@/entities/file-explorer";
-import { deleteMarkdownApi } from "@/entities/markdown";
 import { useAllServices, useAttachDoc } from "@/entities/service";
+import { serviceScope } from "@/entities/shared/file-scope";
+import { markdownRoute } from "@/entities/vault";
 import type { DocWebsocket } from "@/entities/websocket";
 import { useServiceWebsockets } from "@/entities/websocket";
 import {
@@ -23,20 +17,16 @@ import {
 	useImportExportDoc,
 } from "@/features/doc-api";
 import { CreateDocApiModal } from "@/features/doc-api/create-doc-api";
-import { useNewMarkdownFile } from "@/features/markdown";
 import { serviceDocsKeys, useServiceDocs } from "@/features/service";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
-import b from "@/pages/platform-show/ui/PlatformShowPage/PlatformShowPage.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
-import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
+import { VaultBrowser } from "@/widgets/vault-browser";
 import { CreateErdModal } from "../CreateErdModal";
 import { CreateWebsocketModal } from "../CreateWebsocketModal";
 import { EditWebsocketModal } from "../EditWebsocketModal";
-
-const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {
@@ -119,40 +109,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		}
 	};
 
-	/** Vault folder holding this microservice's files. */
-	const baseDir = `services/${id}`;
-	const [listing, setListing] = useState<DirListing>(EMPTY_LISTING);
-	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	/** Current folder: a vault-relative path, always under `baseDir`. */
-	const [path, setPath] = useState(baseDir);
-
-	useEffect(() => {
-		let cancelled = false;
-		getDirectoryApi(path)
-			.then((data) => {
-				if (!cancelled) setListing(data);
-			})
-			.catch(() => {
-				if (!cancelled) setListing(EMPTY_LISTING);
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [path]);
-
-	/** Re-read the current folder after a mutation (e.g. creating a file). */
-	const reloadCurrent = () => {
-		getDirectoryApi(path)
-			.then(setListing)
-			.catch(() => setListing(EMPTY_LISTING));
-	};
-
-	const {
-		openMenu,
-		openCreateFile,
-		element: newFileUi,
-	} = useNewMarkdownFile(path, reloadCurrent);
-
 	/** Open a doc in a separate native window. Reuses/focuses an existing
 	 *  window for the same doc instead of erroring on the duplicate label. */
 	const openDocInNewWindow = async (doc: Doc) => {
@@ -177,59 +133,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		});
 	};
 
-	const openFolder = (folderId: string) => {
-		setSelectedFile(null);
-		setPath(folderId);
-	};
-
-	const deleteFolder = async (folder: Folder) => {
-		try {
-			await deleteDirectoryApi(folder.id);
-			reloadCurrent();
-		} catch (err) {
-			toast({
-				variant: "error",
-				title: "Не удалось удалить каталог",
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
-
-	const deleteFile = async (file: File) => {
-		try {
-			await deleteMarkdownApi(`${path}/${file.name}`);
-			if (selectedFile?.name === file.name) setSelectedFile(null);
-			reloadCurrent();
-		} catch (err) {
-			toast({
-				variant: "error",
-				title: "Не удалось удалить файл",
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
-
-	/** Double-click a file: `.md` files open in the markdown viewer. */
-	const openFile = (file: File) => {
-		if (!file.name.toLowerCase().endsWith(".md")) return;
-		const fileId = `${path}/${file.name}`;
-		navigate(`/markdown-show?file=${encodeURIComponent(fileId)}`);
-	};
-
-	/** Breadcrumb chain relative to the service root (the `baseDir` prefix is
-	 *  hidden from the user). */
-	const crumbs: { name: string; id: string }[] = [
-		{ name: "Файлы", id: baseDir },
-	];
-	{
-		const rel = path === baseDir ? "" : path.slice(baseDir.length + 1);
-		let prefix = baseDir;
-		for (const segment of rel.split("/").filter(Boolean)) {
-			prefix = `${prefix}/${segment}`;
-			crumbs.push({ name: segment, id: prefix });
-		}
-	}
-
 	const service = services.find((svc) => svc.id === id);
 
 	if (isServicesLoading && !service) {
@@ -251,11 +154,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 	return (
 		<div className={s.overview}>
-			{service.platform_id && (
-				<Link className={s.ovSub} to={`/platform-show/${service.platform_id}`}>
-					← К платформе
-				</Link>
-			)}
+			<Link className={s.ovSub} to={`/platform-show/${service.platformId}`}>
+				← К платформе
+			</Link>
 
 			<div style={{ marginTop: 24 }}>
 				<div
@@ -429,57 +330,29 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				)}
 			</div>
 
-			<div
-				className={b.fileBrowser}
-				style={{ marginTop: 32 }}
-				onContextMenu={openMenu}
-			>
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "space-between",
-						marginBottom: 16,
-					}}
-				>
-					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
-						ERD-диаграммы
-					</h2>
-					<Button variant="subtle" onClick={openCreateFile}>
-						+ Создать MD
-					</Button>
-				</div>
-				{path !== baseDir && (
-					<nav className={b.crumbs} aria-label="Путь">
-						{crumbs.map((c, i) => (
-							<span key={c.id} className={b.crumbItem}>
-								{i > 0 && <span className={b.crumbSep}>/</span>}
-								{i === crumbs.length - 1 ? (
-									<span className={b.crumbCurrent}>{c.name}</span>
-								) : (
-									<button
-										type="button"
-										className={b.crumb}
-										onClick={() => openFolder(c.id)}
-									>
-										{c.name}
-									</button>
-								)}
-							</span>
-						))}
-					</nav>
-				)}
-				<FolderGrid
-					folders={listing.folders}
-					onOpen={openFolder}
-					onDelete={deleteFolder}
-				/>
-				<FileGrid
-					files={listing.files}
-					selectedId={selectedFile?.name ?? null}
-					onSelect={setSelectedFile}
-					onOpen={openFile}
-					onDelete={deleteFile}
+			<div style={{ marginTop: 32 }}>
+				<VaultBrowser
+					scope={serviceScope(id)}
+					rootLabel="Файлы микросервиса"
+					onOpenFile={(filePath) =>
+						navigate(markdownRoute(serviceScope(id), filePath))
+					}
+					renderHeader={({ openCreateFile }) => (
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "space-between",
+							}}
+						>
+							<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
+								Файлы микросервиса
+							</h2>
+							<Button variant="subtle" onClick={openCreateFile}>
+								+ Создать MD
+							</Button>
+						</div>
+					)}
 				/>
 			</div>
 
@@ -680,8 +553,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</Dialog.Footer>
 				</Dialog.Root>
 			)}
-
-			{newFileUi}
 		</div>
 	);
 };

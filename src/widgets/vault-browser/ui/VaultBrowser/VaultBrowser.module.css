@@ -1,0 +1,59 @@
+/* ═══════════════════════════════════════════════════════════════
+   ПРОВОДНИК ПО ФАЙЛАМ ОБЛАСТИ — хлебные крошки, каталоги, файлы.
+   Сетки карточек живут в FileGrid / FolderGrid.
+   ═══════════════════════════════════════════════════════════════ */
+
+.browser {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+/* Хлебные крошки для возврата из вложенных каталогов. */
+.crumbs {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+}
+.crumbItem {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+}
+.crumbSep {
+	font-family: var(--font-serif);
+	font-size: 15px;
+	color: var(--ink-low);
+}
+.crumb,
+.crumbCurrent {
+	font-family: var(--font-sans);
+	font-size: 13.5px;
+	background: none;
+	border: none;
+	padding: 0;
+}
+.crumb {
+	color: var(--ink-low);
+	cursor: pointer;
+}
+.crumb:hover {
+	color: var(--ink);
+	text-decoration: underline;
+}
+.crumbCurrent {
+	color: var(--ink);
+	font-weight: var(--fw-medium);
+}
+
+.empty {
+	padding: 48px 0;
+	text-align: center;
+	font-size: 13.5px;
+	color: var(--ink-low);
+	border: 1px dashed var(--border-h);
+	border-radius: var(--r-xl);
+	background: var(--surface);
+}

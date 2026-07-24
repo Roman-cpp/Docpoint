@@ -11,7 +11,8 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import { useNavigate, useSearchParams } from "react-router";
 import remarkGfm from "remark-gfm";
 import { toast } from "@/core/toast";
-import { exportMarkdownApi, type Markdown } from "@/entities/markdown";
+import { parseScopeKey } from "@/entities/shared/file-scope";
+import { exportMarkdownApi, type Markdown } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { Header } from "@/widgets/header";
@@ -102,10 +103,16 @@ const formatBytes = (bytes: number): string => {
 	return `${rounded.toLocaleString("ru-RU")} ${units[unit]}`;
 };
 
+/* Folder shown in the viewer's breadcrumb — the scope root has no name. */
+const parentFolder = (path: string): string => {
+	const slash = path.lastIndexOf("/");
+	return slash === -1 ? "Файлы" : path.slice(0, slash);
+};
+
 /* Map a file read from the vault into the viewer's display shape. */
 const toViewFile = (md: Markdown): MarkdownFile => ({
-	id: md.id,
-	folder: md.folder || "Файлы",
+	id: md.path,
+	folder: parentFolder(md.path),
 	name: md.name,
 	size: formatBytes(md.size),
 	updated: new Date(md.updated * 1000).toLocaleString("ru-RU", {
@@ -119,7 +126,14 @@ const toViewFile = (md: Markdown): MarkdownFile => ({
 export const MarkdownShowPage: FC = () => {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
+	// A scope-relative path means nothing on its own, so the scope travels with
+	// it in the URL. Either half missing means no real file is open.
+	const scopeParam = searchParams.get("scope");
 	const fileParam = searchParams.get("file");
+	const scope = useMemo(
+		() => (scopeParam ? parseScopeKey(scopeParam) : null),
+		[scopeParam],
+	);
 	const [view, setView] = useState<View>("rendered");
 	const [activeHeading, setActiveHeading] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
@@ -133,7 +147,7 @@ export const MarkdownShowPage: FC = () => {
 		content: vaultContent,
 		status,
 		onChange,
-	} = useMarkdownContent(fileParam);
+	} = useMarkdownContent(scope, fileParam);
 	const isVault = vaultFile !== null;
 
 	// Sample files are read-only — never expose the editor for them.
@@ -224,7 +238,7 @@ export const MarkdownShowPage: FC = () => {
 
 			<div className={s.body}>
 				{/* ─── File browser ─── */}
-				<FileSidebar activeFileId={fileParam} />
+				{scope && <FileSidebar scope={scope} activePath={fileParam} />}
 
 				{/* ─── Reader ─── */}
 				<div className={s.reader} ref={readerRef}>

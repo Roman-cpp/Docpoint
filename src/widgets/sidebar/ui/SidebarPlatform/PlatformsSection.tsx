@@ -103,8 +103,7 @@ export const PlatformsSection = () => {
 	const serviceCounts = useMemo(() => {
 		const map = new Map<string, number>();
 		for (const svc of services) {
-			if (svc.platform_id === null) continue;
-			map.set(svc.platform_id, (map.get(svc.platform_id) ?? 0) + 1);
+			map.set(svc.platformId, (map.get(svc.platformId) ?? 0) + 1);
 		}
 		return map;
 	}, [services]);

@@ -1,55 +1,56 @@
 import { type FC, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { type DirListing, getDirectoryApi } from "@/entities/file-explorer";
+import { type FileScope, scopeKey } from "@/entities/shared/file-scope";
+import {
+	type DirListing,
+	EMPTY_LISTING,
+	getDirectoryApi,
+	isMarkdown,
+	markdownRoute,
+	parentPath,
+	pathCrumbs,
+} from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
 import { ChevronIcon, DocIcon, FolderIcon } from "../icons";
 import s from "../MarkdownShowPage.module.css";
 
-const EMPTY_LISTING: DirListing = { folders: [], files: [] };
-
-/** Folder that contains the file at `id` ("" for the vault root). */
-const parentFolder = (id: string | null): string => {
-	if (!id) return "";
-	const slash = id.lastIndexOf("/");
-	return slash === -1 ? "" : id.slice(0, slash);
-};
-
-const isMarkdown = (name: string) => name.toLowerCase().endsWith(".md");
-
 /* ═══════════════ SIDEBAR (left) ═══════════════
-   Browsable file tree: lists the .md files in the current folder and lets
-   the reader step into sub-folders to preview their contents. Folders in the
-   vault only ever hold .md files, so nothing else is shown. */
-export const FileSidebar: FC<{ activeFileId: string | null }> = ({
-	activeFileId,
-}) => {
+   Browsable file tree for the scope the open document belongs to: lists its
+   .md files and lets the reader step into sub-folders. */
+export const FileSidebar: FC<{
+	scope: FileScope;
+	/** Scope-relative path of the document on screen, if any. */
+	activePath: string | null;
+}> = ({ scope, activePath }) => {
 	const navigate = useNavigate();
-	/** Folder currently being browsed — a vault-relative path, "" for the root. */
-	const [dir, setDir] = useState(() => parentFolder(activeFileId));
+	/** Folder being browsed — scope-relative, "" for the scope root. */
+	const [dir, setDir] = useState(() => parentPath(activePath ?? ""));
 	const [listing, setListing] = useState<DirListing>(EMPTY_LISTING);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [query, setQuery] = useState("");
 
+	const key = scopeKey(scope);
+
 	// Follow the opened file into its own folder, so the sidebar always shows
 	// the neighbours of the document on screen after a navigation.
 	useEffect(() => {
-		setDir(parentFolder(activeFileId));
-	}, [activeFileId]);
+		setDir(parentPath(activePath ?? ""));
+	}, [activePath]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `key` is the scope's identity
 	useEffect(() => {
 		let cancelled = false;
 		setLoading(true);
 		setError(null);
-		getDirectoryApi(dir)
+		getDirectoryApi(scope, dir)
 			.then((data) => {
 				if (!cancelled) setListing(data);
 			})
 			.catch((err) => {
-				if (!cancelled) {
-					setListing(EMPTY_LISTING);
-					setError(String(err));
-				}
+				if (cancelled) return;
+				setListing(EMPTY_LISTING);
+				setError(err instanceof Error ? err.message : String(err));
 			})
 			.finally(() => {
 				if (!cancelled) setLoading(false);
@@ -57,18 +58,9 @@ export const FileSidebar: FC<{ activeFileId: string | null }> = ({
 		return () => {
 			cancelled = true;
 		};
-	}, [dir]);
+	}, [key, dir]);
 
-	/** Breadcrumb chain: Главная + each folder segment along the path. */
-	const crumbs = useMemo(() => {
-		const chain: { name: string; id: string }[] = [{ name: "Главная", id: "" }];
-		let prefix = "";
-		for (const segment of dir.split("/").filter(Boolean)) {
-			prefix = prefix ? `${prefix}/${segment}` : segment;
-			chain.push({ name: segment, id: prefix });
-		}
-		return chain;
-	}, [dir]);
+	const crumbs = useMemo(() => pathCrumbs(dir, "Файлы"), [dir]);
 
 	const { folders, files } = useMemo(() => {
 		const q = query.trim().toLowerCase();
@@ -79,28 +71,23 @@ export const FileSidebar: FC<{ activeFileId: string | null }> = ({
 		};
 	}, [listing, query]);
 
-	const openFile = (name: string) => {
-		const id = dir ? `${dir}/${name}` : name;
-		navigate(`/markdown-show?file=${encodeURIComponent(id)}`);
-	};
-
 	const isEmpty = folders.length === 0 && files.length === 0;
 
 	return (
 		<aside className={s.sidebar}>
 			<nav className={s.sideCrumbs} aria-label="Путь">
-				{crumbs.map((c, i) => (
-					<span key={c.id} className={s.sideCrumbItem}>
+				{crumbs.map((crumb, i) => (
+					<span key={crumb.path} className={s.sideCrumbItem}>
 						{i > 0 && <span className={s.sideCrumbSep}>/</span>}
 						{i === crumbs.length - 1 ? (
-							<span className={s.sideCrumbCur}>{c.name}</span>
+							<span className={s.sideCrumbCur}>{crumb.name}</span>
 						) : (
 							<button
 								type="button"
 								className={s.sideCrumb}
-								onClick={() => setDir(c.id)}
+								onClick={() => setDir(crumb.path)}
 							>
-								{c.name}
+								{crumb.name}
 							</button>
 						)}
 					</span>
@@ -121,11 +108,11 @@ export const FileSidebar: FC<{ activeFileId: string | null }> = ({
 					folders.map((folder) => (
 						<button
 							type="button"
-							key={folder.id}
+							key={folder.path}
 							className={s.sideRow}
 							onClick={() => {
 								setQuery("");
-								setDir(folder.id);
+								setDir(folder.path);
 							}}
 						>
 							<FolderIcon />
@@ -137,23 +124,20 @@ export const FileSidebar: FC<{ activeFileId: string | null }> = ({
 
 				{!error &&
 					!loading &&
-					files.map((file) => {
-						const id = dir ? `${dir}/${file.name}` : file.name;
-						return (
-							<button
-								type="button"
-								key={file.name}
-								className={cx(
-									s.sideRow,
-									id === activeFileId && s.sideRowActive,
-								)}
-								onClick={() => openFile(file.name)}
-							>
-								<DocIcon />
-								<span className={s.sideRowName}>{file.name}</span>
-							</button>
-						);
-					})}
+					files.map((file) => (
+						<button
+							type="button"
+							key={file.path}
+							className={cx(
+								s.sideRow,
+								file.path === activePath && s.sideRowActive,
+							)}
+							onClick={() => navigate(markdownRoute(scope, file.path))}
+						>
+							<DocIcon />
+							<span className={s.sideRowName}>{file.name}</span>
+						</button>
+					))}
 			</div>
 		</aside>
 	);

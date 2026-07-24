@@ -1,2 +1,3 @@
-pub mod directory;
-pub mod markdown;
+pub mod doc_content;
+pub mod layout;
+pub mod vault;

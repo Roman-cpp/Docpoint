@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import type { FileKind } from "../../pages/file-explorer/ui/types";
+import type { FileKind } from "./fileKind";
 
 /* ─── Icons shared across the file explorer ─── */
 export const SearchIcon: FC = () => (

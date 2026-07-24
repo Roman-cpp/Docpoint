@@ -14,7 +14,7 @@ use service::{
     save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_endpoint, update_environment,
     update_environment_auth, update_param_value, update_platform, update_schema, update_service, update_variable,
     write_groups, write_schemas,
-    create_markdown, delete_markdown, export_markdown, read_markdown, read_markdowns, update_markdown,
+    create_markdown, delete_file, export_markdown, read_markdown, update_markdown,
     read_erds, read_service_erds, create_erd, update_erd, delete_erd,
     read_erd_schemas, create_erd_schema,
     read_relations, create_relation, delete_relation,
@@ -40,8 +40,13 @@ pub fn run() {
             let app_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_dir)?;
 
+            // User files, browsable from the app.
             let vault_dir = app_dir.join("vault");
             std::fs::create_dir_all(&vault_dir)?;
+
+            // App-managed doc-api bodies, deliberately outside the vault.
+            let docs_dir = app_dir.join("docs");
+            std::fs::create_dir_all(&docs_dir)?;
 
             let db_path = app_dir.join("docpoint.db");
             let options = SqliteConnectOptions::new()
@@ -60,6 +65,7 @@ pub fn run() {
                 db: pool,
                 selected_environment_id: Default::default(),
                 vault_dir,
+                docs_dir,
                 ws_conns: Default::default(),
                 http_client: infrastructure::http_client::build_client(),
             });
@@ -124,11 +130,10 @@ pub fn run() {
             read_directory,
             create_directory,
             delete_directory,
-            read_markdowns,
             read_markdown,
             create_markdown,
             update_markdown,
-            delete_markdown,
+            delete_file,
             export_markdown,
             read_erds,
             read_service_erds,

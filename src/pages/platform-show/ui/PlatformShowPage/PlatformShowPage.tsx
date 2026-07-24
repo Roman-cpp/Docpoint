@@ -1,31 +1,21 @@
-import { type FC, useEffect, useState } from "react";
+import { type FC, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { toast } from "@/core/toast";
-import {
-	type DirListing,
-	deleteDirectoryApi,
-	type File,
-	type Folder,
-	getDirectoryApi,
-} from "@/entities/file-explorer";
-import { deleteMarkdownApi } from "@/entities/markdown";
 import { usePlatformsStore } from "@/entities/platform";
 import { type Service, usePlatformServices } from "@/entities/service";
+import { platformScope } from "@/entities/shared/file-scope";
+import { markdownRoute } from "@/entities/vault";
 import {
 	actionFetchEnvironmentsPlatform,
 	useEnvironmentsStore,
 } from "@/features/environment";
-import { useNewMarkdownFile } from "@/features/markdown";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
 import { ServiceModal } from "@/features/service";
-import { Button, FileDropZone } from "@/shared/ui-kit/controls";
+import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
-import { FileGrid, FolderGrid } from "@/widgets/file-explorer";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
+import { VaultBrowser } from "@/widgets/vault-browser";
 import b from "./PlatformShowPage.module.css";
-
-const EMPTY_LISTING: DirListing = { folders: [], files: [] };
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {
@@ -48,88 +38,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		y: number;
 		svc: Service;
 	} | null>(null);
-	const [listing, setListing] = useState<DirListing>(EMPTY_LISTING);
-	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	/** Current folder inside the vault: a vault-relative path, "" for the root. */
-	const [path, setPath] = useState("");
 	/** Which section is shown: platform details, microservices, or files. */
 	const [tab, setTab] = useState<"details" | "services" | "files">("services");
 	const navigate = useNavigate();
-
-	useEffect(() => {
-		let cancelled = false;
-		getDirectoryApi(path)
-			.then((data) => {
-				if (!cancelled) setListing(data);
-			})
-			.catch(() => {
-				if (!cancelled) setListing(EMPTY_LISTING);
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [path]);
-
-	/** Re-read the current folder after a mutation (e.g. creating a file). */
-	const reloadCurrent = () => {
-		getDirectoryApi(path)
-			.then(setListing)
-			.catch(() => setListing(EMPTY_LISTING));
-	};
-
-	const { openMenu, element: newFileUi } = useNewMarkdownFile(
-		path,
-		reloadCurrent,
-	);
-
-	const openFolder = (folderId: string) => {
-		setSelectedFile(null);
-		setPath(folderId);
-	};
-
-	const deleteFolder = async (folder: Folder) => {
-		try {
-			await deleteDirectoryApi(folder.id);
-			reloadCurrent();
-		} catch (err) {
-			toast({
-				variant: "error",
-				title: "Не удалось удалить каталог",
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
-
-	const deleteFile = async (file: File) => {
-		try {
-			await deleteMarkdownApi(path ? `${path}/${file.name}` : file.name);
-			if (selectedFile?.name === file.name) setSelectedFile(null);
-			reloadCurrent();
-		} catch (err) {
-			toast({
-				variant: "error",
-				title: "Не удалось удалить файл",
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
-
-	/** Double-click a file: `.md` files open in the markdown viewer. */
-	const openFile = (file: File) => {
-		if (!file.name.toLowerCase().endsWith(".md")) return;
-		const fileId = path ? `${path}/${file.name}` : file.name;
-		navigate(`/markdown-show?file=${encodeURIComponent(fileId)}`);
-	};
-
-	/** Breadcrumb chain: root + each folder segment along the current path. */
-	const crumbs: { name: string; id: string }[] = [{ name: "Файлы", id: "" }];
-	{
-		let prefix = "";
-		for (const segment of path.split("/").filter(Boolean)) {
-			prefix = prefix ? `${prefix}/${segment}` : segment;
-			crumbs.push({ name: segment, id: prefix });
-		}
-	}
 
 	const platform = platforms.find((p) => p.id === id);
 
@@ -147,7 +58,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	}
 
 	return (
-		<div className={b.overview} onContextMenu={openMenu}>
+		<div className={b.overview}>
 			<div className={b.content}>
 				<div className={b.tabs} role="tablist">
 					<button
@@ -263,41 +174,13 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				)}
 
 				{tab === "files" && (
-					<div className={b.fileBrowser}>
-						{path !== "" && (
-							<nav className={b.crumbs} aria-label="Путь">
-								{crumbs.map((c, i) => (
-									<span key={c.id} className={b.crumbItem}>
-										{i > 0 && <span className={b.crumbSep}>/</span>}
-										{i === crumbs.length - 1 ? (
-											<span className={b.crumbCurrent}>{c.name}</span>
-										) : (
-											<button
-												type="button"
-												className={b.crumb}
-												onClick={() => openFolder(c.id)}
-											>
-												{c.name}
-											</button>
-										)}
-									</span>
-								))}
-							</nav>
-						)}
-						<FolderGrid
-							folders={listing.folders}
-							onOpen={openFolder}
-							onDelete={deleteFolder}
-						/>
-						<FileGrid
-							files={listing.files}
-							selectedId={selectedFile?.name ?? null}
-							onSelect={setSelectedFile}
-							onOpen={openFile}
-							onDelete={deleteFile}
-						/>
-						<FileDropZone folder={path} onImported={reloadCurrent} />
-					</div>
+					<VaultBrowser
+						scope={platformScope(id)}
+						rootLabel="Файлы платформы"
+						onOpenFile={(filePath) =>
+							navigate(markdownRoute(platformScope(id), filePath))
+						}
+					/>
 				)}
 			</div>
 
@@ -384,8 +267,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					</Dialog.Footer>
 				</Dialog.Root>
 			)}
-
-			{newFileUi}
 		</div>
 	);
 };

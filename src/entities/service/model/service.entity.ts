@@ -2,5 +2,6 @@ export interface Service {
 	id: string;
 	name: string;
 	desc: string;
-	platform_id: string | null;
+	/** Owning platform — always set: a microservice cannot exist without one. */
+	platformId: string;
 }

@@ -1,9 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Service {
     pub id: String,
     pub name: String,
     pub desc: String,
-    pub platform_id: Option<String>,
+    /// Owning platform. Required since migration 0024: a service's files live
+    /// under its platform's directory, so it cannot exist without one.
+    pub platform_id: String,
 }

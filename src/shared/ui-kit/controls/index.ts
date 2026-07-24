@@ -12,7 +12,6 @@ export type {
 } from "./DropMenu/DropMenu";
 export { DropMenu } from "./DropMenu/DropMenu";
 export { Field } from "./Field/Field";
-export { FileDropZone } from "./FileDropZone/FileDropZone";
 export { Input } from "./Input/Input";
 export { RadioGroup } from "./RadioGroup/RadioGroup";
 export { Select } from "./Select/Select";

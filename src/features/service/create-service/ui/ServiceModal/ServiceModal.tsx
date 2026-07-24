@@ -54,13 +54,13 @@ export const ServiceModal: FC<ServiceModalProps> = ({
 				id: service.id,
 				name: name.trim(),
 				desc: desc.trim(),
-				platform_id: service.platform_id,
+				platformId: service.platformId,
 			});
 		} else {
 			onCreate({
 				name: name.trim(),
 				desc: desc.trim(),
-				platform_id: platformId,
+				platformId,
 			});
 		}
 	};
