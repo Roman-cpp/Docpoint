@@ -15,6 +15,7 @@ import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
 import { VaultBrowser } from "@/widgets/vault-browser";
+import { PlatformDetails } from "../PlatformDetails";
 import b from "./PlatformShowPage.module.css";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
@@ -94,27 +95,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				</div>
 
 				{tab === "details" && (
-					<section className={b.section}>
-						<div className={b.sectionLabel}>
-							<span>Подробности о платформе</span>
-							<span className={b.sectionRule} />
-						</div>
-						{platform.desc ? (
-							<p className={b.detailsDesc}>{platform.desc}</p>
-						) : (
-							<p className={b.ovSub}>Описание платформы не задано</p>
-						)}
-						<dl className={b.metaGrid}>
-							<div className={b.metaRow}>
-								<dt className={b.metaKey}>Название</dt>
-								<dd className={b.metaVal}>{platform.name}</dd>
-							</div>
-							<div className={b.metaRow}>
-								<dt className={b.metaKey}>Микросервисов</dt>
-								<dd className={b.metaVal}>{services.length}</dd>
-							</div>
-						</dl>
-					</section>
+					<PlatformDetails
+						platform={platform}
+					/>
 				)}
 
 				{tab === "services" && (

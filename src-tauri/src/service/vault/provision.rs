@@ -1,6 +1,12 @@
 use crate::repository::filesystem::layout::VaultLayout;
 use std::path::Path;
 
+/// Markdown file holding the long-form description of a platform. It lives
+/// among the platform's own files, so the existing viewer, editor and file
+/// browser all work on it without a special case. The frontend reads it by the
+/// same name — see `entities/platform/lib/description.ts`.
+pub const PLATFORM_DESCRIPTION_FILE: &str = "README.md";
+
 /// Create the file directory of a freshly created platform, so its files tab
 /// opens on a real folder instead of a lazily created one.
 pub async fn create_platform_dirs(vault_dir: &Path, platform_id: &str) -> Result<(), String> {
@@ -8,6 +14,39 @@ pub async fn create_platform_dirs(vault_dir: &Path, platform_id: &str) -> Result
     tokio::fs::create_dir_all(&dir)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Seed the description file of a freshly created platform, so its details tab
+/// opens on a real document. An existing file is left untouched — the user's
+/// text always wins over the template.
+pub async fn create_platform_description(
+    vault_dir: &Path,
+    platform_id: &str,
+    name: &str,
+    desc: &str,
+) -> Result<(), String> {
+    let file = VaultLayout::new(vault_dir)
+        .platform_files(platform_id)?
+        .join(PLATFORM_DESCRIPTION_FILE);
+
+    if tokio::fs::try_exists(&file).await.map_err(|e| e.to_string())? {
+        return Ok(());
+    }
+
+    tokio::fs::write(&file, description_template(name, desc))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Initial body of a platform description: its name as the title, followed by
+/// the short description typed in the create dialog when there is one.
+fn description_template(name: &str, desc: &str) -> String {
+    let body = if desc.trim().is_empty() {
+        "Описание платформы пока не заполнено."
+    } else {
+        desc.trim()
+    };
+    format!("# {name}\n\n{body}\n")
 }
 
 /// Drop a platform's whole subtree — its own files and every service under it.
