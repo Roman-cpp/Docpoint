@@ -20,6 +20,7 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 }) => {
 	const [name, setName] = useState(doc.name);
 	const [desc, setDesc] = useState(doc.desc);
+	const [prefix, setPrefix] = useState(doc.prefix);
 	const [tagsInput, setTagsInput] = useState(doc.tags.join(", "));
 
 	const close = () => {
@@ -32,7 +33,13 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 			.split(",")
 			.map((t) => t.trim())
 			.filter(Boolean);
-		onSave({ name: name.trim(), desc: desc.trim(), tags, id: doc.id });
+		onSave({
+			name: name.trim(),
+			desc: desc.trim(),
+			prefix: prefix.trim(),
+			tags,
+			id: doc.id,
+		});
 	};
 
 	const canSave = name.trim().length > 0 && !isSaving;
@@ -53,6 +60,17 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 						onChange={(e) => setName(e.target.value)}
 						placeholder="Например, Payments API"
 						style={{ width: "100%" }}
+					/>
+				</Field>
+				<Field
+					label="Префикс"
+					hint="дописывается после префикса окружения ко всем путям документа"
+				>
+					<Input
+						value={prefix}
+						onChange={(e) => setPrefix(e.target.value)}
+						placeholder="/payments"
+						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 					/>
 				</Field>
 				<Field label="Описание">

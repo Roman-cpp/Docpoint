@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { joinUrl } from "@/shared/lib/url";
 import s from "../EnvironmentPage.module.css";
 import { Field, Section } from "../parts";
 
@@ -11,13 +12,8 @@ type Props = {
 	onPrefixBlur: () => void;
 };
 
-const composeFinalUrl = (baseUrl: string, prefix: string) => {
-	const base = baseUrl.trim().replace(/\/+$/, "");
-	const pre = prefix.trim();
-	if (!pre) return base || "—";
-	const normalized = pre.startsWith("/") ? pre : `/${pre}`;
-	return `${base}${normalized}`;
-};
+const composeFinalUrl = (baseUrl: string, prefix: string) =>
+	joinUrl(baseUrl, prefix) || "—";
 
 export const EndpointSection: FC<Props> = ({
 	baseUrl,

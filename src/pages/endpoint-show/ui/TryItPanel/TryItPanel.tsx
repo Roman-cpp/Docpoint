@@ -3,6 +3,7 @@ import { type FC, useEffect, useRef, useState } from "react";
 import {
 	createEndpointRequestApi,
 	deleteEndpointRequestApi,
+	type Doc,
 	type Endpoint,
 	type EndpointRequest,
 	listEndpointRequestsApi,
@@ -17,7 +18,7 @@ import {
 import type { HttpMethod } from "@/entities/shared/http-method";
 import {
 	actionUpdateEndpointParamValue,
-	// selectDocApi,
+	selectDocApi,
 	selectSelectedEndpoint,
 	useDocApiStore,
 } from "@/features/doc-api";
@@ -28,6 +29,7 @@ import {
 } from "@/features/environment";
 import { actionSetResponse, useResponseStore } from "@/features/request";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { joinUrl } from "@/shared/lib/url";
 import s from "../ApiExplorerPage.module.css";
 
 // Один именованный набор значений параметров запроса. Несколько наборов
@@ -76,9 +78,12 @@ function extractPathParams(path: string): string[] {
 	return [...path.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 }
 
+// Итоговый URL: base URL окружения + префикс окружения + префикс документа +
+// путь эндпоинта. Любой из префиксов может быть пустым.
 function buildUrl(
 	ep: Endpoint,
 	env: Environment,
+	doc: Doc | null,
 	vals: Record<string, string> = {},
 ) {
 	const path = ep.path.replace(/\{(\w+)\}/g, (_, name) => {
@@ -95,7 +100,8 @@ function buildUrl(
 		if (v) qp[p.name] = v;
 	}
 	const qs = new URLSearchParams(qp).toString();
-	return `${env.baseUrl}${env.prefix}${path}${qs ? "?" + qs : ""}`;
+	const url = joinUrl(env.baseUrl, env.prefix, doc?.prefix, path);
+	return `${url}${qs ? "?" + qs : ""}`;
 }
 
 // Приводит строковое значение параметра к типу, заявленному в его схеме
@@ -171,7 +177,7 @@ const CopyBtn: FC<{ text: string }> = ({ text }) => {
 
 export const TryItPanel = () => {
 	const endpoint = useDocApiStore(selectSelectedEndpoint);
-	// const doc = useDocApiStore(selectDocApi);
+	const doc = useDocApiStore(selectDocApi);
 	const selectedEnvConfig = useEnvironmentsStore(selectSelectedEnvironment);
 	const [authToken, setAuthToken] = useState("");
 	const setAccessToken = useEnvironmentsStore(actionUpdateEnvironmentToken);
@@ -191,7 +197,6 @@ export const TryItPanel = () => {
 	const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
 	if (!endpoint) return;
-	// if (!doc) return;
 
 	const mc = METHOD_CFG[endpoint.method];
 	const pathParams = extractPathParams(endpoint.path);
@@ -321,7 +326,7 @@ export const TryItPanel = () => {
 
 	if (!selectedEnvConfig) return;
 
-	const url = buildUrl(endpoint, selectedEnvConfig, vals);
+	const url = buildUrl(endpoint, selectedEnvConfig, doc, vals);
 
 	const send = async () => {
 		setLoading(true);

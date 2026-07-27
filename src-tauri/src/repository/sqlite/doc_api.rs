@@ -59,6 +59,7 @@ impl DocRepository for DocRepo<'_> {
                     name: r.get("name"),
                     version: r.get("version"),
                     desc: r.get("desc"),
+                    prefix: r.get("prefix"),
                     tags,
                 }
             })
@@ -87,6 +88,7 @@ impl DocRepository for DocRepo<'_> {
             name: row.get("name"),
             version: row.get("version"),
             desc: row.get("desc"),
+            prefix: row.get("prefix"),
             tags: tag_rows.iter().map(|r| r.get::<String, _>("tag")).collect(),
         }))
     }
@@ -94,11 +96,12 @@ impl DocRepository for DocRepo<'_> {
     async fn create(&self, doc: &CreateDocApiDTO) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
 
-        sqlx::query("INSERT INTO docs (id, name, version, desc) VALUES (?, ?, ?, ?)")
+        sqlx::query("INSERT INTO docs (id, name, version, desc, prefix) VALUES (?, ?, ?, ?, ?)")
             .bind(&id)
             .bind(&doc.name)
             .bind(&doc.version)
             .bind(&doc.desc)
+            .bind(&doc.prefix)
             .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;
@@ -116,9 +119,10 @@ impl DocRepository for DocRepo<'_> {
     }
 
     async fn update(&self, doc: &UpdateDocApiDTO) -> Result<String, String> {
-        sqlx::query("UPDATE docs SET name = ?, desc = ? WHERE id = ?")
+        sqlx::query("UPDATE docs SET name = ?, desc = ?, prefix = ? WHERE id = ?")
             .bind(&doc.name)
             .bind(&doc.desc)
+            .bind(&doc.prefix)
             .bind(&doc.id)
             .execute(self.db)
             .await

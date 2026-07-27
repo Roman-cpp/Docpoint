@@ -24,6 +24,7 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { joinUrl } from "@/shared/lib/url";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "../../../../widgets/header/ui/Header/Header";
 import { AuthRequestSection } from "../AuthRequestSection";
@@ -400,9 +401,7 @@ export const EnvironmentPage: FC = () => {
 	const renderHero = () => {
 		if (!selectedEnv) return null;
 		const accent = getEnvDotColor(selectedEnv.env);
-		const finalUrl =
-			`${baseUrl.replace(/\/+$/, "")}${prefix.startsWith("/") || !prefix ? prefix : `/${prefix}`}` ||
-			"—";
+		const finalUrl = joinUrl(baseUrl, prefix) || "—";
 		const tokenInfo = selectedEnv.accessToken
 			? {
 					variant: "ok" as const,

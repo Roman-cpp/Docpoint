@@ -19,12 +19,14 @@ export const CreateDocApiModal: FC<CreateDocApiModalProps> = ({
 	const [name, setName] = useState("");
 	const [version, setVersion] = useState("1.0.0");
 	const [desc, setDesc] = useState("");
+	const [prefix, setPrefix] = useState("");
 	const [tagsInput, setTagsInput] = useState("");
 
 	const reset = () => {
 		setName("");
 		setVersion("1.0.0");
 		setDesc("");
+		setPrefix("");
 		setTagsInput("");
 	};
 
@@ -47,6 +49,7 @@ export const CreateDocApiModal: FC<CreateDocApiModalProps> = ({
 			name: name.trim(),
 			version: version.trim() || "1.0.0",
 			desc: desc.trim(),
+			prefix: prefix.trim(),
 			tags,
 		});
 		reset();
@@ -77,6 +80,17 @@ export const CreateDocApiModal: FC<CreateDocApiModalProps> = ({
 						value={version}
 						onChange={(e) => setVersion(e.target.value)}
 						placeholder="1.0.0"
+						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
+					/>
+				</Field>
+				<Field
+					label="Префикс"
+					hint="дописывается после префикса окружения ко всем путям документа"
+				>
+					<Input
+						value={prefix}
+						onChange={(e) => setPrefix(e.target.value)}
+						placeholder="/payments"
 						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 					/>
 				</Field>

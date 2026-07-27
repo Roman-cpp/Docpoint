@@ -5,6 +5,11 @@ import {
 	selectGroups,
 	useDocApiStore,
 } from "@/features/doc-api";
+import {
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
+import { joinUrl } from "@/shared/lib/url";
 import s from "@/shared/styles/apiDocs.module.css";
 
 interface DocOrigin {
@@ -16,6 +21,7 @@ export const OverviewPage = () => {
 	const doc = useDocApiStore(selectDocApi);
 	const groups = useDocApiStore(selectGroups);
 	const entities = useDocApiStore(selectEntities);
+	const env = useEnvironmentsStore(selectSelectedEnvironment);
 
 	// When the doc was opened from a microservice page, `state` carries it so we
 	// can offer a link back to that service.
@@ -26,6 +32,11 @@ export const OverviewPage = () => {
 	const resourceCount = entities.length;
 
 	if (!doc) return null;
+
+	// База всех запросов документа: base URL выбранного окружения + его префикс +
+	// префикс самого документа. Без выбранного окружения показываем то, что
+	// документ добавляет от себя.
+	const baseUrl = joinUrl(env?.baseUrl, env?.prefix, doc.prefix) || "—";
 
 	return (
 		<div>
@@ -60,7 +71,7 @@ export const OverviewPage = () => {
 				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Base URL</div>
 					<div className={s.overviewCardValue}>
-						<code>https://api.example.com/{doc.version}</code>
+						<code>{baseUrl}</code>
 					</div>
 				</div>
 				<div className={s.overviewCard}>

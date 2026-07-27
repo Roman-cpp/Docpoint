@@ -143,6 +143,7 @@ impl PlatformRepository for PlatformRepo<'_> {
                     name: r.get("name"),
                     version: r.get("version"),
                     desc: r.get("desc"),
+                    prefix: r.get("prefix"),
                     tags,
                 }
             })
