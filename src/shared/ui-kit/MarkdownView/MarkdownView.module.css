@@ -215,6 +215,33 @@
 	white-space: pre;
 }
 
+/* Shiki highlighting
+   `defaultColor: false` makes Shiki write only `--shiki-light` / `--shiki-dark`
+   custom properties into its inline styles instead of a fixed colour, so the
+   theme is picked here — switching it costs no re-render and no second
+   highlighting pass. `:global` is required: `.shiki` is Shiki's class, not this
+   module's. The block's background stays on the `.pre` frame above so the
+   document keeps the project's own surface; only token colours come from the
+   theme. These rules must follow `.pre code` — same specificity, order wins. */
+.rendered :global(.shiki),
+.rendered :global(.shiki) span {
+	color: var(--shiki-light);
+	background: none;
+}
+
+/* Dark tokens are opt-in the same way as the rest of the palette: `.dark` on
+   any ancestor (see shared/styles/tokens.css). */
+:global(.dark) .rendered :global(.shiki),
+:global(.dark) .rendered :global(.shiki) span {
+	color: var(--shiki-dark);
+}
+
+/* Placeholder while the renderer's chunk loads — holds the column open so the
+   surrounding layout does not jump when the document arrives. */
+.loading {
+	min-height: 240px;
+}
+
 /* Tables
    The frame (border, radius) lives on the wrapper so a table too wide for the
    document scrolls horizontally inside it instead of spilling over the edge. */

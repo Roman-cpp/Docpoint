@@ -19,6 +19,34 @@ export default defineConfig(async () => ({
 	// breaks that lookup, so exclude it and let Vite serve the module as-is.
 	optimizeDeps: {
 		exclude: ["canvas-wasm"],
+
+		// The markdown renderer is code-split, so Vite would only discover this
+		// graph the first time a document is opened — and then re-optimise with a
+		// full page reload in the middle of the session. Keep in sync with
+		// shared/ui-kit/MarkdownView/lib/highlighter.ts.
+		include: [
+			"react-markdown",
+			"remark-gfm",
+			"@shikijs/rehype/core",
+			"shiki/core",
+			"shiki/engine/oniguruma",
+			"shiki/wasm",
+			"@shikijs/themes/github-light",
+			"@shikijs/themes/github-dark",
+			"@shikijs/langs/bash",
+			"@shikijs/langs/css",
+			"@shikijs/langs/html",
+			"@shikijs/langs/javascript",
+			"@shikijs/langs/json",
+			"@shikijs/langs/markdown",
+			"@shikijs/langs/python",
+			"@shikijs/langs/rust",
+			"@shikijs/langs/sql",
+			"@shikijs/langs/toml",
+			"@shikijs/langs/tsx",
+			"@shikijs/langs/typescript",
+			"@shikijs/langs/yaml",
+		],
 	},
 
 	// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
