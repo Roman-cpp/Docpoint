@@ -4,11 +4,6 @@ use super::dto::{
 use super::entity::{EnvValue, Environment};
 
 pub trait EnvironmentRepository {
-    async fn write_configs(
-        &self,
-        platform_id: Option<&str>,
-        configs: &[CreateEnvironmentDTO],
-    ) -> Result<(), String>;
     async fn create(
         &self,
         platform_id: &str,

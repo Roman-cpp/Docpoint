@@ -94,13 +94,17 @@ export const MarkdownShowPage: FC = () => {
 	const file: MarkdownFile | null = vaultFile
 		? { ...toViewFile(vaultFile), content: vaultContent }
 		: null;
-	const toc = useMemo(() => (file ? extractToc(file.content) : []), [file]);
+
+	// Both memos key on the raw text, not on `file` — the latter is a fresh
+	// object every render, which would defeat them.
+	const docSource = vaultFile ? vaultContent : "";
+	const toc = useMemo(() => extractToc(docSource), [docSource]);
 
 	// Render the document once per file — keeps scroll-spy state changes from
 	// re-parsing the whole Markdown tree on every scroll frame.
 	const docBody = useMemo(
-		() => <MarkdownView>{file?.content ?? ""}</MarkdownView>,
-		[file],
+		() => <MarkdownView>{docSource}</MarkdownView>,
+		[docSource],
 	);
 
 	// Scroll-spy for the TOC — throttled with rAF to avoid layout thrash.
@@ -117,7 +121,9 @@ export const MarkdownShowPage: FC = () => {
 			for (const h of heads) {
 				if (h.getBoundingClientRect().top < 140) current = h.id;
 			}
-			setActiveHeading(current);
+			// Bail out when the active heading hasn't changed — otherwise every
+			// scroll frame would re-render the page.
+			setActiveHeading((prev) => (prev === current ? prev : current));
 		};
 		const onScroll = () => {
 			if (frame) return;

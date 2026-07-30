@@ -17,31 +17,6 @@ impl<'a> EnvironmentRepo<'a> {
 }
 
 impl EnvironmentRepository for EnvironmentRepo<'_> {
-    async fn write_configs(
-        &self,
-        platform_id: Option<&str>,
-        configs: &[CreateEnvironmentDTO],
-    ) -> Result<(), String> {
-        for config in configs {
-            let env_id = Uuid::new_v4().to_string();
-            sqlx::query(
-                "INSERT INTO environments (id, platform_id, env, label, base_url, prefix) VALUES (?, ?, ?, ?, ?, ?)",
-            )
-            .bind(&env_id)
-            .bind(platform_id)
-            .bind(&config.env)
-            .bind(&config.label)
-            .bind(&config.base_url)
-            .bind(&config.prefix)
-            .execute(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        }
-
-        Ok(())
-    }
-
     async fn create(
         &self,
         platform_id: &str,
