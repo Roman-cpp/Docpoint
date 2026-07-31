@@ -1,6 +1,6 @@
 import { type FC, useMemo, useRef, useState } from "react";
 import { selectResponse, useResponseStore } from "@/features/request";
-import { JsonTree } from "@/shared/ui-kit/data-display";
+import { JsonTree, type JsonTreeHandle } from "@/shared/ui-kit/data-display";
 import s from "./BottomConsolePanel.module.css";
 
 /* ── Цвет статуса (как в ResponseCard) ────────────────────────────── */
@@ -39,8 +39,11 @@ export const BottomConsolePanel: FC = () => {
 	const [tab, setTab] = useState<Tab>("body");
 	const [copied, setCopied] = useState(false);
 	const [maximized, setMaximized] = useState(false);
+	/** Раскрыто ли дерево целиком — от этого зависит вид кнопки-переключателя */
+	const [treeExpanded, setTreeExpanded] = useState(false);
 
 	const panelRef = useRef<HTMLDivElement>(null);
+	const treeRef = useRef<JsonTreeHandle>(null);
 	/** Запоминаем исходную высоту дока, чтобы вернуть её при сворачивании */
 	const prevHeight = useRef<string>("");
 
@@ -64,6 +67,22 @@ export const BottomConsolePanel: FC = () => {
 		}
 	};
 
+	const toggleTree = () => {
+		if (treeExpanded) treeRef.current?.collapseAll();
+		else treeRef.current?.expandAll();
+		setTreeExpanded((v) => !v);
+	};
+
+	/**
+	 * При уходе с вкладки дерево размонтируется и теряет своё состояние
+	 * раскрытия — сбрасываем и вид кнопки, иначе они разъедутся.
+	 */
+	const selectTab = (next: Tab) => {
+		if (next === tab) return;
+		setTreeExpanded(false);
+		setTab(next);
+	};
+
 	const copy = async () => {
 		try {
 			await navigator.clipboard.writeText(body);
@@ -82,14 +101,14 @@ export const BottomConsolePanel: FC = () => {
 				<button
 					type="button"
 					className={`${s.tab} ${tab === "body" ? s.tabActive : ""}`}
-					onClick={() => setTab("body")}
+					onClick={() => selectTab("body")}
 				>
 					Тело ответа
 				</button>
 				<button
 					type="button"
 					className={`${s.tab} ${tab === "headers" ? s.tabActive : ""}`}
-					onClick={() => setTab("headers")}
+					onClick={() => selectTab("headers")}
 				>
 					Заголовки
 				</button>
@@ -112,6 +131,39 @@ export const BottomConsolePanel: FC = () => {
 							</span>
 						)}
 						<span className={s.dur}>{response.dur}ms</span>
+
+						{/* Управление деревом — только когда оно на экране */}
+						{!response.error && tab === "body" && parsed.ok && (
+							<button
+								type="button"
+								className={s.iconBtn}
+								onClick={toggleTree}
+								aria-pressed={treeExpanded}
+								title={treeExpanded ? "Свернуть всё" : "Развернуть всё"}
+								aria-label={treeExpanded ? "Свернуть всё" : "Развернуть всё"}
+							>
+								<svg
+									viewBox="0 0 14 14"
+									width="14"
+									height="14"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.5"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									aria-hidden="true"
+								>
+									{treeExpanded ? (
+										// двойной шеврон вверх — свернуть
+										<path d="M3.5 6.5L7 3l3.5 3.5M3.5 10.5L7 7l3.5 3.5" />
+									) : (
+										// двойной шеврон вниз — развернуть
+										<path d="M3.5 3.5L7 7l3.5-3.5M3.5 7.5L7 11l3.5-3.5" />
+									)}
+								</svg>
+							</button>
+						)}
+
 						{!response.error && (
 							<button type="button" className={s.copyBtn} onClick={copy}>
 								{copied ? "Скопировано" : "Копировать"}
@@ -160,6 +212,7 @@ export const BottomConsolePanel: FC = () => {
 					parsed.ok ? (
 						<div className={s.contentTree}>
 							<JsonTree
+								ref={treeRef}
 								data={parsed.value}
 								size="sm"
 								defaultExpandedDepth={2}
