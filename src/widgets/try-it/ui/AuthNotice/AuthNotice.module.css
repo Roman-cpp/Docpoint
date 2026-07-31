@@ -1,0 +1,61 @@
+.authNotice {
+	border-radius: 7px;
+	padding: 8px 11px;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	border: 1px solid #f0d99a;
+	background: var(--amber-bg);
+}
+.authNotice.ok {
+	background: var(--green-bg);
+	border-color: #9dd4b5;
+}
+.authNoticeIcon {
+	font-size: 15px;
+}
+.authNoticeTxt {
+	font-size: 12px;
+	color: var(--amber);
+	flex: 1;
+	line-height: 1.4;
+}
+.authNotice.ok .authNoticeTxt {
+	color: var(--green);
+}
+.authNoticeBtn {
+	font-size: 11px;
+	color: var(--amber);
+	background: none;
+	border: 1px solid rgba(154, 95, 0, 0.35);
+	border-radius: 5px;
+	padding: 2px 8px;
+	cursor: pointer;
+	font-family: var(--font-sans);
+	transition: all 0.13s;
+	white-space: nowrap;
+}
+.authNoticeBtn:hover {
+	background: var(--amber);
+	color: #fff;
+}
+.authNoticeForm {
+	display: flex;
+	gap: 4px;
+	flex: 1;
+}
+.authNoticeInput {
+	flex: 1;
+	padding: 3px 8px;
+	font-size: 12px;
+	font-family: var(--font-mono);
+	color: var(--ink);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	outline: none;
+	transition: border-color 0.15s;
+}
+.authNoticeInput:focus {
+	border-color: var(--border-h);
+}

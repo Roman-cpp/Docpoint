@@ -1,0 +1,31 @@
+.urlBar {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow: hidden;
+}
+.urlBarInner {
+	display: flex;
+	align-items: stretch;
+}
+.urlMethod {
+	padding: 8px 11px;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.4px;
+	flex-shrink: 0;
+	border-right: 1px solid var(--border);
+	display: flex;
+	align-items: center;
+}
+.urlText {
+	padding: 8px 10px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-mid);
+	overflow-wrap: anywhere;
+	white-space: normal;
+	flex: 1;
+	min-width: 0;
+	line-height: 1.5;
+}

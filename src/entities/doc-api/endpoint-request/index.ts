@@ -2,11 +2,13 @@ export {
 	createEndpointRequestApi,
 	deleteEndpointRequestApi,
 	listEndpointRequestsApi,
-	renameEndpointRequestApi,
-	setRequestParamValueApi,
+	saveEndpointRequestApi,
 } from "./api";
 export type {
+	BodyMode,
 	EndpointRequest,
 	ParamKind,
+	RequestHeader,
 	RequestParamValue,
+	SaveEndpointRequestDTO,
 } from "./model/endpoint-request.entity";

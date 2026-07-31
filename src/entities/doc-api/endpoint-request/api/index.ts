@@ -2,6 +2,5 @@ export {
 	createEndpointRequestApi,
 	deleteEndpointRequestApi,
 	listEndpointRequestsApi,
-	renameEndpointRequestApi,
-	setRequestParamValueApi,
+	saveEndpointRequestApi,
 } from "./endpoint-request-api";

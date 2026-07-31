@@ -12,11 +12,11 @@ import { DockLayout } from "@/shared/ui-kit/layout";
 import { Header } from "@/widgets/header";
 import { Layout } from "@/widgets/layout";
 import { Sidebar } from "@/widgets/layout/ui/Sidebar";
+import { TryItPanel } from "@/widgets/try-it";
 import { BottomConsolePanel } from "../BottomConsolePanel";
 import { DeleteEndpointModal } from "../DeleteEndpointModal";
 import { EditEndpointModal } from "../EditEndpointModal";
 import { EndpointPage } from "../EndpointPage";
-import { TryItPanel } from "../TryItPanel";
 
 export const EndpointShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();

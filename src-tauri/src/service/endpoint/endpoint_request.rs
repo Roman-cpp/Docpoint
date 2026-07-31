@@ -1,5 +1,7 @@
+use crate::domain::doc_api::endpoint_request::dto::SaveEndpointRequestDTO;
 use crate::domain::doc_api::endpoint_request::entity::EndpointRequest;
-use crate::domain::doc_api::endpoint_request::repository::EndpointRequestRepo;
+use crate::domain::doc_api::endpoint_request::repository::EndpointRequestRepository;
+use crate::repository::sqlite::endpoint_request::EndpointRequestRepo;
 use crate::state::AppState;
 use tauri::State;
 
@@ -23,15 +25,6 @@ pub async fn create_endpoint_request(
 }
 
 #[tauri::command]
-pub async fn rename_endpoint_request(
-    state: State<'_, AppState>,
-    id: String,
-    name: String,
-) -> Result<(), String> {
-    EndpointRequestRepo::new(&state.db).rename(&id, &name).await
-}
-
-#[tauri::command]
 pub async fn delete_endpoint_request(
     state: State<'_, AppState>,
     id: String,
@@ -40,14 +33,9 @@ pub async fn delete_endpoint_request(
 }
 
 #[tauri::command]
-pub async fn set_request_param_value(
+pub async fn save_endpoint_request(
     state: State<'_, AppState>,
-    request_id: String,
-    kind: String,
-    name: String,
-    value: String,
+    request: SaveEndpointRequestDTO,
 ) -> Result<(), String> {
-    EndpointRequestRepo::new(&state.db)
-        .set_value(&request_id, &kind, &name, &value)
-        .await
+    EndpointRequestRepo::new(&state.db).save(&request).await
 }

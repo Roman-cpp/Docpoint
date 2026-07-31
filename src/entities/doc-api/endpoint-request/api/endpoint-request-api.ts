@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
 	EndpointRequest,
-	ParamKind,
+	SaveEndpointRequestDTO,
 } from "../model/endpoint-request.entity";
 
 export function listEndpointRequestsApi(
@@ -17,22 +17,13 @@ export function createEndpointRequestApi(
 	return invoke("create_endpoint_request", { endpointId, name });
 }
 
-export function renameEndpointRequestApi(
-	id: string,
-	name: string,
-): Promise<void> {
-	return invoke("rename_endpoint_request", { id, name });
-}
-
 export function deleteEndpointRequestApi(id: string): Promise<void> {
 	return invoke("delete_endpoint_request", { id });
 }
 
-export function setRequestParamValueApi(
-	requestId: string,
-	kind: ParamKind,
-	name: string,
-	value: string,
+/** Перезаписывает набор целиком: имя, режим и тело, заголовки и значения. */
+export function saveEndpointRequestApi(
+	request: SaveEndpointRequestDTO,
 ): Promise<void> {
-	return invoke("set_request_param_value", { requestId, kind, name, value });
+	return invoke("save_endpoint_request", { request });
 }

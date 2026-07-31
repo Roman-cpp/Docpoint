@@ -22,13 +22,15 @@ export {
 	createEndpointRequestApi,
 	deleteEndpointRequestApi,
 	listEndpointRequestsApi,
-	renameEndpointRequestApi,
-	setRequestParamValueApi,
+	saveEndpointRequestApi,
 } from "./endpoint-request/api";
 export type {
+	BodyMode,
 	EndpointRequest,
 	ParamKind,
+	RequestHeader,
 	RequestParamValue,
+	SaveEndpointRequestDTO,
 } from "./endpoint-request/model/endpoint-request.entity";
 export { deleteGroupApi } from "./group/api/delete-group-api";
 export { getGroupsApi } from "./group/api/get-groups-api";
