@@ -6,6 +6,8 @@ export type {
 } from "./DataTable/DataTable";
 
 export { DataTable } from "./DataTable/DataTable";
+export type { Json, JsonTreeHandle, JsonTreeProps } from "./JsonTree/JsonTree";
+export { JsonTree } from "./JsonTree/JsonTree";
 export {
 	StatusBadge,
 	Table,

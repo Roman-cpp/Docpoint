@@ -1,6 +1,6 @@
 import { type FC, useMemo, useRef, useState } from "react";
 import { selectResponse, useResponseStore } from "@/features/request";
-import { JsonTree } from "../JsonTree";
+import { JsonTree } from "@/shared/ui-kit/data-display";
 import s from "./BottomConsolePanel.module.css";
 
 /* ── Цвет статуса (как в ResponseCard) ────────────────────────────── */
@@ -158,8 +158,13 @@ export const BottomConsolePanel: FC = () => {
 					<div className={s.error}>Network error: {response.error}</div>
 				) : tab === "body" ? (
 					parsed.ok ? (
-						<div className={s.content}>
-							<JsonTree value={parsed.value} />
+						<div className={s.contentTree}>
+							<JsonTree
+								data={parsed.value}
+								size="sm"
+								defaultExpandedDepth={2}
+								className={s.tree}
+							/>
 						</div>
 					) : (
 						<div className={s.content}>

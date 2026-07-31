@@ -139,87 +139,15 @@
 }
 
 /* ─── Просмотр ─── */
+/* Скроллом дерева управляет сам JsonTree (виртуализация), поэтому здесь
+   overflow скрыт — иначе получим двойной скролл-контейнер. */
 .viewBody {
 	flex: 1;
 	min-height: 0;
-	overflow: auto;
-	padding: 12px 6px;
-}
-
-.tree {
-	font-family: var(--font-mono);
-	font-size: 12.5px;
-	line-height: 1.7;
-}
-
-.row {
 	display: flex;
-	align-items: baseline;
-	gap: 0;
-	width: 100%;
-	white-space: pre;
-	font: inherit;
-	color: var(--ink);
-	background: transparent;
-	border: none;
-	text-align: left;
-}
-.rowToggle {
-	cursor: pointer;
-}
-.rowToggle:hover {
-	background: var(--cat-bg);
-}
-
-/* колонка под треугольник, чтобы значения ровнялись */
-.gutter {
-	display: inline-block;
-	width: 14px;
-	flex-shrink: 0;
-}
-.toggle {
-	display: inline-block;
-	width: 14px;
-	flex-shrink: 0;
-	color: var(--ink-low);
-	font-size: 10px;
-}
-
-.key {
-	color: var(--patch);
-}
-.index {
-	color: var(--ink-low);
-}
-.punct {
-	color: var(--ink-low);
-}
-.collapsed {
-	color: var(--ink-low);
-	padding: 0 4px;
-}
-.count {
-	margin-left: 8px;
-	color: var(--ink-low);
-	font-size: 11px;
-	opacity: 0.75;
-}
-
-/* значения по типам */
-.vString {
-	color: var(--green);
-	word-break: break-all;
-	white-space: pre-wrap;
-}
-.vNumber {
-	color: var(--blue);
-}
-.vBool {
-	color: var(--amber);
-}
-.vNull {
-	color: var(--ink-low);
-	font-style: italic;
+	flex-direction: column;
+	overflow: hidden;
+	padding: 12px 6px;
 }
 
 /* ─── Заглушки ─── */

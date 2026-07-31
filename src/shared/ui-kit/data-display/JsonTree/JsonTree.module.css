@@ -1,0 +1,145 @@
+/* Виртуализированное дерево JSON.
+   Высота строки и размер шрифта приходят из компонента как inline CSS-переменные
+   (--json-row-h / --json-font-size) — JS остаётся единственным источником правды
+   для математики виртуализации. */
+
+.scroller {
+	flex: 1 1 auto;
+	min-height: 0;
+	height: 100%;
+	overflow: auto;
+	font-family: var(--font-mono);
+	font-size: var(--json-font-size);
+	line-height: var(--json-row-h);
+	color: var(--ink);
+}
+.scroller::-webkit-scrollbar {
+	width: 3px;
+	height: 3px;
+}
+.scroller::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 2px;
+}
+
+/* Держит полную высоту дерева, чтобы скроллбар был честным */
+.spacer {
+	position: relative;
+	min-width: 100%;
+}
+
+/* Окно отрисованных строк; сдвигается трансформом, а не layout-ом */
+.window {
+	position: absolute;
+	top: 0;
+	left: 0;
+	min-width: 100%;
+	will-change: transform;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	height: var(--json-row-h);
+	width: max-content;
+	min-width: 100%;
+	margin: 0;
+	padding: 0;
+	white-space: pre;
+	font: inherit;
+	line-height: inherit;
+	color: inherit;
+	background: transparent;
+	border: none;
+	text-align: left;
+}
+
+.rowBranch {
+	cursor: pointer;
+}
+.rowBranch:hover {
+	background: var(--cat-bg);
+}
+
+/* Колонка под треугольник — чтобы листья ровнялись по веткам */
+.gutter {
+	display: inline-block;
+	width: 14px;
+	flex-shrink: 0;
+}
+.toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	flex-shrink: 0;
+	color: var(--ink-low);
+}
+.chev {
+	transition: transform 0.12s;
+}
+.chevOpen {
+	transition: transform 0.12s;
+	transform: rotate(90deg);
+}
+
+.key {
+	color: var(--purple);
+}
+.index {
+	color: var(--ink-low);
+}
+.punct {
+	color: var(--ink-low);
+}
+.ellipsis {
+	color: var(--ink-low);
+	padding: 0 4px;
+}
+.count {
+	margin-left: 8px;
+	font-size: 0.9em;
+	color: var(--ink-low);
+	opacity: 0.75;
+}
+
+/* Значения по типам */
+.vString {
+	color: var(--green);
+}
+.vNumber {
+	color: var(--blue);
+}
+.vBool {
+	color: var(--amber);
+}
+.vNull {
+	color: var(--ink-low);
+	font-style: italic;
+}
+
+/* Хвост обрезанной строки */
+.trunc {
+	padding-left: 6px;
+	font-size: 0.9em;
+	color: var(--ink-low);
+	opacity: 0.75;
+}
+
+/* Строка «показать ещё» */
+.more {
+	color: var(--blue);
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.more:hover {
+	background: var(--cat-bg);
+}
+
+/* Предохранитель при упоре в лимит строк */
+.limit {
+	color: var(--amber);
+	font-style: italic;
+}

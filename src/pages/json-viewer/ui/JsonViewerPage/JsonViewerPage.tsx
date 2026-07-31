@@ -1,7 +1,21 @@
-import { type FC, useCallback, useMemo, useRef, useState } from "react";
+import {
+	type FC,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import {
+	type Json,
+	JsonTree,
+	type JsonTreeHandle,
+} from "@/shared/ui-kit/data-display";
 import { Header } from "@/widgets/header";
-import { type Json, JsonTree } from "../JsonTree";
 import s from "../JsonViewerPage.module.css";
+
+/** Пауза после ввода, прежде чем парсить и перестраивать дерево */
+const PARSE_DEBOUNCE_MS = 250;
 
 interface ParseResult {
 	data: Json | null;
@@ -31,9 +45,10 @@ const countNodes = (v: Json): number => {
 
 export const JsonViewerPage: FC = () => {
 	const [raw, setRaw] = useState("");
-	// Толкаем при «развернуть/свернуть всё», чтобы пересобрать дерево.
-	const [treeKey, setTreeKey] = useState(0);
-	const [allOpen, setAllOpen] = useState(true);
+	// Парсим не на каждое нажатие клавиши, а после паузы: на большом JSON
+	// JSON.parse + пересборка дерева заметно тормозят ввод.
+	const [deferredRaw, setDeferredRaw] = useState("");
+	const treeRef = useRef<JsonTreeHandle>(null);
 
 	// Ширина левой панели в процентах; двигается перетаскиванием разделителя.
 	const [inputWidth, setInputWidth] = useState(44);
@@ -61,7 +76,12 @@ export const JsonViewerPage: FC = () => {
 		window.addEventListener("pointerup", onUp);
 	}, []);
 
-	const { data, error } = useMemo(() => parseJson(raw), [raw]);
+	useEffect(() => {
+		const id = setTimeout(() => setDeferredRaw(raw), PARSE_DEBOUNCE_MS);
+		return () => clearTimeout(id);
+	}, [raw]);
+
+	const { data, error } = useMemo(() => parseJson(deferredRaw), [deferredRaw]);
 	const hasData = data !== null && !error;
 
 	const format = () => {
@@ -81,15 +101,15 @@ export const JsonViewerPage: FC = () => {
 		}
 	};
 
-	const toggleAll = (open: boolean) => {
-		setAllOpen(open);
-		setTreeKey((k) => k + 1);
-	};
-
-	const stats =
-		data !== null
-			? `${countNodes(data)} узлов · ${new Blob([raw]).size} байт`
-			: null;
+	// Полный обход дерева + подсчёт байт — только когда JSON реально изменился,
+	// а не на каждый рендер страницы.
+	const stats = useMemo(
+		() =>
+			data !== null
+				? `${countNodes(data)} узлов · ${new Blob([deferredRaw]).size} байт`
+				: null,
+		[data, deferredRaw],
+	);
 
 	return (
 		<div className={s.frame}>
@@ -162,14 +182,14 @@ export const JsonViewerPage: FC = () => {
 								<button
 									type="button"
 									className={s.toolBtn}
-									onClick={() => toggleAll(true)}
+									onClick={() => treeRef.current?.expandAll()}
 								>
 									Развернуть всё
 								</button>
 								<button
 									type="button"
 									className={s.toolBtn}
-									onClick={() => toggleAll(false)}
+									onClick={() => treeRef.current?.collapseAll()}
 								>
 									Свернуть всё
 								</button>
@@ -185,7 +205,12 @@ export const JsonViewerPage: FC = () => {
 								<span className={s.placeholderHint}>{error}</span>
 							</div>
 						) : data !== null ? (
-							<JsonTree key={treeKey} data={data} defaultOpen={allOpen} />
+							<JsonTree
+								ref={treeRef}
+								data={data}
+								size="md"
+								defaultExpandedDepth={2}
+							/>
 						) : (
 							<div className={s.placeholder}>
 								<span className={s.placeholderIcon}>{"{ }"}</span>

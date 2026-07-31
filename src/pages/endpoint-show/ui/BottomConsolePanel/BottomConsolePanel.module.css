@@ -110,13 +110,28 @@
 	overflow: hidden;
 }
 
-/* Скролл-контейнер для тела ответа (JsonTree / сырой текст) */
+/* Скролл-контейнер для сырого текста */
 .content {
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow: auto;
 	padding: 11px 13px;
 	background: var(--code-bg);
+}
+
+/* Для дерева скроллом управляет сам JsonTree (виртуализация),
+   поэтому внешний контейнер только задаёт фон и отступы. */
+.contentTree {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	overflow: hidden;
+	padding: 11px 13px;
+	background: var(--code-bg);
+}
+
+.tree {
+	color: var(--code-ink);
 }
 
 .raw {
