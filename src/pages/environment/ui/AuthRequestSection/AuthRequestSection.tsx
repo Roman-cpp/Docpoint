@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import type { TokenPlacement } from "@/entities/environment";
+import type { TokenPlacement, WsTokenPlacement } from "@/entities/environment";
 import s from "../EnvironmentPage.module.css";
 import {
 	type AuthMethod,
@@ -11,6 +11,8 @@ import {
 	TOKEN_PLACEMENT_LABEL,
 	TOKEN_PLACEMENTS,
 	TrashIcon,
+	WS_TOKEN_PLACEMENT_LABEL,
+	WS_TOKEN_PLACEMENTS,
 } from "../parts";
 
 type Props = {
@@ -27,14 +29,16 @@ type Props = {
 	onTokenPathBlur: () => void;
 	tokenPlacement: TokenPlacement;
 	onTokenPlacementChange: (value: TokenPlacement) => void;
-	cookieName: string;
-	onCookieNameChange: (value: string) => void;
-	onCookieNameBlur: () => void;
+	wsTokenPlacement: WsTokenPlacement;
+	onWsTokenPlacementChange: (value: WsTokenPlacement) => void;
+	/** Куки, выданные сервером авторизации: только для показа. */
+	authCookies: Record<string, string>;
+	authCookieHost: string;
 	onFetchToken: () => void;
 	onClearToken: () => void;
 	fetchingToken: boolean;
 	accessToken: string | null;
-	tokenPillVariant?: "ok" | "warn" | "muted";
+	/** Статус автосохранения настроек — «сохраняем…» / «сохранено». */
 	tokenPillLabel?: string;
 };
 
@@ -43,6 +47,9 @@ const isMethod = (value: string): value is AuthMethod =>
 
 const isTokenPlacement = (value: string): value is TokenPlacement =>
 	(TOKEN_PLACEMENTS as readonly string[]).includes(value);
+
+const isWsTokenPlacement = (value: string): value is WsTokenPlacement =>
+	(WS_TOKEN_PLACEMENTS as readonly string[]).includes(value);
 
 const methodClass = (method: AuthMethod) => {
 	const mod = method.toLowerCase();
@@ -63,27 +70,42 @@ export const AuthRequestSection: FC<Props> = ({
 	onTokenPathBlur,
 	tokenPlacement,
 	onTokenPlacementChange,
-	cookieName,
-	onCookieNameChange,
-	onCookieNameBlur,
+	wsTokenPlacement,
+	onWsTokenPlacementChange,
+	authCookies,
+	authCookieHost,
 	onFetchToken,
 	onClearToken,
 	fetchingToken,
 	accessToken,
-	tokenPillVariant = "muted",
 	tokenPillLabel,
 }) => {
-	const fetchDisabled = fetchingToken || !url.trim() || !tokenPath.trim();
+	const fetchDisabled = fetchingToken || !url.trim();
 	const bodyDisabled = method === "GET";
-	const pillClass = `${s.envTokenPill} ${tokenPillVariant === "warn" ? s.warn : ""}`;
+	const cookieNames = Object.keys(authCookies);
+	/** Обе стороны ходят по кукам — токен из тела не нужен вовсе. */
+	const cookieOnly =
+		tokenPlacement === "cookie" && wsTokenPlacement === "cookie";
+	const hasSession = Boolean(accessToken) || cookieNames.length > 0;
+
+	/** Что окружение сейчас предъявляет серверу: токен, куки или ничего. */
+	const sessionSummary = () => {
+		const parts: string[] = [];
+		if (accessToken) {
+			const short = `${accessToken.slice(0, 24)}${accessToken.length > 24 ? "…" : ""}`;
+			parts.push(`токен · ${short}`);
+		}
+		if (cookieNames.length) parts.push(`куки · ${cookieNames.length}`);
+		return parts.length ? parts.join(" · ") : "не авторизовано";
+	};
 
 	return (
 		<Section
 			title="Запрос авторизации"
-			sub="выполняется по кнопке «Получить токен»"
+			sub="выполняется по кнопке «Авторизоваться»"
 			right={
 				tokenPillLabel ? (
-					<span className={pillClass}>
+					<span className={s.envTokenPill}>
 						<span className={s.dot} />
 						{tokenPillLabel}
 					</span>
@@ -134,18 +156,21 @@ export const AuthRequestSection: FC<Props> = ({
 					placeholder='{"email":"{{ADMIN_EMAIL}}","password":"{{ADMIN_PASSWORD}}"}'
 				/>
 			</Field>
-			<Field
-				label="Token path"
-				help="путь в JSON-ответе (например data.accessToken)"
-			>
-				<input
-					className={s.envInput}
-					value={tokenPath}
-					onChange={(e) => onTokenPathChange(e.target.value)}
-					onBlur={onTokenPathBlur}
-					placeholder="data.accessToken"
-				/>
-			</Field>
+			{/* Обе стороны на куках — токен из тела нигде не используется. */}
+			{!cookieOnly && (
+				<Field
+					label="Token path"
+					help="путь в JSON-ответе (например data.accessToken)"
+				>
+					<input
+						className={s.envInput}
+						value={tokenPath}
+						onChange={(e) => onTokenPathChange(e.target.value)}
+						onBlur={onTokenPathBlur}
+						placeholder="data.accessToken"
+					/>
+				</Field>
+			)}
 			<Field
 				label="Куда подставлять токен"
 				help="как полученный токен добавляется к запросам этого окружения"
@@ -166,18 +191,46 @@ export const AuthRequestSection: FC<Props> = ({
 					</select>
 				</div>
 			</Field>
-			{tokenPlacement === "cookie" && (
+			<Field
+				label="Куда подставлять токен в WebSocket"
+				help="при рукопожатии: многие WS-серверы читают только query-параметр"
+			>
+				<div className={`${s.envSelect} ${s.method}`}>
+					<select
+						value={wsTokenPlacement}
+						onChange={(e) =>
+							isWsTokenPlacement(e.target.value) &&
+							onWsTokenPlacementChange(e.target.value)
+						}
+					>
+						{WS_TOKEN_PLACEMENTS.map((p) => (
+							<option key={p} value={p}>
+								{WS_TOKEN_PLACEMENT_LABEL[p]}
+							</option>
+						))}
+					</select>
+				</div>
+			</Field>
+			{(tokenPlacement === "cookie" || wsTokenPlacement === "cookie") && (
 				<Field
-					label="Cookie name"
-					help="имя cookie, в которую попадёт токен (например session_id)"
+					label="Куки сессии"
+					help={
+						authCookieHost
+							? `выданы сервером ${authCookieHost}; уходят только на него и его поддомены`
+							: "появятся после авторизации: что сервер прислал в Set-Cookie, то и уйдёт в запросы"
+					}
 				>
-					<input
-						className={s.envInput}
-						value={cookieName}
-						onChange={(e) => onCookieNameChange(e.target.value)}
-						onBlur={onCookieNameBlur}
-						placeholder="token"
-					/>
+					<div className={s.envCookieList}>
+						{cookieNames.length ? (
+							cookieNames.map((name) => (
+								<span key={name} className={s.envCookieChip} title={name}>
+									{name}
+								</span>
+							))
+						) : (
+							<span className={s.envCookieEmpty}>пока нет</span>
+						)}
+					</div>
 				</Field>
 			)}
 			<div className={s.envAuthFoot}>
@@ -186,28 +239,22 @@ export const AuthRequestSection: FC<Props> = ({
 					className={`${s.envBtn} ${s.envBtnPrimary}`}
 					onClick={onFetchToken}
 					disabled={fetchDisabled}
-					title={
-						!url.trim() || !tokenPath.trim() ? "Заполните URL и token path" : ""
-					}
+					title={!url.trim() ? "Заполните URL" : ""}
 				>
 					{fetchingToken ? <RefreshIcon /> : <BoltIcon />}
-					{fetchingToken ? "Получаем…" : "Получить токен"}
+					{fetchingToken ? "Получаем…" : "Авторизоваться"}
 				</button>
-				{accessToken && (
+				{hasSession && (
 					<button
 						type="button"
 						className={`${s.envBtn} ${s.envBtnGhost}`}
 						onClick={onClearToken}
 					>
 						<TrashIcon />
-						Очистить токен
+						Очистить сессию
 					</button>
 				)}
-				<span className={s.envAuthFootMeta}>
-					{accessToken
-						? `текущий токен · ${accessToken.slice(0, 24)}${accessToken.length > 24 ? "…" : ""}`
-						: "токен не получен"}
-				</span>
+				<span className={s.envAuthFootMeta}>{sessionSummary()}</span>
 			</div>
 		</Section>
 	);

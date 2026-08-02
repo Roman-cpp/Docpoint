@@ -23,12 +23,13 @@ export { useEnvironmentsStore } from "./environment/store/useEnvironmentsStore";
 export { DeleteVariableModal } from "./environment/ui/DeleteVariableModal";
 export { EnvironmentModal } from "./environment/ui/EnvironmentModal";
 export { VariableModal } from "./environment/ui/VariableModal";
-export { getEnvironmentAccessTokenApi } from "./environment-auth/api/get-environment-access-token-api";
+export { authenticateEnvironmentApi } from "./environment-auth/api/authenticate-environment-api";
+export { clearEnvironmentSessionApi } from "./environment-auth/api/clear-environment-session-api";
 export { getEnvironmentAuthApi } from "./environment-auth/api/get-environment-auth-api";
-export { setEnvironmentAccessTokenApi } from "./environment-auth/api/set-environment-access-token-api";
 export { updateEnvironmentAuthApi } from "./environment-auth/api/update-environment-auth-api";
 export type { UpdateEnvironmentAuthDTO } from "./environment-auth/model/environment-auth.dto";
 export type {
 	EnvironmentAuth,
 	TokenPlacement,
+	WsTokenPlacement,
 } from "./environment-auth/model/environment-auth.entity";

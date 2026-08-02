@@ -1,10 +1,26 @@
 import type { FC } from "react";
-import { Checkbox } from "@/shared/ui-kit/controls";
-import type { HeaderDraft } from "../../model/tryIt.types";
+import { Checkbox } from "../Checkbox/Checkbox";
 import s from "./HeadersEditor.module.css";
 
-const emptyHeader = (): HeaderDraft => ({
-	id: crypto.randomUUID(),
+/**
+ * Заголовок в редакторе. `id` локальный — нужен только как React-ключ,
+ * хранится список с порядком.
+ */
+export interface HeaderDraft {
+	id: string;
+	name: string;
+	value: string;
+	enabled: boolean;
+}
+
+/** Локальный id строки. NB: `crypto.randomUUID()` требует secure context,
+ *  которым webview Tauri на Linux не является, и бросает исключение. */
+let seq = 0;
+const nextId = () => `hdr-${Date.now().toString(36)}-${++seq}`;
+
+/** Пустая строка заголовка — для инициализации списка снаружи. */
+export const createHeaderDraft = (): HeaderDraft => ({
+	id: nextId(),
 	name: "",
 	value: "",
 	enabled: true,
@@ -24,7 +40,7 @@ const COMMON_HEADERS = [
 	"X-Request-Id",
 ];
 
-const DATALIST_ID = "try-it-header-names";
+const DATALIST_ID = "headers-editor-names";
 
 /** Имена, встречающиеся больше одного раза: победит последнее. */
 function findDuplicates(headers: HeaderDraft[]): Set<string> {
@@ -45,8 +61,8 @@ interface HeadersEditorProps {
 }
 
 /**
- * Произвольные заголовки запроса. Значения понимают `{{VAR}}` из окружения,
- * выключенные строки хранятся, но не отправляются.
+ * Произвольные заголовки запроса. Выключенные строки хранятся, но не
+ * отправляются; подстановка `{{VAR}}` в значениях — на стороне вызывающего.
  */
 export const HeadersEditor: FC<HeadersEditorProps> = ({
 	headers,
@@ -68,7 +84,7 @@ export const HeadersEditor: FC<HeadersEditorProps> = ({
 				<button
 					type="button"
 					className={s.addBtn}
-					onClick={() => onChange([...headers, emptyHeader()])}
+					onClick={() => onChange([...headers, createHeaderDraft()])}
 				>
 					+ Add header
 				</button>

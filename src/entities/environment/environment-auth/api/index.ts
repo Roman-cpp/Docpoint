@@ -1,4 +1,4 @@
-export { getEnvironmentAccessTokenApi } from "./get-environment-access-token-api";
+export { authenticateEnvironmentApi } from "./authenticate-environment-api";
+export { clearEnvironmentSessionApi } from "./clear-environment-session-api";
 export { getEnvironmentAuthApi } from "./get-environment-auth-api";
-export { setEnvironmentAccessTokenApi } from "./set-environment-access-token-api";
 export { updateEnvironmentAuthApi } from "./update-environment-auth-api";

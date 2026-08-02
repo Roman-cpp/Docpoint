@@ -17,6 +17,11 @@ import {
 	useWebsocketMessages,
 	type WebsocketMessage,
 } from "@/entities/websocket";
+import {
+	createHeaderDraft,
+	type HeaderDraft,
+	HeadersEditor,
+} from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/header";
 import { CreateWebsocketMessageModal } from "../CreateWebsocketMessageModal";
 import { EditWebsocketMessageModal } from "../EditWebsocketMessageModal";
@@ -45,6 +50,24 @@ const DEFAULT_DRAFT = `{ "op": "subscribe", "id": "init", "streams": "kline.exch
 
 const TABS = ["Message", "Params", "Headers", "Settings"] as const;
 type Tab = (typeof TABS)[number];
+
+/**
+ * Заголовки рукопожатия для бэкенда: включённые строки с непустым именем,
+ * последняя одноимённая побеждает.
+ */
+function collectHeaders(headers: HeaderDraft[]): Record<string, string> {
+	const result: Record<string, string> = {};
+	for (const header of headers) {
+		const name = header.name.trim();
+		if (!header.enabled || !name) continue;
+		for (const existing of Object.keys(result)) {
+			if (existing.toLowerCase() === name.toLowerCase())
+				delete result[existing];
+		}
+		result[name] = header.value;
+	}
+	return result;
+}
 
 const now = () => {
 	const d = new Date();
@@ -205,6 +228,10 @@ export const WebSocketPage: FC = () => {
 	const [connecting, setConnecting] = useState(false);
 	const [tab, setTab] = useState<Tab>("Message");
 	const [draft, setDraft] = useState(DEFAULT_DRAFT);
+	/* Заголовки рукопожатия. Живут только на время сессии страницы; токен
+	   окружения бэкенд подставляет сам, если своего `Authorization`/`Cookie`
+	   здесь нет. */
+	const [headers, setHeaders] = useState<HeaderDraft[]>([]);
 	const [messages, setMessages] = useState<WsMessage[]>([]);
 	const [search, setSearch] = useState("");
 	const [filter, setFilter] = useState<"all" | "in" | "out">("all");
@@ -282,7 +309,11 @@ export const WebSocketPage: FC = () => {
 				}
 			});
 			unlistenRef.current = unlisten;
-			await invoke<string>("ws_connect", { url, id });
+			await invoke<string>("ws_connect", {
+				url,
+				id,
+				headers: collectHeaders(headers),
+			});
 			setConnId(id);
 		} catch (err) {
 			unlistenRef.current?.();
@@ -291,7 +322,7 @@ export const WebSocketPage: FC = () => {
 		} finally {
 			setConnecting(false);
 		}
-	}, [url, connecting, teardown, push]);
+	}, [url, headers, connecting, teardown, push]);
 
 	const disconnect = useCallback(async () => {
 		const id = connIdRef.current;
@@ -360,6 +391,16 @@ export const WebSocketPage: FC = () => {
 		},
 		[editorHeight],
 	);
+
+	/** Открывает Headers и заводит строку `Cookie`, если её ещё нет. */
+	const editCookies = () => {
+		setTab("Headers");
+		setHeaders((list) =>
+			list.some((h) => h.name.trim().toLowerCase() === "cookie")
+				? list
+				: [...list, { ...createHeaderDraft(), name: "Cookie" }],
+		);
+	};
 
 	const draftLines = draft.split("\n");
 
@@ -571,26 +612,44 @@ export const WebSocketPage: FC = () => {
 								</button>
 							))}
 							<div className={s.tabsSpacer} />
-							<span className={s.cookiesLink}>Cookies</span>
+							<button
+								type="button"
+								className={s.cookiesLink}
+								onClick={editCookies}
+								title="Заголовок Cookie для рукопожатия"
+							>
+								Cookies
+							</button>
 						</div>
 
-						<div className={s.editor}>
-							<div className={s.gutter}>
-								{draftLines.map((_, i) => (
-									<div className={s.gutterLine} key={i}>
-										{i + 1}
-									</div>
-								))}
+						{tab === "Headers" ? (
+							<div className={s.headersPane}>
+								<HeadersEditor headers={headers} onChange={setHeaders} />
+								<p className={s.headersHint}>
+									Отправляются при подключении. Если не задать
+									Authorization/Cookie, токен выбранного окружения подставится
+									сам — способ настраивается в окружении.
+								</p>
 							</div>
-							<textarea
-								className={s.codeArea}
-								value={draft}
-								onChange={(e) => setDraft(e.target.value)}
-								onKeyDown={onKey}
-								spellCheck={false}
-								placeholder='{ "op": "subscribe", "streams": "…" }'
-							/>
-						</div>
+						) : (
+							<div className={s.editor}>
+								<div className={s.gutter}>
+									{draftLines.map((_, i) => (
+										<div className={s.gutterLine} key={i}>
+											{i + 1}
+										</div>
+									))}
+								</div>
+								<textarea
+									className={s.codeArea}
+									value={draft}
+									onChange={(e) => setDraft(e.target.value)}
+									onKeyDown={onKey}
+									spellCheck={false}
+									placeholder='{ "op": "subscribe", "streams": "…" }'
+								/>
+							</div>
+						)}
 
 						<div className={s.editorFooter}>
 							<select className={s.formatSelect} defaultValue="JSON">

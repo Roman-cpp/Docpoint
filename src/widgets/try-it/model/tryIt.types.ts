@@ -1,21 +1,13 @@
 import type { BodyMode } from "@/entities/doc-api";
+import type { HeaderDraft } from "@/shared/ui-kit/controls";
+
+export type { HeaderDraft };
 
 /**
  * Значения параметров одного набора, индексированные ключом `${kind}:${name}`
  * (см. `valueKey` / `splitValueKey`).
  */
 export type ParamValues = Record<string, string>;
-
-/**
- * Заголовок в редакторе. `id` локальный — нужен только как React-ключ,
- * в БД заголовки хранятся списком с порядком.
- */
-export interface HeaderDraft {
-	id: string;
-	name: string;
-	value: string;
-	enabled: boolean;
-}
 
 /**
  * Именованный набор параметров запроса — локальное представление

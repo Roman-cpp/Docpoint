@@ -25,6 +25,11 @@ impl RequestPayload {
             body,
         }
     }
+
+    /// Адрес запроса — нужен, чтобы решить, можно ли слать сюда куки окружения.
+    pub fn url(&self) -> &str {
+        &self.url
+    }
 }
 
 #[derive(Serialize)]
@@ -32,18 +37,23 @@ pub struct ResponsePayload {
     pub status: u16,
     pub status_text: String,
     pub headers: HashMap<String, String>,
+    /// Все заголовки `Set-Cookie` ответа, по одному на элемент: в `headers` они
+    /// не помещаются, там одноимённые схлопываются в последний.
+    pub set_cookies: Vec<String>,
     pub body: String,
     pub duration_ms: u64,
 }
 
-/// Builds the app-wide HTTP client. Cookies are persisted in the client's
-/// jar for its whole lifetime (the app session) and replayed automatically
-/// by reqwest on later requests to the same host, so a `Set-Cookie` from an
-/// auth endpoint keeps working across `send` calls without any manual
-/// header wiring.
+/// Builds the app-wide HTTP client.
+///
+/// Свой cookie jar у reqwest выключен намеренно: он один на всё приложение, а
+/// куки у нас принадлежат окружению. Общий jar подхватывал бы `Set-Cookie` из
+/// любого ответа и переживал переключение окружения. Вместо него куки сессии
+/// хранятся per-env в БД и подставляются явно — см.
+/// [`cookies`](crate::service::env_auth::cookies).
 pub fn build_client() -> reqwest::Client {
     reqwest::Client::builder()
-        .cookie_store(true)
+        .cookie_store(false)
         .build()
         .expect("failed to build reqwest client")
 }
@@ -89,6 +99,12 @@ pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<R
     for (name, value) in response.headers() {
         resp_headers.insert(name.to_string(), value.to_str().unwrap_or("").to_string());
     }
+    let set_cookies = response
+        .headers()
+        .get_all(reqwest::header::SET_COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok().map(str::to_string))
+        .collect();
 
     let body = response.text().await.map_err(|e| e.to_string())?;
 
@@ -96,7 +112,83 @@ pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<R
         status: status.as_u16(),
         status_text,
         headers: resp_headers,
+        set_cookies,
         body,
         duration_ms,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
+    /// Крошечный сервер: отвечает двумя `Set-Cookie` и возвращает заголовки
+    /// каждого полученного запроса.
+    async fn spawn_server() -> (String, tokio::sync::mpsc::UnboundedReceiver<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut socket, _)) = listener.accept().await else {
+                    return;
+                };
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let mut buf = vec![0u8; 4096];
+                    let n = socket.read(&mut buf).await.unwrap_or(0);
+                    let _ = tx.send(String::from_utf8_lossy(&buf[..n]).to_string());
+                    let _ = socket
+                        .write_all(
+                            b"HTTP/1.1 200 OK\r\n\
+                              Set-Cookie: sid=abc; Path=/; HttpOnly\r\n\
+                              Set-Cookie: csrf=xyz; Path=/\r\n\
+                              Content-Length: 2\r\n\
+                              Connection: close\r\n\r\n{}",
+                        )
+                        .await;
+                });
+            }
+        });
+
+        (format!("http://{addr}"), rx)
+    }
+
+    fn get(url: &str) -> RequestPayload {
+        RequestPayload::new("GET".to_string(), url.to_string(), HashMap::new(), None)
+    }
+
+    #[tokio::test]
+    async fn every_set_cookie_survives_the_response() {
+        let (url, _rx) = spawn_server().await;
+        let response = send(&build_client(), get(&url)).await.unwrap();
+
+        // В `headers` одноимённые схлопываются — именно поэтому нужен отдельный
+        // список: без него вторая кука терялась бы молча.
+        assert_eq!(response.set_cookies.len(), 2);
+        assert!(response.set_cookies[0].starts_with("sid=abc"));
+        assert!(response.set_cookies[1].starts_with("csrf=xyz"));
+    }
+
+    #[tokio::test]
+    async fn client_does_not_replay_cookies_on_its_own() {
+        let (url, mut rx) = spawn_server().await;
+        let client = build_client();
+
+        send(&client, get(&url)).await.unwrap();
+        let _first = rx.recv().await.unwrap();
+
+        send(&client, get(&url)).await.unwrap();
+        let second = rx.recv().await.unwrap();
+
+        // Куки принадлежат окружению и подставляются явно; общий jar reqwest
+        // разослал бы их сам, куда бы ни ушёл следующий запрос.
+        assert!(
+            !second.to_lowercase().contains("cookie:"),
+            "клиент подставил куки сам: {second}"
+        );
+    }
 }

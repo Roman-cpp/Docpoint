@@ -1,4 +1,7 @@
-import type { TokenPlacement } from "./environment-auth.entity";
+import type {
+	TokenPlacement,
+	WsTokenPlacement,
+} from "./environment-auth.entity";
 
 export type UpdateEnvironmentAuthDTO = {
 	environmentId: string;
@@ -7,5 +10,5 @@ export type UpdateEnvironmentAuthDTO = {
 	body: string;
 	tokenPath: string;
 	tokenPlacement: TokenPlacement;
-	cookieName: string;
+	wsTokenPlacement: WsTokenPlacement;
 };

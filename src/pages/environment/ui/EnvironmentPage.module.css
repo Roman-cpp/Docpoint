@@ -233,6 +233,29 @@
 	border-color: var(--amber-border);
 }
 
+/* ─── Session cookies ────────────────────────────────────────── */
+.envCookieList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	min-height: 30px;
+}
+.envCookieChip {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	padding: 3px 8px;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--border);
+	background: var(--cat-bg);
+	color: var(--ink-mid);
+}
+.envCookieEmpty {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+
 /* ─── Buttons ────────────────────────────────────────────────── */
 .envBtn {
 	display: inline-flex;

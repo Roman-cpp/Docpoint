@@ -12,6 +12,11 @@ export type {
 } from "./DropMenu/DropMenu";
 export { DropMenu } from "./DropMenu/DropMenu";
 export { Field } from "./Field/Field";
+export type { HeaderDraft } from "./HeadersEditor/HeadersEditor";
+export {
+	createHeaderDraft,
+	HeadersEditor,
+} from "./HeadersEditor/HeadersEditor";
 export { Input } from "./Input/Input";
 export { RadioGroup } from "./RadioGroup/RadioGroup";
 export { Select } from "./Select/Select";

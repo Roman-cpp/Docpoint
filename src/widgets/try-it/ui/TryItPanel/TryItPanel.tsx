@@ -10,6 +10,7 @@ import {
 } from "@/features/environment";
 import { useResponseStore } from "@/features/request";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { HeadersEditor } from "@/shared/ui-kit/controls";
 import { buildUrl, canHaveBody } from "../../lib/buildRequest";
 import { getJsonError } from "../../lib/validateJson";
 import type { RequestDraft } from "../../model/tryIt.types";
@@ -17,7 +18,6 @@ import { useEndpointRequests } from "../../model/useEndpointRequests";
 import { useSendRequest } from "../../model/useSendRequest";
 import { AuthNotice } from "../AuthNotice";
 import { BodyEditor } from "../BodyEditor";
-import { HeadersEditor } from "../HeadersEditor";
 import { ParamFields } from "../ParamFields";
 import { RequestTabs } from "../RequestTabs";
 import { UrlBar } from "../UrlBar";

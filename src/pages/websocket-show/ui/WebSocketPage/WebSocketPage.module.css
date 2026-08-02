@@ -252,9 +252,26 @@
 }
 .cookiesLink {
 	font-size: 12px;
+	font-family: var(--font-sans);
 	color: var(--blue);
+	background: none;
+	border: none;
 	cursor: pointer;
 	padding: 0 6px;
+}
+
+/* ─── headers tab ─── */
+.headersPane {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 12px 14px;
+}
+.headersHint {
+	margin: 10px 0 0;
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--ink-low);
 }
 
 /* ─── code editor ─── */

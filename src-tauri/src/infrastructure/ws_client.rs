@@ -10,6 +10,23 @@ use tokio_tungstenite::tungstenite::Message;
 use crate::domain::websocket::dto::WsEvent;
 use crate::state::WsConn;
 
+/// Why a handshake failed.
+///
+/// `status` is the HTTP status the server answered the upgrade request with,
+/// when it answered at all — that is what lets the caller tell an expired token
+/// (401/403) from a transport failure and react to it.
+#[derive(Debug)]
+pub struct ConnectError {
+    pub message: String,
+    pub status: Option<u16>,
+}
+
+impl ConnectError {
+    fn transport(message: String) -> Self {
+        Self { message, status: None }
+    }
+}
+
 /// Opens a WebSocket connection to `url`, spawns the reader/writer tasks and
 /// returns the live [`WsConn`]. Every incoming frame is emitted to the frontend
 /// on the event channel `ws://{id}` (the caller supplies `id`).
@@ -18,7 +35,7 @@ pub async fn connect(
     id: String,
     url: String,
     headers: Option<HashMap<String, String>>,
-) -> Result<WsConn, String> {
+) -> Result<WsConn, ConnectError> {
     // Some endpoints (e.g. Binance's AWS load balancers) intermittently close
     // the TCP connection mid-TLS-handshake ("tls handshake eof"). That is a
     // transient, retryable condition, so make a few attempts before giving up.
@@ -30,12 +47,17 @@ pub async fn connect(
     let ws = loop {
         attempt += 1;
 
-        let mut request = url.as_str().into_client_request().map_err(|e| e.to_string())?;
+        let mut request = url
+            .as_str()
+            .into_client_request()
+            .map_err(|e| ConnectError::transport(e.to_string()))?;
         if let Some(headers) = &headers {
             let h = request.headers_mut();
             for (k, v) in headers {
-                let name = HeaderName::from_bytes(k.as_bytes()).map_err(|e| e.to_string())?;
-                let value = HeaderValue::from_str(v).map_err(|e| e.to_string())?;
+                let name = HeaderName::from_bytes(k.as_bytes())
+                    .map_err(|e| ConnectError::transport(e.to_string()))?;
+                let value =
+                    HeaderValue::from_str(v).map_err(|e| ConnectError::transport(e.to_string()))?;
                 h.insert(name, value);
             }
         }
@@ -47,12 +69,28 @@ pub async fn connect(
         .await
         {
             Ok(Ok((ws, _resp))) => break ws,
+            // The server answered the upgrade with a plain HTTP response: that
+            // is a verdict, not a hiccup, so report it (with its status) instead
+            // of burning the remaining attempts on it.
+            Ok(Err(tokio_tungstenite::tungstenite::Error::Http(resp))) => {
+                let status = resp.status();
+                let body = resp
+                    .body()
+                    .as_ref()
+                    .map(|b| String::from_utf8_lossy(b).trim().to_string())
+                    .unwrap_or_default();
+                let mut message = format!("handshake rejected: HTTP {status}");
+                if !body.is_empty() {
+                    message.push_str(&format!(" — {body}"));
+                }
+                return Err(ConnectError { message, status: Some(status.as_u16()) });
+            }
             Ok(Err(e)) => last_err = e.to_string(),
             Err(_) => last_err = "connection timed out after 15s".to_string(),
         }
 
         if attempt >= MAX_ATTEMPTS {
-            return Err(last_err);
+            return Err(ConnectError::transport(last_err));
         }
         // Small backoff before retrying the handshake.
         tokio::time::sleep(std::time::Duration::from_millis(300)).await;

@@ -1,13 +1,17 @@
-import { invoke } from "@tauri-apps/api/core";
 import { type FC, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
-import type { TokenPlacement, Variable } from "@/entities/environment";
+import type {
+	TokenPlacement,
+	Variable,
+	WsTokenPlacement,
+} from "@/entities/environment";
 import {
+	authenticateEnvironmentApi,
+	clearEnvironmentSessionApi,
 	DeleteVariableModal,
 	deleteEnvironmentApi,
 	duplicateEnvironmentApi,
 	getEnvironmentAuthApi,
-	setEnvironmentAccessTokenApi,
 	updateEnvironmentApi,
 	updateEnvironmentAuthApi,
 	VariableModal,
@@ -41,27 +45,6 @@ import {
 import { Sidebar } from "../Sidebar";
 import { VariablesSection } from "../VariablesSection";
 
-function extractByPath(obj: unknown, path: string): string | null {
-	if (!path.trim()) return null;
-	const parts = path
-		.split(".")
-		.map((p) => p.trim())
-		.filter(Boolean);
-	let cur: unknown = obj;
-	for (const key of parts) {
-		if (
-			cur &&
-			typeof cur === "object" &&
-			key in (cur as Record<string, unknown>)
-		) {
-			cur = (cur as Record<string, unknown>)[key];
-		} else {
-			return null;
-		}
-	}
-	return typeof cur === "string" ? cur : cur != null ? String(cur) : null;
-}
-
 const asMethod = (value: string): AuthMethod => {
 	const upper = value.toUpperCase();
 	return (HTTP_METHODS as readonly string[]).includes(upper)
@@ -71,6 +54,9 @@ const asMethod = (value: string): AuthMethod => {
 
 const asTokenPlacement = (value: string): TokenPlacement =>
 	value === "cookie" ? "cookie" : "header";
+
+const asWsTokenPlacement = (value: string): WsTokenPlacement =>
+	value === "cookie" || value === "header" ? value : "query";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -104,7 +90,11 @@ export const EnvironmentPage: FC = () => {
 	const [authTokenPath, setAuthTokenPath] = useState("");
 	const [authTokenPlacement, setAuthTokenPlacement] =
 		useState<TokenPlacement>("header");
-	const [authCookieName, setAuthCookieName] = useState("token");
+	const [authWsTokenPlacement, setAuthWsTokenPlacement] =
+		useState<WsTokenPlacement>("query");
+	/** Куки сессии окружения: их пишет только авторизация, руками не правятся. */
+	const [authCookies, setAuthCookies] = useState<Record<string, string>>({});
+	const [authCookieHost, setAuthCookieHost] = useState("");
 	const [authStatus, setAuthStatus] = useState<SaveStatus>("idle");
 	const [fetchingToken, setFetchingToken] = useState(false);
 	const loadedAuthRef = useRef<{
@@ -113,7 +103,7 @@ export const EnvironmentPage: FC = () => {
 		body: string;
 		tokenPath: string;
 		tokenPlacement: TokenPlacement;
-		cookieName: string;
+		wsTokenPlacement: WsTokenPlacement;
 	} | null>(null);
 
 	// Variable modal
@@ -143,13 +133,15 @@ export const EnvironmentPage: FC = () => {
 			if (cancelled) return;
 			const method = asMethod(auth.method || "POST");
 			const tokenPlacement = asTokenPlacement(auth.tokenPlacement);
-			const cookieName = auth.cookieName || "token";
+			const wsTokenPlacement = asWsTokenPlacement(auth.wsTokenPlacement);
 			setAuthUrl(auth.url);
 			setAuthMethod(method);
 			setAuthBody(auth.body);
 			setAuthTokenPath(auth.tokenPath);
 			setAuthTokenPlacement(tokenPlacement);
-			setAuthCookieName(cookieName);
+			setAuthWsTokenPlacement(wsTokenPlacement);
+			setAuthCookies(auth.authCookies ?? {});
+			setAuthCookieHost(auth.authCookieHost ?? "");
 			setAuthStatus("idle");
 			loadedAuthRef.current = {
 				url: auth.url,
@@ -157,7 +149,7 @@ export const EnvironmentPage: FC = () => {
 				body: auth.body,
 				tokenPath: auth.tokenPath,
 				tokenPlacement,
-				cookieName,
+				wsTokenPlacement,
 			};
 		});
 		return () => {
@@ -209,7 +201,7 @@ export const EnvironmentPage: FC = () => {
 		body?: string;
 		tokenPath?: string;
 		tokenPlacement?: TokenPlacement;
-		cookieName?: string;
+		wsTokenPlacement?: WsTokenPlacement;
 	}) => {
 		if (!selectedEnv) return;
 		const loaded = loadedAuthRef.current;
@@ -219,7 +211,7 @@ export const EnvironmentPage: FC = () => {
 			body: overrides?.body ?? authBody,
 			tokenPath: (overrides?.tokenPath ?? authTokenPath).trim(),
 			tokenPlacement: overrides?.tokenPlacement ?? authTokenPlacement,
-			cookieName: (overrides?.cookieName ?? authCookieName).trim() || "token",
+			wsTokenPlacement: overrides?.wsTokenPlacement ?? authWsTokenPlacement,
 		};
 		if (
 			loaded &&
@@ -228,7 +220,7 @@ export const EnvironmentPage: FC = () => {
 			next.body === loaded.body &&
 			next.tokenPath === loaded.tokenPath &&
 			next.tokenPlacement === loaded.tokenPlacement &&
-			next.cookieName === loaded.cookieName
+			next.wsTokenPlacement === loaded.wsTokenPlacement
 		) {
 			return;
 		}
@@ -238,7 +230,6 @@ export const EnvironmentPage: FC = () => {
 				environmentId: selectedEnv.id,
 				...next,
 			});
-			patchToken(next.tokenPath);
 			loadedAuthRef.current = next;
 			setAuthStatus("saved");
 			setTimeout(
@@ -255,66 +246,40 @@ export const EnvironmentPage: FC = () => {
 		}
 	};
 
+	/**
+	 * Запрос авторизации целиком выполняет бэкенд: он же достаёт токен по
+	 * `tokenPath` и забирает куки из `Set-Cookie`, поэтому и кнопка, и
+	 * авто-обновление при 401 работают по одному и тому же коду.
+	 */
 	const handleFetchToken = async () => {
 		if (!selectedEnv || !authUrl.trim()) return;
 		// Make sure latest auth config is persisted before firing the request.
 		await saveAuth();
 		setFetchingToken(true);
 		try {
-			const headers: Record<string, string> = { Accept: "application/json" };
-			const trimmedBody = authBody.trim();
-			const sendBody =
-				authMethod === "GET" || !trimmedBody ? null : trimmedBody;
-			if (sendBody !== null) headers["Content-Type"] = "application/json";
+			const auth = await authenticateEnvironmentApi(selectedEnv.id);
+			if (!auth) {
+				toast({
+					variant: "error",
+					title: "Авторизация ничего не дала",
+					description: authTokenPath.trim()
+						? `Сервер не вернул ни кук, ни значения по пути "${authTokenPath.trim()}"`
+						: "Сервер не вернул ни кук, ни токена — укажите token path, если токен приходит в теле",
+				});
+				return;
+			}
 
-			const res = await invoke<{
-				status: number;
-				status_text: string;
-				body: string;
-				duration_ms: number;
-			}>("send_request", {
-				payload: {
-					method: authMethod,
-					url: authUrl.trim(),
-					headers,
-					body: sendBody,
-				},
+			const cookieNames = Object.keys(auth.authCookies ?? {});
+			setAuthCookies(auth.authCookies ?? {});
+			setAuthCookieHost(auth.authCookieHost ?? "");
+			patchToken(auth.accessToken);
+			toast({
+				variant: "success",
+				title: auth.accessToken ? "Токен получен" : "Куки сессии получены",
+				description: cookieNames.length
+					? `Куки: ${cookieNames.join(", ")}`
+					: undefined,
 			});
-
-			if (res.status >= 300) {
-				toast({
-					variant: "error",
-					title: `Auth request failed (${res.status})`,
-					description: res.status_text,
-				});
-				return;
-			}
-
-			let parsed: unknown;
-			try {
-				parsed = JSON.parse(res.body);
-			} catch {
-				toast({
-					variant: "error",
-					title: "Invalid response",
-					description: "Response body is not valid JSON",
-				});
-				return;
-			}
-
-			const token = extractByPath(parsed, authTokenPath);
-			if (!token) {
-				toast({
-					variant: "error",
-					title: "Token not found",
-					description: `No value at path "${authTokenPath}"`,
-				});
-				return;
-			}
-
-			await setEnvironmentAccessTokenApi(selectedEnv.id, token);
-			patchToken(token);
-			toast({ variant: "success", title: "Token fetched" });
 		} catch (e) {
 			toast({
 				variant: "error",
@@ -329,8 +294,12 @@ export const EnvironmentPage: FC = () => {
 	const handleClearToken = async () => {
 		if (!selectedEnv) return;
 		try {
-			await setEnvironmentAccessTokenApi(selectedEnv.id, null);
+			// Токен и куки гасим вместе: иначе «очистить» оставило бы рабочую
+			// сессию в куках, и запросы уходили бы авторизованными.
+			await clearEnvironmentSessionApi(selectedEnv.id);
 			patchToken(null);
+			setAuthCookies({});
+			setAuthCookieHost("");
 		} catch {
 			toast({
 				variant: "error",
@@ -402,15 +371,22 @@ export const EnvironmentPage: FC = () => {
 		if (!selectedEnv) return null;
 		const accent = getEnvDotColor(selectedEnv.env);
 		const finalUrl = joinUrl(baseUrl, prefix) || "—";
+		// Окружение может авторизоваться токеном, куками или и тем, и другим.
+		const cookieCount = Object.keys(authCookies).length;
 		const tokenInfo = selectedEnv.accessToken
 			? {
 					variant: "ok" as const,
 					label: `Токен · ${selectedEnv.accessToken.slice(0, 12)}${selectedEnv.accessToken.length > 12 ? "…" : ""}`,
 				}
-			: {
-					variant: "warn" as const,
-					label: "Токен не получен",
-				};
+			: cookieCount
+				? {
+						variant: "ok" as const,
+						label: `Куки · ${cookieCount}`,
+					}
+				: {
+						variant: "warn" as const,
+						label: "Не авторизовано",
+					};
 
 		return (
 			<div className={s.envHero}>
@@ -427,7 +403,12 @@ export const EnvironmentPage: FC = () => {
 						<span className={s.sep}>·</span>
 						<span
 							className={`${s.envTokenPill} ${tokenInfo.variant === "warn" ? s.warn : ""}`}
-							title={selectedEnv.accessToken ?? "Нет токена"}
+							title={
+								selectedEnv.accessToken ??
+								(cookieCount
+									? `Куки сессии: ${Object.keys(authCookies).join(", ")}`
+									: "Нет ни токена, ни кук")
+							}
 						>
 							<span className={s.dot} />
 							{tokenInfo.label}
@@ -457,15 +438,15 @@ export const EnvironmentPage: FC = () => {
 						type="button"
 						className={`${s.envBtn} ${s.envBtnPrimary}`}
 						onClick={handleFetchToken}
-						disabled={fetchingToken || !authUrl.trim() || !authTokenPath.trim()}
+						disabled={fetchingToken || !authUrl.trim()}
 						title={
-							!authUrl.trim() || !authTokenPath.trim()
-								? "Заполните URL и token path в разделе авторизации"
-								: ""
+							!authUrl.trim()
+								? "Заполните URL в разделе авторизации"
+								: "Выполнить запрос авторизации и сохранить токен и куки"
 						}
 					>
 						<BoltIcon />
-						{fetchingToken ? "Получаем…" : "Получить токен"}
+						{fetchingToken ? "Получаем…" : "Авторизоваться"}
 					</button>
 				</div>
 			</div>
@@ -520,14 +501,17 @@ export const EnvironmentPage: FC = () => {
 										setAuthTokenPlacement(p);
 										saveAuth({ tokenPlacement: p });
 									}}
-									cookieName={authCookieName}
-									onCookieNameChange={setAuthCookieName}
-									onCookieNameBlur={() => saveAuth()}
+									wsTokenPlacement={authWsTokenPlacement}
+									onWsTokenPlacementChange={(p) => {
+										setAuthWsTokenPlacement(p);
+										saveAuth({ wsTokenPlacement: p });
+									}}
+									authCookies={authCookies}
+									authCookieHost={authCookieHost}
 									onFetchToken={handleFetchToken}
 									onClearToken={handleClearToken}
 									fetchingToken={fetchingToken}
 									accessToken={selectedEnv.accessToken}
-									tokenPillVariant={selectedEnv.accessToken ? "muted" : "warn"}
 									tokenPillLabel={
 										authStatus === "saving"
 											? "сохраняем…"
