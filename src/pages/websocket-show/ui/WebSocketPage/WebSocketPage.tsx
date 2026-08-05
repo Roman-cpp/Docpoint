@@ -216,7 +216,7 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 
 /* ─── PAGE ───────────────────────────────────── */
 export const WebSocketPage: FC = () => {
-	// A card on the service page links here with the socket's id and URL in
+	// A card on the domain page links here with the socket's id and URL in
 	// router state. The id ties this page to its saved example messages; it is
 	// absent when the page is opened straight from the top nav.
 	const location = useLocation();
@@ -530,7 +530,7 @@ export const WebSocketPage: FC = () => {
 					<div className={s.exampleList}>
 						{!websocketId ? (
 							<div className={s.emptyExamples}>
-								Откройте WebSocket из карточки сервиса, чтобы хранить сообщения.
+								Откройте WebSocket из карточки домена, чтобы хранить сообщения.
 							</div>
 						) : isMessagesLoading ? (
 							<div className={s.emptyExamples}>Загрузка…</div>

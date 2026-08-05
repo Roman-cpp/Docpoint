@@ -13,8 +13,8 @@ import { joinUrl } from "@/shared/lib/url";
 import s from "@/shared/styles/apiDocs.module.css";
 
 interface DocOrigin {
-	serviceId?: string;
-	serviceName?: string;
+	domainId?: string;
+	domainName?: string;
 }
 
 export const OverviewPage = () => {
@@ -23,8 +23,8 @@ export const OverviewPage = () => {
 	const entities = useDocApiStore(selectEntities);
 	const env = useEnvironmentsStore(selectSelectedEnvironment);
 
-	// When the doc was opened from a microservice page, `state` carries it so we
-	// can offer a link back to that service.
+	// When the doc was opened from a domain page, `state` carries it so we
+	// can offer a link back to that domain.
 	const origin = useLocation().state as DocOrigin | null;
 
 	const endpointCount =
@@ -41,10 +41,10 @@ export const OverviewPage = () => {
 	return (
 		<div>
 			<div className={s.breadcrumb}>
-				{origin?.serviceId && (
+				{origin?.domainId && (
 					<>
-						<Link className={s.bcItem} to={`/service-show/${origin.serviceId}`}>
-							← {origin.serviceName ?? "Микросервис"}
+						<Link className={s.bcItem} to={`/domain-show/${origin.domainId}`}>
+							← {origin.domainName ?? "Домен"}
 						</Link>
 						<span className={s.bcSep}>/</span>
 					</>

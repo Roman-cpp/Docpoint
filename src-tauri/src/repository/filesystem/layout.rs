@@ -1,16 +1,16 @@
 use std::path::{Path, PathBuf};
 
-/// Folder holding the user files of a platform or a service. Keeping them one
+/// Folder holding the user files of a platform or a domain. Keeping them one
 /// level down means a user file can never be mistaken for — or collide with —
-/// a structural folder such as `services`.
+/// a structural folder such as `domains`.
 const FILES: &str = "files";
 
 /// Physical layout of the vault. The only place in the codebase that knows how
-/// platforms and services map onto directories:
+/// platforms and domains map onto directories:
 ///
 /// ```text
 /// <vault>/platforms/<platform_id>/files
-/// <vault>/platforms/<platform_id>/services/<service_id>/files
+/// <vault>/platforms/<platform_id>/domains/<domain_id>/files
 /// ```
 ///
 /// Ids are UUIDs, so folder names stay stable when an entity is renamed.
@@ -23,7 +23,7 @@ impl<'a> VaultLayout<'a> {
         Self { root }
     }
 
-    /// Everything owned by a platform, including its services.
+    /// Everything owned by a platform, including its domains.
     pub fn platform_dir(&self, platform_id: &str) -> Result<PathBuf, String> {
         Ok(self.root.join("platforms").join(safe_id(platform_id)?))
     }
@@ -33,17 +33,17 @@ impl<'a> VaultLayout<'a> {
         Ok(self.platform_dir(platform_id)?.join(FILES))
     }
 
-    /// Everything owned by a single service.
-    pub fn service_dir(&self, platform_id: &str, service_id: &str) -> Result<PathBuf, String> {
+    /// Everything owned by a single domain.
+    pub fn domain_dir(&self, platform_id: &str, domain_id: &str) -> Result<PathBuf, String> {
         Ok(self
             .platform_dir(platform_id)?
-            .join("services")
-            .join(safe_id(service_id)?))
+            .join("domains")
+            .join(safe_id(domain_id)?))
     }
 
-    /// User files of a service.
-    pub fn service_files(&self, platform_id: &str, service_id: &str) -> Result<PathBuf, String> {
-        Ok(self.service_dir(platform_id, service_id)?.join(FILES))
+    /// User files of a domain.
+    pub fn domain_files(&self, platform_id: &str, domain_id: &str) -> Result<PathBuf, String> {
+        Ok(self.domain_dir(platform_id, domain_id)?.join(FILES))
     }
 }
 

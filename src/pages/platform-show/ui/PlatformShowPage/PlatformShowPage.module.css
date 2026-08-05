@@ -82,7 +82,7 @@
 	margin-bottom: 0;
 }
 
-/* ═══════════════ SERVICE CARDS ═══════════════ */
+/* ═══════════════ DOMAIN CARDS ═══════════════ */
 .apiCardsGrid {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
@@ -182,7 +182,7 @@
 }
 
 /* ═══════════════ TABS ═══════════════ */
-/* Switch between the microservices list and the platform file browser. Rides
+/* Switch between the domains list and the platform file browser. Rides
    on a hairline baseline; the active tab lifts with an underline accent. */
 .tabs {
 	display: flex;
@@ -288,7 +288,7 @@
 }
 
 /* Section label row: uppercase caption + optional count, then a hairline that
-   fills the remaining width. Shared by the services and files sections. */
+   fills the remaining width. Shared by the domains and files sections. */
 .sectionLabel {
 	display: flex;
 	align-items: center;
@@ -321,14 +321,14 @@
 	letter-spacing: 0;
 }
 
-/* Microservice card. Overrides the centred text that a native <button>
+/* Domain card. Overrides the centred text that a native <button>
    inherits and leads with a monogram avatar so the card reads as a deliberate
    object, matching the icon tiles used for files and folders below. */
-.svcCard {
+.domCard {
 	text-align: left;
 	gap: 6px;
 }
-.svcAvatar {
+.domAvatar {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -344,11 +344,11 @@
 	border: 1px solid var(--blue-border);
 	transition: transform var(--t-slow) var(--ease-out);
 }
-.svcCard:hover .svcAvatar {
+.domCard:hover .domAvatar {
 	transform: scale(1.06) rotate(-3deg);
 }
 
-/* Empty state: a dashed invitation card when no services are attached. */
+/* Empty state: a dashed invitation card when no domains are attached. */
 .emptyState {
 	display: flex;
 	flex-direction: column;
@@ -368,7 +368,7 @@
 	margin: 0;
 }
 
-/* A content section in the overview (services, files…). The hero above already
+/* A content section in the overview (domains, files…). The hero above already
    supplies the top gap, so the first section needs none of its own. */
 .section {
 	margin-top: 0;

@@ -49,39 +49,73 @@ fn description_template(name: &str, desc: &str) -> String {
     format!("# {name}\n\n{body}\n")
 }
 
-/// Drop a platform's whole subtree — its own files and every service under it.
-/// Mirrors the `ON DELETE CASCADE` from `platforms` to `services`.
+/// Follow the `services` -> `domains` rename of migration 0029 on disk, so a
+/// vault written by an older build keeps resolving. Runs once per start and is
+/// a no-op as soon as no platform has a `services` folder left.
+///
+/// A platform that somehow has both folders is left alone: merging them could
+/// silently overwrite user files, so the stale `services` tree stays where it
+/// is rather than being guessed at.
+pub async fn migrate_vault_layout(vault_dir: &Path) -> Result<(), String> {
+    let platforms = vault_dir.join("platforms");
+    let mut entries = match tokio::fs::read_dir(&platforms).await {
+        Ok(entries) => entries,
+        // A vault with no platforms yet has nothing to migrate.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(e.to_string()),
+    };
+
+    while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
+        let old = entry.path().join("services");
+        let new = entry.path().join("domains");
+
+        if !tokio::fs::try_exists(&old).await.map_err(|e| e.to_string())?
+            || tokio::fs::try_exists(&new).await.map_err(|e| e.to_string())?
+        {
+            continue;
+        }
+
+        tokio::fs::rename(&old, &new)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+/// Drop a platform's whole subtree — its own files and every domain under it.
+/// Mirrors the `ON DELETE CASCADE` from `platforms` to `domains`.
 pub async fn delete_platform_dirs(vault_dir: &Path, platform_id: &str) -> Result<(), String> {
     let dir = VaultLayout::new(vault_dir).platform_dir(platform_id)?;
     remove_dir(&dir).await
 }
 
-pub async fn create_service_dirs(
+pub async fn create_domain_dirs(
     vault_dir: &Path,
     platform_id: &str,
-    service_id: &str,
+    domain_id: &str,
 ) -> Result<(), String> {
-    let dir = VaultLayout::new(vault_dir).service_files(platform_id, service_id)?;
+    let dir = VaultLayout::new(vault_dir).domain_files(platform_id, domain_id)?;
     tokio::fs::create_dir_all(&dir)
         .await
         .map_err(|e| e.to_string())
 }
 
-pub async fn delete_service_dirs(
+pub async fn delete_domain_dirs(
     vault_dir: &Path,
     platform_id: &str,
-    service_id: &str,
+    domain_id: &str,
 ) -> Result<(), String> {
-    let dir = VaultLayout::new(vault_dir).service_dir(platform_id, service_id)?;
+    let dir = VaultLayout::new(vault_dir).domain_dir(platform_id, domain_id)?;
     remove_dir(&dir).await
 }
 
-/// Follow a service that was re-homed onto another platform, so its files move
-/// with it. A service with no directory yet is simply created at the new
+/// Follow a domain that was re-homed onto another platform, so its files move
+/// with it. A domain with no directory yet is simply created at the new
 /// location.
-pub async fn move_service_dirs(
+pub async fn move_domain_dirs(
     vault_dir: &Path,
-    service_id: &str,
+    domain_id: &str,
     from_platform: &str,
     to_platform: &str,
 ) -> Result<(), String> {
@@ -90,11 +124,11 @@ pub async fn move_service_dirs(
     }
 
     let layout = VaultLayout::new(vault_dir);
-    let from = layout.service_dir(from_platform, service_id)?;
-    let to = layout.service_dir(to_platform, service_id)?;
+    let from = layout.domain_dir(from_platform, domain_id)?;
+    let to = layout.domain_dir(to_platform, domain_id)?;
 
     if !tokio::fs::try_exists(&from).await.map_err(|e| e.to_string())? {
-        return create_service_dirs(vault_dir, to_platform, service_id).await;
+        return create_domain_dirs(vault_dir, to_platform, domain_id).await;
     }
 
     if let Some(parent) = to.parent() {

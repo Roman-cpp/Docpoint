@@ -20,7 +20,7 @@ pub struct AppState {
     pub db: SqlitePool,
     pub selected_environment_id: Mutex<Option<String>>,
     /// Root of the user's file tree: `platforms/<platform_id>/files` and
-    /// `platforms/<platform_id>/services/<service_id>/files`.
+    /// `platforms/<platform_id>/domains/<domain_id>/files`.
     pub vault_dir: PathBuf,
     /// Markdown bodies of doc-api documents, one `<doc_id>.md` file per doc.
     /// Deliberately outside `vault_dir` so these app-managed files never show up

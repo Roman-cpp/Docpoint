@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import { createWebsocketApi } from "../api/create-websocket-api";
-import { getServiceWebsocketsApi } from "../api/get-service-websockets-api";
+import { getDomainWebsocketsApi } from "../api/get-domain-websockets-api";
 import { updateWebsocketApi } from "../api/update-websocket-api";
 import type {
 	CreateDocWebsocketDTO,
@@ -11,17 +11,17 @@ import type { DocWebsocket } from "../model/doc-websocket.entity";
 
 export const docWebsocketKeys = {
 	all: ["doc-websockets"] as const,
-	byService: (id: string) => [...docWebsocketKeys.all, "service", id] as const,
+	byDomain: (id: string) => [...docWebsocketKeys.all, "domain", id] as const,
 };
 
-/** WebSocket docs attached to a single microservice, plus a create mutation. */
-export const useServiceWebsockets = (serviceId: string) => {
+/** WebSocket docs attached to a single domain, plus a create mutation. */
+export const useDomainWebsockets = (domainId: string) => {
 	const queryClient = useQueryClient();
 
 	const websockets = useQuery<DocWebsocket[]>({
-		queryKey: docWebsocketKeys.byService(serviceId),
-		queryFn: () => getServiceWebsocketsApi(serviceId),
-		enabled: !!serviceId,
+		queryKey: docWebsocketKeys.byDomain(domainId),
+		queryFn: () => getDomainWebsocketsApi(domainId),
+		enabled: !!domainId,
 	});
 
 	const create = useMutation({
@@ -29,7 +29,7 @@ export const useServiceWebsockets = (serviceId: string) => {
 		onSuccess: () => {
 			toast({ title: "OK", description: "WebSocket создан" });
 			queryClient.invalidateQueries({
-				queryKey: docWebsocketKeys.byService(serviceId),
+				queryKey: docWebsocketKeys.byDomain(domainId),
 			});
 		},
 		onError: (error: Error) => {
@@ -42,7 +42,7 @@ export const useServiceWebsockets = (serviceId: string) => {
 		onSuccess: () => {
 			toast({ title: "OK", description: "WebSocket обновлён" });
 			queryClient.invalidateQueries({
-				queryKey: docWebsocketKeys.byService(serviceId),
+				queryKey: docWebsocketKeys.byDomain(domainId),
 			});
 		},
 		onError: (error: Error) => {

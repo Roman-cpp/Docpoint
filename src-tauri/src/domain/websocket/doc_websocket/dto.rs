@@ -5,10 +5,10 @@ pub struct CreateDocWebsocketDTO {
     pub name: String,
     pub desc: String,
     pub url: String,
-    /// The microservice this socket is attached to, if created from a service
+    /// The domain this socket is attached to, if created from a domain
     /// page. `None` leaves it unattached.
     #[serde(default)]
-    pub service_id: Option<String>,
+    pub domain_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

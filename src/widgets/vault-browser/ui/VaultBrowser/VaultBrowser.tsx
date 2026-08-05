@@ -48,7 +48,7 @@ export const VaultBrowser: FC<{
 	/** Rendered above the listing, wired to the browser's own actions. */
 	renderHeader?: (actions: VaultBrowserActions) => ReactNode;
 }> = ({ scope, rootLabel = "Файлы", onOpenFile, renderHeader }) => {
-	// Scopes are usually built inline (`serviceScope(id)`), so a fresh object
+	// Scopes are usually built inline (`domainScope(id)`), so a fresh object
 	// arrives on every render. Hold a reference stable across those renders,
 	// otherwise every effect below would re-run in a loop.
 	const key = scopeKey(scope);
@@ -62,7 +62,7 @@ export const VaultBrowser: FC<{
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Another platform or service means a different tree: start at its root.
+	// Another platform or domain means a different tree: start at its root.
 	// Adjusted during render rather than in an effect, so the fetch below runs
 	// once against the new scope instead of firing at the stale path first.
 	const [lastKey, setLastKey] = useState(key);

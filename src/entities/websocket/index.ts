@@ -1,5 +1,5 @@
 export { createWebsocketApi } from "./doc-websocket/api/create-websocket-api";
-export { getServiceWebsocketsApi } from "./doc-websocket/api/get-service-websockets-api";
+export { getDomainWebsocketsApi } from "./doc-websocket/api/get-domain-websockets-api";
 export { updateWebsocketApi } from "./doc-websocket/api/update-websocket-api";
 export type {
 	CreateDocWebsocketDTO,
@@ -8,7 +8,7 @@ export type {
 export type { DocWebsocket } from "./doc-websocket/model/doc-websocket.entity";
 export {
 	docWebsocketKeys,
-	useServiceWebsockets,
+	useDomainWebsockets,
 } from "./doc-websocket/store/useDocWebsockets";
 export { createWebsocketMessageApi } from "./websocket-message/api/create-websocket-message-api";
 export { deleteWebsocketMessageApi } from "./websocket-message/api/delete-websocket-message-api";

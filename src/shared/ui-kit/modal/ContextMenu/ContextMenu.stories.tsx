@@ -13,7 +13,7 @@ const meta: Meta<typeof ContextMenu.Root> = {
 export default meta;
 type Story = StoryObj<typeof ContextMenu.Root>;
 
-/* ─── Иконки (как в ServiceShowPage) ─────────────────────── */
+/* ─── Иконки (как в DomainShowPage) ─────────────────────── */
 
 const EyeIcon: FC = () => (
 	<svg

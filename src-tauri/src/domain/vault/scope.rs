@@ -4,16 +4,16 @@ use serde::Deserialize;
 ///
 /// The frontend never builds vault paths itself — it names the owning entity and
 /// the backend resolves that to a directory (see `service::vault::scope_dir`).
-/// A service therefore does not carry its platform id here: it is looked up in
-/// the database, so a service that moved to another platform can never be
+/// A domain therefore does not carry its platform id here: it is looked up in
+/// the database, so a domain that moved to another platform can never be
 /// addressed through a stale path.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum FileScope {
-    /// Files owned by a platform itself, shared across its services.
+    /// Files owned by a platform itself, shared across its domains.
     #[serde(rename_all = "camelCase")]
     Platform { platform_id: String },
-    /// Files owned by a single microservice.
+    /// Files owned by a single domain.
     #[serde(rename_all = "camelCase")]
-    Service { service_id: String },
+    Domain { domain_id: String },
 }

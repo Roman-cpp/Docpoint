@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
+import { useAllDomains } from "@/entities/domain";
 import { type Platform, usePlatformsStore } from "@/entities/platform";
-import { useAllServices } from "@/entities/service";
 import {
 	DeletePlatformModal,
 	PlatformModal,
@@ -22,7 +22,7 @@ const plural = (n: number, forms: [string, string, string]): string => {
 interface PlatformCardProps {
 	platform: Platform;
 	active: boolean;
-	serviceCount: number | null;
+	domainCount: number | null;
 	onEdit: (p: Platform) => void;
 	onDelete: (p: Platform) => void;
 }
@@ -30,19 +30,18 @@ interface PlatformCardProps {
 const PlatformCard = ({
 	platform,
 	active,
-	serviceCount,
+	domainCount,
 	onEdit,
 	onDelete,
 }: PlatformCardProps) => {
 	const { docs, isDocsLoading } = usePlatformDocs(platform.id);
 
 	const meta =
-		serviceCount === null ? (
-			<>— сервисов · — файлов</>
+		domainCount === null ? (
+			<>— доменов · — файлов</>
 		) : (
 			<>
-				{serviceCount} {plural(serviceCount, ["сервис", "сервиса", "сервисов"])}{" "}
-				·{" "}
+				{domainCount} {plural(domainCount, ["домен", "домена", "доменов"])} ·{" "}
 				{isDocsLoading
 					? "—"
 					: `${docs.length} ${plural(docs.length, ["файл", "файла", "файлов"])}`}
@@ -90,7 +89,7 @@ const PlatformCard = ({
 export const PlatformsSection = () => {
 	const { platforms, createPlatform, updatePlatform, isCreating, isUpdating } =
 		usePlatformsStore();
-	const { services, isServicesLoading } = useAllServices();
+	const { domains, isDomainsLoading } = useAllDomains();
 
 	const { id: activeId } = useParams();
 
@@ -99,14 +98,14 @@ export const PlatformsSection = () => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-	/** Кол-во сервисов на каждую платформу из общего списка. */
-	const serviceCounts = useMemo(() => {
+	/** Кол-во доменов на каждую платформу из общего списка. */
+	const domainCounts = useMemo(() => {
 		const map = new Map<string, number>();
-		for (const svc of services) {
-			map.set(svc.platformId, (map.get(svc.platformId) ?? 0) + 1);
+		for (const dom of domains) {
+			map.set(dom.platformId, (map.get(dom.platformId) ?? 0) + 1);
 		}
 		return map;
-	}, [services]);
+	}, [domains]);
 
 	const openCreate = () => {
 		setEditing(null);
@@ -133,8 +132,8 @@ export const PlatformsSection = () => {
 						key={p.id}
 						platform={p}
 						active={String(p.id) === activeId}
-						serviceCount={
-							isServicesLoading ? null : (serviceCounts.get(p.id) ?? 0)
+						domainCount={
+							isDomainsLoading ? null : (domainCounts.get(p.id) ?? 0)
 						}
 						onEdit={openEdit}
 						onDelete={openDelete}

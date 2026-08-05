@@ -8,7 +8,7 @@
 
 ## 1. Основные термины
 
-**Домен** — верхний уровень `src/features/`, папка с предметной областью (`doc-api/`, `platform/`, `service/`…). Объединяет несколько фича-слайсов, тесно связанных одним бизнес-объектом. Прямой аналог Entity Group в `entities` (`docs/entities-layer-standard.md`, раздел 6). Домен обязан иметь собственный public API.
+**Домен** — верхний уровень `src/features/`, папка с предметной областью (`doc-api/`, `platform/`, `domain/`…). Объединяет несколько фича-слайсов, тесно связанных одним бизнес-объектом. Прямой аналог Entity Group в `entities` (`docs/entities-layer-standard.md`, раздел 6). Домен обязан иметь собственный public API.
 
 **Фича-слайс** — папка с одним пользовательским действием (создать, отредактировать, удалить, импортировать) либо с состоянием домена (раздел 6.3). Единица работы слоя `features`.
 
@@ -109,7 +109,7 @@ Zustand-стор домена. Используется исключительн
 
 ### 5.5. `ui`
 
-Компонент действия. Практически всегда модальное окно: `{Action}{Noun}Modal.tsx` для отдельных операций (`CreateDocApiModal`, `DeleteEntityModal`) либо один `{Noun}Modal.tsx` на create+edit сразу, различающий режим по наличию пропа сущности (`PlatformModal`, `ServiceModal` — см. 6.1).
+Компонент действия. Практически всегда модальное окно: `{Action}{Noun}Modal.tsx` для отдельных операций (`CreateDocApiModal`, `DeleteEntityModal`) либо один `{Noun}Modal.tsx` на create+edit сразу, различающий режим по наличию пропа сущности (`PlatformModal`, `DomainModal` — см. 6.1).
 
 ### 5.6. `index.ts`
 
@@ -123,7 +123,7 @@ Public API слайса — реэкспортирует компонент/ху
 
 Слайс = компонент формы/модалки в `ui/`, без сегментов `api`/`model`/`store`. Мутацию выполняет вызывающий `pages`-компонент через хук `entities`; слайс получает результат через колбэки-пропы (`onCreate`, `onUpdate`, `onSave`) и флаг `isSaving`.
 
-Используется, когда после успешной операции нужна дополнительная оркестрация на странице (инвалидация конкретных query-ключей, прикрепление созданной сущности к другой, закрытие смежного состояния) — как правило, для create/edit-модалок: `CreateDocApiModal`, `EditDocApiModal`, `EditEntityModal`, `PlatformModal`, `ServiceModal`.
+Используется, когда после успешной операции нужна дополнительная оркестрация на странице (инвалидация конкретных query-ключей, прикрепление созданной сущности к другой, закрытие смежного состояния) — как правило, для create/edit-модалок: `CreateDocApiModal`, `EditDocApiModal`, `EditEntityModal`, `PlatformModal`, `DomainModal`.
 
 Один компонент может обслуживать оба режима (create + edit) сразу — режим определяется наличием опционального пропа сущности:
 
@@ -145,7 +145,7 @@ interface PlatformModalProps {
 
 Слайс без UI: один хук на `useQuery`/`useMutation` со своим объектом query-keys, по паттерну `docs/architecture/store/store-guide.md` (Query Keys → параметры → `useQuery`/`useMutation` → плоский возвращаемый объект). Может иметь собственный `api/`, если подходящей api-функции нет в `entities`.
 
-Примеры: `list-service-docs` (`useServiceDocs`), `list-platform-docs` (`usePlatformDocs`), `import-export-doc` (`useImportExportDoc` + `lib/exportDoc.ts`), `edit-doc-api-content` (`useDocApiContent`), `markdown/create-markdown-file` (`useNewMarkdownFile`).
+Примеры: `list-domain-docs` (`useDomainDocs`), `list-platform-docs` (`usePlatformDocs`), `import-export-doc` (`useImportExportDoc` + `lib/exportDoc.ts`), `edit-doc-api-content` (`useDocApiContent`), `markdown/create-markdown-file` (`useNewMarkdownFile`).
 
 ### 6.4. Стор-слайс (workspace-state) `[исключение из FSD]`
 
@@ -184,14 +184,14 @@ interface PlatformModalProps {
 | Что | Стиль | Пример |
 |---|---|---|
 | Папка домена | kebab-case, существительное | `doc-api/`, `platform/` |
-| Папка action/model-слайса | kebab-case, `{глагол}-{существительное}` | `create-doc-api/`, `delete-group/`, `list-service-docs/` |
+| Папка action/model-слайса | kebab-case, `{глагол}-{существительное}` | `create-doc-api/`, `delete-group/`, `list-domain-docs/` |
 | Папка стор-слайса | kebab-case, `{домен}-workspace-state` / `-history-state` / `-response-state` | `doc-workspace-state/` |
 | Компонент действия | PascalCase, суффикс `Modal` | `CreateDocApiModal.tsx`, `EditEntityModal.tsx` |
-| TanStack Query хук | camelCase с `use`, по названию операции | `useServiceDocs`, `useImportExportDoc` |
+| TanStack Query хук | camelCase с `use`, по названию операции | `useDomainDocs`, `useImportExportDoc` |
 | Zustand-стор домена | camelCase, `use` + `Store` | `useDocApiStore`, `useRequestStore` |
 | Селекторы стора | `select{Field}` | `selectSelectedEntity`, `selectFilters` |
 | Экшены стора | `action{Name}` | `actionAddEntity`, `actionDeleteGroup` |
-| Query keys | `{domain}Keys`, иерархия `all → lists/byX → list/detail` | `serviceDocsKeys`, `docWebsocketKeys` |
+| Query keys | `{domain}Keys`, иерархия `all → lists/byX → list/detail` | `domainDocsKeys`, `docWebsocketKeys` |
 
 ---
 
@@ -204,6 +204,6 @@ interface PlatformModalProps {
 | `markdown/` | `create-markdown-file` |
 | `platform/` | `create-platform`, `delete-platform`, `list-platform-docs`, `platform-workspace-state` |
 | `request/` | `request-history-state`, `request-response-state` |
-| `service/` | `create-service`, `list-service-docs` |
+| `domain/` | `create-domain`, `list-domain-docs` |
 
 > Таблица «Фичи» в `CLAUDE.md` (`algo-order`, `auth`, `core`, `preset`, `realtime`, `trading-account`) относится к шаблону/другому проекту и не соответствует текущему составу `src/features` — актуальный список см. выше.

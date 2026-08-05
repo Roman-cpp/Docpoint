@@ -1,23 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
 import { createErdApi } from "../api/create-erd-api";
-import { getServiceErdsApi } from "../api/get-service-erds-api";
+import { getDomainErdsApi } from "../api/get-domain-erds-api";
 import type { CreateDocErdDTO } from "../model/doc-erd.dto";
 import type { DocErd } from "../model/doc-erd.entity";
 
 export const docErdKeys = {
 	all: ["doc-erds"] as const,
-	byService: (id: string) => [...docErdKeys.all, "service", id] as const,
+	byDomain: (id: string) => [...docErdKeys.all, "domain", id] as const,
 };
 
-/** ERD diagrams attached to a single microservice, plus a create mutation. */
-export const useServiceErds = (serviceId: string) => {
+/** ERD diagrams attached to a single domain, plus a create mutation. */
+export const useDomainErds = (domainId: string) => {
 	const queryClient = useQueryClient();
 
 	const erds = useQuery<DocErd[]>({
-		queryKey: docErdKeys.byService(serviceId),
-		queryFn: () => getServiceErdsApi(serviceId),
-		enabled: !!serviceId,
+		queryKey: docErdKeys.byDomain(domainId),
+		queryFn: () => getDomainErdsApi(domainId),
+		enabled: !!domainId,
 	});
 
 	const create = useMutation({
@@ -25,7 +25,7 @@ export const useServiceErds = (serviceId: string) => {
 		onSuccess: () => {
 			toast({ title: "OK", description: "ERD-диаграмма создана" });
 			queryClient.invalidateQueries({
-				queryKey: docErdKeys.byService(serviceId),
+				queryKey: docErdKeys.byDomain(domainId),
 			});
 		},
 		onError: (error: Error) => {

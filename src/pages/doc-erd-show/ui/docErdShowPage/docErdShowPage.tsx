@@ -37,14 +37,14 @@ const blankEntity = (name: string): CreateEntityDTO => ({
 });
 
 interface ErdOrigin {
-	serviceId?: string;
-	serviceName?: string;
+	domainId?: string;
+	domainName?: string;
 }
 
 export function DocErdShowPage() {
 	const { id } = useParams<{ id: string }>();
-	// When the ERD was opened from a microservice page, `state` carries it so we
-	// can offer a link back to that service.
+	// When the ERD was opened from a domain page, `state` carries it so we
+	// can offer a link back to that domain.
 	const origin = useLocation().state as ErdOrigin | null;
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	// Holds the live scene and a bound render callback so toolbar actions
@@ -180,12 +180,9 @@ export function DocErdShowPage() {
 			<Header section="Документы / ERD" activeLink="docs" />
 
 			<div className={styles.page}>
-				{origin?.serviceId && (
-					<Link
-						className={styles.back}
-						to={`/service-show/${origin.serviceId}`}
-					>
-						← {origin.serviceName ?? "Микросервис"}
+				{origin?.domainId && (
+					<Link className={styles.back} to={`/domain-show/${origin.domainId}`}>
+						← {origin.domainName ?? "Домен"}
 					</Link>
 				)}
 				<div className={styles.toolbar}>

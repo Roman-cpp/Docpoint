@@ -155,7 +155,7 @@ impl DocRepository for DocRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         // Environments are owned by platforms, not docs, so deleting a doc does not
-        // touch them (docs.service_id is ON DELETE SET NULL on the service side).
+        // touch them (docs.domain_id is ON DELETE SET NULL on the domain side).
         sqlx::query("DELETE FROM docs WHERE id = ?")
             .bind(id)
             .execute(&mut *conn)
@@ -166,13 +166,13 @@ impl DocRepository for DocRepo<'_> {
     }
 
     async fn environments_by_doc(&self, doc_id: &str) -> Result<Vec<Environment>, String> {
-        // A doc's environments are those of the platform owning the service it
-        // belongs to (docs.service_id -> services.platform_id). Docs with no
-        // service, or a service with no platform, have none.
+        // A doc's environments are those of the platform owning the domain it
+        // belongs to (docs.domain_id -> domains.platform_id). Docs with no
+        // domain, or a domain with no platform, have none.
         let rows = sqlx::query(
             "SELECT * FROM environments WHERE platform_id = (\
-                 SELECT platform_id FROM services \
-                 WHERE id = (SELECT service_id FROM docs WHERE id = ?))",
+                 SELECT platform_id FROM domains \
+                 WHERE id = (SELECT domain_id FROM docs WHERE id = ?))",
         )
         .bind(doc_id)
         .fetch_all(self.db)

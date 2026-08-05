@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { Link } from "react-router";
 import { type Doc, type UpdateDocDTO, useDocsStore } from "@/entities/doc-api";
-import { useAllServices, useAttachDoc } from "@/entities/service";
+import { useAllDomains, useAttachDoc } from "@/entities/domain";
 import {
 	actionResetDocApi,
 	DeleteDocApiModal,
@@ -21,7 +21,7 @@ import s from "../ApiExplorerPage.module.css";
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview = () => {
 	const { docs, updateDoc } = useDocsStore();
-	const { services } = useAllServices();
+	const { domains } = useAllDomains();
 	const { attachDoc } = useAttachDoc();
 	const [pendingDoc, setPendingDoc] = useState<Doc | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -84,24 +84,22 @@ const Overview = () => {
 												Export
 											</DropMenu.Item>
 											<DropMenu.Sub>
-												<DropMenu.SubTrigger>
-													Add to service
-												</DropMenu.SubTrigger>
+												<DropMenu.SubTrigger>Add to domain</DropMenu.SubTrigger>
 												<DropMenu.SubContent>
-													{services.length === 0 ? (
-														<DropMenu.Item disabled>No services</DropMenu.Item>
+													{domains.length === 0 ? (
+														<DropMenu.Item disabled>No domains</DropMenu.Item>
 													) : (
-														services.map((svc) => (
+														domains.map((dom) => (
 															<DropMenu.Item
-																key={svc.id}
+																key={dom.id}
 																onClick={() =>
 																	attachDoc({
-																		serviceId: svc.id,
+																		domainId: dom.id,
 																		docId: a.id,
 																	})
 																}
 															>
-																{svc.name}
+																{dom.name}
 															</DropMenu.Item>
 														))
 													)}

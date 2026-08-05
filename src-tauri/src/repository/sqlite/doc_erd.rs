@@ -31,10 +31,10 @@ impl DocErdRepository for DocErdRepo<'_> {
             .collect())
     }
 
-    async fn by_service(&self, service_id: &str) -> Result<Vec<DocErd>, String> {
+    async fn by_domain(&self, domain_id: &str) -> Result<Vec<DocErd>, String> {
         let rows =
-            sqlx::query("SELECT id, name, desc FROM doc_erds WHERE service_id = ? ORDER BY name")
-                .bind(service_id)
+            sqlx::query("SELECT id, name, desc FROM doc_erds WHERE domain_id = ? ORDER BY name")
+                .bind(domain_id)
                 .fetch_all(self.db)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -52,11 +52,11 @@ impl DocErdRepository for DocErdRepo<'_> {
     async fn create(&self, dto: &CreateDocErdDTO) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
 
-        sqlx::query("INSERT INTO doc_erds (id, name, desc, service_id) VALUES (?, ?, ?, ?)")
+        sqlx::query("INSERT INTO doc_erds (id, name, desc, domain_id) VALUES (?, ?, ?, ?)")
             .bind(&id)
             .bind(&dto.name)
             .bind(&dto.desc)
-            .bind(&dto.service_id)
+            .bind(&dto.domain_id)
             .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;

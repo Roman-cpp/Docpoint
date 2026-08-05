@@ -29,9 +29,9 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/service-show/:id",
+				path: "/domain-show/:id",
 				lazy: async () => ({
-					Component: (await import("@/pages/service-show")).ServiceShowPage,
+					Component: (await import("@/pages/domain-show")).DomainShowPage,
 				}),
 			},
 			{
@@ -65,9 +65,9 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/services",
+				path: "/domains",
 				lazy: async () => ({
-					Component: (await import("@/pages/services")).ServicesPage,
+					Component: (await import("@/pages/domains")).DomainsPage,
 				}),
 			},
 			{

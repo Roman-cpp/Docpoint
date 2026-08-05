@@ -97,13 +97,13 @@ impl PlatformRepository for PlatformRepo<'_> {
         Ok(())
     }
 
-    // A platform's docs are those attached to any of its services, joined
-    // through docs.service_id -> services.platform_id (migrations 0013, 0014).
+    // A platform's docs are those attached to any of its domains, joined
+    // through docs.domain_id -> domains.platform_id (migrations 0013, 0014).
     async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<DocApi>, String> {
         let rows = sqlx::query(
             "SELECT docs.* FROM docs \
-             JOIN services ON docs.service_id = services.id \
-             WHERE services.platform_id = ?",
+             JOIN domains ON docs.domain_id = domains.id \
+             WHERE domains.platform_id = ?",
         )
         .bind(platform_id)
         .fetch_all(self.db)

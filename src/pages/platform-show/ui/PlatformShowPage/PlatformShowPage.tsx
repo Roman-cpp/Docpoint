@@ -1,15 +1,15 @@
 import { type FC, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { type Domain, usePlatformDomains } from "@/entities/domain";
 import { usePlatformsStore } from "@/entities/platform";
-import { type Service, usePlatformServices } from "@/entities/service";
 import { platformScope } from "@/entities/shared/file-scope";
 import { markdownRoute } from "@/entities/vault";
+import { DomainModal } from "@/features/domain";
 import {
 	actionFetchEnvironmentsPlatform,
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
-import { ServiceModal } from "@/features/service";
 import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
@@ -22,25 +22,25 @@ import b from "./PlatformShowPage.module.css";
 const Overview: FC<{ id: string }> = ({ id }) => {
 	const { platforms } = usePlatformsStore();
 	const {
-		services,
-		isServicesLoading,
-		createService,
-		isCreatingService,
-		updateService,
-		isUpdatingService,
-		deleteServiceAsync,
-		isDeletingService,
-	} = usePlatformServices(id);
-	const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-	const [editingService, setEditingService] = useState<Service | null>(null);
-	const [pendingDelete, setPendingDelete] = useState<Service | null>(null);
-	const [svcMenu, setSvcMenu] = useState<{
+		domains,
+		isDomainsLoading,
+		createDomain,
+		isCreatingDomain,
+		updateDomain,
+		isUpdatingDomain,
+		deleteDomainAsync,
+		isDeletingDomain,
+	} = usePlatformDomains(id);
+	const [isDomainModalOpen, setIsDomainModalOpen] = useState(false);
+	const [editingDomain, setEditingDomain] = useState<Domain | null>(null);
+	const [pendingDelete, setPendingDelete] = useState<Domain | null>(null);
+	const [domMenu, setDomMenu] = useState<{
 		x: number;
 		y: number;
-		svc: Service;
+		dom: Domain;
 	} | null>(null);
-	/** Which section is shown: platform details, microservices, or files. */
-	const [tab, setTab] = useState<"details" | "services" | "files">("services");
+	/** Which section is shown: platform details, domains, or files. */
+	const [tab, setTab] = useState<"details" | "domains" | "files">("domains");
 	const navigate = useNavigate();
 
 	const platform = platforms.find((p) => p.id === id);
@@ -74,13 +74,13 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					<button
 						type="button"
 						role="tab"
-						aria-selected={tab === "services"}
-						className={`${b.tab} ${tab === "services" ? b.tabActive : ""}`}
-						onClick={() => setTab("services")}
+						aria-selected={tab === "domains"}
+						className={`${b.tab} ${tab === "domains" ? b.tabActive : ""}`}
+						onClick={() => setTab("domains")}
 					>
-						Микросервисы
-						{services.length > 0 && (
-							<span className={b.tabCount}>{services.length}</span>
+						Домены
+						{domains.length > 0 && (
+							<span className={b.tabCount}>{domains.length}</span>
 						)}
 					</button>
 					<button
@@ -96,55 +96,55 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 				{tab === "details" && <PlatformDetails platform={platform} />}
 
-				{tab === "services" && (
+				{tab === "domains" && (
 					<section className={b.section}>
 						<div className={b.sectionHead}>
 							<div className={b.sectionLabel}>
-								<span>Микросервисы</span>
-								{services.length > 0 && (
-									<span className={b.sectionCount}>{services.length}</span>
+								<span>Домены</span>
+								{domains.length > 0 && (
+									<span className={b.sectionCount}>{domains.length}</span>
 								)}
 								<span className={b.sectionRule} />
 							</div>
 							<Button
 								variant="subtle"
 								size="sm"
-								onClick={() => setIsServiceModalOpen(true)}
+								onClick={() => setIsDomainModalOpen(true)}
 							>
 								+ Добавить
 							</Button>
 						</div>
-						{isServicesLoading ? (
-							<p className={b.ovSub}>Загрузка микросервисов…</p>
-						) : services.length === 0 ? (
+						{isDomainsLoading ? (
+							<p className={b.ovSub}>Загрузка доменов…</p>
+						) : domains.length === 0 ? (
 							<div className={b.emptyState}>
 								<p className={b.emptyText}>
-									К этой платформе пока не прикреплён ни один микросервис
+									К этой платформе пока не прикреплён ни один домен
 								</p>
 								<Button
 									variant="primary"
 									size="sm"
-									onClick={() => setIsServiceModalOpen(true)}
+									onClick={() => setIsDomainModalOpen(true)}
 								>
-									+ Добавить микросервис
+									+ Добавить домен
 								</Button>
 							</div>
 						) : (
 							<div className={b.apiCardsGrid}>
-								{services.map((svc) => (
+								{domains.map((dom) => (
 									<button
 										type="button"
-										key={svc.id}
-										className={`${b.apiCard} ${b.svcCard}`}
-										onClick={() => navigate(`/service-show/${svc.id}`)}
+										key={dom.id}
+										className={`${b.apiCard} ${b.domCard}`}
+										onClick={() => navigate(`/domain-show/${dom.id}`)}
 										onContextMenu={(e) => {
 											e.preventDefault();
 											e.stopPropagation();
-											setSvcMenu({ x: e.clientX, y: e.clientY, svc });
+											setDomMenu({ x: e.clientX, y: e.clientY, dom });
 										}}
 									>
-										<div className={b.acName}>{svc.name}</div>
-										{svc.desc && <div className={b.acDesc}>{svc.desc}</div>}
+										<div className={b.acName}>{dom.name}</div>
+										{dom.desc && <div className={b.acDesc}>{dom.desc}</div>}
 									</button>
 								))}
 							</div>
@@ -163,33 +163,33 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				)}
 			</div>
 
-			<ServiceModal
-				open={isServiceModalOpen || editingService != null}
+			<DomainModal
+				open={isDomainModalOpen || editingDomain != null}
 				onOpenChange={(open) => {
 					if (open) return;
-					setIsServiceModalOpen(false);
-					setEditingService(null);
+					setIsDomainModalOpen(false);
+					setEditingDomain(null);
 				}}
 				platformId={id}
-				service={editingService}
+				domain={editingDomain}
 				onCreate={(dto) =>
-					createService(dto, { onSuccess: () => setIsServiceModalOpen(false) })
+					createDomain(dto, { onSuccess: () => setIsDomainModalOpen(false) })
 				}
 				onUpdate={(dto) =>
-					updateService(dto, { onSuccess: () => setEditingService(null) })
+					updateDomain(dto, { onSuccess: () => setEditingDomain(null) })
 				}
-				isSaving={editingService ? isUpdatingService : isCreatingService}
+				isSaving={editingDomain ? isUpdatingDomain : isCreatingDomain}
 			/>
 
 			<ContextMenu.Root
-				open={!!svcMenu}
-				x={svcMenu?.x ?? 0}
-				y={svcMenu?.y ?? 0}
-				onClose={() => setSvcMenu(null)}
+				open={!!domMenu}
+				x={domMenu?.x ?? 0}
+				y={domMenu?.y ?? 0}
+				onClose={() => setDomMenu(null)}
 			>
 				<ContextMenu.Item
 					icon={<PencilIcon />}
-					onSelect={() => svcMenu && setEditingService(svcMenu.svc)}
+					onSelect={() => domMenu && setEditingDomain(domMenu.dom)}
 				>
 					Редактировать
 				</ContextMenu.Item>
@@ -199,9 +199,9 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				<ContextMenu.Item
 					danger
 					icon={<TrashIcon />}
-					onSelect={() => svcMenu && setPendingDelete(svcMenu.svc)}
+					onSelect={() => domMenu && setPendingDelete(domMenu.dom)}
 				>
-					Удалить микросервис
+					Удалить домен
 				</ContextMenu.Item>
 			</ContextMenu.Root>
 
@@ -209,39 +209,39 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				<Dialog.Root
 					open
 					onOpenChange={(open) =>
-						!open && !isDeletingService && setPendingDelete(null)
+						!open && !isDeletingDomain && setPendingDelete(null)
 					}
 				>
 					<Dialog.Header>
-						<Dialog.Title>Удалить микросервис?</Dialog.Title>
+						<Dialog.Title>Удалить домен?</Dialog.Title>
 						<Dialog.Close />
 					</Dialog.Header>
 					<Dialog.Body>
 						<p className={b.ovSub} style={{ margin: 0 }}>
-							Микросервис «{pendingDelete.name}» будет удалён без возможности
+							Домен «{pendingDelete.name}» будет удалён без возможности
 							восстановления.
 						</p>
 					</Dialog.Body>
 					<Dialog.Footer>
 						<Dialog.BtnCancel
 							onClick={() => setPendingDelete(null)}
-							disabled={isDeletingService}
+							disabled={isDeletingDomain}
 						>
 							Отмена
 						</Dialog.BtnCancel>
 						<Dialog.BtnDanger
 							onClick={async () => {
-								if (isDeletingService) return;
+								if (isDeletingDomain) return;
 								try {
-									await deleteServiceAsync(pendingDelete.id);
+									await deleteDomainAsync(pendingDelete.id);
 									setPendingDelete(null);
 								} catch {
 									/* error toast handled by the mutation */
 								}
 							}}
-							disabled={isDeletingService}
+							disabled={isDeletingDomain}
 						>
-							{isDeletingService ? "Удаляем…" : "Удалить"}
+							{isDeletingDomain ? "Удаляем…" : "Удалить"}
 						</Dialog.BtnDanger>
 					</Dialog.Footer>
 				</Dialog.Root>

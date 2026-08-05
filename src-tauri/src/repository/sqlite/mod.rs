@@ -8,5 +8,5 @@ pub mod entity_relation;
 pub mod environment;
 pub mod group;
 pub mod platform;
-pub mod service;
+pub mod domain;
 pub mod websocket_message;

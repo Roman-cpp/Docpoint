@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 /// Filesystem store for the user files of one scope. `base` is the scope's
 /// already-resolved root directory (see `service::vault::scope_dir`); every
 /// path handled here is relative to it, so the repository is structurally
-/// unable to touch another platform's or service's files.
+/// unable to touch another platform's or domain's files.
 pub struct VaultRepo {
     base: PathBuf,
 }

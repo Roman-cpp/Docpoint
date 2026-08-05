@@ -3,7 +3,7 @@ use std::path::Path;
 
 /// File operations inside a single already-resolved scope. Every `path` is
 /// relative to that scope's root (`""` addresses the root itself), so an
-/// implementation cannot reach another platform's or service's files.
+/// implementation cannot reach another platform's or domain's files.
 pub trait VaultRepository {
     async fn list(&self, path: &str) -> Result<DirListing, String>;
     async fn read_markdown(&self, path: &str) -> Result<Option<MarkdownFile>, String>;

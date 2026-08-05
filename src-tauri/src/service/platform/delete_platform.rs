@@ -7,8 +7,8 @@ use crate::state::AppState;
 use tauri::State;
 
 /// Delete a platform with its environments and its whole file subtree — its own
-/// files and every service under it, mirroring the `ON DELETE CASCADE` from
-/// `platforms` to `services`.
+/// files and every domain under it, mirroring the `ON DELETE CASCADE` from
+/// `platforms` to `domains`.
 #[tauri::command]
 pub async fn delete_platform(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let repo = PlatformRepo::new(&state.db);
