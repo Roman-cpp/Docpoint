@@ -1,6 +1,6 @@
 import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import type { Endpoint } from "@/entities/doc-api";
+import { type Endpoint, extractPathParams } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
@@ -42,6 +42,9 @@ const TYPE_OPTIONS = [
 	{ value: "array", label: "array" },
 ];
 
+/** Какие параметры правим: сегменты пути, строка запроса или тело. */
+type ParamTab = "path" | "query" | "body";
+
 /** Локальная форма одного параметра (без runtime-поля value) */
 interface ParamDraft {
 	name: string;
@@ -58,6 +61,7 @@ interface FormValues {
 	description: string;
 	tagsInput: string;
 	auth: boolean;
+	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
 	bodyParams: ParamDraft[];
 }
@@ -94,6 +98,7 @@ const toFormValues = (endpoint: Endpoint): FormValues => ({
 	description: endpoint.description,
 	tagsInput: endpoint.tags.join(", "),
 	auth: endpoint.auth,
+	pathParams: (endpoint.pathParams ?? []).map(toDraft),
 	queryParams: (endpoint.queryParams ?? []).map(toDraft),
 	bodyParams: (endpoint.bodyParams ?? []).map(toDraft),
 });
@@ -107,21 +112,24 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	const selectedEnv = useEnvironmentsStore(selectSelectedEnvironment);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const { control, handleSubmit, watch, reset } = useForm<FormValues>({
-		defaultValues: toFormValues(endpoint),
-	});
+	const { control, getValues, handleSubmit, watch, reset } =
+		useForm<FormValues>({
+			defaultValues: toFormValues(endpoint),
+		});
 
 	// Синхронизируем форму, если открыли модалку для другого endpoint
 	useEffect(() => {
 		if (open) reset(toFormValues(endpoint));
 	}, [open, endpoint, reset]);
 
+	const pathArray = useFieldArray({ control, name: "pathParams" });
 	const queryArray = useFieldArray({ control, name: "queryParams" });
 	const bodyArray = useFieldArray({ control, name: "bodyParams" });
 
-	const [tab, setTab] = useState<"query" | "body">("query");
-	const activeArray = tab === "query" ? queryArray : bodyArray;
-	const arrayName = tab === "query" ? "queryParams" : "bodyParams";
+	const [tab, setTab] = useState<ParamTab>("query");
+	const activeArray =
+		tab === "path" ? pathArray : tab === "query" ? queryArray : bodyArray;
+	const arrayName = `${tab}Params` as const;
 
 	const close = () => {
 		if (isSaving) return;
@@ -144,6 +152,7 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				description: values.description.trim(),
 				tags,
 				auth: values.auth,
+				pathParams: values.pathParams.map(fromDraft),
 				queryParams: values.queryParams.map(fromDraft),
 				bodyParams: values.bodyParams.map(fromDraft),
 			});
@@ -156,6 +165,24 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	});
 
 	const path = watch("path");
+
+	// Перечень сегментов задаёт путь, а не эта форма: строки появляются и
+	// исчезают вместе с ним, поэтому имя в них не редактируется. Описания
+	// уцелевших сегментов переносим по имени.
+	const replacePathParams = pathArray.replace;
+	useEffect(() => {
+		const segments = extractPathParams(path);
+		const current = getValues("pathParams");
+		const unchanged =
+			segments.length === current.length &&
+			segments.every((name, i) => current[i]?.name === name);
+		if (unchanged) return;
+
+		const described = new Map(current.map((param) => [param.name, param]));
+		replacePathParams(
+			segments.map((name) => described.get(name) ?? { ...emptyParam(), name }),
+		);
+	}, [path, getValues, replacePathParams]);
 	const name = watch("name");
 	const authValue = watch("auth");
 	const canSave = path.trim().length > 0 && name.trim().length > 0 && !isSaving;
@@ -259,6 +286,13 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				<div className={s.tabs}>
 					<button
 						type="button"
+						className={`${s.tab} ${tab === "path" ? s.tabActive : ""}`}
+						onClick={() => setTab("path")}
+					>
+						Path ({pathArray.fields.length})
+					</button>
+					<button
+						type="button"
 						className={`${s.tab} ${tab === "query" ? s.tabActive : ""}`}
 						onClick={() => setTab("query")}
 					>
@@ -276,34 +310,51 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				<div className={s.section}>
 					<div className={s.sectionHead}>
 						<span className={s.sectionTitle}>
-							{tab === "query" ? "Query-параметры" : "Body-параметры"}
+							{tab === "path"
+								? "Сегменты пути"
+								: tab === "query"
+									? "Query-параметры"
+									: "Body-параметры"}
 						</span>
-						<button
-							type="button"
-							className={s.addBtn}
-							onClick={() => activeArray.append(emptyParam())}
-						>
-							<PlusIcon /> Добавить
-						</button>
+						{tab !== "path" && (
+							<button
+								type="button"
+								className={s.addBtn}
+								onClick={() => activeArray.append(emptyParam())}
+							>
+								<PlusIcon /> Добавить
+							</button>
+						)}
 					</div>
 
 					{activeArray.fields.length === 0 ? (
-						<div className={s.empty}>Параметров пока нет</div>
+						<div className={s.empty}>
+							{tab === "path"
+								? "В пути нет сегментов в фигурных скобках"
+								: "Параметров пока нет"}
+						</div>
 					) : (
 						activeArray.fields.map((f, i) => (
-							<div className={s.paramRow} key={f.id}>
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.name`}
-									render={({ field }) => (
-										<Input
-											size="sm"
-											{...field}
-											placeholder="name"
-											style={{ fontFamily: "var(--font-mono)" }}
-										/>
-									)}
-								/>
+							<div
+								className={`${s.paramRow} ${tab === "path" ? s.paramRowFixed : ""}`}
+								key={f.id}
+							>
+								{tab === "path" ? (
+									<span className={s.paramNameFixed}>{`{${f.name}}`}</span>
+								) : (
+									<Controller
+										control={control}
+										name={`${arrayName}.${i}.name`}
+										render={({ field }) => (
+											<Input
+												size="sm"
+												{...field}
+												placeholder="name"
+												style={{ fontFamily: "var(--font-mono)" }}
+											/>
+										)}
+									/>
+								)}
 								<Controller
 									control={control}
 									name={`${arrayName}.${i}.type`}
@@ -333,14 +384,16 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 										</label>
 									)}
 								/>
-								<button
-									type="button"
-									className={s.removeBtn}
-									onClick={() => activeArray.remove(i)}
-									aria-label="Удалить параметр"
-								>
-									<TrashIcon />
-								</button>
+								{tab !== "path" && (
+									<button
+										type="button"
+										className={s.removeBtn}
+										onClick={() => activeArray.remove(i)}
+										aria-label="Удалить параметр"
+									>
+										<TrashIcon />
+									</button>
+								)}
 							</div>
 						))
 					)}

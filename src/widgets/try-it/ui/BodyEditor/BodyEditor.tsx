@@ -1,9 +1,11 @@
 import type { FC } from "react";
 import type { BodyMode, Endpoint } from "@/entities/doc-api";
-import type { Environment } from "@/entities/environment";
-import { buildBody, readValue, valueKey } from "../../lib/buildRequest";
+import {
+	bodyFieldText,
+	parseBodyObject,
+	setBodyField,
+} from "../../lib/buildRequest";
 import { formatJson, getJsonError } from "../../lib/validateJson";
-import type { ParamValues } from "../../model/tryIt.types";
 import { ParamField } from "../ParamField";
 import s from "./BodyEditor.module.css";
 
@@ -14,35 +16,29 @@ const MODES: { mode: BodyMode; label: string }[] = [
 
 interface BodyEditorProps {
 	endpoint: Endpoint;
-	env: Environment;
 	mode: BodyMode;
-	rawBody: string;
-	values: ParamValues;
+	body: string;
 	onModeChange: (mode: BodyMode) => void;
-	onRawBodyChange: (rawBody: string) => void;
-	onValueChange: (key: string, value: string) => void;
+	onBodyChange: (body: string) => void;
 }
 
 /**
- * Тело запроса: либо по полям схемы эндпоинта, либо сырым JSON, который
- * уходит на сервер без обработки. Оба варианта хранятся одновременно.
+ * Тело запроса — один JSON-документ. Форма по полям схемы и редактор JSON
+ * правят его же, поэтому переключение режима ничего не теряет и переносить
+ * значения между ними не нужно.
  */
 export const BodyEditor: FC<BodyEditorProps> = ({
 	endpoint,
-	env,
 	mode,
-	rawBody,
-	values,
+	body,
 	onModeChange,
-	onRawBodyChange,
-	onValueChange,
+	onBodyChange,
 }) => {
 	const bodyParams = endpoint.bodyParams ?? [];
-	const jsonError = getJsonError(rawBody);
-
-	/** Переносит текущие значения полей в сырое тело, чтобы не набирать заново. */
-	const prefillFromFields = () =>
-		onRawBodyChange(formatJson(buildBody(endpoint, env, values) ?? "{}"));
+	const jsonError = getJsonError(body);
+	// Форма умеет править только JSON-объект: массив, скаляр или сломанный
+	// JSON редактируются лишь текстом.
+	const doc = parseBodyObject(body);
 
 	return (
 		<div className={s.group}>
@@ -63,7 +59,11 @@ export const BodyEditor: FC<BodyEditorProps> = ({
 			</div>
 
 			{mode === "fields" ? (
-				bodyParams.length > 0 ? (
+				doc === null ? (
+					<div className={s.empty}>
+						Тело не является JSON-объектом — правьте его в режиме JSON.
+					</div>
+				) : bodyParams.length > 0 ? (
 					bodyParams.map((param) => (
 						<ParamField
 							key={param.name}
@@ -73,9 +73,9 @@ export const BodyEditor: FC<BodyEditorProps> = ({
 							placeholder={
 								param.default ? `default: ${param.default}` : param.desc
 							}
-							value={readValue(values, "body", param.name, param.value)}
+							value={bodyFieldText(doc, param.name, param.value)}
 							onChange={(value) =>
-								onValueChange(valueKey("body", param.name), value)
+								onBodyChange(setBodyField(body, param.name, param.type, value))
 							}
 						/>
 					))
@@ -90,8 +90,8 @@ export const BodyEditor: FC<BodyEditorProps> = ({
 						className={`${s.editor}${jsonError ? ` ${s.invalid}` : ""}`}
 						spellCheck={false}
 						placeholder={'{\n  "key": "value"\n}'}
-						value={rawBody}
-						onChange={(e) => onRawBodyChange(e.target.value)}
+						value={body}
+						onChange={(e) => onBodyChange(e.target.value)}
 					/>
 					<div className={s.editorFooter}>
 						{jsonError ? (
@@ -100,20 +100,11 @@ export const BodyEditor: FC<BodyEditorProps> = ({
 							<span className={s.hint}>Отправляется как есть</span>
 						)}
 						<div className={s.editorActions}>
-							{bodyParams.length > 0 && (
-								<button
-									type="button"
-									className={s.action}
-									onClick={prefillFromFields}
-								>
-									Prefill from fields
-								</button>
-							)}
 							<button
 								type="button"
 								className={s.action}
-								disabled={!!jsonError || !rawBody.trim()}
-								onClick={() => onRawBodyChange(formatJson(rawBody))}
+								disabled={!!jsonError || !body.trim()}
+								onClick={() => onBodyChange(formatJson(body))}
 							>
 								Format
 							</button>

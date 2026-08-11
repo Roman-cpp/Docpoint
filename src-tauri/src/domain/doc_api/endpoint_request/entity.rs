@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-/// Способ задать тело запроса: по полям схемы эндпоинта или сырым JSON,
-/// который уходит на сервер без обработки.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+/// Каким редактором открывать тело набора: формой по полям схемы эндпоинта
+/// или редактором JSON. Тело в обоих случаях одно и то же — колонка `body`;
+/// это настройка отображения, а не признак того, где лежат данные.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BodyMode {
+    /// Совпадает с DEFAULT колонки `endpoint_requests.body_mode`.
+    #[default]
     Fields,
     Raw,
 }
@@ -36,8 +39,8 @@ pub struct EndpointRequest {
     pub sort_ord: i64,
     #[serde(rename = "bodyMode")]
     pub body_mode: BodyMode,
-    #[serde(rename = "rawBody")]
-    pub raw_body: String,
+    /// Тело запроса как JSON-документ. Пустая строка — тела нет.
+    pub body: String,
     pub headers: Vec<RequestHeader>,
     pub values: Vec<ParamValue>,
 }
@@ -47,7 +50,14 @@ pub struct EndpointRequest {
 pub struct RequestHeader {
     pub name: String,
     pub value: String,
+    /// В файле импорта поле можно опустить: заголовок без пометки —
+    /// включённый. Фронт всегда присылает его явно.
+    #[serde(default = "enabled_by_default")]
     pub enabled: bool,
+}
+
+fn enabled_by_default() -> bool {
+    true
 }
 
 /// Конкретное значение одного параметра внутри набора.

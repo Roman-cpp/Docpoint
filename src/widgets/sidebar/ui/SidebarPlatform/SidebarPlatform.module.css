@@ -151,7 +151,7 @@
 }
 
 .sbApis {
-	padding: 14px 12px 10px;
+	padding: 14px 8px 10px;
 	flex-shrink: 0;
 }
 .sbSecLbl {
@@ -160,108 +160,75 @@
 	letter-spacing: 0.9px;
 	text-transform: uppercase;
 	color: var(--ink-low);
-	padding: 3px 4px 10px;
+	padding: 3px 8px 8px;
 	display: block;
 }
 
-/* ═══════════════ PLATFORM CARDS ═══════════════ */
+/* ═══════════════ PLATFORM ROWS ═══════════════ */
 .pfList {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 1px;
 }
 
-/* локальный индиго-акцент активной карточки */
 .pfCard {
 	--pf-accent: var(--ink);
-	--pf-accent-bg: var(--cat-bg);
-	--pf-accent-border: var(--border-h);
 	position: relative;
 	display: flex;
-	align-items: stretch;
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	background: var(--surface);
-	transition:
-		border-color 0.13s,
-		background 0.13s,
-		box-shadow 0.13s;
+	align-items: center;
+	border-radius: 7px;
+	transition: background 0.13s;
 }
 .pfCard:hover {
-	border-color: var(--border-h);
-}
-.pfCard:hover .sbMenuBtn {
-	opacity: 1;
+	background: var(--cat-bg);
 }
 .pfCardActive {
-	border-color: var(--pf-accent-border);
-	background: var(--pf-accent-bg);
-	box-shadow: inset 3px 0 0 var(--pf-accent);
+	background: var(--cat-bg);
+}
+/* засечка активной платформы */
+.pfCardActive::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 3px;
+	height: 15px;
+	border-radius: 0 2px 2px 0;
+	background: var(--pf-accent);
 }
 
 .pfCardLink {
 	display: flex;
 	align-items: center;
-	gap: 11px;
 	flex: 1;
 	min-width: 0;
-	padding: 11px 12px;
+	padding: 7px 4px 7px 8px;
 	text-decoration: none;
 	cursor: pointer;
 	font-family: var(--font-sans);
 }
-
-/* иконка-заглушка со штриховкой */
-.pfCardIcon {
-	width: 38px;
-	height: 38px;
-	flex-shrink: 0;
-	border-radius: 8px;
-	border: 1px solid var(--border);
-	background-color: var(--bg);
-	background-image: repeating-linear-gradient(
-		-45deg,
-		var(--border) 0,
-		var(--border) 1px,
-		transparent 1px,
-		transparent 7px
-	);
-}
-.pfCardActive .pfCardIcon {
-	border-color: var(--border-h);
-	background-color: var(--surface);
-}
-
-.pfCardBody {
-	display: flex;
-	flex-direction: column;
-	gap: 3px;
-	min-width: 0;
-}
 .pfCardName {
 	font-size: 13px;
-	font-weight: 600;
-	color: var(--ink);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.pfCardMeta {
-	font-size: 11.5px;
-	color: var(--ink-low);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.pfCardActive .pfCardMeta {
 	color: var(--ink-mid);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	transition: color 0.13s;
+}
+.pfCard:hover .pfCardName {
+	color: var(--ink);
+}
+.pfCardActive .pfCardName {
+	color: var(--ink);
+	font-weight: 500;
 }
 
 /* меню действий — появляется по наведению */
 .pfCardMenu {
-	position: absolute;
-	top: 6px;
-	right: 6px;
+	display: flex;
+	align-items: center;
+	padding-right: 4px;
 }
 .sbMenuBtn {
 	flex-shrink: 0;
@@ -283,11 +250,18 @@
 	width: 14px;
 	height: 14px;
 }
+/* строка при наведении уже окрашена в --cat-bg, поэтому кнопке нужен более
+   светлый фон, иначе её ховер не читается */
 .sbMenuBtn:hover {
 	color: var(--ink);
-	background: var(--cat-bg);
+	background: var(--surface);
 }
 .pfCardActive .sbMenuBtn {
+	opacity: 1;
+}
+/* кнопка проявляется по наведению на строку и при переходе на неё с клавиатуры */
+.pfCard:hover .sbMenuBtn,
+.pfCard:focus-within .sbMenuBtn {
 	opacity: 1;
 }
 

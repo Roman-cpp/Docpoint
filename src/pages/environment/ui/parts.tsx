@@ -11,15 +11,6 @@ export const ENV_COLOR: Record<EnvKey, string> = {
 	dev: "#3F6B4A",
 };
 
-export const SWATCH_COLORS = [
-	"#9B3B36",
-	"#75591A",
-	"#3F6B4A",
-	"#3A5A78",
-	"#1A1A1A",
-	"#888888",
-];
-
 export const ACTIVE_COLOR = "#3F6B4A";
 
 export type AuthMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

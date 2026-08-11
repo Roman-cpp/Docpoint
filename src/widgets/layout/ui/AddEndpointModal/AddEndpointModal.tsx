@@ -1,6 +1,10 @@
 import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import type { CreateEndpointDTO, Group } from "@/entities/doc-api";
+import {
+	type CreateEndpointDTO,
+	extractPathParams,
+	type Group,
+} from "@/entities/doc-api";
 import type { HttpMethod } from "@/entities/shared/http-method";
 import {
 	Field,
@@ -44,6 +48,9 @@ const TYPE_OPTIONS = [
 	{ value: "array", label: "array" },
 ];
 
+/** Какие параметры правим: сегменты пути, строка запроса или тело. */
+type ParamTab = "path" | "query" | "body";
+
 /** Локальная форма одного параметра (без runtime-поля value). */
 interface ParamDraft {
 	name: string;
@@ -62,6 +69,7 @@ interface FormValues {
 	description: string;
 	tagsInput: string;
 	auth: boolean;
+	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
 	bodyParams: ParamDraft[];
 }
@@ -94,6 +102,7 @@ const makeDefaults = (groups: Group[]): FormValues => ({
 	description: "",
 	tagsInput: "",
 	auth: false,
+	pathParams: [],
 	queryParams: [],
 	bodyParams: [],
 });
@@ -105,21 +114,24 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 	onCreate,
 	isSaving = false,
 }) => {
-	const { control, handleSubmit, watch, reset } = useForm<FormValues>({
-		defaultValues: makeDefaults(groups),
-	});
+	const { control, getValues, handleSubmit, watch, reset } =
+		useForm<FormValues>({
+			defaultValues: makeDefaults(groups),
+		});
 
 	// Сбрасываем форму при каждом открытии.
 	useEffect(() => {
 		if (open) reset(makeDefaults(groups));
 	}, [open, groups, reset]);
 
+	const pathArray = useFieldArray({ control, name: "pathParams" });
 	const queryArray = useFieldArray({ control, name: "queryParams" });
 	const bodyArray = useFieldArray({ control, name: "bodyParams" });
 
-	const [tab, setTab] = useState<"query" | "body">("query");
-	const activeArray = tab === "query" ? queryArray : bodyArray;
-	const arrayName = tab === "query" ? "queryParams" : "bodyParams";
+	const [tab, setTab] = useState<ParamTab>("query");
+	const activeArray =
+		tab === "path" ? pathArray : tab === "query" ? queryArray : bodyArray;
+	const arrayName = `${tab}Params` as const;
 
 	const groupOptions = [
 		...groups.map((g) => ({ value: g.id, label: g.label })),
@@ -144,6 +156,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 			description: values.description.trim(),
 			tags,
 			auth: values.auth,
+			pathParams: values.pathParams.map(fromDraft),
 			queryParams: values.queryParams.map(fromDraft),
 			bodyParams: values.bodyParams.map(fromDraft),
 			responses: {},
@@ -159,6 +172,24 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 	});
 
 	const path = watch("path");
+
+	// Перечень сегментов задаёт путь, а не эта форма: строки появляются и
+	// исчезают вместе с ним, поэтому имя в них не редактируется. Описания
+	// уцелевших сегментов переносим по имени.
+	const replacePathParams = pathArray.replace;
+	useEffect(() => {
+		const segments = extractPathParams(path);
+		const current = getValues("pathParams");
+		const unchanged =
+			segments.length === current.length &&
+			segments.every((name, i) => current[i]?.name === name);
+		if (unchanged) return;
+
+		const described = new Map(current.map((param) => [param.name, param]));
+		replacePathParams(
+			segments.map((name) => described.get(name) ?? { ...emptyParam(), name }),
+		);
+	}, [path, getValues, replacePathParams]);
 	const name = watch("name");
 	const groupChoice = watch("groupChoice");
 	const newGroupLabel = watch("newGroupLabel");
@@ -294,6 +325,13 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 				<div className={s.tabs}>
 					<button
 						type="button"
+						className={`${s.tab} ${tab === "path" ? s.tabActive : ""}`}
+						onClick={() => setTab("path")}
+					>
+						Path ({pathArray.fields.length})
+					</button>
+					<button
+						type="button"
 						className={`${s.tab} ${tab === "query" ? s.tabActive : ""}`}
 						onClick={() => setTab("query")}
 					>
@@ -311,34 +349,51 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 				<div className={s.section}>
 					<div className={s.sectionHead}>
 						<span className={s.sectionTitle}>
-							{tab === "query" ? "Query-параметры" : "Body-параметры"}
+							{tab === "path"
+								? "Сегменты пути"
+								: tab === "query"
+									? "Query-параметры"
+									: "Body-параметры"}
 						</span>
-						<button
-							type="button"
-							className={s.addBtn}
-							onClick={() => activeArray.append(emptyParam())}
-						>
-							<PlusIcon /> Добавить
-						</button>
+						{tab !== "path" && (
+							<button
+								type="button"
+								className={s.addBtn}
+								onClick={() => activeArray.append(emptyParam())}
+							>
+								<PlusIcon /> Добавить
+							</button>
+						)}
 					</div>
 
 					{activeArray.fields.length === 0 ? (
-						<div className={s.empty}>Параметров пока нет</div>
+						<div className={s.empty}>
+							{tab === "path"
+								? "В пути нет сегментов в фигурных скобках"
+								: "Параметров пока нет"}
+						</div>
 					) : (
 						activeArray.fields.map((f, i) => (
-							<div className={s.paramRow} key={f.id}>
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.name`}
-									render={({ field }) => (
-										<Input
-											size="sm"
-											{...field}
-											placeholder="name"
-											style={{ fontFamily: "var(--font-mono)" }}
-										/>
-									)}
-								/>
+							<div
+								className={`${s.paramRow} ${tab === "path" ? s.paramRowFixed : ""}`}
+								key={f.id}
+							>
+								{tab === "path" ? (
+									<span className={s.paramNameFixed}>{`{${f.name}}`}</span>
+								) : (
+									<Controller
+										control={control}
+										name={`${arrayName}.${i}.name`}
+										render={({ field }) => (
+											<Input
+												size="sm"
+												{...field}
+												placeholder="name"
+												style={{ fontFamily: "var(--font-mono)" }}
+											/>
+										)}
+									/>
+								)}
 								<Controller
 									control={control}
 									name={`${arrayName}.${i}.type`}
@@ -368,14 +423,16 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 										</label>
 									)}
 								/>
-								<button
-									type="button"
-									className={s.removeBtn}
-									onClick={() => activeArray.remove(i)}
-									aria-label="Удалить параметр"
-								>
-									<TrashIcon />
-								</button>
+								{tab !== "path" && (
+									<button
+										type="button"
+										className={s.removeBtn}
+										onClick={() => activeArray.remove(i)}
+										aria-label="Удалить параметр"
+									>
+										<TrashIcon />
+									</button>
+								)}
 							</div>
 						))
 					)}

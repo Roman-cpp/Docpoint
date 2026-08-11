@@ -1,7 +1,36 @@
 use crate::domain::doc_api::endpoint::dto::{CreateEndpointDTO, UpdateEndpointDTO};
+use crate::domain::doc_api::endpoint::entity::{path_segments, ParamDef};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
+
+/// Пишет параметры одного вида (`path`, `query`, `body`). Позиция в массиве
+/// становится `sort_ord` — по нему они потом и читаются.
+async fn insert_params(
+    conn: &mut sqlx::SqliteConnection,
+    endpoint_id: &str,
+    kind: &str,
+    params: &[ParamDef],
+) -> Result<(), String> {
+    for (pi, param) in params.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(endpoint_id)
+        .bind(kind)
+        .bind(&param.name)
+        .bind(&param.type_)
+        .bind(if param.required { 1i64 } else { 0i64 })
+        .bind(&param.desc)
+        .bind(&param.default)
+        .bind(pi as i64)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 
 pub struct EndpointRepo<'a> {
     pub db: &'a SqlitePool,
@@ -14,8 +43,21 @@ impl<'a> EndpointRepo<'a> {
 }
 
 impl EndpointRepository for EndpointRepo<'_> {
-    async fn create(&self, group_id: &str, endpoint: &CreateEndpointDTO) -> Result<(), String> {
+    async fn create(&self, group_id: &str, endpoint: &CreateEndpointDTO) -> Result<String, String> {
         let db = self.db;
+
+        // Описание сегмента, которого нет в пути, — почти всегда опечатка:
+        // и панель, и документация ищут описания по именам из самого пути,
+        // так что лишняя запись просто пропала бы из виду.
+        let segments = path_segments(&endpoint.path);
+        for param in &endpoint.path_params {
+            if !segments.contains(&param.name.as_str()) {
+                return Err(format!(
+                    "эндпоинт {} {}: в пути нет сегмента {:?}",
+                    endpoint.method, endpoint.path, param.name
+                ));
+            }
+        }
 
         let endpoint_id = Uuid::new_v4().to_string();
 
@@ -51,39 +93,11 @@ impl EndpointRepository for EndpointRepo<'_> {
                 .map_err(|e| e.to_string())?;
         }
 
-        for (pi, param) in endpoint.query_params.iter().enumerate() {
-            sqlx::query(
-                "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
-                 VALUES (?, 'query', ?, ?, ?, ?, ?, ?)",
-            )
-            .bind(&endpoint_id)
-            .bind(&param.name)
-            .bind(&param.type_)
-            .bind(if param.required { 1i64 } else { 0i64 })
-            .bind(&param.desc)
-            .bind(&param.default)
-            .bind(pi as i64)
-            .execute(db)
-            .await
-            .map_err(|e| e.to_string())?;
-        }
-
-        for (pi, param) in endpoint.body_params.iter().enumerate() {
-            sqlx::query(
-                "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
-                 VALUES (?, 'body', ?, ?, ?, ?, ?, ?)",
-            )
-            .bind(&endpoint_id)
-            .bind(&param.name)
-            .bind(&param.type_)
-            .bind(if param.required { 1i64 } else { 0i64 })
-            .bind(&param.desc)
-            .bind(&param.default)
-            .bind(pi as i64)
-            .execute(db)
-            .await
-            .map_err(|e| e.to_string())?;
-        }
+        let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
+        insert_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
+        insert_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
+        insert_params(&mut conn, &endpoint_id, "body", &endpoint.body_params).await?;
+        drop(conn);
 
         for (status_code, resp) in &endpoint.responses {
             let result = sqlx::query(
@@ -117,7 +131,7 @@ impl EndpointRepository for EndpointRepo<'_> {
             }
         }
 
-        Ok(())
+        Ok(endpoint_id)
     }
 
     async fn update(&self, endpoint: &UpdateEndpointDTO) -> Result<(), String> {
@@ -153,51 +167,16 @@ impl EndpointRepository for EndpointRepo<'_> {
                 .map_err(|e| e.to_string())?;
         }
 
-        sqlx::query("DELETE FROM param WHERE endpoint_id = ? AND kind = 'query'")
+        // Параметры всех видов правятся целиком, поэтому пересоздаём их.
+        sqlx::query("DELETE FROM param WHERE endpoint_id = ?")
             .bind(&endpoint.id)
             .execute(&mut *tx)
             .await
             .map_err(|e| e.to_string())?;
 
-        sqlx::query("DELETE FROM param WHERE endpoint_id = ? AND kind = 'body'")
-            .bind(&endpoint.id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        for (pi, param) in endpoint.query_params.iter().enumerate() {
-            sqlx::query(
-                "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
-                 VALUES (?, 'query', ?, ?, ?, ?, ?, ?)",
-            )
-            .bind(&endpoint.id)
-            .bind(&param.name)
-            .bind(&param.type_)
-            .bind(if param.required { 1i64 } else { 0i64 })
-            .bind(&param.desc)
-            .bind(&param.default)
-            .bind(pi as i64)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-        }
-
-        for (pi, param) in endpoint.body_params.iter().enumerate() {
-            sqlx::query(
-                "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
-                 VALUES (?, 'body', ?, ?, ?, ?, ?, ?)",
-            )
-            .bind(&endpoint.id)
-            .bind(&param.name)
-            .bind(&param.type_)
-            .bind(if param.required { 1i64 } else { 0i64 })
-            .bind(&param.desc)
-            .bind(&param.default)
-            .bind(pi as i64)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-        }
+        insert_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
+        insert_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
+        insert_params(&mut tx, &endpoint.id, "body", &endpoint.body_params).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
 
@@ -221,5 +200,75 @@ impl EndpointRepository for EndpointRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::repository::sqlite::test_db;
+    use sqlx::Executor;
+
+    /// Пересборка таблицы не теряет уже описанные параметры и открывает
+    /// дорогу третьему виду — сегментам пути.
+    #[tokio::test]
+    async fn migration_0031_keeps_params_and_accepts_the_path_kind() {
+        let pool = test_db::through("0030").await;
+
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO docs (id,name,version) VALUES ('d1','D','v1');
+            INSERT INTO "group" (id,doc_id,label,sort_ord) VALUES ('g1','d1','G',0);
+            INSERT INTO endpoint (id,group_id,method,path,name,description,auth,sort_ord)
+              VALUES ('e1','g1','GET','/posts/{postId}','P','',0,0);
+            INSERT INTO param (endpoint_id,kind,name,type,required,desc,default_val,value,sort_ord)
+              VALUES ('e1','query','page','integer',0,'Страница','1','PAGE_VAR',0);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        // До миграции сегмент пути описать нельзя.
+        assert!(
+            insert_path_param(&pool).await.is_err(),
+            "до 0031 kind='path' должен отбиваться CHECK-констрейнтом"
+        );
+
+        test_db::apply(&pool, "0031_path_params.sql").await;
+
+        let kept: (String, String, i64, String, Option<String>, String, i64) = sqlx::query_as(
+            "SELECT kind, name, required, desc, default_val, value, sort_ord \
+             FROM param WHERE endpoint_id = 'e1'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            kept,
+            (
+                "query".into(),
+                "page".into(),
+                0,
+                "Страница".into(),
+                Some("1".into()),
+                "PAGE_VAR".into(),
+                0
+            ),
+            "строка должна переехать целиком, вместе с привязкой к переменной"
+        );
+
+        insert_path_param(&pool)
+            .await
+            .expect("после 0031 сегмент пути описывается как параметр");
+    }
+
+    async fn insert_path_param(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO param (endpoint_id, kind, name, type, required, desc, sort_ord) \
+             VALUES ('e1', 'path', 'postId', 'uuid', 1, 'UUID поста', 0)",
+        )
+        .execute(pool)
+        .await
+        .map(|_| ())
     }
 }

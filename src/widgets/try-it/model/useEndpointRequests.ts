@@ -22,7 +22,7 @@ function toDraft(request: EndpointRequest): RequestDraft {
 		id: request.id,
 		name: request.name,
 		bodyMode: request.bodyMode,
-		rawBody: request.rawBody,
+		body: request.body,
 		headers: request.headers.map((header) => ({
 			...header,
 			id: crypto.randomUUID(),
@@ -36,7 +36,7 @@ function toDto(draft: RequestDraft): SaveEndpointRequestDTO {
 		id: draft.id,
 		name: draft.name,
 		bodyMode: draft.bodyMode,
-		rawBody: draft.rawBody,
+		body: draft.body,
 		headers: draft.headers.map(({ name, value, enabled }) => ({
 			name,
 			value,

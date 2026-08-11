@@ -8,20 +8,17 @@ import {
 } from "@/features/doc-api";
 import { actionSetResponse, useResponseStore } from "@/features/request";
 import {
-	buildBody,
 	buildHeaders,
 	buildUrl,
-	canHaveBody,
+	parseBodyObject,
 	readValue,
+	resolveRequestBody,
 } from "../lib/buildRequest";
 import { notifyError } from "../lib/notifyError";
 import type { RequestDraft } from "./tryIt.types";
 
 /** Значение вида `{{VAR}}` целиком — ссылка на переменную окружения. */
 const VAR_REF_RE = /^\{\{(\w+)\}\}$/;
-
-/** Параметры эндпоинта из его схемы — query или body. */
-type SchemaParams = Endpoint["queryParams"];
 
 function prettyJson(raw: string): string {
 	try {
@@ -36,23 +33,6 @@ interface SendArgs {
 	env: Environment;
 	doc: Doc | null;
 	request: RequestDraft;
-}
-
-/**
- * Тело запроса: в режиме `raw` уходит ровно то, что набрал пользователь,
- * в режиме `fields` — собранное из полей схемы. GET/HEAD тела не имеют.
- */
-function resolveBody(
-	endpoint: Endpoint,
-	env: Environment,
-	request: RequestDraft,
-): string | null {
-	if (request.bodyMode === "fields") {
-		return buildBody(endpoint, env, request.values);
-	}
-	if (!canHaveBody(endpoint.method)) return null;
-	const raw = request.rawBody.trim();
-	return raw || null;
 }
 
 /**
@@ -71,25 +51,47 @@ export function useSendRequest() {
 	 * эндпоинта — тогда параметр будет подставляться сам в новых наборах.
 	 */
 	const persistVarRefs = async ({ endpoint, request }: SendArgs) => {
-		const values = request.values;
 		const tasks: Promise<void>[] = [];
 
-		const collect = (kind: "query" | "body", params: SchemaParams) => {
-			for (const param of params) {
-				if (param.value) continue;
-				const match = readValue(values, kind, param.name)
-					.trim()
-					.match(VAR_REF_RE);
-				if (match) {
-					tasks.push(
-						updateEndpointParamValue(endpoint.id, kind, param.name, match[1]),
-					);
-				}
+		const remember = (
+			kind: "path" | "query" | "body",
+			name: string,
+			text: string,
+		) => {
+			const match = text.trim().match(VAR_REF_RE);
+			if (match) {
+				tasks.push(updateEndpointParamValue(endpoint.id, kind, name, match[1]));
 			}
 		};
 
-		collect("query", endpoint.queryParams ?? []);
-		collect("body", endpoint.bodyParams ?? []);
+		// Только описанные сегменты: запоминать ссылку некуда, если строки
+		// параметра в схеме нет.
+		for (const param of endpoint.pathParams ?? []) {
+			if (param.value) continue;
+			remember(
+				"path",
+				param.name,
+				readValue(request.values, "path", param.name),
+			);
+		}
+
+		for (const param of endpoint.queryParams ?? []) {
+			if (param.value) continue;
+			remember(
+				"query",
+				param.name,
+				readValue(request.values, "query", param.name),
+			);
+		}
+
+		// Поля тела лежат в JSON-документе, а не среди плоских значений.
+		const doc = parseBodyObject(request.body);
+		for (const param of endpoint.bodyParams ?? []) {
+			if (param.value || !doc) continue;
+			const value = doc[param.name];
+			if (typeof value === "string") remember("body", param.name, value);
+		}
+
 		await Promise.all(tasks);
 	};
 
@@ -105,7 +107,7 @@ export function useSendRequest() {
 		}
 
 		try {
-			const body = resolveBody(endpoint, env, request);
+			const body = resolveRequestBody(endpoint, env, request.body);
 			const result = await sendRequestApi({
 				method: endpoint.method,
 				url: buildUrl(endpoint, env, doc, request.values),

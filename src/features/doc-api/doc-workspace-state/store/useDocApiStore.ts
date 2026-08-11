@@ -49,7 +49,7 @@ type DocApiActions = {
 
 	updateEndpointParamValue: (
 		endpointId: string,
-		kind: "query" | "body",
+		kind: "path" | "query" | "body",
 		name: string,
 		value: string,
 	) => Promise<void>;
@@ -119,7 +119,7 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 		set((state) => {
 			const patchEndpoint = (ep: Endpoint): Endpoint => {
 				if (ep.id !== endpointId) return ep;
-				const key = kind === "query" ? "queryParams" : "bodyParams";
+				const key = `${kind}Params` as const;
 				return {
 					...ep,
 					[key]: ep[key].map((p) => (p.name === name ? { ...p, value } : p)),

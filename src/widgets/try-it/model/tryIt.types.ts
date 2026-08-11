@@ -4,8 +4,9 @@ import type { HeaderDraft } from "@/shared/ui-kit/controls";
 export type { HeaderDraft };
 
 /**
- * Значения параметров одного набора, индексированные ключом `${kind}:${name}`
- * (см. `valueKey` / `splitValueKey`).
+ * Значения path- и query-параметров одного набора, индексированные ключом
+ * `${kind}:${name}` (см. `valueKey` / `splitValueKey`). Тело хранится отдельно,
+ * в `RequestDraft.body`.
  */
 export type ParamValues = Record<string, string>;
 
@@ -18,7 +19,7 @@ export interface RequestDraft {
 	id: string;
 	name: string;
 	bodyMode: BodyMode;
-	rawBody: string;
+	body: string;
 	headers: HeaderDraft[];
 	values: ParamValues;
 }

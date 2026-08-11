@@ -32,5 +32,6 @@ pub async fn create_endpoint(
 
     EndpointRepo::new(&state.db)
         .create(&group_id, &endpoint)
-        .await
+        .await?;
+    Ok(())
 }

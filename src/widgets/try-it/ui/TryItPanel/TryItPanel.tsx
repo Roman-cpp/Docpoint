@@ -16,7 +16,6 @@ import { getJsonError } from "../../lib/validateJson";
 import type { RequestDraft } from "../../model/tryIt.types";
 import { useEndpointRequests } from "../../model/useEndpointRequests";
 import { useSendRequest } from "../../model/useSendRequest";
-import { AuthNotice } from "../AuthNotice";
 import { BodyEditor } from "../BodyEditor";
 import { ParamFields } from "../ParamFields";
 import { RequestTabs } from "../RequestTabs";
@@ -60,9 +59,10 @@ export const TryItPanel: FC = () => {
 
 	const url = buildUrl(endpoint, environment, doc, active.values);
 	const hasBody = canHaveBody(endpoint.method);
-	// Невалидный JSON отправлять некуда — блокируем Send.
-	const bodyError =
-		hasBody && active.bodyMode === "raw" ? getJsonError(active.rawBody) : null;
+	// Невалидный JSON отправлять некуда — блокируем Send. Тело у обоих режимов
+	// одно, поэтому и проверка одна: раньше форма не проверялась вовсе, и
+	// сломанное тело уезжало, стоило переключиться на неё.
+	const bodyError = hasBody ? getJsonError(active.body) : null;
 
 	return (
 		<div className={s.pane}>
@@ -92,8 +92,6 @@ export const TryItPanel: FC = () => {
 
 				<UrlBar method={endpoint.method} url={url} />
 
-				{endpoint.auth && <AuthNotice environmentId={environment.id} />}
-
 				<ParamFields
 					endpoint={endpoint}
 					values={active.values}
@@ -108,13 +106,10 @@ export const TryItPanel: FC = () => {
 				{hasBody && (
 					<BodyEditor
 						endpoint={endpoint}
-						env={environment}
 						mode={active.bodyMode}
-						rawBody={active.rawBody}
-						values={active.values}
+						body={active.body}
 						onModeChange={(bodyMode) => patchActive({ bodyMode })}
-						onRawBodyChange={(rawBody) => patchActive({ rawBody })}
-						onValueChange={setValue}
+						onBodyChange={(body) => patchActive({ body })}
 					/>
 				)}
 

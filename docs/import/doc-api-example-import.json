@@ -70,7 +70,23 @@
               ],
               "example": "{\n  \"message\": \"Invalid credentials\"\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Валидные учётные данные",
+              "body": {
+                "email": "admin@example.com",
+                "password": "correct-horse-battery"
+              }
+            },
+            {
+              "name": "Неверный пароль — ждём 401",
+              "body": {
+                "email": "admin@example.com",
+                "password": "wrong"
+              }
+            }
+          ]
         },
         {
           "method": "POST",
@@ -173,7 +189,26 @@
               ],
               "example": "{\n  \"data\": [\n    { \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"name\": \"Alice Smith\", \"email\": \"alice@example.com\", \"role\": \"member\" }\n  ],\n  \"meta\": { \"total\": 142, \"page\": 1 }\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Первая страница",
+              "query": {
+                "page": 1,
+                "limit": 20
+              },
+              "headers": {
+                "X-Request-Id": "smoke-users-page-1"
+              }
+            },
+            {
+              "name": "Поиск по имени",
+              "query": {
+                "search": "ivan",
+                "limit": 5
+              }
+            }
+          ]
         },
         {
           "method": "GET",
@@ -184,6 +219,15 @@
             "auth-required"
           ],
           "auth": true,
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true,
+              "desc": "UUID пользователя",
+              "default": ""
+            }
+          ],
           "queryParams": [],
           "bodyParams": [],
           "responses": {
@@ -229,7 +273,21 @@
               ],
               "example": "{\n  \"message\": \"User not found\"\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Существующий пользователь",
+              "path": {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+              }
+            },
+            {
+              "name": "Несуществующий — ждём 404",
+              "path": {
+                "id": "00000000-0000-0000-0000-000000000000"
+              }
+            }
+          ]
         },
         {
           "method": "POST",
@@ -299,7 +357,18 @@
               ],
               "example": "{\n  \"errors\": [\n    { \"field\": \"email\", \"message\": \"Email already taken\" }\n  ]\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Новый администратор",
+              "body": {
+                "name": "Иван Петров",
+                "email": "ivan@example.com",
+                "password": "{{DEFAULT_PASSWORD}}",
+                "role": "admin"
+              }
+            }
+          ]
         },
         {
           "method": "PATCH",
@@ -310,6 +379,15 @@
             "auth-required"
           ],
           "auth": true,
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true,
+              "desc": "UUID изменяемого пользователя",
+              "default": ""
+            }
+          ],
           "queryParams": [],
           "bodyParams": [
             {
@@ -361,6 +439,15 @@
             "destructive"
           ],
           "auth": true,
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true,
+              "desc": "UUID удаляемого пользователя",
+              "default": ""
+            }
+          ],
           "queryParams": [],
           "bodyParams": [],
           "responses": {
@@ -380,7 +467,22 @@
               ],
               "example": "{\n  \"message\": \"User not found\"\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Удаление тестового пользователя",
+              "path": {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+              },
+              "headers": [
+                {
+                  "name": "X-Confirm",
+                  "value": "yes",
+                  "enabled": false
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -553,7 +655,45 @@
               ],
               "example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"todo\"\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Задача с вложенными полями",
+              "headers": {
+                "Idempotency-Key": "release-task-001"
+              },
+              "body": {
+                "title": "Подготовить релиз",
+                "project_id": "9c8b7a65-4321-4000-8000-abcdefabcdef",
+                "priority": "high",
+                "meta": {
+                  "labels": [
+                    "release",
+                    "urgent"
+                  ],
+                  "estimate": {
+                    "value": 8,
+                    "unit": "hours"
+                  }
+                }
+              }
+            },
+            {
+              "name": "Минимальная задача",
+              "body": {
+                "title": "Починить импорт",
+                "project_id": "9c8b7a65-4321-4000-8000-abcdefabcdef"
+              }
+            },
+            {
+              "name": "Тело строкой (не JSON)",
+              "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+              },
+              "bodyMode": "raw",
+              "body": "title=Подготовить релиз&priority=high"
+            }
+          ]
         },
         {
           "method": "PATCH",
@@ -564,7 +704,24 @@
             "auth-required"
           ],
           "auth": true,
-          "queryParams": [],
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true,
+              "desc": "UUID задачи",
+              "default": ""
+            }
+          ],
+          "queryParams": [
+            {
+              "name": "notify",
+              "type": "boolean",
+              "required": false,
+              "desc": "Уведомить исполнителя об изменении",
+              "default": "false"
+            }
+          ],
           "bodyParams": [
             {
               "name": "title",
@@ -622,7 +779,25 @@
               ],
               "example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"done\",\n  \"updated_at\": \"2025-05-20T14:00:00Z\"\n}"
             }
-          }
+          },
+          "requests": [
+            {
+              "name": "Закрыть задачу с уведомлением",
+              "path": {
+                "id": "7d3f1e20-9c44-4b8a-9f10-2b6c5a0d1e33"
+              },
+              "query": {
+                "notify": true
+              },
+              "headers": {
+                "Idempotency-Key": "close-task-001"
+              },
+              "body": {
+                "status": "done",
+                "assignee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+              }
+            }
+          ]
         },
         {
           "method": "DELETE",
@@ -633,6 +808,15 @@
             "auth-required"
           ],
           "auth": true,
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true,
+              "desc": "UUID удаляемой задачи",
+              "default": ""
+            }
+          ],
           "queryParams": [],
           "bodyParams": [],
           "responses": {

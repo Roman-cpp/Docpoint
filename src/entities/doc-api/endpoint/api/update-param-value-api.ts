@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 export function updateParamValueApi(
 	endpointId: string,
-	kind: "query" | "body",
+	kind: "path" | "query" | "body",
 	name: string,
 	value: string,
 ): Promise<void> {

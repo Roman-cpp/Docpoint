@@ -83,9 +83,15 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/websocket",
+				path: "/ws-client",
 				lazy: async () => ({
-					Component: (await import("@/pages/websocket-show")).WebSocketPage,
+					Component: (await import("@/pages/ws-client")).WsClientPage,
+				}),
+			},
+			{
+				path: "/doc-ws-show/:id",
+				lazy: async () => ({
+					Component: (await import("@/pages/doc-ws-show")).DocWsShowPage,
 				}),
 			},
 			{

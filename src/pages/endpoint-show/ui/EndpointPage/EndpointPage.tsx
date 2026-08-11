@@ -1,6 +1,10 @@
 import type { FC } from "react";
 import { useState } from "react";
-import type { Endpoint } from "@/entities/doc-api";
+import {
+	type Endpoint,
+	extractPathParams,
+	type Param,
+} from "@/entities/doc-api";
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 import s from "@/shared/styles/apiDocs.module.css";
@@ -78,6 +82,39 @@ export const CopyBtn: FC<{ text: string }> = ({ text }) => {
 	);
 };
 
+/** Таблица параметров одного вида; пустая секция не рисуется. */
+const ParamsTable: FC<{ label: string; params: Param[] }> = ({
+	label,
+	params,
+}) => {
+	if (params.length === 0) return null;
+
+	return (
+		<div className={s.sectionBlock}>
+			<div className={s.sectionLabel}>{label}</div>
+			<div className={s.paramsTable}>
+				<div className={s.paramsTableHead}>
+					<span>Name</span>
+					<span>Type</span>
+					<span>Description</span>
+					<span>Default</span>
+				</div>
+				{params.map((p) => (
+					<div className={s.paramRow} key={p.name}>
+						<span className={s.paramName}>
+							{p.name}
+							{p.required && <span className={s.paramRequired}>*</span>}
+						</span>
+						<span className={s.paramType}>{p.type}</span>
+						<span className={s.paramDesc}>{p.desc}</span>
+						<span className={s.paramDefault}>{p.default ?? "—"}</span>
+					</div>
+				))}
+			</div>
+		</div>
+	);
+};
+
 export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 	const [activeResponse, setActiveResponse] = useState(
 		Object.keys(detail.responses)[0],
@@ -88,7 +125,24 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 		Record<string, string>
 	>({});
 
-	const params = detail.queryParams ?? detail.bodyParams ?? [];
+	// Сегменты пути показываем по самому пути: описание к ним необязательно,
+	// но сам сегмент в документации быть обязан.
+	const described = new Map(
+		(detail.pathParams ?? []).map((param): [string, Param] => [
+			param.name,
+			param,
+		]),
+	);
+	const pathParams: Param[] = extractPathParams(detail.path).map(
+		(name) =>
+			described.get(name) ?? {
+				name,
+				type: "string",
+				required: true,
+				desc: "",
+				value: null,
+			},
+	);
 	const responseKeys = Object.keys(detail.responses);
 	const activeResp = detail.responses[activeResponse];
 	const activeExample =
@@ -126,30 +180,9 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 
 			<div className={s.divider} />
 
-			{params.length > 0 && (
-				<div className={s.sectionBlock}>
-					<div className={s.sectionLabel}>Request body</div>
-					<div className={s.paramsTable}>
-						<div className={s.paramsTableHead}>
-							<span>Name</span>
-							<span>Type</span>
-							<span>Description</span>
-							<span>Default</span>
-						</div>
-						{params.map((p) => (
-							<div className={s.paramRow} key={p.name}>
-								<span className={s.paramName}>
-									{p.name}
-									{p.required && <span className={s.paramRequired}>*</span>}
-								</span>
-								<span className={s.paramType}>{p.type}</span>
-								<span className={s.paramDesc}>{p.desc}</span>
-								<span className={s.paramDefault}>{p.default ?? "—"}</span>
-							</div>
-						))}
-					</div>
-				</div>
-			)}
+			<ParamsTable label="Path params" params={pathParams} />
+			<ParamsTable label="Query params" params={detail.queryParams ?? []} />
+			<ParamsTable label="Request body" params={detail.bodyParams ?? []} />
 
 			<div className={s.sectionBlock}>
 				<div className={s.sectionLabel}>Responses</div>

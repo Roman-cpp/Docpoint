@@ -20,7 +20,7 @@ const NAV_LINKS: {
 }[] = [
 	{ label: "Docs", href: "/docs" },
 	{ label: "HTTP Client", href: "/http-client" },
-	{ label: "WebSocket", href: "/websocket", window: true },
+	{ label: "WebSocket", href: "/ws-client", window: true },
 	{ label: "JSON", href: "/json-viewer", window: true },
 ];
 

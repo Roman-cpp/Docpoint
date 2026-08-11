@@ -1,28 +1,13 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { useAllDomains } from "@/entities/domain";
 import { type Platform, usePlatformsStore } from "@/entities/platform";
-import {
-	DeletePlatformModal,
-	PlatformModal,
-	usePlatformDocs,
-} from "@/features/platform";
+import { DeletePlatformModal, PlatformModal } from "@/features/platform";
 import { DropMenu } from "@/shared/ui-kit/controls";
 import s from "./SidebarPlatform.module.css";
-
-/** Русская форма слова по числу: [1, 2-4, 5-0]. */
-const plural = (n: number, forms: [string, string, string]): string => {
-	const m10 = n % 10;
-	const m100 = n % 100;
-	if (m10 === 1 && m100 !== 11) return forms[0];
-	if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return forms[1];
-	return forms[2];
-};
 
 interface PlatformCardProps {
 	platform: Platform;
 	active: boolean;
-	domainCount: number | null;
 	onEdit: (p: Platform) => void;
 	onDelete: (p: Platform) => void;
 }
@@ -30,24 +15,9 @@ interface PlatformCardProps {
 const PlatformCard = ({
 	platform,
 	active,
-	domainCount,
 	onEdit,
 	onDelete,
 }: PlatformCardProps) => {
-	const { docs, isDocsLoading } = usePlatformDocs(platform.id);
-
-	const meta =
-		domainCount === null ? (
-			<>— доменов · — файлов</>
-		) : (
-			<>
-				{domainCount} {plural(domainCount, ["домен", "домена", "доменов"])} ·{" "}
-				{isDocsLoading
-					? "—"
-					: `${docs.length} ${plural(docs.length, ["файл", "файла", "файлов"])}`}
-			</>
-		);
-
 	return (
 		<div className={`${s.pfCard} ${active ? s.pfCardActive : ""}`}>
 			<Link
@@ -55,11 +25,7 @@ const PlatformCard = ({
 				className={s.pfCardLink}
 				title={platform.desc || platform.name}
 			>
-				<span className={s.pfCardIcon} aria-hidden />
-				<span className={s.pfCardBody}>
-					<span className={s.pfCardName}>{platform.name}</span>
-					<span className={s.pfCardMeta}>{meta}</span>
-				</span>
+				<span className={s.pfCardName}>{platform.name}</span>
 			</Link>
 
 			<div className={s.pfCardMenu} onClick={(e) => e.stopPropagation()}>
@@ -89,7 +55,6 @@ const PlatformCard = ({
 export const PlatformsSection = () => {
 	const { platforms, createPlatform, updatePlatform, isCreating, isUpdating } =
 		usePlatformsStore();
-	const { domains, isDomainsLoading } = useAllDomains();
 
 	const { id: activeId } = useParams();
 
@@ -97,15 +62,6 @@ export const PlatformsSection = () => {
 	const [pending, setPending] = useState<Platform | null>(null);
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
-	/** Кол-во доменов на каждую платформу из общего списка. */
-	const domainCounts = useMemo(() => {
-		const map = new Map<string, number>();
-		for (const dom of domains) {
-			map.set(dom.platformId, (map.get(dom.platformId) ?? 0) + 1);
-		}
-		return map;
-	}, [domains]);
 
 	const openCreate = () => {
 		setEditing(null);
@@ -132,9 +88,6 @@ export const PlatformsSection = () => {
 						key={p.id}
 						platform={p}
 						active={String(p.id) === activeId}
-						domainCount={
-							isDomainsLoading ? null : (domainCounts.get(p.id) ?? 0)
-						}
 						onEdit={openEdit}
 						onDelete={openDelete}
 					/>

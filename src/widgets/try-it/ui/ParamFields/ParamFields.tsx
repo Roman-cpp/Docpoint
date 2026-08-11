@@ -1,6 +1,7 @@
 import type { FC } from "react";
-import type { Endpoint } from "@/entities/doc-api";
-import { extractPathParams, readValue, valueKey } from "../../lib/buildRequest";
+import type { Endpoint, Param } from "@/entities/doc-api";
+import { extractPathParams } from "@/entities/doc-api";
+import { readValue, valueKey } from "../../lib/buildRequest";
 import type { ParamValues } from "../../model/tryIt.types";
 import { ParamField } from "../ParamField";
 import s from "./ParamFields.module.css";
@@ -17,6 +18,14 @@ export const ParamFields: FC<ParamFieldsProps> = ({
 	values,
 	onChange,
 }) => {
+	// Перечень сегментов задаёт путь, а описания к ним — схема: сегмент без
+	// описания всё равно показывается, иначе его негде было бы заполнить.
+	const described = new Map(
+		(endpoint.pathParams ?? []).map((param): [string, Param] => [
+			param.name,
+			param,
+		]),
+	);
 	const pathParams = extractPathParams(endpoint.path);
 	const queryParams = endpoint.queryParams ?? [];
 
@@ -25,16 +34,20 @@ export const ParamFields: FC<ParamFieldsProps> = ({
 			{pathParams.length > 0 && (
 				<div className={s.group}>
 					<div className={s.groupLbl}>Path params</div>
-					{pathParams.map((name) => (
-						<ParamField
-							key={name}
-							name={name}
-							required
-							placeholder={name}
-							value={readValue(values, "path", name)}
-							onChange={(value) => onChange(valueKey("path", name), value)}
-						/>
-					))}
+					{pathParams.map((name) => {
+						const param = described.get(name);
+						return (
+							<ParamField
+								key={name}
+								name={name}
+								required={param?.required ?? true}
+								type={param?.type}
+								placeholder={param?.desc || name}
+								value={readValue(values, "path", name, param?.value)}
+								onChange={(value) => onChange(valueKey("path", name), value)}
+							/>
+						);
+					})}
 				</div>
 			)}
 

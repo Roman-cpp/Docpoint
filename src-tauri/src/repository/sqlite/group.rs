@@ -1,6 +1,10 @@
 use crate::domain::doc_api::endpoint::entity::{Endpoint, ParamDef, ResponseDef, ResponseSchemaField};
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
 use crate::repository::sqlite::endpoint::EndpointRepo;
+use crate::domain::doc_api::endpoint_request::repository::{
+    EndpointRequestRepository, RequestTarget,
+};
+use crate::repository::sqlite::endpoint_request::EndpointRequestRepo;
 use crate::domain::doc_api::group::dto::CreateGroupDTO;
 use crate::domain::doc_api::group::entity::Group;
 use sqlx::{Row, SqlitePool};
@@ -124,37 +128,27 @@ impl GroupRepository for GroupRepo<'_> {
                     .map(|t| t.get("tag"))
                     .collect();
 
-                let query_params: Vec<ParamDef> = param_rows
-                    .iter()
-                    .filter(|p| {
-                        p.get::<String, _>("endpoint_id") == eid
-                            && p.get::<String, _>("kind") == "query"
-                    })
-                    .map(|p| ParamDef {
-                        name: p.get("name"),
-                        type_: p.get("type"),
-                        required: p.get::<i64, _>("required") != 0,
-                        desc: p.get("desc"),
-                        default: p.get("default_val"),
-                        value: p.get("value"),
-                    })
-                    .collect();
+                let params_of = |kind: &str| -> Vec<ParamDef> {
+                    param_rows
+                        .iter()
+                        .filter(|p| {
+                            p.get::<String, _>("endpoint_id") == eid
+                                && p.get::<String, _>("kind") == kind
+                        })
+                        .map(|p| ParamDef {
+                            name: p.get("name"),
+                            type_: p.get("type"),
+                            required: p.get::<i64, _>("required") != 0,
+                            desc: p.get("desc"),
+                            default: p.get("default_val"),
+                            value: p.get("value"),
+                        })
+                        .collect()
+                };
 
-                let body_params: Vec<ParamDef> = param_rows
-                    .iter()
-                    .filter(|p| {
-                        p.get::<String, _>("endpoint_id") == eid
-                            && p.get::<String, _>("kind") == "body"
-                    })
-                    .map(|p| ParamDef {
-                        name: p.get("name"),
-                        type_: p.get("type"),
-                        required: p.get::<i64, _>("required") != 0,
-                        desc: p.get("desc"),
-                        default: p.get("default_val"),
-                        value: p.get("value"),
-                    })
-                    .collect();
+                let path_params = params_of("path");
+                let query_params = params_of("query");
+                let body_params = params_of("body");
 
                 let mut responses: HashMap<String, ResponseDef> = HashMap::new();
                 for resp in response_rows
@@ -191,6 +185,7 @@ impl GroupRepository for GroupRepo<'_> {
                     description: e.get("description"),
                     tags,
                     auth: e.get::<i64, _>("auth") != 0,
+                    path_params,
                     query_params,
                     body_params,
                     responses,
@@ -222,8 +217,23 @@ impl GroupRepository for GroupRepo<'_> {
         for (gi, group) in groups.iter().enumerate() {
             let group_id = self.insert_group(doc_id, group, gi).await?;
             let endpoint_repo = EndpointRepo::new(self.db);
-            for (ei, endpoint) in group.endpoints.iter().enumerate() {
-                endpoint_repo.create(&group_id, endpoint).await?;
+            let request_repo = EndpointRequestRepo::new(self.db);
+            for endpoint in &group.endpoints {
+                let endpoint_id = endpoint_repo.create(&group_id, endpoint).await?;
+                // Наборы «Try it» из импортируемого файла: порядок берём из
+                // позиции в массиве, id генерирует репозиторий.
+                let target = RequestTarget {
+                    endpoint_id: &endpoint_id,
+                    path: &endpoint.path,
+                    query_names: endpoint
+                        .query_params
+                        .iter()
+                        .map(|param| param.name.as_str())
+                        .collect(),
+                };
+                for (ri, request) in endpoint.requests.iter().enumerate() {
+                    request_repo.insert(&target, ri as i64, request).await?;
+                }
             }
         }
         Ok(())
@@ -284,5 +294,191 @@ impl GroupRepo<'_> {
         .map_err(|e| e.to_string())?;
 
         Ok(group_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::doc_api::doc_api::dto::CreateDocApiDTO;
+    use crate::domain::doc_api::doc_api::repository::DocRepository;
+    use crate::repository::sqlite::doc_api::DocRepo;
+    use serde::Deserialize;
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    /// Ровно то, что читает команда `import_doc`.
+    #[derive(Deserialize)]
+    struct ImportFile {
+        doc: CreateDocApiDTO,
+        groups: Vec<CreateGroupDTO>,
+    }
+
+    /// Схема из настоящих миграций — тест ловит и рассинхрон с ними.
+    async fn db() -> SqlitePool {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+        pool
+    }
+
+    /// Пример из документации импортируется целиком, вместе с наборами «Try it».
+    /// Файл подключён через `include_str!`, поэтому тест краснеет, если пример
+    /// разъедется с DTO — документация не сможет соврать молча.
+    #[tokio::test]
+    async fn the_documented_example_imports_with_its_test_requests() {
+        let raw = include_str!("../../../../docs/import/doc-api-example-import.json");
+        let file: ImportFile = serde_json::from_str(raw).expect("пример не разбирается");
+
+        let pool = db().await;
+        let doc_id = DocRepo::new(&pool).create(&file.doc).await.unwrap();
+        GroupRepo::new(&pool).create(&doc_id, &file.groups).await.unwrap();
+
+        // Наборы легли на свои эндпоинты, а не куда попало.
+        let login_id: String = sqlx::query_scalar(
+            "SELECT id FROM endpoint WHERE path = '/auth/login' AND method = 'POST'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        let login = EndpointRequestRepo::new(&pool).list(&login_id).await.unwrap();
+        assert_eq!(
+            login.iter().map(|r| r.name.as_str()).collect::<Vec<_>>(),
+            ["Валидные учётные данные", "Неверный пароль — ждём 401"],
+            "порядок наборов должен идти из файла"
+        );
+        let login_body: serde_json::Value = serde_json::from_str(&login[0].body).unwrap();
+        assert_eq!(login_body["email"], "admin@example.com");
+        assert!(
+            login[0].values.is_empty(),
+            "тело больше не хранится плоскими значениями"
+        );
+
+        // Тело-объект из файла доехало документом, вложенность сохранилась.
+        let create_task_id: String =
+            sqlx::query_scalar("SELECT id FROM endpoint WHERE path = '/tasks' AND method = 'POST'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        let tasks = EndpointRequestRepo::new(&pool).list(&create_task_id).await.unwrap();
+        let nested: serde_json::Value = serde_json::from_str(&tasks[0].body).unwrap();
+        assert_eq!(nested["title"], "Подготовить релиз");
+        assert_eq!(nested["meta"]["labels"][0], "release");
+        assert_eq!(nested["meta"]["estimate"]["value"], 8);
+        assert_eq!(tasks[0].headers[0].name, "Idempotency-Key");
+
+        // Тело-строка остаётся дословно, без попытки разобрать его как JSON.
+        assert_eq!(tasks[2].body, "title=Подготовить релиз&priority=high");
+
+        // Выключенный заголовок сохраняется именно выключенным.
+        let delete_user_id: String = sqlx::query_scalar(
+            "SELECT id FROM endpoint WHERE path = '/users/{id}' AND method = 'DELETE'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let del = EndpointRequestRepo::new(&pool).list(&delete_user_id).await.unwrap();
+        assert!(!del[0].headers[0].enabled);
+        assert!(del[0].values.iter().any(|v| v.kind == "path" && v.name == "id"));
+
+        // Набор, где заданы все части запроса разом: сегмент пути, строка
+        // запроса, заголовок и тело.
+        let patch_task_id: String = sqlx::query_scalar(
+            "SELECT id FROM endpoint WHERE path = '/tasks/{id}' AND method = 'PATCH'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let patch = EndpointRequestRepo::new(&pool).list(&patch_task_id).await.unwrap();
+        let value = |kind: &str, name: &str| {
+            patch[0]
+                .values
+                .iter()
+                .find(|v| v.kind == kind && v.name == name)
+                .map(|v| v.value.as_str())
+        };
+        assert!(value("path", "id").is_some());
+        assert_eq!(
+            value("query", "notify"),
+            Some("true"),
+            "булево значение параметра доезжает строкой"
+        );
+        assert_eq!(patch[0].headers[0].name, "Idempotency-Key");
+        assert!(patch[0].headers[0].enabled, "объект задаёт включённые заголовки");
+        let patch_body: serde_json::Value = serde_json::from_str(&patch[0].body).unwrap();
+        assert_eq!(patch_body["status"], "done");
+
+        // Описания сегментов пути доезжают вместе со схемой эндпоинта.
+        let described: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT name, type, desc FROM param \
+             WHERE endpoint_id = ? AND kind = 'path' ORDER BY sort_ord",
+        )
+        .bind(&patch_task_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            described,
+            vec![("id".into(), "uuid".into(), "UUID задачи".into())]
+        );
+
+        // Эндпоинты без секции `requests` остаются без наборов.
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint_requests")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(total, 12);
+    }
+
+    /// Описание сегмента, которого нет в пути, — опечатка: такой эндпоинт
+    /// не импортируется молча, иначе описание просто пропало бы из виду.
+    #[tokio::test]
+    async fn a_path_param_that_is_not_in_the_path_stops_the_import() {
+        let raw = r#"{
+            "doc": { "name": "My API", "version": "v1", "desc": "d", "tags": [] },
+            "groups": [{ "label": "Default", "endpoints": [{
+                "method": "GET", "path": "/posts/{postId}", "name": "Post", "description": "",
+                "pathParams": [
+                    { "name": "postid", "type": "uuid", "required": true, "desc": "", "default": "" }
+                ],
+                "responses": {}
+            }]}]
+        }"#;
+        let file: ImportFile = serde_json::from_str(raw).unwrap();
+
+        let pool = db().await;
+        let doc_id = DocRepo::new(&pool).create(&file.doc).await.unwrap();
+        let err = GroupRepo::new(&pool)
+            .create(&doc_id, &file.groups)
+            .await
+            .unwrap_err();
+
+        assert!(err.contains("postid"), "невнятная подсказка: {err}");
+    }
+
+    /// Файл без секции `requests` (старый формат) импортируется как раньше.
+    #[tokio::test]
+    async fn a_file_without_requests_still_imports() {
+        let raw = r#"{
+            "doc": { "name": "My API", "version": "v1", "desc": "d", "tags": [] },
+            "groups": [{ "label": "Default", "endpoints": [{
+                "method": "GET", "path": "/ping", "name": "Ping", "description": "",
+                "tags": [], "auth": false, "queryParams": [], "bodyParams": [], "responses": {}
+            }]}]
+        }"#;
+        let file: ImportFile = serde_json::from_str(raw).unwrap();
+
+        let pool = db().await;
+        let doc_id = DocRepo::new(&pool).create(&file.doc).await.unwrap();
+        GroupRepo::new(&pool).create(&doc_id, &file.groups).await.unwrap();
+
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint_requests")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(total, 0);
     }
 }

@@ -401,18 +401,6 @@ export const EnvironmentPage: FC = () => {
 						<span className={s.sep}>·</span>
 						<span>{selectedEnv.value.length} переменных</span>
 						<span className={s.sep}>·</span>
-						<span
-							className={`${s.envTokenPill} ${tokenInfo.variant === "warn" ? s.warn : ""}`}
-							title={
-								selectedEnv.accessToken ??
-								(cookieCount
-									? `Куки сессии: ${Object.keys(authCookies).join(", ")}`
-									: "Нет ни токена, ни кук")
-							}
-						>
-							<span className={s.dot} />
-							{tokenInfo.label}
-						</span>
 					</div>
 				</div>
 				<div className={s.envHeroActions}>
@@ -470,7 +458,6 @@ export const EnvironmentPage: FC = () => {
 									onLabelChange={setLabel}
 									onLabelBlur={() => saveEnvironment()}
 									envTag={selectedEnv.env}
-									accentColor={getEnvDotColor(selectedEnv.env)}
 									statusHint={statusHint(envStatus)}
 								/>
 								<EndpointSection

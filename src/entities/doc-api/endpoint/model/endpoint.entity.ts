@@ -1,6 +1,6 @@
 import type { HttpMethod } from "@/entities/shared/http-method";
 
-interface Param {
+export interface Param {
 	name: string;
 	type: string;
 	required: boolean;
@@ -30,6 +30,8 @@ export interface Endpoint {
 	description: string;
 	tags: string[];
 	auth: boolean;
+	/** Описания сегментов пути. Какие сегменты есть, задаёт `path`. */
+	pathParams: Param[];
 	queryParams: Param[];
 	bodyParams: Param[];
 	responses: Record<string, Response>;

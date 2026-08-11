@@ -10,3 +10,6 @@ pub mod group;
 pub mod platform;
 pub mod domain;
 pub mod websocket_message;
+
+#[cfg(test)]
+pub mod test_db;

@@ -1,6 +1,14 @@
-export type ParamKind = "path" | "query" | "body";
+/**
+ * Параметры, которые попадают в URL. Тело здесь не участвует — оно хранится
+ * отдельным JSON-документом в `EndpointRequest.body`.
+ */
+export type ParamKind = "path" | "query";
 
-/** Способ задать тело запроса: по полям схемы или сырым JSON. */
+/**
+ * Каким редактором открывать тело набора: формой по полям схемы или редактором
+ * JSON. Тело в обоих случаях одно и то же — это настройка отображения, а не
+ * признак того, где лежат данные.
+ */
 export type BodyMode = "fields" | "raw";
 
 export interface RequestParamValue {
@@ -23,7 +31,8 @@ export interface EndpointRequest {
 	name: string;
 	sortOrd: number;
 	bodyMode: BodyMode;
-	rawBody: string;
+	/** Тело запроса как JSON-документ. Пустая строка — тела нет. */
+	body: string;
 	headers: RequestHeader[];
 	values: RequestParamValue[];
 }

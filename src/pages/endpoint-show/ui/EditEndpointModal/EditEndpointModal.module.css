@@ -57,6 +57,20 @@
 	gap: 6px;
 }
 
+/* Имя сегмента приходит из пути, поэтому показываем его, а не поле ввода. */
+.paramNameFixed {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--code-ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.paramRowFixed {
+	grid-template-columns: 1.2fr 0.9fr 1.6fr auto;
+}
+
 .reqToggle {
 	display: inline-flex;
 	align-items: center;

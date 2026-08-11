@@ -1,1 +1,0 @@
-export { AuthNotice } from "./AuthNotice";

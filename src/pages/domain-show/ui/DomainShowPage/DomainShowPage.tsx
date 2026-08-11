@@ -304,12 +304,12 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					<div className={s.apiCardsGrid}>
 						{websockets.map((ws) => (
 							<Link
-								to="/websocket"
+								to={`/doc-ws-show/${ws.id}`}
 								key={ws.id}
 								className={s.apiCard}
-								// Carry the socket's id and URL so the tester page can prefill
-								// the connection and load its saved example messages.
-								state={{ id: ws.id, url: ws.url, name: ws.name }}
+								// Имя и адрес — подсказка для шапки: она рисуется сразу, не
+								// дожидаясь, пока страница перечитает сокет по id.
+								state={{ url: ws.url, name: ws.name }}
 								onContextMenu={(e) => {
 									e.preventDefault();
 									e.stopPropagation();

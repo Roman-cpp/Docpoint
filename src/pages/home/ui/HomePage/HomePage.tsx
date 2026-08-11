@@ -24,9 +24,9 @@ const TOOLS: Tool[] = [
 		accent: "var(--blue)",
 	},
 	{
-		name: "WebSocket",
+		name: "WS Client",
 		desc: "Open WebSocket connections and exchange messages in real time.",
-		href: "/websocket",
+		href: "/ws-client",
 		icon: "⚡",
 		iconColor: "var(--amber)",
 		accent: "var(--cat-ink)",

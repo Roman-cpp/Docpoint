@@ -13,11 +13,13 @@ export { createEndpointApi } from "./endpoint/api/create-endpoint-api";
 export { deleteEndpointApi } from "./endpoint/api/delete-endpoint-api";
 export { updateEndpointApi } from "./endpoint/api/update-endpoint-api";
 export { updateParamValueApi } from "./endpoint/api/update-param-value-api";
+export { extractPathParams } from "./endpoint/lib/path";
 export type {
 	CreateEndpointDTO,
+	ImportEndpointRequest,
 	UpdateEndpointDTO,
 } from "./endpoint/model/endpoint.dto";
-export type { Endpoint } from "./endpoint/model/endpoint.entity";
+export type { Endpoint, Param } from "./endpoint/model/endpoint.entity";
 export {
 	createEndpointRequestApi,
 	deleteEndpointRequestApi,
