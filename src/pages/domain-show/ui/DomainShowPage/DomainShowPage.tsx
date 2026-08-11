@@ -18,6 +18,11 @@ import {
 } from "@/features/doc-api";
 import { CreateDocApiModal } from "@/features/doc-api/create-doc-api";
 import { domainDocsKeys, useDomainDocs } from "@/features/domain";
+import {
+	type ImportWebsocketPayload,
+	parseWebsocketImport,
+	useImportWebsocket,
+} from "@/features/websocket";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
@@ -51,6 +56,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		updateDocAsync,
 	} = useDocsStore();
 	const { importDocAsync, isImporting } = useImportExportDoc();
+	const { importWebsocket, isImportingWebsocket } = useImportWebsocket(id);
 	const { attachDocAsync, isAttaching } = useAttachDoc();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -72,6 +78,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	} | null>(null);
 	const [pendingWsEdit, setPendingWsEdit] = useState<DocWebsocket | null>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
+	const wsImportInputRef = useRef<HTMLInputElement>(null);
 
 	/** Read a previously exported doc JSON, import it, and immediately attach the
 	 *  new doc to this domain so it appears under "Прикреплённые документы". */
@@ -94,6 +101,30 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				description: err instanceof Error ? err.message : String(err),
 			});
 		}
+	};
+
+	/** Читает файл WS-дока, создаёт сокет в этом домене и заливает в него
+	 *  примеры сообщений. Разбор файла отделён от мутации: свои ошибки он
+	 *  объясняет сам, а мутация показывает свои. */
+	const handleImportWsFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		// Reset the input so picking the same file again still fires onChange.
+		e.target.value = "";
+		if (!file) return;
+
+		let payload: ImportWebsocketPayload;
+		try {
+			payload = parseWebsocketImport(await file.text());
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось прочитать файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+			return;
+		}
+
+		importWebsocket(payload);
 	};
 
 	/** Export a doc to JSON, in the same format handleImportFile accepts. */
@@ -290,9 +321,25 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
 						Прикреплённые WebSocket
 					</h2>
-					<Button variant="subtle" onClick={() => setWsModalOpen(true)}>
-						+ Создать WS
-					</Button>
+					<div style={{ display: "flex", gap: 8 }}>
+						<Button
+							variant="subtle"
+							disabled={isImportingWebsocket}
+							onClick={() => wsImportInputRef.current?.click()}
+						>
+							{isImportingWebsocket ? "Импорт…" : "↓ Импортировать"}
+						</Button>
+						<Button variant="subtle" onClick={() => setWsModalOpen(true)}>
+							+ Создать WS
+						</Button>
+					</div>
+					<input
+						ref={wsImportInputRef}
+						type="file"
+						accept="application/json,.json"
+						style={{ display: "none" }}
+						onChange={handleImportWsFile}
+					/>
 				</div>
 				{isWebsocketsLoading ? (
 					<p className={s.ovSub}>Загрузка WebSocket…</p>

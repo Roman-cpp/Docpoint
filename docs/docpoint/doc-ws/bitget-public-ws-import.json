@@ -1,0 +1,54 @@
+{
+	"version": 1,
+	"websocket": {
+		"name": "Bitget · Public v2",
+		"url": "wss://ws.bitget.com/v2/ws/public"
+	},
+	"messages": [
+		{
+			"name": "Свечи 1m · подписка (SPOT)",
+			"desc": "Главное сообщение для свечей в реальном времени. Ответ-подтверждение: {\"event\":\"subscribe\",\"arg\":{\"instType\":\"SPOT\",\"channel\":\"candle1m\",\"instId\":\"BTCUSDT\"}}. Дальше сервер сам шлёт кадры {\"action\":\"snapshot|update\",\"arg\":{...},\"data\":[[...]],\"ts\":...} — снапшот текущей свечи, потом обновления по мере торгов.",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"candle1m\", \"instId\": \"BTCUSDT\" } ] }"
+		},
+		{
+			"name": "Свечи 1m · подписка (USDT-FUTURES)",
+			"desc": "То же самое для бессрочных фьючерсов. instType: SPOT | USDT-FUTURES | COIN-FUTURES (для COIN-FUTURES instId вида BTCUSD). В data у фьючерсов 7 полей вместо 8 — нет последнего объёма в USDT.",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"USDT-FUTURES\", \"channel\": \"candle1m\", \"instId\": \"BTCUSDT\" } ] }"
+		},
+		{
+			"name": "Свечи · пачкой (интервалы и инструменты)",
+			"desc": "В args можно перечислить до 50 подписок за раз — на каждую придёт отдельный event:subscribe. Проверенные каналы: candle1m, candle3m, candle5m, candle15m, candle30m, candle1H, candle4H, candle6H, candle12H, candle1D, candle3D, candle1W, candle1M плюс UTC-варианты candle6Hutc, candle1Dutc, candle1Wutc. Регистр важен.",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"candle1m\", \"instId\": \"BTCUSDT\" }, { \"instType\": \"SPOT\", \"channel\": \"candle5m\", \"instId\": \"BTCUSDT\" }, { \"instType\": \"SPOT\", \"channel\": \"candle15m\", \"instId\": \"ETHUSDT\" } ] }"
+		},
+		{
+			"name": "Свечи 1m · отписка",
+			"desc": "Отписка повторяет arg подписки один в один. Ответ: {\"event\":\"unsubscribe\",\"arg\":{...}}.",
+			"payload": "{ \"op\": \"unsubscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"candle1m\", \"instId\": \"BTCUSDT\" } ] }"
+		},
+		{
+			"name": "ping (обычный текст, не JSON)",
+			"desc": "Bitget рвёт соединение после 30 секунд тишины. Слать надо голое слово ping текстовым кадром — не {\"op\":\"ping\"}. В ответ приходит такой же текстовый pong.",
+			"payload": "ping"
+		},
+		{
+			"name": "Тикер · подписка (проверка потока)",
+			"desc": "Служебная подписка: тикер шлётся часто, поэтому по нему сразу видно, идёт ли поток вообще, или соединение приняло подписку и молчит.",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"ticker\", \"instId\": \"BTCUSDT\" } ] }"
+		},
+		{
+			"name": "Сделки · подписка (проверка потока)",
+			"desc": "Единственный канал, который отвечает снапшотом мгновенно, ещё до первых обновлений: {\"action\":\"snapshot\",\"arg\":{\"instType\":\"SPOT\",\"channel\":\"trade\",\"instId\":\"BTCUSDT\"},\"data\":[{\"ts\":\"1786453310599\",\"price\":\"64328.22\",\"size\":\"0.002294\",\"side\":\"sell\",\"tradeId\":\"1471057294462271492\"}]}. Удобен, чтобы отличить «нет данных по свече» от «поток мёртвый».",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"trade\", \"instId\": \"BTCUSDT\" } ] }"
+		},
+		{
+			"name": "Ошибка · неверный регистр интервала",
+			"desc": "candle1h вместо candle1H. Ответ: {\"event\":\"error\",\"arg\":{\"instType\":\"SPOT\",\"channel\":\"candle1h\",\"instId\":\"BTCUSDT\"},\"code\":30016,\"msg\":\"Param error\",\"op\":\"subscribe\"}. Полезно как образец кадра ошибки.",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"candle1h\", \"instId\": \"BTCUSDT\" } ] }"
+		},
+		{
+			"name": "Ошибка · несуществующий инструмент",
+			"desc": "Ответ: {\"event\":\"error\",\"arg\":{...},\"code\":30001,\"msg\":\"instType:SPOT,channel:candle1m,instId:NOPE_XYZ,precision:null doesn't exist\",\"op\":\"subscribe\"}. Ошибка приходит на конкретный arg, остальные подписки из того же запроса продолжают работать.",
+			"payload": "{ \"op\": \"subscribe\", \"args\": [ { \"instType\": \"SPOT\", \"channel\": \"candle1m\", \"instId\": \"NOPE_XYZ\" } ] }"
+		}
+	]
+}
