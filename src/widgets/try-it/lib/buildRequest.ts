@@ -234,7 +234,12 @@ export function buildHeaders(
 	env: Environment,
 	body: string | null,
 ): Record<string, string> {
-	const result: Record<string, string> = { Accept: "application/json" };
+	// `*/*` в хвосте обязателен: голый `application/json` отсекает всё, что
+	// смотрит на Accept — SPA-фоллбэк дев-сервера отдаёт на него пустой 404
+	// вместо страницы, и в панели ответ выглядит пустым без причины.
+	const result: Record<string, string> = {
+		Accept: "application/json, */*;q=0.8",
+	};
 	if (body !== null) result["Content-Type"] = "application/json";
 
 	for (const header of headers) {

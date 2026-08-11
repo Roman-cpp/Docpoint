@@ -157,6 +157,16 @@
 	text-align: center;
 }
 
+/* Подпись под заглушкой: статус и заголовки, объясняющие пустое тело */
+.emptyMeta {
+	margin-top: 6px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+	opacity: 0.75;
+	word-break: break-all;
+}
+
 .error {
 	flex: 1 1 auto;
 	min-height: 0;

@@ -110,11 +110,6 @@ function formatAt(iso: string): string {
 	return `${d}.${mo} ${hh}:${mm}`;
 }
 
-/** 12840 → "12 840". */
-function formatNum(n: number): string {
-	return n.toLocaleString("ru-RU");
-}
-
 /* ─── Page ─── */
 export const DomainsPage: FC = () => {
 	const [search, setSearch] = useState("");

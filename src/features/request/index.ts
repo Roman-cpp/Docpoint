@@ -19,7 +19,11 @@ export {
 	selectSelectedRequest,
 	useRequestStore,
 } from "./request-history-state";
-export type { ApiResponse, ResponseStore } from "./request-response-state";
+export type {
+	ApiResponse,
+	ResponseHeader,
+	ResponseStore,
+} from "./request-response-state";
 export {
 	actionClearResponse,
 	actionSetResponse,

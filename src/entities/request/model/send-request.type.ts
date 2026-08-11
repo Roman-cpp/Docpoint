@@ -11,6 +11,11 @@ export interface SendRequestResult {
 	status: number;
 	status_text: string;
 	headers: Record<string, string>;
+	/**
+	 * Все `Set-Cookie` ответа, по одному на элемент: в `headers` одноимённые
+	 * схлопываются в последний, поэтому бэкенд отдаёт их отдельным списком.
+	 */
+	set_cookies: string[];
 	body: string;
 	duration_ms: number;
 }

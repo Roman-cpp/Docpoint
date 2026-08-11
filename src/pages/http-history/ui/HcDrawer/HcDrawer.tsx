@@ -1,4 +1,4 @@
-import { type FC, Fragment, useEffect, useState } from "react";
+import { type FC, Fragment, useState } from "react";
 import { selectSelectedRequest, useRequestStore } from "@/features/request";
 import { cx } from "@/shared/lib/cx";
 import type { HistoryRecord } from "../../model/types";

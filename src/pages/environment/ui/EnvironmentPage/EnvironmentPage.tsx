@@ -372,22 +372,6 @@ export const EnvironmentPage: FC = () => {
 		const accent = getEnvDotColor(selectedEnv.env);
 		const finalUrl = joinUrl(baseUrl, prefix) || "—";
 		// Окружение может авторизоваться токеном, куками или и тем, и другим.
-		const cookieCount = Object.keys(authCookies).length;
-		const tokenInfo = selectedEnv.accessToken
-			? {
-					variant: "ok" as const,
-					label: `Токен · ${selectedEnv.accessToken.slice(0, 12)}${selectedEnv.accessToken.length > 12 ? "…" : ""}`,
-				}
-			: cookieCount
-				? {
-						variant: "ok" as const,
-						label: `Куки · ${cookieCount}`,
-					}
-				: {
-						variant: "warn" as const,
-						label: "Не авторизовано",
-					};
-
 		return (
 			<div className={s.envHero}>
 				<span className={s.envHeroMark} style={{ background: accent }} />

@@ -2,10 +2,17 @@ import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
+/** Заголовок ответа. Списком, а не мапой: `Set-Cookie` приходит не один. */
+export interface ResponseHeader {
+	key: string;
+	value: string;
+}
+
 /**
  * Состояние последнего ответа из панели "Try it". `body` хранится строкой
  * (как его вернул бэкенд / после pretty-print JSON), потребитель сам решает,
- * парсить ли её в дерево.
+ * парсить ли её в дерево. Пустая строка — ответ без тела, это не то же самое,
+ * что отсутствие ответа.
  */
 export interface ApiResponse {
 	ok?: boolean;
@@ -13,6 +20,7 @@ export interface ApiResponse {
 	statusText?: string;
 	dur: number;
 	body?: string;
+	headers?: ResponseHeader[];
 	error?: string;
 }
 

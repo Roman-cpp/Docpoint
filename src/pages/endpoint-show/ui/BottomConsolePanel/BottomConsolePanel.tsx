@@ -1,5 +1,9 @@
 import { type FC, useMemo, useRef, useState } from "react";
-import { selectResponse, useResponseStore } from "@/features/request";
+import {
+	type ResponseHeader,
+	selectResponse,
+	useResponseStore,
+} from "@/features/request";
 import { JsonTree, type JsonTreeHandle } from "@/shared/ui-kit/data-display";
 import s from "./BottomConsolePanel.module.css";
 
@@ -29,6 +33,11 @@ function tryParseJson(
 	}
 }
 
+/** Имена заголовков бэкенд отдаёт в нижнем регистре, но полагаться на это незачем. */
+function findHeader(headers: ResponseHeader[] | undefined, name: string) {
+	return headers?.find((h) => h.key.toLowerCase() === name)?.value;
+}
+
 /* ── Компонент ────────────────────────────────────────────────────── */
 
 type Tab = "body" | "headers";
@@ -49,6 +58,26 @@ export const BottomConsolePanel: FC = () => {
 
 	const body = response?.body ?? "";
 	const parsed = useMemo(() => tryParseJson(body), [body]);
+	const headers = response?.headers;
+
+	/** Чем объяснить пустое тело: статус и то, что сервер сам сказал о содержимом. */
+	const emptyHint = useMemo(() => {
+		if (!response || response.error) return "";
+		const parts = [`${response.status} ${response.statusText}`];
+		const type = findHeader(headers, "content-type");
+		const length = findHeader(headers, "content-length");
+		if (type) parts.push(type);
+		if (length !== undefined) parts.push(`content-length: ${length}`);
+		return parts.join(" · ");
+	}, [response, headers]);
+
+	const headersText = useMemo(
+		() => (headers ?? []).map((h) => `${h.key}: ${h.value}`).join("\n"),
+		[headers],
+	);
+
+	// Копируем то, что на экране: с вкладки заголовков тело копировать незачем.
+	const copyText = tab === "body" ? body : headersText;
 
 	const toggleMaximize = () => {
 		// родитель нашего корня — это div блока DockLayout.Bottom с inline-высотой
@@ -85,7 +114,7 @@ export const BottomConsolePanel: FC = () => {
 
 	const copy = async () => {
 		try {
-			await navigator.clipboard.writeText(body);
+			await navigator.clipboard.writeText(copyText);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1200);
 		} catch {
@@ -164,7 +193,7 @@ export const BottomConsolePanel: FC = () => {
 							</button>
 						)}
 
-						{!response.error && (
+						{!response.error && copyText && (
 							<button type="button" className={s.copyBtn} onClick={copy}>
 								{copied ? "Скопировано" : "Копировать"}
 							</button>
@@ -209,7 +238,16 @@ export const BottomConsolePanel: FC = () => {
 				) : response.error ? (
 					<div className={s.error}>Network error: {response.error}</div>
 				) : tab === "body" ? (
-					parsed.ok ? (
+					!body ? (
+						// Пустое тело — это ответ, а не сбой панели: показываем, чем его
+						// объяснил сервер, иначе экран выглядит сломанным.
+						<div className={s.empty}>
+							<div>
+								<div>Сервер вернул ответ без тела</div>
+								{emptyHint && <div className={s.emptyMeta}>{emptyHint}</div>}
+							</div>
+						</div>
+					) : parsed.ok ? (
 						<div className={s.contentTree}>
 							<JsonTree
 								ref={treeRef}
@@ -221,12 +259,19 @@ export const BottomConsolePanel: FC = () => {
 						</div>
 					) : (
 						<div className={s.content}>
-							<pre className={s.raw}>{body || "(empty)"}</pre>
+							<pre className={s.raw}>{body}</pre>
 						</div>
 					)
+				) : headers?.length ? (
+					<div className={s.headers}>
+						{headers.map(({ key, value }) => (
+							<div key={`${key}: ${value}`} className={s.headerRow}>
+								<span className={s.headerKey}>{key}:</span>
+								<span className={s.headerVal}>{value}</span>
+							</div>
+						))}
+					</div>
 				) : (
-					// Заголовки ответа пока не возвращаются бэкендом (send_request
-					// отдаёт только status/body/duration), поэтому показываем заглушку.
 					<div className={s.empty}>Заголовки ответа недоступны</div>
 				)}
 			</div>

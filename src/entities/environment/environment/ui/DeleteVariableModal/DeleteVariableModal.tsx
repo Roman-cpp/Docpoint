@@ -84,7 +84,6 @@ export const DeleteVariableModal: FC<DeleteVariableModalProps> = ({
 							className={s.modalDanger}
 							onClick={confirm}
 							disabled={loading}
-							autoFocus
 						>
 							{loading ? "Удаляем…" : "Удалить"}
 						</button>

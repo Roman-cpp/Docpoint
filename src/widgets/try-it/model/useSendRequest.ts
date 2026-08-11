@@ -1,12 +1,16 @@
 import { useState } from "react";
 import type { Doc, Endpoint } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
-import { sendRequestApi } from "@/entities/request";
+import { type SendRequestResult, sendRequestApi } from "@/entities/request";
 import {
 	actionUpdateEndpointParamValue,
 	useDocApiStore,
 } from "@/features/doc-api";
-import { actionSetResponse, useResponseStore } from "@/features/request";
+import {
+	actionSetResponse,
+	type ResponseHeader,
+	useResponseStore,
+} from "@/features/request";
 import {
 	buildHeaders,
 	buildUrl,
@@ -24,8 +28,25 @@ function prettyJson(raw: string): string {
 	try {
 		return JSON.stringify(JSON.parse(raw), null, 2);
 	} catch {
-		return raw || "(empty)";
+		// Пустую строку отдаём как есть: «ответ без тела» — случай панели, а не
+		// повод подменять содержимое заглушкой.
+		return raw;
 	}
+}
+
+/**
+ * Заголовки ответа парами. `Set-Cookie` бэкенд отдаёт отдельным списком, иначе
+ * в мапе от нескольких кук осталась бы последняя, — возвращаем их построчно.
+ */
+function responseHeaders(result: SendRequestResult): ResponseHeader[] {
+	const rows = Object.entries(result.headers)
+		.filter(([key]) => key.toLowerCase() !== "set-cookie")
+		.map(([key, value]) => ({ key, value }));
+
+	for (const cookie of result.set_cookies ?? [])
+		rows.push({ key: "set-cookie", value: cookie });
+
+	return rows.sort((a, b) => a.key.localeCompare(b.key));
 }
 
 interface SendArgs {
@@ -121,6 +142,7 @@ export function useSendRequest() {
 				statusText: result.status_text,
 				dur: result.duration_ms,
 				body: prettyJson(result.body),
+				headers: responseHeaders(result),
 			});
 		} catch (e) {
 			setResponse({ error: String(e), dur: 0 });
