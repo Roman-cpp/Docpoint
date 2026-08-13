@@ -436,7 +436,6 @@ export const EnvironmentPage: FC = () => {
 									label={label}
 									onLabelChange={setLabel}
 									onLabelBlur={() => saveEnvironment()}
-									envTag={selectedEnv.env}
 									statusHint={statusHint(envStatus)}
 								/>
 								<EndpointSection

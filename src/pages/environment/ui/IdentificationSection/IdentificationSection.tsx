@@ -6,7 +6,6 @@ type Props = {
 	label: string;
 	onLabelChange: (value: string) => void;
 	onLabelBlur: () => void;
-	envTag: string;
 	statusHint?: string;
 };
 
@@ -14,7 +13,6 @@ export const IdentificationSection: FC<Props> = ({
 	label,
 	onLabelChange,
 	onLabelBlur,
-	envTag,
 	statusHint,
 }) => (
 	<Section
@@ -39,9 +37,6 @@ export const IdentificationSection: FC<Props> = ({
 				onBlur={onLabelBlur}
 				placeholder="Production"
 			/>
-		</Field>
-		<Field label="Тег" help="наследуется от типа окружения, нельзя менять">
-			<input className={s.envInput} value={envTag} readOnly disabled />
 		</Field>
 	</Section>
 );
