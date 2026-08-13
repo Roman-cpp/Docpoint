@@ -155,6 +155,68 @@ src/shared/ui-kit/
 
 ---
 
+## Иконки (`shared/svg`)
+
+**Все SVG-иконки живут только здесь.** Объявлять `<svg>` внутри страницы, виджета или ui-kit-компонента нельзя — вместо этого добавляется иконка в набор и импортируется из `@/shared/svg`.
+
+```
+src/shared/svg/
+├── index.ts              # баррель: по строке реэкспорта на иконку
+├── model/
+│   └── icon.type.ts      # IconProps — внутренний тип набора
+└── ui/
+    ├── PlusIcon.tsx      # один файл на одну иконку
+    ├── TrashIcon.tsx
+    └── …
+```
+
+### Как добавить новую иконку
+
+1. Создать `src/shared/svg/ui/<ИмяIcon>.tsx` — имя файла совпадает с именем компонента и всегда заканчивается на `Icon`.
+2. Добавить строку в `src/shared/svg/index.ts`: `export { <ИмяIcon> } from "./ui/<ИмяIcon>";`.
+
+```tsx
+import type { FC } from "react";
+import type { IconProps } from "../model/icon.type";
+
+export const PlusIcon: FC<IconProps> = ({ size = 14, title, ...rest }) => (
+	<svg
+		viewBox="0 0 16 16"
+		width={size}
+		height={size}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={1.4}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+		{...rest}
+	>
+		{title ? <title>{title}</title> : null}
+		<path d="M8 3v10M3 8h10" />
+	</svg>
+);
+```
+
+Обязательные свойства шаблона:
+
+| Что | Зачем |
+| ----| ------|
+| `size` с значением по умолчанию | Размер, с которым иконка стоит чаще всего; на местах вызова переопределяется пропом `size={13}` |
+| `stroke="currentColor"` | Цвет наследуется от текста — иконка не знает про тему |
+| `aria-hidden="true"` статикой | Иконка декоративна; имя контролу даёт его собственный `aria-label`. Динамическое значение здесь ломает правило biome `noSvgWithoutTitle` |
+| `{title ? <title>…</title> : null}` | Нативный тултип по требованию места вызова |
+| `{...rest}` **последним** | Позволяет переопределить `className`, `style`, `strokeWidth` снаружи |
+
+### Правила набора
+
+- **Одна иконка на понятие.** Прежде чем добавлять, поискать в `index.ts` существующую: разные размеры и толщины — это пропсы, а не новые компоненты. Не плодить `TrashSmallIcon` рядом с `TrashIcon`.
+- **Никакой логики выбора.** Набор отдаёт только глифы; сопоставление вроде «тип файла → иконка» живёт в компоненте, который его использует (пример — `GLYPH_BY_KIND` в `widgets/vault-browser/ui/FileGrid`).
+- **Никаких фабрик и обёрток.** Каждая иконка — обычный компонент с явной разметкой, чтобы глиф был виден и находился поиском.
+- **Состояние остаётся на месте вызова.** Поворот, подсветка, анимация делаются пропсами `style`/`className` или локальной обёрткой рядом с компонентом (например `Caret` в `HcDrawer`), а не вариантом иконки в наборе.
+
+---
+
 ## Управление состоянием
 
 ### Zustand — клиентский стейт
@@ -177,6 +239,7 @@ src/shared/ui-kit/
 | Типы / интерфейсы | PascalCase | `StrategyPreview`, `HttpSuccessResponse` |
 | Zustand-сторы     | camelCase  | `useAuthStore.ts`                        |
 | API-функции       | camelCase  | `getSymbolsApi`, `createOrderApi`        |
+| Иконки            | PascalCase | `PlusIcon.tsx`, `ChevronRightIcon.tsx`   |
 
 
 

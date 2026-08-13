@@ -1,4 +1,4 @@
-import { type FC, SVGProps, useState } from "react";
+import { type FC, type SVGProps, useState } from "react";
 import { formatSize, type VaultFile } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
 import {
@@ -12,25 +12,19 @@ import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileGrid.module.css";
 
 export interface IconProps
-  extends Omit<SVGProps<SVGSVGElement>, "width" | "height" | "title"> {
-  /** Сторона квадрата в пикселях. По умолчанию — размер, заданный иконкой. */
-  size?: number | string;
-  /**
-   * Нативный тултип при наведении. Иконки декоративны (`aria-hidden`) — имя
-   * элементу управления даёт его собственный `aria-label`, а не иконка внутри.
-   */
-  title?: string;
+	extends Omit<SVGProps<SVGSVGElement>, "width" | "height" | "title"> {
+	/** Сторона квадрата в пикселях. По умолчанию — размер, заданный иконкой. */
+	size?: number | string;
+	/**
+	 * Нативный тултип при наведении. Иконки декоративны (`aria-hidden`) — имя
+	 * элементу управления даёт его собственный `aria-label`, а не иконка внутри.
+	 */
+	title?: string;
 }
 
 /** Visual category a file is drawn as. Purely presentational: it drives the
  *  icon and tile colour, nothing else. */
-type FileKind =
-	| "doc"
-	| "archive"
-	| "image"
-	| "code"
-	| "video"
-	| "generic";
+type FileKind = "doc" | "archive" | "image" | "code" | "video" | "generic";
 
 const GLYPH_BY_KIND: Record<FileKind, FC<IconProps>> = {
 	image: ImageFileIcon,

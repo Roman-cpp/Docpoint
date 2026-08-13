@@ -1,45 +1,37 @@
-export {
-	BoltIcon,
-	CopyIcon,
-	DownloadIcon,
-	GripIcon,
-	NewFileIcon,
-	NewFolderIcon,
-	NewWindowIcon,
-	PencilIcon,
-	PlusIcon,
-	RefreshIcon,
-	ShareIcon,
-	TrashIcon,
-	UploadIcon,
-} from "./ui/action";
-export {
-	ArrowDownIcon,
-	ArrowUpIcon,
-	ChevronDownIcon,
-	ChevronLeftIcon,
-	ChevronRightIcon,
-	SortIcon,
-} from "./ui/navigation";
-export {
-	ArchiveFileIcon,
-	DocIcon,
-	FileIcon,
-	FolderIcon,
-	ImageFileIcon,
-	LogsIcon,
-	SearchIcon,
-	VideoFileIcon,
-} from "./ui/object";
-export {
-	CheckIcon,
-	CloseIcon,
-	ErrorIcon,
-	EyeIcon,
-	EyeOffIcon,
-	HistoryIcon,
-	InfoIcon,
-	MinusIcon,
-	SuccessIcon,
-	WarningIcon,
-} from "./ui/status";
+export { ArchiveFileIcon } from "./ui/ArchiveFileIcon";
+export { ArrowDownIcon } from "./ui/ArrowDownIcon";
+export { ArrowUpIcon } from "./ui/ArrowUpIcon";
+export { BoltIcon } from "./ui/BoltIcon";
+export { CheckIcon } from "./ui/CheckIcon";
+export { ChevronDownIcon } from "./ui/ChevronDownIcon";
+export { ChevronLeftIcon } from "./ui/ChevronLeftIcon";
+export { ChevronRightIcon } from "./ui/ChevronRightIcon";
+export { CloseIcon } from "./ui/CloseIcon";
+export { CopyIcon } from "./ui/CopyIcon";
+export { DocIcon } from "./ui/DocIcon";
+export { DownloadIcon } from "./ui/DownloadIcon";
+export { ErrorIcon } from "./ui/ErrorIcon";
+export { EyeIcon } from "./ui/EyeIcon";
+export { EyeOffIcon } from "./ui/EyeOffIcon";
+export { FileIcon } from "./ui/FileIcon";
+export { FolderIcon } from "./ui/FolderIcon";
+export { GripIcon } from "./ui/GripIcon";
+export { HistoryIcon } from "./ui/HistoryIcon";
+export { ImageFileIcon } from "./ui/ImageFileIcon";
+export { InfoIcon } from "./ui/InfoIcon";
+export { LogsIcon } from "./ui/LogsIcon";
+export { MinusIcon } from "./ui/MinusIcon";
+export { NewFileIcon } from "./ui/NewFileIcon";
+export { NewFolderIcon } from "./ui/NewFolderIcon";
+export { NewWindowIcon } from "./ui/NewWindowIcon";
+export { PencilIcon } from "./ui/PencilIcon";
+export { PlusIcon } from "./ui/PlusIcon";
+export { RefreshIcon } from "./ui/RefreshIcon";
+export { SearchIcon } from "./ui/SearchIcon";
+export { ShareIcon } from "./ui/ShareIcon";
+export { SortIcon } from "./ui/SortIcon";
+export { SuccessIcon } from "./ui/SuccessIcon";
+export { TrashIcon } from "./ui/TrashIcon";
+export { UploadIcon } from "./ui/UploadIcon";
+export { VideoFileIcon } from "./ui/VideoFileIcon";
+export { WarningIcon } from "./ui/WarningIcon";
