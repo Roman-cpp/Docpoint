@@ -1,40 +1,111 @@
 import type { FC } from "react";
-import { createIcon } from "../lib/createIcon";
 import type { IconProps } from "../model/icon.type";
 
 /* ─── Шевроны ─── */
 
 /** Шеврон вправо. Раскрытое состояние обычно рисуют поворотом через `style`. */
-export const ChevronRightIcon = createIcon(
-	"ChevronRightIcon",
-	{ viewBox: "0 0 14 14", size: 14, strokeWidth: 1.5 },
-	<path d="M5 3l4 4-4 4" />,
+export const ChevronRightIcon: FC<IconProps> = ({
+	size = 14,
+	title,
+	...rest
+}) => (
+	<svg
+		viewBox="0 0 14 14"
+		width={size}
+		height={size}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={1.5}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+		{...rest}
+	>
+		{title ? <title>{title}</title> : null}
+		<path d="M5 3l4 4-4 4" />
+	</svg>
 );
 
-export const ChevronLeftIcon = createIcon(
-	"ChevronLeftIcon",
-	{ viewBox: "0 0 14 14", size: 14, strokeWidth: 1.5 },
-	<path d="M9 11L5 7l4-4" />,
+export const ChevronLeftIcon: FC<IconProps> = ({
+	size = 14,
+	title,
+	...rest
+}) => (
+	<svg
+		viewBox="0 0 14 14"
+		width={size}
+		height={size}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={1.5}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+		{...rest}
+	>
+		{title ? <title>{title}</title> : null}
+		<path d="M9 11L5 7l4-4" />
+	</svg>
 );
 
-export const ChevronDownIcon = createIcon(
-	"ChevronDownIcon",
-	{ viewBox: "0 0 10 10", size: 10, strokeWidth: 1.5 },
-	<path d="M2 4l3 3 3-3" />,
+export const ChevronDownIcon: FC<IconProps> = ({
+	size = 10,
+	title,
+	...rest
+}) => (
+	<svg
+		viewBox="0 0 10 10"
+		width={size}
+		height={size}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={1.5}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+		{...rest}
+	>
+		{title ? <title>{title}</title> : null}
+		<path d="M2 4l3 3 3-3" />
+	</svg>
 );
 
 /* ─── Стрелки ─── */
 
-export const ArrowUpIcon = createIcon(
-	"ArrowUpIcon",
-	{ viewBox: "0 0 13 13", size: 13, strokeWidth: 1.6 },
-	<path d="M6.5 10.5v-8M3 6l3.5-3.5L10 6" />,
+export const ArrowUpIcon: FC<IconProps> = ({ size = 13, title, ...rest }) => (
+	<svg
+		viewBox="0 0 13 13"
+		width={size}
+		height={size}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={1.6}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+		{...rest}
+	>
+		{title ? <title>{title}</title> : null}
+		<path d="M6.5 10.5v-8M3 6l3.5-3.5L10 6" />
+	</svg>
 );
 
-export const ArrowDownIcon = createIcon(
-	"ArrowDownIcon",
-	{ viewBox: "0 0 13 13", size: 13, strokeWidth: 1.6 },
-	<path d="M6.5 2.5v8M3 7l3.5 3.5L10 7" />,
+export const ArrowDownIcon: FC<IconProps> = ({ size = 13, title, ...rest }) => (
+	<svg
+		viewBox="0 0 13 13"
+		width={size}
+		height={size}
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={1.6}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+		{...rest}
+	>
+		{title ? <title>{title}</title> : null}
+		<path d="M6.5 2.5v8M3 7l3.5 3.5L10 7" />
+	</svg>
 );
 
 /**
@@ -44,7 +115,6 @@ export const ArrowDownIcon = createIcon(
 export const SortIcon: FC<
 	IconProps & { upClassName?: string; downClassName?: string }
 > = ({ size, upClassName, downClassName, title, ...rest }) => (
-	// biome-ignore lint/a11y/noSvgWithoutTitle: подпись приходит пропом `title`, без неё иконка декоративная и закрыта от скринридеров через aria-hidden
 	<svg
 		viewBox="0 0 10 12"
 		width={size ?? 10}
@@ -54,7 +124,7 @@ export const SortIcon: FC<
 		strokeWidth={1.7}
 		strokeLinecap="round"
 		strokeLinejoin="round"
-		aria-hidden={title ? undefined : true}
+		aria-hidden="true"
 		{...rest}
 	>
 		{title ? <title>{title}</title> : null}

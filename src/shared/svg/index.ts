@@ -1,6 +1,3 @@
-export { createIcon } from "./lib/createIcon";
-export type { FileKind } from "./model/fileKind";
-export type { IconProps } from "./model/icon.type";
 export {
 	BoltIcon,
 	CopyIcon,
@@ -25,11 +22,14 @@ export {
 	SortIcon,
 } from "./ui/navigation";
 export {
+	ArchiveFileIcon,
 	DocIcon,
 	FileIcon,
 	FolderIcon,
+	ImageFileIcon,
 	LogsIcon,
 	SearchIcon,
+	VideoFileIcon,
 } from "./ui/object";
 export {
 	CheckIcon,

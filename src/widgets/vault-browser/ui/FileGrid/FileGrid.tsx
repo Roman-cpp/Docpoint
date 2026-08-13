@@ -1,9 +1,55 @@
-import { type FC, useState } from "react";
+import { type FC, SVGProps, useState } from "react";
 import { formatSize, type VaultFile } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
-import { FileIcon, TrashIcon } from "@/shared/svg";
+import {
+	ArchiveFileIcon,
+	FileIcon,
+	ImageFileIcon,
+	TrashIcon,
+	VideoFileIcon,
+} from "@/shared/svg";
 import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileGrid.module.css";
+
+export interface IconProps
+  extends Omit<SVGProps<SVGSVGElement>, "width" | "height" | "title"> {
+  /** Сторона квадрата в пикселях. По умолчанию — размер, заданный иконкой. */
+  size?: number | string;
+  /**
+   * Нативный тултип при наведении. Иконки декоративны (`aria-hidden`) — имя
+   * элементу управления даёт его собственный `aria-label`, а не иконка внутри.
+   */
+  title?: string;
+}
+
+/** Visual category a file is drawn as. Purely presentational: it drives the
+ *  icon and tile colour, nothing else. */
+type FileKind =
+	| "doc"
+	| "archive"
+	| "image"
+	| "code"
+	| "video"
+	| "generic";
+
+const GLYPH_BY_KIND: Record<FileKind, FC<IconProps>> = {
+	image: ImageFileIcon,
+	video: VideoFileIcon,
+	archive: ArchiveFileIcon,
+	// doc / code / generic рисуются одним листом с текстом
+	doc: FileIcon,
+	code: FileIcon,
+	generic: FileIcon,
+};
+
+/** Иконка файла по его визуальной категории. */
+const FileKindIcon: FC<IconProps & { kind: FileKind }> = ({
+	kind,
+	...rest
+}) => {
+	const Glyph = GLYPH_BY_KIND[kind];
+	return <Glyph {...rest} />;
+};
 
 /* ─── Files — content tiles ─── */
 export const FileGrid: FC<{
@@ -56,7 +102,7 @@ export const FileGrid: FC<{
 								</span>
 							)} */}
 							<span className={cx(s["fe-tile"], s[`fe-tile-${kind}`])}>
-								<FileIcon kind={kind} />
+								<FileKindIcon kind={kind} />
 							</span>
 							<span className={s["fe-card-name"]} title={file.name}>
 								{file.name}
