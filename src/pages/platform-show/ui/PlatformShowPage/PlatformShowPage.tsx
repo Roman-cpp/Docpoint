@@ -10,7 +10,6 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
-import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
@@ -41,7 +40,20 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	} | null>(null);
 	/** Which section is shown: platform details, domains, or files. */
 	const [tab, setTab] = useState<"details" | "domains" | "files">("domains");
+	/** Меню «добавить домен»: открывается правым кликом по свободной области. */
+	const [pageMenu, setPageMenu] = useState<{ x: number; y: number } | null>(
+		null,
+	);
 	const navigate = useNavigate();
+
+	/** Правый клик по свободной области вкладки «Домены». Карточки доменов
+	 *  гасят событие сами, а «Подробности» и «Файлы» показывают собственные
+	 *  меню и помечают событие обработанным — второе меню поверх не нужно. */
+	const openPageMenu = (e: React.MouseEvent) => {
+		if (e.defaultPrevented || tab !== "domains") return;
+		e.preventDefault();
+		setPageMenu({ x: e.clientX, y: e.clientY });
+	};
 
 	const platform = platforms.find((p) => p.id === id);
 
@@ -59,7 +71,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	}
 
 	return (
-		<div className={b.overview}>
+		<div className={b.overview} onContextMenu={openPageMenu}>
 			<div className={b.content}>
 				<div className={b.tabs} role="tablist">
 					<button
@@ -106,28 +118,15 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 								)}
 								<span className={b.sectionRule} />
 							</div>
-							<Button
-								variant="subtle"
-								size="sm"
-								onClick={() => setIsDomainModalOpen(true)}
-							>
-								+ Добавить
-							</Button>
 						</div>
 						{isDomainsLoading ? (
 							<p className={b.ovSub}>Загрузка доменов…</p>
 						) : domains.length === 0 ? (
 							<div className={b.emptyState}>
 								<p className={b.emptyText}>
-									К этой платформе пока не прикреплён ни один домен
+									К этой платформе пока не прикреплён ни один домен — нажмите
+									правой кнопкой мыши, чтобы добавить
 								</p>
-								<Button
-									variant="primary"
-									size="sm"
-									onClick={() => setIsDomainModalOpen(true)}
-								>
-									+ Добавить домен
-								</Button>
 							</div>
 						) : (
 							<div className={b.apiCardsGrid}>
@@ -180,6 +179,20 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				}
 				isSaving={editingDomain ? isUpdatingDomain : isCreatingDomain}
 			/>
+
+			<ContextMenu.Root
+				open={!!pageMenu}
+				x={pageMenu?.x ?? 0}
+				y={pageMenu?.y ?? 0}
+				onClose={() => setPageMenu(null)}
+			>
+				<ContextMenu.Item
+					icon={<PlusIcon />}
+					onSelect={() => setIsDomainModalOpen(true)}
+				>
+					Добавить домен
+				</ContextMenu.Item>
+			</ContextMenu.Root>
 
 			<ContextMenu.Root
 				open={!!domMenu}
@@ -249,6 +262,23 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		</div>
 	);
 };
+
+const PlusIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>create</title>
+		<path d="M8 3v10M3 8h10" />
+	</svg>
+);
 
 const PencilIcon: FC = () => (
 	<svg

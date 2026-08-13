@@ -24,7 +24,6 @@ import {
 	useImportWebsocket,
 } from "@/features/websocket";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
-import { Button } from "@/shared/ui-kit/controls";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
@@ -77,8 +76,24 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		ws: DocWebsocket;
 	} | null>(null);
 	const [pendingWsEdit, setPendingWsEdit] = useState<DocWebsocket | null>(null);
+	/** Меню создания/импорта: открывается правым кликом по свободной области. */
+	const [pageMenu, setPageMenu] = useState<{ x: number; y: number } | null>(
+		null,
+	);
 	const importInputRef = useRef<HTMLInputElement>(null);
 	const wsImportInputRef = useRef<HTMLInputElement>(null);
+	/** Действие «новый markdown-файл» из VaultBrowser: виджет отдаёт его только
+	 *  через renderHeader, а вызвать нужно из меню страницы. */
+	const createVaultFileRef = useRef<(() => void) | null>(null);
+
+	/** Правый клик по свободной области открывает меню создания и импорта.
+	 *  Карточки гасят событие сами, а VaultBrowser сначала показывает своё меню
+	 *  и помечает событие как обработанное — второе меню поверх не нужно. */
+	const openPageMenu = (e: React.MouseEvent) => {
+		if (e.defaultPrevented) return;
+		e.preventDefault();
+		setPageMenu({ x: e.clientX, y: e.clientY });
+	};
 
 	/** Read a previously exported doc JSON, import it, and immediately attach the
 	 *  new doc to this domain so it appears under "Прикреплённые документы". */
@@ -184,48 +199,24 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 	}
 
 	return (
-		<div className={s.overview}>
+		<div className={s.overview} onContextMenu={openPageMenu}>
 			<Link className={s.ovSub} to={`/platform-show/${domain.platformId}`}>
 				← К платформе
 			</Link>
+			<p className={s.ovSub} style={{ marginTop: 6, fontSize: 12 }}>
+				Правый клик по свободной области — создание и импорт
+			</p>
 
 			<div style={{ marginTop: 24 }}>
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "space-between",
-						marginBottom: 16,
-					}}
-				>
-					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
-						Прикреплённые документы
-					</h2>
-					<div style={{ display: "flex", gap: 8 }}>
-						<Button
-							variant="subtle"
-							disabled={isImporting || isAttaching}
-							onClick={() => importInputRef.current?.click()}
-						>
-							{isImporting ? "Импорт…" : "↓ Импортировать"}
-						</Button>
-						<Button variant="subtle" onClick={() => setDocModalOpen(true)}>
-							+ Создать документ
-						</Button>
-					</div>
-					<input
-						ref={importInputRef}
-						type="file"
-						accept="application/json,.json"
-						style={{ display: "none" }}
-						onChange={handleImportFile}
-					/>
-				</div>
+				<h2 className={s.ovTitle} style={{ fontSize: 18, margin: "0 0 16px" }}>
+					Прикреплённые документы
+				</h2>
 				{isDocsLoading ? (
 					<p className={s.ovSub}>Загрузка документов…</p>
 				) : docs.length === 0 ? (
 					<p className={s.ovSub}>
-						К этому домену пока не прикреплён ни один документ
+						К этому домену пока не прикреплён ни один документ — нажмите правой
+						кнопкой мыши, чтобы создать или импортировать
 					</p>
 				) : (
 					<div className={s.apiCardsGrid}>
@@ -263,26 +254,15 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			</div>
 
 			<div style={{ marginTop: 32 }}>
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "space-between",
-						marginBottom: 16,
-					}}
-				>
-					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
-						ERD-диаграммы
-					</h2>
-					<Button variant="subtle" onClick={() => setErdModalOpen(true)}>
-						+ Создать ERD
-					</Button>
-				</div>
+				<h2 className={s.ovTitle} style={{ fontSize: 18, margin: "0 0 16px" }}>
+					ERD-диаграммы
+				</h2>
 				{isErdsLoading ? (
 					<p className={s.ovSub}>Загрузка диаграмм…</p>
 				) : erds.length === 0 ? (
 					<p className={s.ovSub}>
-						К этому домену пока не прикреплена ни одна ERD-диаграмма
+						К этому домену пока не прикреплена ни одна ERD-диаграмма — нажмите
+						правой кнопкой мыши, чтобы создать
 					</p>
 				) : (
 					<div className={s.apiCardsGrid}>
@@ -310,42 +290,15 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 			</div>
 
 			<div style={{ marginTop: 32 }}>
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "space-between",
-						marginBottom: 16,
-					}}
-				>
-					<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
-						Прикреплённые WebSocket
-					</h2>
-					<div style={{ display: "flex", gap: 8 }}>
-						<Button
-							variant="subtle"
-							disabled={isImportingWebsocket}
-							onClick={() => wsImportInputRef.current?.click()}
-						>
-							{isImportingWebsocket ? "Импорт…" : "↓ Импортировать"}
-						</Button>
-						<Button variant="subtle" onClick={() => setWsModalOpen(true)}>
-							+ Создать WS
-						</Button>
-					</div>
-					<input
-						ref={wsImportInputRef}
-						type="file"
-						accept="application/json,.json"
-						style={{ display: "none" }}
-						onChange={handleImportWsFile}
-					/>
-				</div>
+				<h2 className={s.ovTitle} style={{ fontSize: 18, margin: "0 0 16px" }}>
+					Прикреплённые WebSocket
+				</h2>
 				{isWebsocketsLoading ? (
 					<p className={s.ovSub}>Загрузка WebSocket…</p>
 				) : websockets.length === 0 ? (
 					<p className={s.ovSub}>
-						К этому домену пока не прикреплён ни один WebSocket
+						К этому домену пока не прикреплён ни один WebSocket — нажмите правой
+						кнопкой мыши, чтобы создать или импортировать
 					</p>
 				) : (
 					<div className={s.apiCardsGrid}>
@@ -384,24 +337,95 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 					onOpenFile={(filePath) =>
 						navigate(markdownRoute(domainScope(id), filePath))
 					}
-					renderHeader={({ openCreateFile }) => (
-						<div
-							style={{
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "space-between",
-							}}
-						>
+					renderHeader={({ openCreateFile }) => {
+						// Пробрасываем действие виджета в меню страницы: правый клик по
+						// свободной области должен уметь создавать файл и здесь.
+						createVaultFileRef.current = openCreateFile;
+						return (
 							<h2 className={s.ovTitle} style={{ fontSize: 18, margin: 0 }}>
 								Файлы домена
 							</h2>
-							<Button variant="subtle" onClick={openCreateFile}>
-								+ Создать MD
-							</Button>
-						</div>
-					)}
+						);
+					}}
 				/>
 			</div>
+
+			{/* Инпуты живут в странице, а не в меню: меню закрывается сразу после
+			    выбора пункта, а диалог выбора файла открывается по клику по ним. */}
+			<input
+				ref={importInputRef}
+				type="file"
+				accept="application/json,.json"
+				style={{ display: "none" }}
+				onChange={handleImportFile}
+			/>
+			<input
+				ref={wsImportInputRef}
+				type="file"
+				accept="application/json,.json"
+				style={{ display: "none" }}
+				onChange={handleImportWsFile}
+			/>
+
+			<ContextMenu.Root
+				open={!!pageMenu}
+				x={pageMenu?.x ?? 0}
+				y={pageMenu?.y ?? 0}
+				onClose={() => setPageMenu(null)}
+				minWidth={230}
+			>
+				<ContextMenu.Label>Документы</ContextMenu.Label>
+				<ContextMenu.Item
+					icon={<PlusIcon />}
+					onSelect={() => setDocModalOpen(true)}
+				>
+					Создать документ
+				</ContextMenu.Item>
+				<ContextMenu.Item
+					icon={<UploadIcon />}
+					disabled={isImporting || isAttaching}
+					onSelect={() => importInputRef.current?.click()}
+				>
+					{isImporting ? "Импорт…" : "Импортировать документ"}
+				</ContextMenu.Item>
+
+				<ContextMenu.Separator />
+
+				<ContextMenu.Label>Диаграммы</ContextMenu.Label>
+				<ContextMenu.Item
+					icon={<PlusIcon />}
+					onSelect={() => setErdModalOpen(true)}
+				>
+					Создать ERD
+				</ContextMenu.Item>
+
+				<ContextMenu.Separator />
+
+				<ContextMenu.Label>WebSocket</ContextMenu.Label>
+				<ContextMenu.Item
+					icon={<PlusIcon />}
+					onSelect={() => setWsModalOpen(true)}
+				>
+					Создать WebSocket
+				</ContextMenu.Item>
+				<ContextMenu.Item
+					icon={<UploadIcon />}
+					disabled={isImportingWebsocket}
+					onSelect={() => wsImportInputRef.current?.click()}
+				>
+					{isImportingWebsocket ? "Импорт…" : "Импортировать WebSocket"}
+				</ContextMenu.Item>
+
+				<ContextMenu.Separator />
+
+				<ContextMenu.Label>Файлы домена</ContextMenu.Label>
+				<ContextMenu.Item
+					icon={<PlusIcon />}
+					onSelect={() => createVaultFileRef.current?.()}
+				>
+					Создать markdown-файл
+				</ContextMenu.Item>
+			</ContextMenu.Root>
 
 			<CreateDocApiModal
 				open={docModalOpen}
@@ -603,6 +627,41 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		</div>
 	);
 };
+
+const PlusIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>create</title>
+		<path d="M8 3v10M3 8h10" />
+	</svg>
+);
+
+const UploadIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>import</title>
+		<path d="M8 10.5V2M4.5 5.5 8 2l3.5 3.5" />
+		<path d="M2.5 12.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" />
+	</svg>
+);
 
 const EyeIcon: FC = () => (
 	<svg

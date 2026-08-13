@@ -1,11 +1,11 @@
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import { useNavigate } from "react-router";
 import { PLATFORM_DESCRIPTION_FILE, type Platform } from "@/entities/platform";
 import { platformScope } from "@/entities/shared/file-scope";
 import { markdownRoute } from "@/entities/vault";
 import { usePlatformDescription } from "@/features/platform";
-import { Button } from "@/shared/ui-kit/controls";
 import { MarkdownView } from "@/shared/ui-kit/MarkdownView";
+import { ContextMenu } from "@/shared/ui-kit/modal";
 import b from "./PlatformDetails.module.css";
 
 interface PlatformDetailsProps {
@@ -17,6 +17,8 @@ interface PlatformDetailsProps {
  * the handful of facts the database holds. The document is seeded when the
  * platform is created; a platform from before that — or one whose file was
  * deleted — gets an offer to create it.
+ *
+ * Actions live in the right-click menu of the section, not in buttons above it.
  */
 export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 	const navigate = useNavigate();
@@ -26,14 +28,23 @@ export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 		createDescription,
 		isCreatingDescription,
 	} = usePlatformDescription(platform.id);
+	const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
 	const openInEditor = () =>
 		navigate(
 			markdownRoute(platformScope(platform.id), PLATFORM_DESCRIPTION_FILE),
 		);
 
+	/** Правый клик по секции: редактирование готового описания или его
+	 *  создание, если файла ещё нет. Пока описание грузится, показывать нечего. */
+	const openMenu = (e: React.MouseEvent) => {
+		if (e.defaultPrevented || isDescriptionLoading) return;
+		e.preventDefault();
+		setMenu({ x: e.clientX, y: e.clientY });
+	};
+
 	return (
-		<section className={b.section}>
+		<section className={b.section} onContextMenu={openMenu}>
 			<div className={b.sectionHead}>
 				<div className={b.sectionLabel}>
 					<span>Описание платформы</span>
@@ -42,11 +53,6 @@ export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 					)}
 					<span className={b.sectionRule} />
 				</div>
-				{description && (
-					<Button variant="subtle" size="sm" onClick={openInEditor}>
-						Редактировать
-					</Button>
-				)}
 			</div>
 
 			{isDescriptionLoading ? (
@@ -74,21 +80,69 @@ export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 					<p className={b.emptyText}>
 						У платформы нет файла{" "}
 						<span className={b.emptyFile}>{PLATFORM_DESCRIPTION_FILE}</span> —
-						создайте его, чтобы рассказать, за что отвечает платформа.
+						нажмите правой кнопкой мыши, чтобы создать его и рассказать, за что
+						отвечает платформа.
 					</p>
-					<Button
-						variant="primary"
-						size="sm"
-						onClick={() => createDescription(platform.name)}
-						disabled={isCreatingDescription}
-					>
-						{isCreatingDescription ? "Создаём…" : "Создать описание"}
-					</Button>
 				</div>
 			)}
+
+			<ContextMenu.Root
+				open={!!menu}
+				x={menu?.x ?? 0}
+				y={menu?.y ?? 0}
+				onClose={() => setMenu(null)}
+			>
+				{description ? (
+					<ContextMenu.Item icon={<PencilIcon />} onSelect={openInEditor}>
+						Редактировать описание
+					</ContextMenu.Item>
+				) : (
+					<ContextMenu.Item
+						icon={<PlusIcon />}
+						disabled={isCreatingDescription}
+						onSelect={() => createDescription(platform.name)}
+					>
+						{isCreatingDescription ? "Создаём…" : "Создать описание"}
+					</ContextMenu.Item>
+				)}
+			</ContextMenu.Root>
 		</section>
 	);
 };
+
+const PencilIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>edit</title>
+		<path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
+	</svg>
+);
+
+const PlusIcon: FC = () => (
+	<svg
+		viewBox="0 0 16 16"
+		width="14"
+		height="14"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.4"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<title>create</title>
+		<path d="M8 3v10M3 8h10" />
+	</svg>
+);
 
 const DocIcon: FC = () => (
 	<svg
