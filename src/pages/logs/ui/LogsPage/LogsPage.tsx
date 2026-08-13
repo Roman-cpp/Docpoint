@@ -1,5 +1,6 @@
 import { type FC, useMemo, useState } from "react";
 import { cx } from "@/shared/lib/cx";
+import { CloseIcon, DownloadIcon, SearchIcon } from "@/shared/svg";
 import { Header } from "@/widgets/header";
 import { Sidebar } from "@/widgets/sidebar";
 import s from "./LogsPage.module.css";
@@ -165,7 +166,7 @@ export const LogsPage: FC = () => {
 									</p>
 								</div>
 								<button type="button" className={s["lg-btn"]}>
-									<DownloadIcon />
+									<DownloadIcon size={13} />
 									Экспорт
 								</button>
 							</div>
@@ -313,51 +314,3 @@ export const LogsPage: FC = () => {
 		</div>
 	);
 };
-
-/* ─── Icons ─── */
-const SearchIcon: FC = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-	>
-		<title>search</title>
-		<circle cx="6" cy="6" r="4.2" />
-		<path d="M9.2 9.2L12 12" />
-	</svg>
-);
-
-const DownloadIcon: FC = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width="13"
-		height="13"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>export</title>
-		<path d="M7 2v7M4 6.2L7 9.2 10 6.2M2.5 11.5h9" />
-	</svg>
-);
-
-const CloseIcon: FC = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-	>
-		<title>close</title>
-		<path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
-	</svg>
-);

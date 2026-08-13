@@ -10,8 +10,8 @@ import {
 } from "@/features/environment";
 import { selectPlatform, usePlatformStore } from "@/features/platform";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { PlusIcon } from "@/shared/svg";
 import s from "../EnvironmentPage.module.css";
-import { PlusIcon } from "../parts";
 
 export const Sidebar: FC = () => {
 	const environments = useEnvironmentsStore(selectEnvironments);
@@ -46,7 +46,7 @@ export const Sidebar: FC = () => {
 					title="Создать"
 					onClick={handleCreate}
 				>
-					<PlusIcon />
+					<PlusIcon size={12} />
 				</button>
 			</div>
 			<div className={s.envSbList}>

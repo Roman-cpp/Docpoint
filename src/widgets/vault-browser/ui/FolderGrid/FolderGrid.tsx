@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import type { VaultFolder } from "@/entities/vault";
-import { ChevronIcon, FolderIcon } from "@/shared/icon/icons";
 import { cx } from "@/shared/lib/cx";
+import { ChevronRightIcon, FolderIcon, TrashIcon } from "@/shared/svg";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import s from "./FolderGrid.module.css";
 
@@ -52,7 +52,7 @@ export const FolderGrid: FC<{
 							</span>
 						</span>
 						<span className={s["fe-folder-go"]} aria-hidden="true">
-							<ChevronIcon />
+							<ChevronRightIcon />
 						</span>
 					</button>
 				))}
@@ -126,20 +126,3 @@ const DeleteFolderDialog: FC<{
 		</Dialog.Root>
 	);
 };
-
-const TrashIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>delete</title>
-		<path d="M2.5 4h11M6 4V2.5h4V4M5 4l.5 9.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L11 4M6.5 7v4M9.5 7v4" />
-	</svg>
-);

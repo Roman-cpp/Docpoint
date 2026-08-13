@@ -11,7 +11,7 @@ import {
 	pathCrumbs,
 } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
-import { ChevronIcon, DocIcon, FolderIcon } from "../icons";
+import { ChevronRightIcon, DocIcon, FolderIcon } from "@/shared/svg";
 import s from "../MarkdownShowPage.module.css";
 
 /* ═══════════════ SIDEBAR (left) ═══════════════
@@ -115,10 +115,10 @@ export const FileSidebar: FC<{
 								setDir(folder.path);
 							}}
 						>
-							<FolderIcon />
+							<FolderIcon size={13} />
 							<span className={s.sideRowName}>{folder.name}</span>
 							<span className={s.sideRowMeta}>{folder.childrenCount}</span>
-							<ChevronIcon open={false} />
+							<ChevronRightIcon size={11} />
 						</button>
 					))}
 

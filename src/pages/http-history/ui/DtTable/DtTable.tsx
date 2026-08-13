@@ -1,9 +1,10 @@
 import { flexRender, type Table } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { cx } from "@/shared/lib/cx";
+import { ChevronDownIcon, SearchIcon, SortIcon } from "@/shared/svg";
 import type { DataTableApi, RowKey } from "../DataTable";
 import s from "../DataTable.module.css";
-import { DtCaret, DtCheckbox, DtSearch, DtSort } from "../DtIcons";
+import { DtCheckbox } from "../DtIcons";
 
 interface DtTableProps<T> {
 	table: Table<T>;
@@ -83,7 +84,11 @@ export function DtTable<T>({
 								)}
 								{canSort && (
 									<span className={s["dt-sort-ico"]}>
-										{sorted ? <DtCaret /> : <DtSort />}
+										{sorted ? (
+											<ChevronDownIcon size={11} />
+										) : (
+											<SortIcon size={11} />
+										)}
 									</span>
 								)}
 							</div>
@@ -157,7 +162,7 @@ export function DtTable<T>({
 			{pageRows.length === 0 && (
 				<div className={s["dt-empty"]}>
 					<div className={s["dt-empty-ico"]}>
-						<DtSearch size={16} />
+						<SearchIcon size={16} />
 					</div>
 					<p className={s["dt-empty-title"]}>Ничего не найдено</p>
 					<p className={s["dt-empty-text"]}>

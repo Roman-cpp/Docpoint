@@ -10,6 +10,7 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
+import { PencilIcon, PlusIcon, TrashIcon } from "@/shared/svg";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
@@ -262,57 +263,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		</div>
 	);
 };
-
-const PlusIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>create</title>
-		<path d="M8 3v10M3 8h10" />
-	</svg>
-);
-
-const PencilIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>edit</title>
-		<path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
-	</svg>
-);
-
-const TrashIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>delete</title>
-		<path d="M2.5 4h11M6 4V2.5h4V4M5 4l.5 9.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L11 4M6.5 7v4M9.5 7v4" />
-	</svg>
-);
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const PlatformShowPage: FC = () => {

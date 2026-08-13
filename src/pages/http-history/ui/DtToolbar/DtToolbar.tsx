@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
+import { SearchIcon } from "@/shared/svg";
 import type { DataTableFilter } from "../DataTable";
 import s from "../DataTable.module.css";
 import { DtFilters } from "../DtFilters";
-import { DtSearch } from "../DtIcons";
 
 interface DtToolbarProps<T> {
 	title: string;
@@ -44,7 +44,7 @@ export function DtToolbar<T>({
 				<div className={s["dt-tools"]}>
 					{searchKeys && (
 						<div className={s["dt-search"]}>
-							<DtSearch />
+							<SearchIcon />
 							<input
 								value={search}
 								onChange={(e) => onSearch(e.target.value)}

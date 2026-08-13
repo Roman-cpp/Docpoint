@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { ChevronRightIcon } from "@/shared/svg";
 import s from "./JsonTree.module.css";
 
 export type Json =
@@ -225,21 +226,12 @@ const Leaf = memo(function Leaf({
 });
 
 const Chevron = ({ open }: { open: boolean }) => (
-	<svg
-		viewBox="0 0 10 10"
-		width="10"
-		height="10"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.6"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
+	<ChevronRightIcon
+		size={10}
+		strokeWidth={1.6}
 		focusable="false"
 		className={open ? s.chevOpen : s.chev}
-	>
-		<path d="M3 2l3 3-3 3" />
-	</svg>
+	/>
 );
 
 const KeyLabel = ({ label, isIndex }: { label: string; isIndex?: boolean }) => (

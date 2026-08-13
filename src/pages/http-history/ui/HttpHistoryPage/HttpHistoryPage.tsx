@@ -17,6 +17,7 @@ import {
 	useRequestStore,
 } from "@/features/request";
 import { cx } from "@/shared/lib/cx";
+import { TrashIcon } from "@/shared/svg";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { Sidebar } from "@/widgets/sidebar";
@@ -246,7 +247,7 @@ export const HttpHistoryPage: FC = () => {
 									onClick={() => setIsConfirmDeleteOpen(true)}
 									disabled={requestList.length === 0}
 								>
-									<TrashIcon />
+									<TrashIcon size={13} />
 									Удалить все
 								</button>
 							}
@@ -306,20 +307,3 @@ export const HttpHistoryPage: FC = () => {
 		</div>
 	);
 };
-
-/* ─── Icons ─── */
-const TrashIcon: FC = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width="13"
-		height="13"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>delete</title>
-		<path d="M2.5 3.5h9M5 3.5V2.5h4v1M4 3.5l.5 8h5l.5-8" />
-	</svg>
-);

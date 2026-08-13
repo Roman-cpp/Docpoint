@@ -9,6 +9,7 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { PlusIcon, TrashIcon } from "@/shared/svg";
 import {
 	Field,
 	Input,
@@ -322,7 +323,7 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 								className={s.addBtn}
 								onClick={() => activeArray.append(emptyParam())}
 							>
-								<PlusIcon /> Добавить
+								<PlusIcon size={11} /> Добавить
 							</button>
 						)}
 					</div>
@@ -391,7 +392,7 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 										onClick={() => activeArray.remove(i)}
 										aria-label="Удалить параметр"
 									>
-										<TrashIcon />
+										<TrashIcon size={13} />
 									</button>
 								)}
 							</div>
@@ -448,36 +449,3 @@ const EnvDependencyBadge: FC<{
 		</div>
 	);
 };
-
-/* ─── Icons ──────────────────────────────────────────────── */
-
-const PlusIcon: FC = () => (
-	<svg
-		viewBox="0 0 12 12"
-		width="11"
-		height="11"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.6"
-		strokeLinecap="round"
-	>
-		<title>add</title>
-		<path d="M6 2v8M2 6h8" />
-	</svg>
-);
-
-const TrashIcon: FC = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width="13"
-		height="13"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>delete</title>
-		<path d="M2.5 3.5h9M5 3.5V2.5h4v1M4 3.5l.5 8h5l.5-8" />
-	</svg>
-);

@@ -10,6 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { CheckIcon, ChevronRightIcon } from "@/shared/svg";
 import s from "./DropMenu.module.css";
 
 /* ─── Context ────────────────────────────────────────────────── */
@@ -29,40 +30,6 @@ const useDropMenuContext = (component: string) => {
 	}
 	return ctx;
 };
-
-/* ─── Icons ──────────────────────────────────────────────────── */
-
-const CheckIcon: FC = () => (
-	<svg
-		width="12"
-		height="12"
-		viewBox="0 0 12 12"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="2"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<path d="M2 6l3 3 5-5" />
-	</svg>
-);
-
-const ArrowIcon: FC = () => (
-	<svg
-		width="12"
-		height="12"
-		viewBox="0 0 12 12"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.8"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<path d="M4.5 3l4 3-4 3" />
-	</svg>
-);
 
 /* ─── Root ───────────────────────────────────────────────────── */
 
@@ -226,7 +193,7 @@ const DropMenuItem: FC<DropMenuItemProps> = ({
 			{shortcut && <span className={s.shortcut}>{shortcut}</span>}
 			{arrow && (
 				<span className={s.arrow}>
-					<ArrowIcon />
+					<ChevronRightIcon size={12} />
 				</span>
 			)}
 		</div>
@@ -309,7 +276,7 @@ const DropMenuSubTrigger: FC<DropMenuSubTriggerProps> = ({
 			</span>
 			<span className={s.itemLabel}>{children}</span>
 			<span className={s.arrow}>
-				<ArrowIcon />
+				<ChevronRightIcon size={12} />
 			</span>
 		</div>
 	);

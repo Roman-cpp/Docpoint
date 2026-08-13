@@ -1,4 +1,5 @@
 import type { FC, SelectHTMLAttributes } from "react";
+import { ChevronDownIcon } from "@/shared/svg";
 import s from "./Select.module.css";
 
 type Option = { value: string; label: string };
@@ -34,23 +35,7 @@ export const Select: FC<Props> = ({
 			))}
 		</select>
 		<span className={s.chevron}>
-			<ChevronIcon />
+			<ChevronDownIcon />
 		</span>
 	</div>
-);
-
-const ChevronIcon = () => (
-	<svg
-		viewBox="0 0 10 10"
-		width={10}
-		height={10}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>chevron</title>
-		<path d="M2 4l3 3 3-3" />
-	</svg>
 );

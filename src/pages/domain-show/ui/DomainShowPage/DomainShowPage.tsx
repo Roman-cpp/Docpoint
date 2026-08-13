@@ -24,6 +24,15 @@ import {
 	useImportWebsocket,
 } from "@/features/websocket";
 import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
+import {
+	DownloadIcon,
+	EyeIcon,
+	NewWindowIcon,
+	PencilIcon,
+	PlusIcon,
+	TrashIcon,
+	UploadIcon,
+} from "@/shared/svg";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
@@ -515,7 +524,7 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 				onClose={() => setDocMenu(null)}
 			>
 				<ContextMenu.Item
-					icon={<EyeIcon />}
+					icon={<EyeIcon size={14} />}
 					onSelect={() => {
 						if (!docMenu) return;
 						navigate(`/doc-show/${docMenu.doc.id}`, {
@@ -627,130 +636,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 		</div>
 	);
 };
-
-const PlusIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>create</title>
-		<path d="M8 3v10M3 8h10" />
-	</svg>
-);
-
-const UploadIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>import</title>
-		<path d="M8 10.5V2M4.5 5.5 8 2l3.5 3.5" />
-		<path d="M2.5 12.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" />
-	</svg>
-);
-
-const EyeIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>open</title>
-		<path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8Z" />
-		<circle cx="8" cy="8" r="2" />
-	</svg>
-);
-
-const NewWindowIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>open in new window</title>
-		<path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5" />
-		<path d="M12 9.5v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3" />
-	</svg>
-);
-
-const PencilIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>edit</title>
-
-		<path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
-	</svg>
-);
-
-const DownloadIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>export</title>
-		<path d="M8 1.5v8.5M4.5 6.5 8 10l3.5-3.5" />
-		<path d="M2.5 12.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" />
-	</svg>
-);
-
-const TrashIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>delete</title>
-		<path d="M2.5 4h11M6 4V2.5h4V4M5 4l.5 9.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L11 4M6.5 7v4M9.5 7v4" />
-	</svg>
-);
 
 /* ═══════════════ MAIN PAGE ═══════════════ */
 export const DomainShowPage: FC = () => {

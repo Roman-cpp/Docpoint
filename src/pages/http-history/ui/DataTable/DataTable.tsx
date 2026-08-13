@@ -12,8 +12,8 @@ import {
 } from "@tanstack/react-table";
 import { type ReactNode, useMemo, useState } from "react";
 import { cx } from "@/shared/lib/cx";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/shared/svg";
 import s from "../DataTable.module.css";
-import { DtChevL, DtChevR } from "../DtIcons";
 import { DtTable } from "../DtTable";
 
 /* Per-column presentation hints carried through to the cell/header renderers. */
@@ -295,7 +295,7 @@ export function DataTable<T>({
 							onClick={() => goToPage(pageIndex - 1)}
 							aria-label="Назад"
 						>
-							<DtChevL />
+							<ChevronLeftIcon size={12} />
 						</button>
 						{pageList(pageIndex + 1, pageCount).map((p, i, arr) =>
 							p === "…" ? (
@@ -326,7 +326,7 @@ export function DataTable<T>({
 							onClick={() => goToPage(pageIndex + 1)}
 							aria-label="Вперёд"
 						>
-							<DtChevR />
+							<ChevronRightIcon size={12} />
 						</button>
 					</div>
 				)}

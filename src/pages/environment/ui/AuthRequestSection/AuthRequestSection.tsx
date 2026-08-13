@@ -1,16 +1,14 @@
 import type { FC } from "react";
 import type { TokenPlacement, WsTokenPlacement } from "@/entities/environment";
+import { BoltIcon, RefreshIcon, TrashIcon } from "@/shared/svg";
 import s from "../EnvironmentPage.module.css";
 import {
 	type AuthMethod,
-	BoltIcon,
 	Field,
 	HTTP_METHODS,
-	RefreshIcon,
 	Section,
 	TOKEN_PLACEMENT_LABEL,
 	TOKEN_PLACEMENTS,
-	TrashIcon,
 	WS_TOKEN_PLACEMENT_LABEL,
 	WS_TOKEN_PLACEMENTS,
 } from "../parts";
@@ -250,7 +248,7 @@ export const AuthRequestSection: FC<Props> = ({
 						className={`${s.envBtn} ${s.envBtnGhost}`}
 						onClick={onClearToken}
 					>
-						<TrashIcon />
+						<TrashIcon size={12} />
 						Очистить сессию
 					</button>
 				)}

@@ -15,6 +15,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, SortIcon } from "@/shared/svg";
 import s from "./DataTable.module.css";
 
 /* ─── Public types ────────────────────────────────────────────── */
@@ -47,61 +48,12 @@ type DataTableProps<T extends object> = {
 	className?: string;
 };
 
-/* ─── Icons ──────────────────────────────────────────────────── */
-
-const SortIcon = ({ dir }: { dir: "asc" | "desc" | null }) => (
-	<svg
-		width="10"
-		height="12"
-		viewBox="0 0 10 12"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.7"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden
-	>
-		<path
-			d="M2 4.5L5 1.5L8 4.5"
-			className={dir === "asc" ? s.sortArrowActive : s.sortArrow}
-		/>
-		<path
-			d="M2 7.5L5 10.5L8 7.5"
-			className={dir === "desc" ? s.sortArrowActive : s.sortArrow}
-		/>
-	</svg>
-);
-
-const ChevronLeftIcon = () => (
-	<svg
-		width="14"
-		height="14"
-		viewBox="0 0 14 14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>prev</title>
-		<path d="M9 11L5 7l4-4" />
-	</svg>
-);
-
-const ChevronRightIcon = () => (
-	<svg
-		width="14"
-		height="14"
-		viewBox="0 0 14 14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>next</title>
-		<path d="M5 3l4 4-4 4" />
-	</svg>
+/** Стрелки сортировки: активное направление подсвечено. */
+const SortArrows = ({ dir }: { dir: "asc" | "desc" | null }) => (
+	<SortIcon
+		upClassName={dir === "asc" ? s.sortArrowActive : s.sortArrow}
+		downClassName={dir === "desc" ? s.sortArrowActive : s.sortArrow}
+	/>
 );
 
 /* ─── Helpers ─────────────────────────────────────────────────── */
@@ -249,7 +201,7 @@ export function DataTable<T extends object>({
 									{isMultiSort && sorted && (
 										<span className={s.sortPriority}>{priority}</span>
 									)}
-									<SortIcon dir={sorted || null} />
+									<SortArrows dir={sorted || null} />
 								</span>
 							</button>
 						);
@@ -284,7 +236,7 @@ export function DataTable<T extends object>({
 							disabled={!table.getCanPreviousPage()}
 							aria-label="Предыдущая страница"
 						>
-							<ChevronLeftIcon />
+							<ChevronLeftIcon title="prev" />
 						</button>
 						{Array.from({ length: table.getPageCount() }, (_, i) => i).map(
 							(n) => (
@@ -307,7 +259,7 @@ export function DataTable<T extends object>({
 							disabled={!table.getCanNextPage()}
 							aria-label="Следующая страница"
 						>
-							<ChevronRightIcon />
+							<ChevronRightIcon title="next" />
 						</button>
 					</div>
 				</div>

@@ -1,29 +1,8 @@
 import { type FC, useState } from "react";
+import { CopyIcon, PencilIcon, TrashIcon } from "@/shared/svg";
 import { ContextMenu } from "@/shared/ui-kit/modal";
 import type { RequestDraft } from "../../model/tryIt.types";
 import s from "./RequestTabs.module.css";
-
-const PencilIcon = () => (
-	<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-		<title>Переименовать</title>
-		<path d="M9.5 2.5l2 2L5 11l-2.5.5L3 9l6.5-6.5z" strokeLinejoin="round" />
-	</svg>
-);
-
-const CopyIcon = () => (
-	<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-		<title>Дублировать</title>
-		<rect x="5" y="5" width="7" height="7" rx="1.5" />
-		<path d="M9 5V3.5A1.5 1.5 0 007.5 2H3.5A1.5 1.5 0 002 3.5v4A1.5 1.5 0 003.5 9H5" />
-	</svg>
-);
-
-const TrashIcon = () => (
-	<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-		<title>Удалить</title>
-		<path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.5 7.5h5L10 4" strokeLinejoin="round" />
-	</svg>
-);
 
 interface MenuState {
 	x: number;
@@ -132,7 +111,7 @@ export const RequestTabs: FC<RequestTabsProps> = ({
 												startRename(request);
 											}}
 										>
-											<PencilIcon />
+											<PencilIcon title="Переименовать" />
 										</button>
 									)}
 									{requests.length > 1 && (
@@ -181,13 +160,16 @@ export const RequestTabs: FC<RequestTabsProps> = ({
 				onClose={() => setMenu(null)}
 			>
 				<ContextMenu.Item
-					icon={<PencilIcon />}
+					icon={<PencilIcon title="Переименовать" />}
 					onSelect={() => menu && startRename(menu.request)}
 				>
 					Переименовать
 				</ContextMenu.Item>
 
-				<ContextMenu.Item icon={<CopyIcon />} onSelect={onDuplicate}>
+				<ContextMenu.Item
+					icon={<CopyIcon title="Дублировать" />}
+					onSelect={onDuplicate}
+				>
 					Дублировать
 				</ContextMenu.Item>
 
@@ -195,7 +177,7 @@ export const RequestTabs: FC<RequestTabsProps> = ({
 
 				<ContextMenu.Item
 					danger
-					icon={<TrashIcon />}
+					icon={<TrashIcon title="Удалить" />}
 					disabled={requests.length <= 1}
 					onSelect={() => menu && onDelete(menu.request.id)}
 				>

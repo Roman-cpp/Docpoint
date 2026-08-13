@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { ArrowDownIcon, ArrowUpIcon } from "@/shared/svg";
 import {
 	createHeaderDraft,
 	type HeaderDraft,
@@ -75,36 +76,6 @@ function prettyJson(text: string): string {
 }
 
 /* ─── DIRECTION ICONS ────────────────────────── */
-const ArrowUp: FC = () => (
-	<svg
-		width="13"
-		height="13"
-		viewBox="0 0 13 13"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.6"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<path d="M6.5 10.5v-8M3 6l3.5-3.5L10 6" />
-	</svg>
-);
-
-const ArrowDown: FC = () => (
-	<svg
-		width="13"
-		height="13"
-		viewBox="0 0 13 13"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.6"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<path d="M6.5 2.5v8M3 7l3.5 3.5L10 7" />
-	</svg>
-);
-
 /* ─── SYSTEM ROW (open / closed / error / status) ── */
 const SystemRow: FC<{ msg: WsMessage }> = ({ msg }) => (
 	<div className={s.systemRow}>
@@ -161,7 +132,7 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 		<div className={s.logRow}>
 			<div className={s.logRowHead} onClick={() => setOpen((o) => !o)}>
 				<span className={`${s.dirIcon} ${msg.kind === "out" ? s.out : s.in}`}>
-					{msg.kind === "out" ? <ArrowUp /> : <ArrowDown />}
+					{msg.kind === "out" ? <ArrowUpIcon /> : <ArrowDownIcon />}
 				</span>
 				<span className={s.logText}>{msg.text}</span>
 				<span className={s.logTime}>{msg.ts}</span>

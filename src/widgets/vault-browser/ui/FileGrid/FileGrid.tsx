@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { formatSize, type VaultFile } from "@/entities/vault";
-import { FileIcon } from "@/shared/icon/icons";
 import { cx } from "@/shared/lib/cx";
+import { FileIcon, TrashIcon } from "@/shared/svg";
 import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./FileGrid.module.css";
 
@@ -152,20 +152,3 @@ const DeleteFileDialog: FC<{
 		</Dialog.Root>
 	);
 };
-
-const TrashIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>delete</title>
-		<path d="M2.5 4h11M6 4V2.5h4V4M5 4l.5 9.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L11 4M6.5 7v4M9.5 7v4" />
-	</svg>
-);

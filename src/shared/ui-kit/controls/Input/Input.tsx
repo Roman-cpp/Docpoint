@@ -4,6 +4,7 @@ import {
 	type ReactNode,
 	useState,
 } from "react";
+import { EyeIcon, EyeOffIcon } from "@/shared/svg";
 import s from "./Input.module.css";
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "size" | "prefix"> & {
@@ -58,7 +59,7 @@ export const Input: FC<Props> = ({
 					onClick={() => setShowPass((v) => !v)}
 					tabIndex={-1}
 				>
-					{showPass ? <EyeOffIcon /> : <EyeIcon />}
+					{showPass ? <EyeOffIcon /> : <EyeIcon size={13} />}
 				</button>
 			) : suffix ? (
 				onSuffixClick ? (
@@ -77,37 +78,3 @@ export const Input: FC<Props> = ({
 		</div>
 	);
 };
-
-const EyeIcon = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width={13}
-		height={13}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>show</title>
-		<path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" />
-		<circle cx="7" cy="7" r="1.7" />
-	</svg>
-);
-
-const EyeOffIcon = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width={13}
-		height={13}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	>
-		<title>hide</title>
-		<path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" />
-		<line x1="2" y1="2" x2="12" y2="12" />
-	</svg>
-);

@@ -1,6 +1,13 @@
 import { type FC, useState } from "react";
 import type { Variable } from "@/entities/environment";
 import {
+	EyeIcon,
+	GripIcon,
+	PencilIcon,
+	PlusIcon,
+	TrashIcon,
+} from "@/shared/svg";
+import {
 	StatusBadge,
 	Table,
 	TableActions,
@@ -10,16 +17,7 @@ import {
 	TableRow,
 } from "@/shared/ui-kit/data-display";
 import s from "../EnvironmentPage.module.css";
-import {
-	EyeIcon,
-	GripIcon,
-	inferVarType,
-	PencilIcon,
-	PlusIcon,
-	Section,
-	TrashIcon,
-	type VarType,
-} from "../parts";
+import { inferVarType, Section, type VarType } from "../parts";
 
 const VAR_TYPE_COLOR: Record<VarType, string> = {
 	string: "var(--green)",
@@ -87,7 +85,7 @@ const VarRow: FC<RowProps> = ({ variable, onEdit, onDelete }) => {
 					aria-label="Редактировать"
 					onClick={onEdit}
 				>
-					<PencilIcon />
+					<PencilIcon size={12} />
 				</button>
 				<button
 					type="button"
@@ -95,7 +93,7 @@ const VarRow: FC<RowProps> = ({ variable, onEdit, onDelete }) => {
 					aria-label="Удалить"
 					onClick={onDelete}
 				>
-					<TrashIcon />
+					<TrashIcon size={12} />
 				</button>
 			</TableActions>
 		</TableRow>
@@ -121,7 +119,7 @@ export const VariablesSection: FC<Props> = ({
 				className={`${s.envBtn} ${s.envBtnGhost}`}
 				onClick={onAdd}
 			>
-				<PlusIcon />
+				<PlusIcon size={12} />
 				Новая
 			</button>
 		}

@@ -5,9 +5,9 @@ import {
 	createMarkdownApi,
 	withMarkdownExt,
 } from "@/entities/vault";
+import { NewFileIcon, NewFolderIcon } from "@/shared/svg";
 import { ContextMenu } from "@/shared/ui-kit/modal";
 import { CreateEntryDialog } from "../ui/CreateEntryDialog";
-import { NewFileIcon, NewFolderIcon } from "../ui/CreateEntryDialog/icons";
 
 /** What the create dialog is currently asking for, if anything. */
 type Pending = "file" | "folder" | null;

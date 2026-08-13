@@ -7,6 +7,13 @@ import {
 	useEffect,
 	useState,
 } from "react";
+import {
+	CloseIcon,
+	ErrorIcon,
+	InfoIcon,
+	SuccessIcon,
+	WarningIcon,
+} from "@/shared/svg";
 import s from "./Toast.module.css";
 
 export type ToastVariant = "success" | "error" | "warning" | "info";
@@ -32,94 +39,11 @@ const EXIT_MS = 280;
 
 /* ─── Icons ────────────────────────────────────────────────── */
 
-const IconSuccess = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width={16}
-		height={16}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.75"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden
-	>
-		<circle cx="8" cy="8" r="6.5" />
-		<path d="M5 8.5l2 2 4-4" />
-	</svg>
-);
-
-const IconError = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width={16}
-		height={16}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.75"
-		strokeLinecap="round"
-		aria-hidden
-	>
-		<circle cx="8" cy="8" r="6.5" />
-		<path d="M5.5 5.5l5 5M10.5 5.5l-5 5" />
-	</svg>
-);
-
-const IconWarning = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width={16}
-		height={16}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.75"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden
-	>
-		<path d="M8 2L14.5 13.5H1.5z" />
-		<path d="M8 6.5v3" />
-		<circle cx="8" cy="11.5" r="0.5" fill="currentColor" />
-	</svg>
-);
-
-const IconInfo = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width={16}
-		height={16}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.75"
-		strokeLinecap="round"
-		aria-hidden
-	>
-		<circle cx="8" cy="8" r="6.5" />
-		<path d="M8 7.5v3.5" />
-		<circle cx="8" cy="5.5" r="0.5" fill="currentColor" />
-	</svg>
-);
-
-const IconClose = () => (
-	<svg
-		viewBox="0 0 12 12"
-		width={12}
-		height={12}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.75"
-		strokeLinecap="round"
-		aria-hidden
-	>
-		<path d="M2 2l8 8M10 2l-8 8" />
-	</svg>
-);
-
 const ICON: Record<ToastVariant, ReactNode> = {
-	success: <IconSuccess />,
-	error: <IconError />,
-	warning: <IconWarning />,
-	info: <IconInfo />,
+	success: <SuccessIcon />,
+	error: <ErrorIcon />,
+	warning: <WarningIcon />,
+	info: <InfoIcon />,
 };
 
 const VARIANT_CLASS: Record<ToastVariant, string> = {
@@ -167,7 +91,7 @@ const ToastItem: FC<{ item: ToastState; onDismiss: (id: string) => void }> = ({
 				aria-label="Закрыть уведомление"
 				onClick={() => onDismiss(item.id)}
 			>
-				<IconClose />
+				<CloseIcon size={12} />
 			</button>
 		</div>
 	);

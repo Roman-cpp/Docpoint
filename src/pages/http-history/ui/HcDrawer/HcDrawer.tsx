@@ -1,26 +1,9 @@
 import { type FC, Fragment, useState } from "react";
 import { selectSelectedRequest, useRequestStore } from "@/features/request";
 import { cx } from "@/shared/lib/cx";
+import { ChevronRightIcon, CopyIcon } from "@/shared/svg";
 import type { HistoryRecord } from "../../model/types";
 import s from "../HttpHistoryPage.module.css";
-
-/* ─── Icons ─── */
-const CopyIcon: FC<{ size?: number }> = ({ size = 12 }) => (
-	<svg
-		viewBox="0 0 14 14"
-		width={size}
-		height={size}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
-	>
-		<rect x="4.5" y="4.5" width="8" height="8" rx="1.5" />
-		<path
-			d="M9 4.5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1.5"
-			strokeLinecap="round"
-		/>
-	</svg>
-);
 
 /* ─── Helpers ─── */
 export function hcStatusClass(code: number): string {
@@ -118,24 +101,16 @@ function hcParseJson(
 	}
 }
 
+/** Шеврон раскрытия строки: закрыт — вправо, открыт — вниз. */
 const Caret: FC<{ open: boolean }> = ({ open }) => (
-	<svg
-		aria-hidden="true"
-		viewBox="0 0 12 12"
-		width={10}
-		height={10}
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.7"
-		strokeLinecap="round"
-		strokeLinejoin="round"
+	<ChevronRightIcon
+		size={10}
+		strokeWidth={1.7}
 		style={{
 			transform: open ? "rotate(90deg)" : "none",
 			transition: "transform .12s",
 		}}
-	>
-		<path d="M4 2.5L8 6l-4 3.5" />
-	</svg>
+	/>
 );
 
 const HcJsonPrimitive: FC<{ value: unknown }> = ({ value }) => {
@@ -259,7 +234,7 @@ const HcCopyBtn: FC<{ text: string; label?: string }> = ({
 				setTimeout(() => setDone(false), 1200);
 			}}
 		>
-			<CopyIcon />
+			<CopyIcon size={12} />
 			{done ? "Скопировано" : label}
 		</button>
 	);

@@ -4,6 +4,7 @@ import { PLATFORM_DESCRIPTION_FILE, type Platform } from "@/entities/platform";
 import { platformScope } from "@/entities/shared/file-scope";
 import { markdownRoute } from "@/entities/vault";
 import { usePlatformDescription } from "@/features/platform";
+import { DocIcon, PencilIcon, PlusIcon } from "@/shared/svg";
 import { MarkdownView } from "@/shared/ui-kit/MarkdownView";
 import { ContextMenu } from "@/shared/ui-kit/modal";
 import b from "./PlatformDetails.module.css";
@@ -75,7 +76,7 @@ export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 				</div>
 			) : (
 				<div className={b.emptyState}>
-					<DocIcon />
+					<DocIcon size={34} className={b.emptyIcon} />
 					<h3 className={b.emptyTitle}>Описание ещё не создано</h3>
 					<p className={b.emptyText}>
 						У платформы нет файла{" "}
@@ -109,56 +110,3 @@ export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 		</section>
 	);
 };
-
-const PencilIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>edit</title>
-		<path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5 13l-3 1 1-3 8.5-8.5Z" />
-	</svg>
-);
-
-const PlusIcon: FC = () => (
-	<svg
-		viewBox="0 0 16 16"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>create</title>
-		<path d="M8 3v10M3 8h10" />
-	</svg>
-);
-
-const DocIcon: FC = () => (
-	<svg
-		className={b.emptyIcon}
-		viewBox="0 0 24 24"
-		width="34"
-		height="34"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.2"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>документ</title>
-		<path d="M14 3H7a1.5 1.5 0 0 0-1.5 1.5v15A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V7.5L14 3Z" />
-		<path d="M14 3v4.5h4.5M9 12h6M9 15.5h6M9 8.5h2" />
-	</svg>
-);

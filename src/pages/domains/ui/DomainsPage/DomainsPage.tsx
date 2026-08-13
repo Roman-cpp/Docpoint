@@ -1,6 +1,7 @@
 import { type FC, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { cx } from "@/shared/lib/cx";
+import { SearchIcon } from "@/shared/svg";
 import { Header } from "@/widgets/header";
 import s from "./DomainsPage.module.css";
 
@@ -226,20 +227,3 @@ export const DomainsPage: FC = () => {
 		</div>
 	);
 };
-
-/* ─── Icons ─── */
-const SearchIcon: FC = () => (
-	<svg
-		viewBox="0 0 14 14"
-		width="14"
-		height="14"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.4"
-		strokeLinecap="round"
-	>
-		<title>search</title>
-		<circle cx="6" cy="6" r="4.2" />
-		<path d="M9.2 9.2L12 12" />
-	</svg>
-);

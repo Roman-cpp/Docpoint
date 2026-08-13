@@ -29,19 +29,14 @@ import {
 } from "@/features/environment";
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { joinUrl } from "@/shared/lib/url";
+import { BoltIcon, CopyIcon, TrashIcon } from "@/shared/svg";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "../../../../widgets/header/ui/Header/Header";
 import { AuthRequestSection } from "../AuthRequestSection";
 import { EndpointSection } from "../EndpointSection";
 import s from "../EnvironmentPage.module.css";
 import { IdentificationSection } from "../IdentificationSection";
-import {
-	type AuthMethod,
-	BoltIcon,
-	CopyIcon,
-	HTTP_METHODS,
-	TrashIcon,
-} from "../parts";
+import { type AuthMethod, HTTP_METHODS } from "../parts";
 import { Sidebar } from "../Sidebar";
 import { VariablesSection } from "../VariablesSection";
 
@@ -403,7 +398,7 @@ export const EnvironmentPage: FC = () => {
 						className={`${s.envBtn} ${s.envBtnDanger}`}
 						onClick={handleDeleteEnvironment}
 					>
-						<TrashIcon />
+						<TrashIcon size={12} />
 						Удалить
 					</button>
 					<button

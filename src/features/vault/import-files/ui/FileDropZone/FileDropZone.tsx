@@ -4,6 +4,7 @@ import { toast } from "@/core/toast";
 import type { FileScope } from "@/entities/shared/file-scope";
 import { importFileApi } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
+import { UploadIcon } from "@/shared/svg";
 import s from "./FileDropZone.module.css";
 
 /** A drop target that accepts files dragged in from the OS and copies them into
@@ -112,7 +113,7 @@ export const FileDropZone: FC<{
 			className={cx(s["fe-dropzone"], over && s["fe-dropzone-over"])}
 			aria-label="Перетащите файлы сюда, чтобы сохранить их"
 		>
-			<UploadIcon />
+			<UploadIcon size={22} />
 			<span className={s["fe-dropzone-text"]}>
 				{importing
 					? "Сохраняем…"
@@ -123,20 +124,3 @@ export const FileDropZone: FC<{
 		</div>
 	);
 };
-
-const UploadIcon: FC = () => (
-	<svg
-		viewBox="0 0 24 24"
-		width="22"
-		height="22"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.6"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		<title>upload</title>
-		<path d="M12 15V4M8 8l4-4 4 4M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
-	</svg>
-);

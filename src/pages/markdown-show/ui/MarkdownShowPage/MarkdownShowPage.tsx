@@ -4,6 +4,7 @@ import { toast } from "@/core/toast";
 import { parseScopeKey } from "@/entities/shared/file-scope";
 import { exportMarkdownApi, type Markdown } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
+import { ChevronLeftIcon, CopyIcon, DocIcon, DownloadIcon } from "@/shared/svg";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { MarkdownView } from "@/shared/ui-kit/MarkdownView";
 import { Header } from "@/widgets/header";
@@ -14,7 +15,6 @@ import {
 	useMarkdownContent,
 } from "../../model/useMarkdownContent";
 import { FileSidebar } from "../FileSidebar";
-import { BackIcon, CopyIcon, DocIcon, DownloadIcon } from "../icons";
 import s from "../MarkdownShowPage.module.css";
 
 type View = "rendered" | "edit";
@@ -186,7 +186,7 @@ export const MarkdownShowPage: FC = () => {
 							className={s.toolBtn}
 							onClick={() => navigate(-1)}
 						>
-							<BackIcon /> Назад
+							<ChevronLeftIcon size={13} /> Назад
 						</button>
 						<div className={s.bc}>
 							{file ? (
@@ -223,7 +223,7 @@ export const MarkdownShowPage: FC = () => {
 								)}
 							</div>
 							<button type="button" className={s.toolBtn} onClick={copyAll}>
-								<CopyIcon /> {copied ? "Скопировано" : "Копировать"}
+								<CopyIcon size={13} /> {copied ? "Скопировано" : "Копировать"}
 							</button>
 							<button
 								type="button"
@@ -231,7 +231,7 @@ export const MarkdownShowPage: FC = () => {
 								onClick={exportFile}
 								disabled={!file}
 							>
-								<DownloadIcon /> Экспортировать
+								<DownloadIcon size={13} /> Экспортировать
 							</button>
 						</div>
 					</div>

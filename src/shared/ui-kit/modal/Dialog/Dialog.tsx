@@ -4,6 +4,7 @@ import {
 	type ReactNode,
 	useContext,
 } from "react";
+import { CloseIcon } from "@/shared/svg";
 import s from "./Dialog.module.css";
 
 /* ------------------------------------------------------------------ */
@@ -108,7 +109,7 @@ function Close({ className }: { className?: string }) {
 			onClick={close}
 			aria-label="Закрыть"
 		>
-			<CloseIcon />
+			<CloseIcon size={11} title="close" />
 		</button>
 	);
 }
@@ -170,25 +171,7 @@ function BtnCancel({ className, ...rest }: BtnProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Icons                                                               */
 /* ------------------------------------------------------------------ */
-
-function CloseIcon() {
-	return (
-		<svg
-			viewBox="0 0 11 11"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-			width="11"
-			height="11"
-		>
-			<title>close</title>
-			<path d="M1.5 1.5l8 8M9.5 1.5l-8 8" />
-		</svg>
-	);
-}
 
 /* ------------------------------------------------------------------ */
 /* Публичный API — составной компонент в стиле Radix                   */
