@@ -46,16 +46,6 @@ export const PlatformDetails: FC<PlatformDetailsProps> = ({ platform }) => {
 
 	return (
 		<section className={b.section} onContextMenu={openMenu}>
-			<div className={b.sectionHead}>
-				<div className={b.sectionLabel}>
-					<span>Описание платформы</span>
-					{description && (
-						<span className={b.fileChip}>{PLATFORM_DESCRIPTION_FILE}</span>
-					)}
-					<span className={b.sectionRule} />
-				</div>
-			</div>
-
 			{isDescriptionLoading ? (
 				<div className={b.docCard}>
 					<div

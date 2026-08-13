@@ -23,7 +23,6 @@ import {
 	parseWebsocketImport,
 	useImportWebsocket,
 } from "@/features/websocket";
-import s from "@/pages/docs/ui/ApiExplorerPage.module.css";
 import {
 	DownloadIcon,
 	EyeIcon,
@@ -40,6 +39,7 @@ import { VaultBrowser } from "@/widgets/vault-browser";
 import { CreateErdModal } from "../CreateErdModal";
 import { CreateWebsocketModal } from "../CreateWebsocketModal";
 import { EditWebsocketModal } from "../EditWebsocketModal";
+import s from "./DomainShowPage.module.css";
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 const Overview: FC<{ id: string }> = ({ id }) => {

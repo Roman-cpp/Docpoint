@@ -11,12 +11,6 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/docs",
-				lazy: async () => ({
-					Component: (await import("@/pages/docs")).DocsPage,
-				}),
-			},
-			{
 				path: "/doc-show/:id",
 				lazy: async () => ({
 					Component: (await import("@/pages/doc-api-show")).DocApiShowPage,
@@ -56,12 +50,6 @@ export const router = createBrowserRouter([
 				path: "/http-history",
 				lazy: async () => ({
 					Component: (await import("@/pages/http-history")).HttpHistoryPage,
-				}),
-			},
-			{
-				path: "/logs",
-				lazy: async () => ({
-					Component: (await import("@/pages/logs")).LogsPage,
 				}),
 			},
 			{

@@ -92,9 +92,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 						onClick={() => setTab("domains")}
 					>
 						Домены
-						{domains.length > 0 && (
-							<span className={b.tabCount}>{domains.length}</span>
-						)}
 					</button>
 					<button
 						type="button"
@@ -111,15 +108,6 @@ const Overview: FC<{ id: string }> = ({ id }) => {
 
 				{tab === "domains" && (
 					<section className={b.section}>
-						<div className={b.sectionHead}>
-							<div className={b.sectionLabel}>
-								<span>Домены</span>
-								{domains.length > 0 && (
-									<span className={b.sectionCount}>{domains.length}</span>
-								)}
-								<span className={b.sectionRule} />
-							</div>
-						</div>
 						{isDomainsLoading ? (
 							<p className={b.ovSub}>Загрузка доменов…</p>
 						) : domains.length === 0 ? (

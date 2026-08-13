@@ -1,833 +1,801 @@
 {
-  "doc": {
-    "name": "Task Manager API",
-    "version": "v1",
-    "desc": "REST API для управления задачами, проектами и пользователями.",
-    "tags": [
-      "REST",
-      "JSON",
-      "Auth required"
-    ]
-  },
-  "groups": [
-    {
-      "label": "Auth",
-      "endpoints": [
-        {
-          "method": "POST",
-          "path": "/auth/login",
-          "name": "Login",
-          "description": "Аутентификация пользователя. Возвращает Bearer-токен для последующих запросов.",
-          "tags": [
-            "public"
-          ],
-          "auth": false,
-          "queryParams": [],
-          "bodyParams": [
-            {
-              "name": "email",
-              "type": "string",
-              "required": true,
-              "desc": "Email пользователя",
-              "default": ""
-            },
-            {
-              "name": "password",
-              "type": "string",
-              "required": true,
-              "desc": "Пароль (мин. 8 символов)",
-              "default": ""
-            }
-          ],
-          "responses": {
-            "200": {
-              "label": "200 OK",
-              "schema": [
-                {
-                  "key": "token",
-                  "type": "string",
-                  "desc": "JWT Bearer-токен",
-                  "example": "\"eyJhbGci...\""
-                },
-                {
-                  "key": "expires_in",
-                  "type": "integer",
-                  "desc": "Срок жизни токена в секундах",
-                  "example": "3600"
-                }
-              ],
-              "example": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"expires_in\": 3600\n}"
-            },
-            "401": {
-              "label": "401 Unauthorized",
-              "schema": [
-                {
-                  "key": "message",
-                  "type": "string",
-                  "desc": "Описание ошибки",
-                  "example": "\"Invalid credentials\""
-                }
-              ],
-              "example": "{\n  \"message\": \"Invalid credentials\"\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Валидные учётные данные",
-              "body": {
-                "email": "admin@example.com",
-                "password": "correct-horse-battery"
-              }
-            },
-            {
-              "name": "Неверный пароль — ждём 401",
-              "body": {
-                "email": "admin@example.com",
-                "password": "wrong"
-              }
-            }
-          ]
-        },
-        {
-          "method": "POST",
-          "path": "/auth/logout",
-          "name": "Logout",
-          "description": "Инвалидирует текущий Bearer-токен пользователя.",
-          "tags": [
-            "auth-required"
-          ],
-          "auth": true,
-          "queryParams": [],
-          "bodyParams": [],
-          "responses": {
-            "204": {
-              "label": "204 No Content",
-              "schema": [],
-              "example": ""
-            }
-          }
-        }
-      ]
-    },
-    {
-      "label": "Users",
-      "endpoints": [
-        {
-          "method": "GET",
-          "path": "/users",
-          "name": "List users",
-          "description": "Возвращает постраничный список пользователей. Доступно только администраторам.",
-          "tags": [
-            "paginated",
-            "admin"
-          ],
-          "auth": true,
-          "queryParams": [
-            {
-              "name": "page",
-              "type": "integer",
-              "required": false,
-              "desc": "Номер страницы",
-              "default": "1"
-            },
-            {
-              "name": "limit",
-              "type": "integer",
-              "required": false,
-              "desc": "Элементов на странице",
-              "default": "20"
-            },
-            {
-              "name": "search",
-              "type": "string",
-              "required": false,
-              "desc": "Фильтр по имени или email",
-              "default": ""
-            }
-          ],
-          "bodyParams": [],
-          "responses": {
-            "200": {
-              "label": "200 OK",
-              "schema": [
-                {
-                  "key": "data[].id",
-                  "type": "uuid",
-                  "desc": "UUID пользователя",
-                  "example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
-                },
-                {
-                  "key": "data[].name",
-                  "type": "string",
-                  "desc": "Полное имя",
-                  "example": "\"Alice Smith\""
-                },
-                {
-                  "key": "data[].email",
-                  "type": "string",
-                  "desc": "Email",
-                  "example": "\"alice@example.com\""
-                },
-                {
-                  "key": "data[].role",
-                  "type": "string",
-                  "desc": "Роль пользователя",
-                  "example": "\"member\""
-                },
-                {
-                  "key": "meta.total",
-                  "type": "integer",
-                  "desc": "Всего записей",
-                  "example": "142"
-                },
-                {
-                  "key": "meta.page",
-                  "type": "integer",
-                  "desc": "Текущая страница",
-                  "example": "1"
-                }
-              ],
-              "example": "{\n  \"data\": [\n    { \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"name\": \"Alice Smith\", \"email\": \"alice@example.com\", \"role\": \"member\" }\n  ],\n  \"meta\": { \"total\": 142, \"page\": 1 }\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Первая страница",
-              "query": {
-                "page": 1,
-                "limit": 20
-              },
-              "headers": {
-                "X-Request-Id": "smoke-users-page-1"
-              }
-            },
-            {
-              "name": "Поиск по имени",
-              "query": {
-                "search": "ivan",
-                "limit": 5
-              }
-            }
-          ]
-        },
-        {
-          "method": "GET",
-          "path": "/users/{id}",
-          "name": "Get user",
-          "description": "Возвращает профиль конкретного пользователя по UUID.",
-          "tags": [
-            "auth-required"
-          ],
-          "auth": true,
-          "pathParams": [
-            {
-              "name": "id",
-              "type": "uuid",
-              "required": true,
-              "desc": "UUID пользователя",
-              "default": ""
-            }
-          ],
-          "queryParams": [],
-          "bodyParams": [],
-          "responses": {
-            "200": {
-              "label": "200 OK",
-              "schema": [
-                {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID пользователя"
-                },
-                {
-                  "key": "name",
-                  "type": "string",
-                  "desc": "Полное имя"
-                },
-                {
-                  "key": "email",
-                  "type": "string",
-                  "desc": "Email"
-                },
-                {
-                  "key": "role",
-                  "type": "string",
-                  "desc": "Роль: admin / member"
-                },
-                {
-                  "key": "created_at",
-                  "type": "datetime",
-                  "desc": "Дата регистрации"
-                }
-              ],
-              "example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"role\": \"member\",\n  \"created_at\": \"2025-01-15T08:30:00Z\"\n}"
-            },
-            "404": {
-              "label": "404 Not Found",
-              "schema": [
-                {
-                  "key": "message",
-                  "type": "string",
-                  "desc": "Описание ошибки"
-                }
-              ],
-              "example": "{\n  \"message\": \"User not found\"\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Существующий пользователь",
-              "path": {
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-              }
-            },
-            {
-              "name": "Несуществующий — ждём 404",
-              "path": {
-                "id": "00000000-0000-0000-0000-000000000000"
-              }
-            }
-          ]
-        },
-        {
-          "method": "POST",
-          "path": "/users",
-          "name": "Create user",
-          "description": "Регистрирует нового пользователя. Доступно только администраторам.",
-          "tags": [
-            "admin"
-          ],
-          "auth": true,
-          "queryParams": [],
-          "bodyParams": [
-            {
-              "name": "name",
-              "type": "string",
-              "required": true,
-              "desc": "Полное имя",
-              "default": ""
-            },
-            {
-              "name": "email",
-              "type": "string",
-              "required": true,
-              "desc": "Email (уникальный)",
-              "default": ""
-            },
-            {
-              "name": "password",
-              "type": "string",
-              "required": true,
-              "desc": "Пароль (мин. 8 символов)",
-              "default": ""
-            },
-            {
-              "name": "role",
-              "type": "string",
-              "required": false,
-              "desc": "Роль: admin или member",
-              "default": "member"
-            }
-          ],
-          "responses": {
-            "201": {
-              "label": "201 Created",
-              "schema": [
-                {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID нового пользователя"
-                }
-              ],
-              "example": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
-            },
-            "422": {
-              "label": "422 Validation Error",
-              "schema": [
-                {
-                  "key": "errors[].field",
-                  "type": "string",
-                  "desc": "Имя поля с ошибкой"
-                },
-                {
-                  "key": "errors[].message",
-                  "type": "string",
-                  "desc": "Описание ошибки"
-                }
-              ],
-              "example": "{\n  \"errors\": [\n    { \"field\": \"email\", \"message\": \"Email already taken\" }\n  ]\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Новый администратор",
-              "body": {
-                "name": "Иван Петров",
-                "email": "ivan@example.com",
-                "password": "{{DEFAULT_PASSWORD}}",
-                "role": "admin"
-              }
-            }
-          ]
-        },
-        {
-          "method": "PATCH",
-          "path": "/users/{id}",
-          "name": "Update user",
-          "description": "Частичное обновление профиля пользователя. Администратор может менять роль.",
-          "tags": [
-            "auth-required"
-          ],
-          "auth": true,
-          "pathParams": [
-            {
-              "name": "id",
-              "type": "uuid",
-              "required": true,
-              "desc": "UUID изменяемого пользователя",
-              "default": ""
-            }
-          ],
-          "queryParams": [],
-          "bodyParams": [
-            {
-              "name": "name",
-              "type": "string",
-              "required": false,
-              "desc": "Новое имя",
-              "default": ""
-            },
-            {
-              "name": "role",
-              "type": "string",
-              "required": false,
-              "desc": "Новая роль (только для admin)",
-              "default": ""
-            }
-          ],
-          "responses": {
-            "200": {
-              "label": "200 OK",
-              "schema": [
-                {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID пользователя"
-                },
-                {
-                  "key": "name",
-                  "type": "string",
-                  "desc": "Обновлённое имя"
-                },
-                {
-                  "key": "role",
-                  "type": "string",
-                  "desc": "Роль"
-                }
-              ],
-              "example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Alice Johnson\",\n  \"role\": \"admin\"\n}"
-            }
-          }
-        },
-        {
-          "method": "DELETE",
-          "path": "/users/{id}",
-          "name": "Delete user",
-          "description": "Удаляет пользователя и все связанные данные. Необратимая операция.",
-          "tags": [
-            "admin",
-            "destructive"
-          ],
-          "auth": true,
-          "pathParams": [
-            {
-              "name": "id",
-              "type": "uuid",
-              "required": true,
-              "desc": "UUID удаляемого пользователя",
-              "default": ""
-            }
-          ],
-          "queryParams": [],
-          "bodyParams": [],
-          "responses": {
-            "204": {
-              "label": "204 No Content",
-              "schema": [],
-              "example": ""
-            },
-            "404": {
-              "label": "404 Not Found",
-              "schema": [
-                {
-                  "key": "message",
-                  "type": "string",
-                  "desc": "Описание ошибки"
-                }
-              ],
-              "example": "{\n  \"message\": \"User not found\"\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Удаление тестового пользователя",
-              "path": {
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-              },
-              "headers": [
-                {
-                  "name": "X-Confirm",
-                  "value": "yes",
-                  "enabled": false
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "label": "Tasks",
-      "endpoints": [
-        {
-          "method": "GET",
-          "path": "/tasks",
-          "name": "List tasks",
-          "description": "Возвращает задачи текущего пользователя. Можно фильтровать по статусу и проекту.",
-          "tags": [
-            "paginated",
-            "auth-required"
-          ],
-          "auth": true,
-          "queryParams": [
-            {
-              "name": "status",
-              "type": "string",
-              "required": false,
-              "desc": "Фильтр по статусу: todo / in_progress / done",
-              "default": ""
-            },
-            {
-              "name": "project_id",
-              "type": "uuid",
-              "required": false,
-              "desc": "Фильтр по проекту",
-              "default": ""
-            },
-            {
-              "name": "page",
-              "type": "integer",
-              "required": false,
-              "desc": "Номер страницы",
-              "default": "1"
-            },
-            {
-              "name": "limit",
-              "type": "integer",
-              "required": false,
-              "desc": "Элементов на странице",
-              "default": "20"
-            }
-          ],
-          "bodyParams": [],
-          "responses": {
-            "200": {
-              "label": "200 OK",
-              "schema": [
-                {
-                  "key": "data[].id",
-                  "type": "uuid",
-                  "desc": "UUID задачи"
-                },
-                {
-                  "key": "data[].title",
-                  "type": "string",
-                  "desc": "Заголовок задачи"
-                },
-                {
-                  "key": "data[].status",
-                  "type": "string",
-                  "desc": "Статус: todo / in_progress / done"
-                },
-                {
-                  "key": "data[].priority",
-                  "type": "string",
-                  "desc": "Приоритет: low / medium / high"
-                },
-                {
-                  "key": "data[].due_date",
-                  "type": "datetime",
-                  "desc": "Срок выполнения"
-                },
-                {
-                  "key": "data[].assignee.id",
-                  "type": "uuid",
-                  "desc": "UUID исполнителя"
-                },
-                {
-                  "key": "data[].assignee.name",
-                  "type": "string",
-                  "desc": "Имя исполнителя"
-                },
-                {
-                  "key": "meta.total",
-                  "type": "integer",
-                  "desc": "Всего задач"
-                }
-              ],
-              "example": "{\n  \"data\": [\n    {\n      \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n      \"title\": \"Implement login page\",\n      \"status\": \"in_progress\",\n      \"priority\": \"high\",\n      \"due_date\": \"2025-06-01T00:00:00Z\",\n      \"assignee\": { \"id\": \"3fa85f64-...\", \"name\": \"Alice Smith\" }\n    }\n  ],\n  \"meta\": { \"total\": 37 }\n}"
-            }
-          }
-        },
-        {
-          "method": "POST",
-          "path": "/tasks",
-          "name": "Create task",
-          "description": "Создаёт новую задачу в указанном проекте.",
-          "tags": [
-            "auth-required"
-          ],
-          "auth": true,
-          "queryParams": [],
-          "bodyParams": [
-            {
-              "name": "title",
-              "type": "string",
-              "required": true,
-              "desc": "Заголовок задачи",
-              "default": ""
-            },
-            {
-              "name": "description",
-              "type": "string",
-              "required": false,
-              "desc": "Подробное описание",
-              "default": ""
-            },
-            {
-              "name": "project_id",
-              "type": "uuid",
-              "required": true,
-              "desc": "UUID проекта",
-              "default": ""
-            },
-            {
-              "name": "assignee_id",
-              "type": "uuid",
-              "required": false,
-              "desc": "UUID исполнителя",
-              "default": ""
-            },
-            {
-              "name": "priority",
-              "type": "string",
-              "required": false,
-              "desc": "Приоритет: low / medium / high",
-              "default": "medium"
-            },
-            {
-              "name": "due_date",
-              "type": "string",
-              "required": false,
-              "desc": "Срок выполнения (ISO 8601)",
-              "default": ""
-            }
-          ],
-          "responses": {
-            "201": {
-              "label": "201 Created",
-              "schema": [
-                {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID созданной задачи"
-                },
-                {
-                  "key": "title",
-                  "type": "string",
-                  "desc": "Заголовок"
-                },
-                {
-                  "key": "status",
-                  "type": "string",
-                  "desc": "Начальный статус (всегда todo)"
-                }
-              ],
-              "example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"todo\"\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Задача с вложенными полями",
-              "headers": {
-                "Idempotency-Key": "release-task-001"
-              },
-              "body": {
-                "title": "Подготовить релиз",
-                "project_id": "9c8b7a65-4321-4000-8000-abcdefabcdef",
-                "priority": "high",
-                "meta": {
-                  "labels": [
-                    "release",
-                    "urgent"
-                  ],
-                  "estimate": {
-                    "value": 8,
-                    "unit": "hours"
-                  }
-                }
-              }
-            },
-            {
-              "name": "Минимальная задача",
-              "body": {
-                "title": "Починить импорт",
-                "project_id": "9c8b7a65-4321-4000-8000-abcdefabcdef"
-              }
-            },
-            {
-              "name": "Тело строкой (не JSON)",
-              "headers": {
-                "Content-Type": "application/x-www-form-urlencoded"
-              },
-              "bodyMode": "raw",
-              "body": "title=Подготовить релиз&priority=high"
-            }
-          ]
-        },
-        {
-          "method": "PATCH",
-          "path": "/tasks/{id}",
-          "name": "Update task",
-          "description": "Обновляет поля задачи. Для смены статуса используется это же поле.",
-          "tags": [
-            "auth-required"
-          ],
-          "auth": true,
-          "pathParams": [
-            {
-              "name": "id",
-              "type": "uuid",
-              "required": true,
-              "desc": "UUID задачи",
-              "default": ""
-            }
-          ],
-          "queryParams": [
-            {
-              "name": "notify",
-              "type": "boolean",
-              "required": false,
-              "desc": "Уведомить исполнителя об изменении",
-              "default": "false"
-            }
-          ],
-          "bodyParams": [
-            {
-              "name": "title",
-              "type": "string",
-              "required": false,
-              "desc": "Новый заголовок",
-              "default": ""
-            },
-            {
-              "name": "status",
-              "type": "string",
-              "required": false,
-              "desc": "Новый статус: todo / in_progress / done",
-              "default": ""
-            },
-            {
-              "name": "priority",
-              "type": "string",
-              "required": false,
-              "desc": "Новый приоритет: low / medium / high",
-              "default": ""
-            },
-            {
-              "name": "assignee_id",
-              "type": "uuid",
-              "required": false,
-              "desc": "UUID нового исполнителя",
-              "default": ""
-            }
-          ],
-          "responses": {
-            "200": {
-              "label": "200 OK",
-              "schema": [
-                {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID задачи"
-                },
-                {
-                  "key": "title",
-                  "type": "string",
-                  "desc": "Заголовок"
-                },
-                {
-                  "key": "status",
-                  "type": "string",
-                  "desc": "Статус"
-                },
-                {
-                  "key": "updated_at",
-                  "type": "datetime",
-                  "desc": "Время обновления"
-                }
-              ],
-              "example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"done\",\n  \"updated_at\": \"2025-05-20T14:00:00Z\"\n}"
-            }
-          },
-          "requests": [
-            {
-              "name": "Закрыть задачу с уведомлением",
-              "path": {
-                "id": "7d3f1e20-9c44-4b8a-9f10-2b6c5a0d1e33"
-              },
-              "query": {
-                "notify": true
-              },
-              "headers": {
-                "Idempotency-Key": "close-task-001"
-              },
-              "body": {
-                "status": "done",
-                "assignee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-              }
-            }
-          ]
-        },
-        {
-          "method": "DELETE",
-          "path": "/tasks/{id}",
-          "name": "Delete task",
-          "description": "Удаляет задачу.",
-          "tags": [
-            "auth-required"
-          ],
-          "auth": true,
-          "pathParams": [
-            {
-              "name": "id",
-              "type": "uuid",
-              "required": true,
-              "desc": "UUID удаляемой задачи",
-              "default": ""
-            }
-          ],
-          "queryParams": [],
-          "bodyParams": [],
-          "responses": {
-            "204": {
-              "label": "204 No Content",
-              "schema": [],
-              "example": ""
-            }
-          }
-        }
-      ]
-    }
-  ]
+	"doc": {
+		"name": "Task Manager API",
+		"version": "v1",
+		"desc": "REST API для управления задачами, проектами и пользователями.",
+		"tags": ["REST", "JSON", "Auth required"]
+	},
+	"groups": [
+		{
+			"label": "Auth",
+			"endpoints": [
+				{
+					"method": "POST",
+					"path": "/auth/login",
+					"name": "Login",
+					"description": "Аутентификация пользователя. Возвращает Bearer-токен для последующих запросов.",
+					"tags": ["public"],
+					"auth": false,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "email",
+							"type": "string",
+							"required": true,
+							"desc": "Email пользователя",
+							"default": ""
+						},
+						{
+							"name": "password",
+							"type": "string",
+							"required": true,
+							"desc": "Пароль (мин. 8 символов)",
+							"default": ""
+						}
+					],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "token",
+									"type": "string",
+									"desc": "JWT Bearer-токен",
+									"example": "\"eyJhbGci...\""
+								},
+								{
+									"key": "expires_in",
+									"type": "integer",
+									"desc": "Срок жизни токена в секундах",
+									"example": "3600"
+								}
+							],
+							"example": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"expires_in\": 3600\n}"
+						},
+						"401": {
+							"label": "401 Unauthorized",
+							"schema": [
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки",
+									"example": "\"Invalid credentials\""
+								}
+							],
+							"example": "{\n  \"message\": \"Invalid credentials\"\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Валидные учётные данные",
+							"body": {
+								"email": "admin@example.com",
+								"password": "correct-horse-battery"
+							}
+						},
+						{
+							"name": "Неверный пароль — ждём 401",
+							"body": {
+								"email": "admin@example.com",
+								"password": "wrong"
+							}
+						}
+					]
+				},
+				{
+					"method": "POST",
+					"path": "/auth/logout",
+					"name": "Logout",
+					"description": "Инвалидирует текущий Bearer-токен пользователя.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						}
+					}
+				}
+			]
+		},
+		{
+			"label": "Users",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/users",
+					"name": "List users",
+					"description": "Возвращает постраничный список пользователей. Доступно только администраторам.",
+					"tags": ["paginated", "admin"],
+					"auth": true,
+					"queryParams": [
+						{
+							"name": "page",
+							"type": "integer",
+							"required": false,
+							"desc": "Номер страницы",
+							"default": "1"
+						},
+						{
+							"name": "limit",
+							"type": "integer",
+							"required": false,
+							"desc": "Элементов на странице",
+							"default": "20"
+						},
+						{
+							"name": "search",
+							"type": "string",
+							"required": false,
+							"desc": "Фильтр по имени или email",
+							"default": ""
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "data[].id",
+									"type": "uuid",
+									"desc": "UUID пользователя",
+									"example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
+								},
+								{
+									"key": "data[].name",
+									"type": "string",
+									"desc": "Полное имя",
+									"example": "\"Alice Smith\""
+								},
+								{
+									"key": "data[].email",
+									"type": "string",
+									"desc": "Email",
+									"example": "\"alice@example.com\""
+								},
+								{
+									"key": "data[].role",
+									"type": "string",
+									"desc": "Роль пользователя",
+									"example": "\"member\""
+								},
+								{
+									"key": "meta.total",
+									"type": "integer",
+									"desc": "Всего записей",
+									"example": "142"
+								},
+								{
+									"key": "meta.page",
+									"type": "integer",
+									"desc": "Текущая страница",
+									"example": "1"
+								}
+							],
+							"example": "{\n  \"data\": [\n    { \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"name\": \"Alice Smith\", \"email\": \"alice@example.com\", \"role\": \"member\" }\n  ],\n  \"meta\": { \"total\": 142, \"page\": 1 }\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Первая страница",
+							"query": {
+								"page": 1,
+								"limit": 20
+							},
+							"headers": {
+								"X-Request-Id": "smoke-users-page-1"
+							}
+						},
+						{
+							"name": "Поиск по имени",
+							"query": {
+								"search": "ivan",
+								"limit": 5
+							}
+						}
+					]
+				},
+				{
+					"method": "GET",
+					"path": "/users/{id}",
+					"name": "Get user",
+					"description": "Возвращает профиль конкретного пользователя по UUID.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"pathParams": [
+						{
+							"name": "id",
+							"type": "uuid",
+							"required": true,
+							"desc": "UUID пользователя",
+							"default": ""
+						}
+					],
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID пользователя"
+								},
+								{
+									"key": "name",
+									"type": "string",
+									"desc": "Полное имя"
+								},
+								{
+									"key": "email",
+									"type": "string",
+									"desc": "Email"
+								},
+								{
+									"key": "role",
+									"type": "string",
+									"desc": "Роль: admin / member"
+								},
+								{
+									"key": "created_at",
+									"type": "datetime",
+									"desc": "Дата регистрации"
+								}
+							],
+							"example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"role\": \"member\",\n  \"created_at\": \"2025-01-15T08:30:00Z\"\n}"
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
+							],
+							"example": "{\n  \"message\": \"User not found\"\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Существующий пользователь",
+							"path": {
+								"id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+							}
+						},
+						{
+							"name": "Несуществующий — ждём 404",
+							"path": {
+								"id": "00000000-0000-0000-0000-000000000000"
+							}
+						}
+					]
+				},
+				{
+					"method": "POST",
+					"path": "/users",
+					"name": "Create user",
+					"description": "Регистрирует нового пользователя. Доступно только администраторам.",
+					"tags": ["admin"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "name",
+							"type": "string",
+							"required": true,
+							"desc": "Полное имя",
+							"default": ""
+						},
+						{
+							"name": "email",
+							"type": "string",
+							"required": true,
+							"desc": "Email (уникальный)",
+							"default": ""
+						},
+						{
+							"name": "password",
+							"type": "string",
+							"required": true,
+							"desc": "Пароль (мин. 8 символов)",
+							"default": ""
+						},
+						{
+							"name": "role",
+							"type": "string",
+							"required": false,
+							"desc": "Роль: admin или member",
+							"default": "member"
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID нового пользователя"
+								}
+							],
+							"example": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
+						},
+						"422": {
+							"label": "422 Validation Error",
+							"schema": [
+								{
+									"key": "errors[].field",
+									"type": "string",
+									"desc": "Имя поля с ошибкой"
+								},
+								{
+									"key": "errors[].message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
+							],
+							"example": "{\n  \"errors\": [\n    { \"field\": \"email\", \"message\": \"Email already taken\" }\n  ]\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Новый администратор",
+							"body": {
+								"name": "Иван Петров",
+								"email": "ivan@example.com",
+								"password": "{{DEFAULT_PASSWORD}}",
+								"role": "admin"
+							}
+						}
+					]
+				},
+				{
+					"method": "PATCH",
+					"path": "/users/{id}",
+					"name": "Update user",
+					"description": "Частичное обновление профиля пользователя. Администратор может менять роль.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"pathParams": [
+						{
+							"name": "id",
+							"type": "uuid",
+							"required": true,
+							"desc": "UUID изменяемого пользователя",
+							"default": ""
+						}
+					],
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "name",
+							"type": "string",
+							"required": false,
+							"desc": "Новое имя",
+							"default": ""
+						},
+						{
+							"name": "role",
+							"type": "string",
+							"required": false,
+							"desc": "Новая роль (только для admin)",
+							"default": ""
+						}
+					],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID пользователя"
+								},
+								{
+									"key": "name",
+									"type": "string",
+									"desc": "Обновлённое имя"
+								},
+								{
+									"key": "role",
+									"type": "string",
+									"desc": "Роль"
+								}
+							],
+							"example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Alice Johnson\",\n  \"role\": \"admin\"\n}"
+						}
+					}
+				},
+				{
+					"method": "DELETE",
+					"path": "/users/{id}",
+					"name": "Delete user",
+					"description": "Удаляет пользователя и все связанные данные. Необратимая операция.",
+					"tags": ["admin", "destructive"],
+					"auth": true,
+					"pathParams": [
+						{
+							"name": "id",
+							"type": "uuid",
+							"required": true,
+							"desc": "UUID удаляемого пользователя",
+							"default": ""
+						}
+					],
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						},
+						"404": {
+							"label": "404 Not Found",
+							"schema": [
+								{
+									"key": "message",
+									"type": "string",
+									"desc": "Описание ошибки"
+								}
+							],
+							"example": "{\n  \"message\": \"User not found\"\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Удаление тестового пользователя",
+							"path": {
+								"id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+							},
+							"headers": [
+								{
+									"name": "X-Confirm",
+									"value": "yes",
+									"enabled": false
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"label": "Tasks",
+			"endpoints": [
+				{
+					"method": "GET",
+					"path": "/tasks",
+					"name": "List tasks",
+					"description": "Возвращает задачи текущего пользователя. Можно фильтровать по статусу и проекту.",
+					"tags": ["paginated", "auth-required"],
+					"auth": true,
+					"queryParams": [
+						{
+							"name": "status",
+							"type": "string",
+							"required": false,
+							"desc": "Фильтр по статусу: todo / in_progress / done",
+							"default": ""
+						},
+						{
+							"name": "project_id",
+							"type": "uuid",
+							"required": false,
+							"desc": "Фильтр по проекту",
+							"default": ""
+						},
+						{
+							"name": "page",
+							"type": "integer",
+							"required": false,
+							"desc": "Номер страницы",
+							"default": "1"
+						},
+						{
+							"name": "limit",
+							"type": "integer",
+							"required": false,
+							"desc": "Элементов на странице",
+							"default": "20"
+						}
+					],
+					"bodyParams": [],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "data[].id",
+									"type": "uuid",
+									"desc": "UUID задачи"
+								},
+								{
+									"key": "data[].title",
+									"type": "string",
+									"desc": "Заголовок задачи"
+								},
+								{
+									"key": "data[].status",
+									"type": "string",
+									"desc": "Статус: todo / in_progress / done"
+								},
+								{
+									"key": "data[].priority",
+									"type": "string",
+									"desc": "Приоритет: low / medium / high"
+								},
+								{
+									"key": "data[].due_date",
+									"type": "datetime",
+									"desc": "Срок выполнения"
+								},
+								{
+									"key": "data[].assignee.id",
+									"type": "uuid",
+									"desc": "UUID исполнителя"
+								},
+								{
+									"key": "data[].assignee.name",
+									"type": "string",
+									"desc": "Имя исполнителя"
+								},
+								{
+									"key": "meta.total",
+									"type": "integer",
+									"desc": "Всего задач"
+								}
+							],
+							"example": "{\n  \"data\": [\n    {\n      \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n      \"title\": \"Implement login page\",\n      \"status\": \"in_progress\",\n      \"priority\": \"high\",\n      \"due_date\": \"2025-06-01T00:00:00Z\",\n      \"assignee\": { \"id\": \"3fa85f64-...\", \"name\": \"Alice Smith\" }\n    }\n  ],\n  \"meta\": { \"total\": 37 }\n}"
+						}
+					}
+				},
+				{
+					"method": "POST",
+					"path": "/tasks",
+					"name": "Create task",
+					"description": "Создаёт новую задачу в указанном проекте.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"queryParams": [],
+					"bodyParams": [
+						{
+							"name": "title",
+							"type": "string",
+							"required": true,
+							"desc": "Заголовок задачи",
+							"default": ""
+						},
+						{
+							"name": "description",
+							"type": "string",
+							"required": false,
+							"desc": "Подробное описание",
+							"default": ""
+						},
+						{
+							"name": "project_id",
+							"type": "uuid",
+							"required": true,
+							"desc": "UUID проекта",
+							"default": ""
+						},
+						{
+							"name": "assignee_id",
+							"type": "uuid",
+							"required": false,
+							"desc": "UUID исполнителя",
+							"default": ""
+						},
+						{
+							"name": "priority",
+							"type": "string",
+							"required": false,
+							"desc": "Приоритет: low / medium / high",
+							"default": "medium"
+						},
+						{
+							"name": "due_date",
+							"type": "string",
+							"required": false,
+							"desc": "Срок выполнения (ISO 8601)",
+							"default": ""
+						}
+					],
+					"responses": {
+						"201": {
+							"label": "201 Created",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID созданной задачи"
+								},
+								{
+									"key": "title",
+									"type": "string",
+									"desc": "Заголовок"
+								},
+								{
+									"key": "status",
+									"type": "string",
+									"desc": "Начальный статус (всегда todo)"
+								}
+							],
+							"example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"todo\"\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Задача с вложенными полями",
+							"headers": {
+								"Idempotency-Key": "release-task-001"
+							},
+							"body": {
+								"title": "Подготовить релиз",
+								"project_id": "9c8b7a65-4321-4000-8000-abcdefabcdef",
+								"priority": "high",
+								"meta": {
+									"labels": ["release", "urgent"],
+									"estimate": {
+										"value": 8,
+										"unit": "hours"
+									}
+								}
+							}
+						},
+						{
+							"name": "Минимальная задача",
+							"body": {
+								"title": "Починить импорт",
+								"project_id": "9c8b7a65-4321-4000-8000-abcdefabcdef"
+							}
+						},
+						{
+							"name": "Тело строкой (не JSON)",
+							"headers": {
+								"Content-Type": "application/x-www-form-urlencoded"
+							},
+							"bodyMode": "raw",
+							"body": "title=Подготовить релиз&priority=high"
+						}
+					]
+				},
+				{
+					"method": "PATCH",
+					"path": "/tasks/{id}",
+					"name": "Update task",
+					"description": "Обновляет поля задачи. Для смены статуса используется это же поле.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"pathParams": [
+						{
+							"name": "id",
+							"type": "uuid",
+							"required": true,
+							"desc": "UUID задачи",
+							"default": ""
+						}
+					],
+					"queryParams": [
+						{
+							"name": "notify",
+							"type": "boolean",
+							"required": false,
+							"desc": "Уведомить исполнителя об изменении",
+							"default": "false"
+						}
+					],
+					"bodyParams": [
+						{
+							"name": "title",
+							"type": "string",
+							"required": false,
+							"desc": "Новый заголовок",
+							"default": ""
+						},
+						{
+							"name": "status",
+							"type": "string",
+							"required": false,
+							"desc": "Новый статус: todo / in_progress / done",
+							"default": ""
+						},
+						{
+							"name": "priority",
+							"type": "string",
+							"required": false,
+							"desc": "Новый приоритет: low / medium / high",
+							"default": ""
+						},
+						{
+							"name": "assignee_id",
+							"type": "uuid",
+							"required": false,
+							"desc": "UUID нового исполнителя",
+							"default": ""
+						}
+					],
+					"responses": {
+						"200": {
+							"label": "200 OK",
+							"schema": [
+								{
+									"key": "id",
+									"type": "uuid",
+									"desc": "UUID задачи"
+								},
+								{
+									"key": "title",
+									"type": "string",
+									"desc": "Заголовок"
+								},
+								{
+									"key": "status",
+									"type": "string",
+									"desc": "Статус"
+								},
+								{
+									"key": "updated_at",
+									"type": "datetime",
+									"desc": "Время обновления"
+								}
+							],
+							"example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"done\",\n  \"updated_at\": \"2025-05-20T14:00:00Z\"\n}"
+						}
+					},
+					"requests": [
+						{
+							"name": "Закрыть задачу с уведомлением",
+							"path": {
+								"id": "7d3f1e20-9c44-4b8a-9f10-2b6c5a0d1e33"
+							},
+							"query": {
+								"notify": true
+							},
+							"headers": {
+								"Idempotency-Key": "close-task-001"
+							},
+							"body": {
+								"status": "done",
+								"assignee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+							}
+						}
+					]
+				},
+				{
+					"method": "DELETE",
+					"path": "/tasks/{id}",
+					"name": "Delete task",
+					"description": "Удаляет задачу.",
+					"tags": ["auth-required"],
+					"auth": true,
+					"pathParams": [
+						{
+							"name": "id",
+							"type": "uuid",
+							"required": true,
+							"desc": "UUID удаляемой задачи",
+							"default": ""
+						}
+					],
+					"queryParams": [],
+					"bodyParams": [],
+					"responses": {
+						"204": {
+							"label": "204 No Content",
+							"schema": [],
+							"example": ""
+						}
+					}
+				}
+			]
+		}
+	]
 }
