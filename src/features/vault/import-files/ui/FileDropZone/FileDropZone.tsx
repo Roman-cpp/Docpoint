@@ -10,7 +10,11 @@ import s from "./FileDropZone.module.css";
 /** A drop target that accepts files dragged in from the OS and copies them into
  *  `path` within `scope`. Uses Tauri's window-level drag-drop event (HTML5 drop
  *  doesn't deliver file data when `dragDropEnabled` is on), so it tracks the
- *  pointer against its own bounds to know when a drop lands inside. */
+ *  pointer against its own bounds to know when a drop lands inside.
+ *
+ *  Renders as an overlay over its container and stays invisible until a drag
+ *  actually enters it — the target is the file browser itself, not a separate
+ *  block asking to be dropped on. Its parent must be positioned. */
 export const FileDropZone: FC<{
 	scope: FileScope;
 	/** Scope-relative folder to import into; empty string for the scope root. */
@@ -110,16 +114,15 @@ export const FileDropZone: FC<{
 	return (
 		<div
 			ref={ref}
-			className={cx(s["fe-dropzone"], over && s["fe-dropzone-over"])}
-			aria-label="Перетащите файлы сюда, чтобы сохранить их"
+			className={cx(
+				s["fe-dropzone"],
+				(over || importing) && s["fe-dropzone-over"],
+			)}
+			aria-hidden="true"
 		>
 			<UploadIcon size={22} />
 			<span className={s["fe-dropzone-text"]}>
-				{importing
-					? "Сохраняем…"
-					: over
-						? "Отпустите, чтобы сохранить"
-						: "Перетащите файлы сюда, чтобы сохранить"}
+				{importing ? "Сохраняем…" : "Отпустите, чтобы сохранить"}
 			</span>
 		</div>
 	);
