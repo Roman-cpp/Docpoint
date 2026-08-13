@@ -1,6 +1,6 @@
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { type FC, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import {
 	actionSelectEnvironment,
 	selectEnvironments,
@@ -9,17 +9,17 @@ import {
 } from "@/features/environment";
 import { selectPlatform, usePlatformStore } from "@/features/platform";
 import { getEnvDotColor } from "@/shared/lib/env-color";
+import { ChevronDownIcon, NewWindowIcon } from "@/shared/svg";
 import s from "./Header.module.css";
 
-const NAV_LINKS: {
+/** Инструменты, свёрнутые в выпадающий список «Tools». */
+const TOOL_LINKS: {
 	label: string;
 	href: string;
-	active?: boolean;
-	/** Показать пункт «Открыть в отдельном окне» */
+	/** Показать кнопку «Открыть в отдельном окне» */
 	window?: boolean;
 }[] = [
-	{ label: "Docs", href: "/docs" },
-	{ label: "HTTP Client", href: "/http-client" },
+	{ label: "HTTP Client", href: "/http-client", window: true },
 	{ label: "WebSocket", href: "/ws-client", window: true },
 	{ label: "JSON", href: "/json-viewer", window: true },
 ];
@@ -47,6 +47,29 @@ const openInWindow = async (label: string, url: string, title: string) => {
 	});
 };
 
+/** Закрывает раскрытое меню по клику мимо него и по Escape. */
+const useDismiss = (open: boolean, close: () => void) => {
+	const ref = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const onClick = (e: MouseEvent) => {
+			if (!ref.current?.contains(e.target as Node)) close();
+		};
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") close();
+		};
+		document.addEventListener("mousedown", onClick);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", onClick);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [open, close]);
+
+	return ref;
+};
+
 /** Навигационная ссылка с контекстным меню «Открыть в отдельном окне» (ПКМ) */
 const NavMenuLink: FC<{
 	to: string;
@@ -55,23 +78,7 @@ const NavMenuLink: FC<{
 	onOpenWindow: () => void;
 }> = ({ to, label, active, onOpenWindow }) => {
 	const [open, setOpen] = useState(false);
-	const menuRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (!open) return;
-		const close = (e: MouseEvent) => {
-			if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
-		};
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setOpen(false);
-		};
-		document.addEventListener("mousedown", close);
-		document.addEventListener("keydown", onKey);
-		return () => {
-			document.removeEventListener("mousedown", close);
-			document.removeEventListener("keydown", onKey);
-		};
-	}, [open]);
+	const menuRef = useDismiss(open, () => setOpen(false));
 
 	return (
 		<div className={s.pfNavMenu} ref={menuRef}>
@@ -101,11 +108,72 @@ const NavMenuLink: FC<{
 	);
 };
 
+/**
+ * Выпадающий список «Tools»: инструменты, не привязанные к платформе. У части
+ * из них рядом стоит кнопка открытия в отдельном окне — тем же действием, что
+ * раньше пряталось в контекстном меню ссылки.
+ */
+const ToolsMenu: FC = () => {
+	const [open, setOpen] = useState(false);
+	const menuRef = useDismiss(open, () => setOpen(false));
+	const { pathname } = useLocation();
+	const active = TOOL_LINKS.some((link) => link.href === pathname);
+
+	return (
+		<div className={s.pfNavMenu} ref={menuRef}>
+			<button
+				type="button"
+				className={`${s.pfNavLink} ${s.pfNavTrigger} ${active ? s.active : ""} ${
+					open ? s.open : ""
+				}`}
+				aria-expanded={open}
+				aria-haspopup="menu"
+				onClick={() => setOpen((v) => !v)}
+			>
+				Tools
+				<ChevronDownIcon size={9} className={s.pfNavTriggerIcon} />
+			</button>
+
+			<div className={`${s.pfNavDropdown} ${open ? s.open : ""}`} role="menu">
+				{TOOL_LINKS.map((link) => (
+					<div key={link.href} className={s.pfNavDropdownRow}>
+						<Link
+							to={link.href}
+							className={s.pfNavDropdownItem}
+							role="menuitem"
+							onClick={() => setOpen(false)}
+						>
+							{link.label}
+						</Link>
+						{link.window && (
+							<button
+								type="button"
+								className={s.pfNavDropdownWindowBtn}
+								aria-label={`Открыть «${link.label}» в отдельном окне`}
+								title="Открыть в отдельном окне"
+								onClick={() => {
+									setOpen(false);
+									openInWindow(`nav-${link.href}`, link.href, link.label);
+								}}
+							>
+								<NewWindowIcon size={12} />
+							</button>
+						)}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+};
+
 export const Header: FC<HeaderProps> = ({ section }) => {
 	const environments = useEnvironmentsStore(selectEnvironments);
 	const selectedEnvironment = useEnvironmentsStore(selectSelectedEnvironment);
 	const selectedPlatform = usePlatformStore(selectPlatform);
 	const selectEnvironment = useEnvironmentsStore(actionSelectEnvironment);
+	// Жирным в навигации выделен только текущий раздел — одно правило на все
+	// ссылки, иначе соседние пункты отличаются насыщенностью без причины.
+	const { pathname } = useLocation();
 
 	return (
 		<nav className={s.pfNav}>
@@ -144,7 +212,7 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 					<NavMenuLink
 						to={`/platform-show/${selectedPlatform.id}`}
 						label="Platform"
-						active
+						active={pathname.startsWith("/platform-show")}
 						onOpenWindow={() =>
 							openInWindow(
 								`platform-${selectedPlatform.id}`,
@@ -154,32 +222,14 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						}
 					/>
 				)}
-				{NAV_LINKS.map((link) =>
-					link.window ? (
-						<NavMenuLink
-							key={link.href}
-							to={link.href}
-							label={link.label}
-							active={link.active}
-							onOpenWindow={() =>
-								openInWindow(`nav-${link.href}`, link.href, link.label)
-							}
-						/>
-					) : (
-						<Link
-							key={link.href}
-							to={link.href}
-							className={`${s.pfNavLink} ${link.active ? s.active : ""}`}
-						>
-							{link.label}
-						</Link>
-					),
-				)}
+				<ToolsMenu />
 				{environments.length > 0 && (
 					<Link
 						key="/environments"
 						to="/environments"
-						className={`${s.pfNavLink} ${s.active}`}
+						className={`${s.pfNavLink} ${
+							pathname === "/environments" ? s.active : ""
+						}`}
 					>
 						Environments
 					</Link>

@@ -47,9 +47,6 @@ export const FolderGrid: FC<{
 							<span className={s["fe-folder-name"]} title={folder.name}>
 								{folder.name}
 							</span>
-							<span className={s["fe-folder-count"]}>
-								{folder.childrenCount} эл.
-							</span>
 						</span>
 						<span className={s["fe-folder-go"]} aria-hidden="true">
 							<ChevronRightIcon />

@@ -152,6 +152,47 @@
 	color: var(--ink);
 	background: var(--cat-bg);
 }
+/* Кнопка-триггер выпадающего списка: та же ссылка плюс шеврон. */
+.pfNavTrigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+.pfNavTriggerIcon {
+	transition: transform var(--t-base);
+}
+.pfNavTrigger.open .pfNavTriggerIcon {
+	transform: rotate(180deg);
+}
+/* Строка списка: ссылка занимает всю ширину, кнопка окна прижата справа. */
+.pfNavDropdownRow {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+.pfNavDropdownRow .pfNavDropdownItem {
+	flex: 1;
+	min-width: 0;
+}
+.pfNavDropdownWindowBtn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	padding: 6px;
+	color: var(--ink-low);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		background var(--t-base);
+}
+.pfNavDropdownWindowBtn:hover {
+	color: var(--ink);
+	background: var(--cat-bg);
+}
 .pfNavUser {
 	display: inline-flex;
 	align-items: center;

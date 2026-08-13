@@ -117,7 +117,6 @@ export const FileSidebar: FC<{
 						>
 							<FolderIcon size={13} />
 							<span className={s.sideRowName}>{folder.name}</span>
-							<span className={s.sideRowMeta}>{folder.childrenCount}</span>
 							<ChevronRightIcon size={11} />
 						</button>
 					))}

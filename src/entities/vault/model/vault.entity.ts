@@ -12,7 +12,6 @@ export interface VaultFile {
 export interface VaultFolder {
 	path: string;
 	name: string;
-	childrenCount: number;
 }
 
 /** Direct contents of a single folder, each list sorted by name. */
