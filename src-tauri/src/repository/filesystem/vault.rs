@@ -188,6 +188,43 @@ impl VaultRepository for VaultRepo {
         self.rel(&abs)
     }
 
+    /// Both halves are resolved inside the scope, so an entry can never be
+    /// moved out of it. The destination is never overwritten, and a folder
+    /// cannot be moved inside itself — that would detach its own subtree.
+    async fn move_entry(&self, from: &str, to: &str) -> Result<String, String> {
+        if from.is_empty() || to.is_empty() {
+            return Err("cannot move the scope root".to_string());
+        }
+
+        let src = self.resolve(from)?;
+        let dest = self.resolve(to)?;
+
+        if src == dest {
+            return self.rel(&dest);
+        }
+
+        if !tokio::fs::try_exists(&src).await.map_err(|e| e.to_string())? {
+            return Err(format!("not found: {from}"));
+        }
+        if tokio::fs::try_exists(&dest).await.map_err(|e| e.to_string())? {
+            return Err(format!("already exists: {to}"));
+        }
+        if dest.starts_with(&src) {
+            return Err("cannot move a folder into itself".to_string());
+        }
+
+        if let Some(parent) = dest.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        tokio::fs::rename(&src, &dest)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        self.rel(&dest)
+    }
+
     /// Deletes the folder and everything inside it. Missing folders are treated
     /// as already deleted; the scope root itself cannot be removed.
     async fn delete_dir(&self, path: &str) -> Result<(), String> {

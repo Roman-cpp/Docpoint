@@ -5,6 +5,8 @@ import {
 	ArchiveFileIcon,
 	FileIcon,
 	ImageFileIcon,
+	MoveIcon,
+	PencilIcon,
 	TrashIcon,
 	VideoFileIcon,
 } from "@/shared/svg";
@@ -55,7 +57,11 @@ export const FileGrid: FC<{
 	/** When provided, a right-click menu offers to delete the file; fires after
 	 *  a successful delete so the caller can refresh the listing. */
 	onDelete?: (file: VaultFile) => void | Promise<void>;
-}> = ({ files, selectedId, onSelect, onOpen, onDelete }) => {
+	/** Ask the caller to open its rename prompt for this file. */
+	onRename?: (file: VaultFile) => void;
+	/** Ask the caller to open its move prompt for this file. */
+	onMove?: (file: VaultFile) => void;
+}> = ({ files, selectedId, onSelect, onOpen, onDelete, onRename, onMove }) => {
 	const [pending, setPending] = useState<VaultFile | null>(null);
 	const [menu, setMenu] = useState<{
 		x: number;
@@ -81,7 +87,7 @@ export const FileGrid: FC<{
 							onClick={() => onSelect(file)}
 							onDoubleClick={() => onOpen?.(file)}
 							onContextMenu={
-								onDelete
+								onDelete || onRename || onMove
 									? (e) => {
 											e.preventDefault();
 											e.stopPropagation();
@@ -124,6 +130,34 @@ export const FileGrid: FC<{
 						style={{ left: menu.x, top: menu.y }}
 						role="menu"
 					>
+						{onRename && (
+							<button
+								type="button"
+								className={s["fe-file-menu-item"]}
+								role="menuitem"
+								onClick={() => {
+									onRename(menu.file);
+									setMenu(null);
+								}}
+							>
+								<PencilIcon />
+								Переименовать
+							</button>
+						)}
+						{onMove && (
+							<button
+								type="button"
+								className={s["fe-file-menu-item"]}
+								role="menuitem"
+								onClick={() => {
+									onMove(menu.file);
+									setMenu(null);
+								}}
+							>
+								<MoveIcon />
+								Переместить…
+							</button>
+						)}
 						<button
 							type="button"
 							className={s["fe-file-menu-item"]}

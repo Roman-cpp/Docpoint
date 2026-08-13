@@ -18,4 +18,8 @@ pub trait VaultRepository {
     /// Create the folder `<path>/<name>`. Returns its scope-relative path.
     async fn create_dir(&self, path: &str, name: &str) -> Result<String, String>;
     async fn delete_dir(&self, path: &str) -> Result<(), String>;
+    /// Move a file or folder to `to`, a scope-relative path that must be free.
+    /// Renaming is the same operation with an unchanged parent. Returns the
+    /// entry's new path.
+    async fn move_entry(&self, from: &str, to: &str) -> Result<String, String>;
 }

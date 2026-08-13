@@ -6,6 +6,7 @@ export { exportMarkdownApi } from "./api/export-markdown-api";
 export { getDirectoryApi } from "./api/get-directory-api";
 export { getMarkdownApi } from "./api/get-markdown-api";
 export { importFileApi } from "./api/import-file-api";
+export { moveEntryApi } from "./api/move-entry-api";
 export { updateMarkdownApi } from "./api/update-markdown-api";
 
 export { formatSize, joinPath, parentPath, pathCrumbs } from "./lib/path";

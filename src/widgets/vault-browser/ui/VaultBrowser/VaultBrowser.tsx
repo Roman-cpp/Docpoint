@@ -15,6 +15,9 @@ import {
 	EMPTY_LISTING,
 	getDirectoryApi,
 	isMarkdown,
+	joinPath,
+	moveEntryApi,
+	parentPath,
 	pathCrumbs,
 	type VaultFile,
 	type VaultFolder,
@@ -22,7 +25,12 @@ import {
 import { FileDropZone, useNewVaultEntry } from "@/features/vault";
 import { FileGrid } from "../FileGrid";
 import { FolderGrid } from "../FolderGrid";
+import { MoveEntryDialog } from "../MoveEntryDialog";
+import { RenameEntryDialog } from "../RenameEntryDialog";
 import s from "./VaultBrowser.module.css";
+
+/** Файл или каталог, над которым открыт диалог переименования/переноса. */
+type Entry = { path: string; name: string; kind: "file" | "folder" };
 
 /** Actions the browser exposes to a caller-supplied header. */
 export interface VaultBrowserActions {
@@ -61,6 +69,8 @@ export const VaultBrowser: FC<{
 	const [selected, setSelected] = useState<VaultFile | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [renaming, setRenaming] = useState<Entry | null>(null);
+	const [moving, setMoving] = useState<Entry | null>(null);
 
 	// Another platform or domain means a different tree: start at its root.
 	// Adjusted during render rather than in an effect, so the fetch below runs
@@ -145,6 +155,25 @@ export const VaultBrowser: FC<{
 		if (onOpenFile && isMarkdown(file.name)) onOpenFile(file.path);
 	};
 
+	/** Переименование — это перенос внутри того же каталога. Ошибку показывает
+	 *  сам диалог, поэтому она пробрасывается наверх. */
+	const renameEntry = async (entry: Entry, name: string) => {
+		await moveEntryApi(
+			target,
+			entry.path,
+			joinPath(parentPath(entry.path), name),
+		);
+		if (selected?.path === entry.path) setSelected(null);
+		reload();
+	};
+
+	/** Перенос в другой каталог: имя сохраняется, меняется только родитель. */
+	const moveEntry = async (entry: Entry, targetDir: string) => {
+		await moveEntryApi(target, entry.path, joinPath(targetDir, entry.name));
+		if (selected?.path === entry.path) setSelected(null);
+		reload();
+	};
+
 	const crumbs = pathCrumbs(path, rootLabel);
 	const isEmpty = listing.folders.length === 0 && listing.files.length === 0;
 
@@ -185,6 +214,8 @@ export const VaultBrowser: FC<{
 						folders={listing.folders}
 						onOpen={openFolder}
 						onDelete={deleteFolder}
+						onRename={(folder) => setRenaming({ ...folder, kind: "folder" })}
+						onMove={(folder) => setMoving({ ...folder, kind: "folder" })}
 					/>
 					<FileGrid
 						files={listing.files}
@@ -192,11 +223,32 @@ export const VaultBrowser: FC<{
 						onSelect={setSelected}
 						onOpen={openFile}
 						onDelete={deleteFile}
+						onRename={(file) => setRenaming({ ...file, kind: "file" })}
+						onMove={(file) => setMoving({ ...file, kind: "file" })}
 					/>
 				</>
 			)}
 
 			<FileDropZone scope={target} path={path} onImported={reload} />
+
+			{renaming && (
+				<RenameEntryDialog
+					name={renaming.name}
+					kind={renaming.kind}
+					onClose={() => setRenaming(null)}
+					onRename={(name) => renameEntry(renaming, name)}
+				/>
+			)}
+
+			{moving && (
+				<MoveEntryDialog
+					scope={target}
+					rootLabel={rootLabel}
+					entry={moving}
+					onClose={() => setMoving(null)}
+					onMove={(targetDir) => moveEntry(moving, targetDir)}
+				/>
+			)}
 
 			{createUi}
 		</div>

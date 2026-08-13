@@ -131,6 +131,11 @@
 	visibility: visible;
 	transform: translateY(0);
 }
+/* Для крайнего правого пункта: иначе список уходит за край окна. */
+.pfNavDropdownEnd {
+	left: auto;
+	right: 0;
+}
 .pfNavDropdownItem {
 	display: block;
 	width: 100%;

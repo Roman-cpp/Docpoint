@@ -134,7 +134,12 @@ const ToolsMenu: FC = () => {
 				<ChevronDownIcon size={9} className={s.pfNavTriggerIcon} />
 			</button>
 
-			<div className={`${s.pfNavDropdown} ${open ? s.open : ""}`} role="menu">
+			<div
+				className={`${s.pfNavDropdown} ${s.pfNavDropdownEnd} ${
+					open ? s.open : ""
+				}`}
+				role="menu"
+			>
 				{TOOL_LINKS.map((link) => (
 					<div key={link.href} className={s.pfNavDropdownRow}>
 						<Link
@@ -222,7 +227,6 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						}
 					/>
 				)}
-				<ToolsMenu />
 				{environments.length > 0 && (
 					<Link
 						key="/environments"
@@ -234,6 +238,7 @@ export const Header: FC<HeaderProps> = ({ section }) => {
 						Environments
 					</Link>
 				)}
+				<ToolsMenu />
 				{/* <Link to="/profile" className={s.pfNavUser}>
 					<span className={s.pfNavUserAvatar}>ИП</span>
 					<span className={s.pfNavUserName}>Иван П.</span>

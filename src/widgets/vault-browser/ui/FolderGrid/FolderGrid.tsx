@@ -1,7 +1,13 @@
 import { type FC, useState } from "react";
 import type { VaultFolder } from "@/entities/vault";
 import { cx } from "@/shared/lib/cx";
-import { ChevronRightIcon, FolderIcon, TrashIcon } from "@/shared/svg";
+import {
+	ChevronRightIcon,
+	FolderIcon,
+	MoveIcon,
+	PencilIcon,
+	TrashIcon,
+} from "@/shared/svg";
 import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
 import s from "./FolderGrid.module.css";
 
@@ -11,7 +17,11 @@ export const FolderGrid: FC<{
 	/** When provided, each folder shows a delete button; fires after a
 	 *  successful delete so the caller can refresh the listing. */
 	onDelete?: (folder: VaultFolder) => void | Promise<void>;
-}> = ({ folders, onOpen, onDelete }) => {
+	/** Ask the caller to open its rename prompt for this folder. */
+	onRename?: (folder: VaultFolder) => void;
+	/** Ask the caller to open its move prompt for this folder. */
+	onMove?: (folder: VaultFolder) => void;
+}> = ({ folders, onOpen, onDelete, onRename, onMove }) => {
 	const [pending, setPending] = useState<VaultFolder | null>(null);
 	const [menu, setMenu] = useState<{
 		x: number;
@@ -31,7 +41,7 @@ export const FolderGrid: FC<{
 						className={s["fe-folder"]}
 						onClick={() => onOpen(folder.path)}
 						onContextMenu={
-							onDelete
+							onDelete || onRename || onMove
 								? (e) => {
 										e.preventDefault();
 										e.stopPropagation();
@@ -61,6 +71,26 @@ export const FolderGrid: FC<{
 				y={menu?.y ?? 0}
 				onClose={() => setMenu(null)}
 			>
+				{onRename && (
+					<ContextMenu.Item
+						icon={<PencilIcon />}
+						onSelect={() => menu && onRename(menu.folder)}
+					>
+						Переименовать
+					</ContextMenu.Item>
+				)}
+
+				{onMove && (
+					<ContextMenu.Item
+						icon={<MoveIcon />}
+						onSelect={() => menu && onMove(menu.folder)}
+					>
+						Переместить…
+					</ContextMenu.Item>
+				)}
+
+				{(onRename || onMove) && <ContextMenu.Separator />}
+
 				<ContextMenu.Item
 					danger
 					icon={<TrashIcon />}

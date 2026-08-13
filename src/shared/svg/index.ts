@@ -21,6 +21,7 @@ export { ImageFileIcon } from "./ui/ImageFileIcon";
 export { InfoIcon } from "./ui/InfoIcon";
 export { LogsIcon } from "./ui/LogsIcon";
 export { MinusIcon } from "./ui/MinusIcon";
+export { MoveIcon } from "./ui/MoveIcon";
 export { NewFileIcon } from "./ui/NewFileIcon";
 export { NewFolderIcon } from "./ui/NewFolderIcon";
 export { NewWindowIcon } from "./ui/NewWindowIcon";

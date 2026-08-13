@@ -54,10 +54,6 @@ const Overview = () => {
 					</p>
 				</header>
 
-				<div className={s.sectionLabel}>
-					<span>Всё для работы с API</span>
-				</div>
-
 				<div className={s.toolsGrid}>
 					{TOOLS.map((t) => (
 						<Link
