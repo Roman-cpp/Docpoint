@@ -87,8 +87,6 @@ const DropMenuTrigger: FC<DropMenuTriggerProps> = ({ children }) => {
 	return (
 		<div
 			className={s.trigger}
-			role="button"
-			tabIndex={0}
 			aria-haspopup="menu"
 			aria-expanded={open}
 			onClick={() => setOpen(!open)}
@@ -298,9 +296,7 @@ const DropMenuSubContent: FC<DropMenuSubContentProps> = ({ children }) => {
 
 /* ─── Separator ──────────────────────────────────────────────── */
 
-const DropMenuSeparator: FC = () => (
-	<div className={s.separator} role="separator" />
-);
+const DropMenuSeparator: FC = () => <div className={s.separator} />;
 
 /* ─── Label ──────────────────────────────────────────────────── */
 

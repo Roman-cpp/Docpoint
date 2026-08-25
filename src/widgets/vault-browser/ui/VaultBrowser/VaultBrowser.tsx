@@ -60,7 +60,7 @@ export const VaultBrowser: FC<{
 	// arrives on every render. Hold a reference stable across those renders,
 	// otherwise every effect below would re-run in a loop.
 	const key = scopeKey(scope);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `key` is the scope's identity
+
 	const target = useMemo(() => scope, [key]);
 
 	/** Folder in view: a scope-relative path, "" for the scope root. */

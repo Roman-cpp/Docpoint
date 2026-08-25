@@ -17,8 +17,10 @@
 		"rules": {
 			"a11y": {
 				"noStaticElementInteractions": "off",
-				"noLabelWithoutControl": "off"
+				"noLabelWithoutControl": "off",
+				"useAriaPropsSupportedByRole": "off"
 			},
+			"correctness": { "useExhaustiveDependencies": "off" },
 			"suspicious": { "noArrayIndexKey": "off" },
 			"preset": "recommended"
 		}

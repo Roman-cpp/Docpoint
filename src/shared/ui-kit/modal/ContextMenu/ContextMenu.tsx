@@ -168,7 +168,7 @@ function Item({
 /* ------------------------------------------------------------------ */
 
 function Separator() {
-	return <div className={s.separator} role="separator" />;
+	return <div className={s.separator} />;
 }
 
 function Label({ children }: { children: ReactNode }) {

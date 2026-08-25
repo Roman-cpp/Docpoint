@@ -88,21 +88,25 @@ export function DataTable<T extends object>({
 		? toTanstack(sortCriteria)
 		: internalSorting;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional
 	useEffect(() => {
 		setPagination((p) => ({ ...p, pageIndex: 0 }));
 	}, [pageResetKey]);
 
 	const tanstackColumns = useMemo<ColumnDef<T>[]>(() => {
-		const cols: ColumnDef<T>[] = columns.map((col) => ({
-			id: col.sortKey ?? col.label,
-			header: col.label,
-			enableSorting: !!col.sortKey,
-			accessorFn: col.sortKey
-				? (row) => (row as Record<string, unknown>)[col.sortKey!]
-				: () => null,
-			cell: ({ row }) => col.render(row.original),
-		}));
+		const cols: ColumnDef<T>[] = columns.map((col) => {
+			// Через локальную константу TS сужает тип и внутри замыкания —
+			// с `col.sortKey` пришлось бы дописывать non-null assertion.
+			const { sortKey } = col;
+			return {
+				id: sortKey ?? col.label,
+				header: col.label,
+				enableSorting: !!sortKey,
+				accessorFn: sortKey
+					? (row: T) => (row as Record<string, unknown>)[sortKey]
+					: () => null,
+				cell: ({ row }) => col.render(row.original),
+			};
+		});
 
 		if (renderRowActions) {
 			cols.push({

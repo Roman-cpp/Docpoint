@@ -38,7 +38,6 @@ export const FileSidebar: FC<{
 		setDir(parentPath(activePath ?? ""));
 	}, [activePath]);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `key` is the scope's identity
 	useEffect(() => {
 		let cancelled = false;
 		setLoading(true);

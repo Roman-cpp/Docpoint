@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
 	createContext,
 	type FC,
+	Fragment,
 	type KeyboardEvent,
 	useCallback,
 	useContext,
@@ -24,26 +25,40 @@ import type {
 import s from "./HttpClientPage.module.css";
 
 /* ─── HELPERS ────────────────────────────────── */
-function syntaxHighlight(obj: unknown): string {
-	const json = JSON.stringify(obj, null, 2);
-	return json
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(
-			/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-			(match) => {
-				let color = "#9B3B36";
-				if (/^"/.test(match)) {
-					color = /:$/.test(match) ? "#3A5A78" : "#75591A";
-				} else if (/true|false/.test(match)) {
-					color = "#3F6B4A";
-				} else if (/null/.test(match)) {
-					color = "#888";
-				}
-				return `<span style="color:${color}">${match}</span>`;
-			},
-		);
+
+/** Кусок JSON: либо структурный текст без цвета, либо подсвеченный токен. */
+interface JsonToken {
+	text: string;
+	color?: string;
+}
+
+const JSON_TOKEN_RE =
+	/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g;
+
+function jsonTokenColor(match: string): string {
+	if (/^"/.test(match)) return /:$/.test(match) ? "#3A5A78" : "#75591A";
+	if (/true|false/.test(match)) return "#3F6B4A";
+	if (/null/.test(match)) return "#888";
+	return "#9B3B36";
+}
+
+/**
+ * Режет отформатированный JSON на токены для подсветки. Раньше здесь клеилась
+ * HTML-строка под `dangerouslySetInnerHTML` — теперь куски отдаются как есть,
+ * а экранированием занимается сам React.
+ */
+function syntaxHighlight(obj: unknown): JsonToken[] {
+	const json = JSON.stringify(obj, null, 2) ?? String(obj);
+	const tokens: JsonToken[] = [];
+	let last = 0;
+	for (const match of json.matchAll(JSON_TOKEN_RE)) {
+		const at = match.index ?? 0;
+		if (at > last) tokens.push({ text: json.slice(last, at) });
+		tokens.push({ text: match[0], color: jsonTokenColor(match[0]) });
+		last = at + match[0].length;
+	}
+	if (last < json.length) tokens.push({ text: json.slice(last) });
+	return tokens;
 }
 
 function statusStyle(code: number | undefined): { color: string; bg: string } {
@@ -577,13 +592,21 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 
 			<div className={s.resBody}>
 				{tab === "body" && viewMode === "json" && (
-					<div
-						className={s.jsonPre}
-						dangerouslySetInnerHTML={{ __html: syntaxHighlight(response.body) }}
-					/>
+					<div className={s.jsonPre}>
+						{syntaxHighlight(response.body).map((token, i) =>
+							token.color ? (
+								<span key={i} style={{ color: token.color }}>
+									{token.text}
+								</span>
+							) : (
+								<Fragment key={i}>{token.text}</Fragment>
+							),
+						)}
+					</div>
 				)}
 				{tab === "body" && viewMode === "html" && (
 					<iframe
+						title="Предпросмотр HTML-ответа"
 						srcDoc={
 							typeof response.body === "string"
 								? response.body
@@ -858,10 +881,19 @@ interface HttpCtxT {
 	onClearHistory: () => void;
 }
 
-const HttpCtx = createContext<HttpCtxT>(null!);
+const HttpCtx = createContext<HttpCtxT | null>(null);
+
+/** Контекст есть только под <HttpClientPage>; снаружи это ошибка разработчика. */
+const useHttpCtx = (component: string) => {
+	const ctx = useContext(HttpCtx);
+	if (!ctx) {
+		throw new Error(`<${component}> must be used inside <HttpClientPage>`);
+	}
+	return ctx;
+};
 
 const RequestPanelDoc: FC = () => {
-	const c = useContext(HttpCtx);
+	const c = useHttpCtx("RequestPanelDoc");
 	return (
 		<RequestPanel
 			params={c.params}
@@ -885,7 +917,7 @@ const RequestPanelDoc: FC = () => {
 };
 
 const ResponsePanelDoc: FC = () => {
-	const { loading, response } = useContext(HttpCtx);
+	const { loading, response } = useHttpCtx("ResponsePanelDoc");
 	return <ResponsePanel response={response} loading={loading} />;
 };
 
@@ -1029,9 +1061,9 @@ export const HttpClientPage: FC = () => {
 		}
 
 		if (authType === "Bearer Token" && authToken)
-			headersMap["Authorization"] = `Bearer ${authToken}`;
+			headersMap.Authorization = `Bearer ${authToken}`;
 		else if (authType === "Basic Auth" && authUser)
-			headersMap["Authorization"] = `Basic ${btoa(`${authUser}:${authPass}`)}`;
+			headersMap.Authorization = `Basic ${btoa(`${authUser}:${authPass}`)}`;
 		else if (authType === "API Key" && authUser && authToken)
 			headersMap[authUser] = authToken;
 

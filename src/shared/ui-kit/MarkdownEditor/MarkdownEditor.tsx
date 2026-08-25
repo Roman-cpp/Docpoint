@@ -37,7 +37,6 @@ export const MarkdownEditor: FC<MarkdownEditorProps> = ({
 	// Create the editor once; feature flags that change extensions live below.
 	// `value` is read only as the initial doc here — external updates are
 	// reconciled by the effect below to avoid clobbering the cursor.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: value is the initial doc only
 	useEffect(() => {
 		if (!host.current) return;
 

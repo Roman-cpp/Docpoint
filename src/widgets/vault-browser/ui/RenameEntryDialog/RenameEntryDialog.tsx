@@ -24,7 +24,6 @@ export const RenameEntryDialog: FC<{
 	const [saving, setSaving] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: выделение ставится один раз при открытии
 	useEffect(() => {
 		const input = inputRef.current;
 		if (!input) return;
