@@ -47,14 +47,22 @@ export const VariableModal: FC<VariableModalProps> = ({
 		}
 	};
 
+	/* Escape ловит оверлей — сюда доходит всплытием откуда угодно из модалки. */
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") save();
-		if (e.key === "Escape") onClose();
 	};
 
 	return (
-		<div className={s.modalOverlay} onClick={onClose}>
-			<div className={s.modalBox} onClick={(e) => e.stopPropagation()}>
+		<div
+			className={s.modalOverlay}
+			onClick={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+			onKeyDown={(e) => {
+				if (e.key === "Escape") onClose();
+			}}
+		>
+			<div className={s.modalBox}>
 				<div className={s.modalHdr}>
 					<div className={s.modalHdrText}>
 						<span className={s.modalTitle}>

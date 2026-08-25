@@ -10,6 +10,7 @@ import {
 	useState,
 } from "react";
 import type { HttpMethod } from "@/entities/shared/http-method";
+import { cx } from "@/shared/lib/cx";
 import { Header } from "@/widgets/header";
 import { METHOD_CFG } from "../../data/httpClientData";
 import type {
@@ -205,14 +206,12 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 					<button
 						type="button"
 						key={t.id}
-						className={`${s.panelTab}${tab === t.id ? " " + s.active : ""}`}
+						className={cx(s.panelTab, tab === t.id && s.active)}
 						onClick={() => setTab(t.id)}
 					>
 						{t.label}
 						{(t.count ?? 0) > 0 && (
-							<span
-								className={`${s.tabBadge}${tab === t.id ? " " + s.active : ""}`}
-							>
+							<span className={cx(s.tabBadge, tab === t.id && s.active)}>
 								{t.count}
 							</span>
 						)}
@@ -315,7 +314,7 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 								<button
 									type="button"
 									key={t}
-									className={`${s.authTypeBtn}${authType === t ? " " + s.active : ""}`}
+									className={cx(s.authTypeBtn, authType === t && s.active)}
 									onClick={() => setAuthType(t)}
 								>
 									{t}
@@ -555,7 +554,7 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 					<button
 						type="button"
 						key={t}
-						className={`${s.resTab}${tab === t ? " " + s.active : ""}`}
+						className={cx(s.resTab, tab === t && s.active)}
 						onClick={() => setTab(t)}
 					>
 						{t === "body"
@@ -657,7 +656,7 @@ const Sidebar: FC<SidebarProps> = ({
 			<button
 				type="button"
 				key={h.id}
-				className={`${s.historyItem}${activeId === h.id ? " " + s.active : ""}`}
+				className={cx(s.historyItem, activeId === h.id && s.active)}
 				onClick={() => onSelect(h)}
 			>
 				<span
@@ -793,7 +792,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 						<span className={s.tweakToggleLbl}>Syntax highlight</span>
 						<button
 							type="button"
-							className={`${s.toggleSw}${tweaks.highlight ? " " + s.on : ""}`}
+							className={cx(s.toggleSw, tweaks.highlight && s.on)}
 							onClick={() => setTweak("highlight", !tweaks.highlight)}
 						/>
 					</div>
@@ -805,7 +804,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 							<button
 								type="button"
 								key={o}
-								className={`${s.tweakOpt}${tweaks.theme === o ? " " + s.active : ""}`}
+								className={cx(s.tweakOpt, tweaks.theme === o && s.active)}
 								onClick={() => setTweak("theme", o)}
 							>
 								{o}
@@ -820,7 +819,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 							<button
 								type="button"
 								key={o}
-								className={`${s.tweakOpt}${tweaks.fontSize === o ? " " + s.active : ""}`}
+								className={cx(s.tweakOpt, tweaks.fontSize === o && s.active)}
 								onClick={() => setTweak("fontSize", o)}
 							>
 								{o}

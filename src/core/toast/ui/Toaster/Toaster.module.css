@@ -72,6 +72,14 @@
 	background: var(--blue);
 }
 
+.icon {
+	flex-shrink: 0;
+	width: 15px;
+	height: 15px;
+	color: var(--ink-low);
+	margin-top: 1px;
+}
+
 /* variant icon colors */
 .success .icon {
 	color: var(--green);
@@ -81,14 +89,6 @@
 }
 .info .icon {
 	color: var(--blue);
-}
-
-.icon {
-	flex-shrink: 0;
-	width: 15px;
-	height: 15px;
-	color: var(--ink-low);
-	margin-top: 1px;
 }
 
 .icon svg {

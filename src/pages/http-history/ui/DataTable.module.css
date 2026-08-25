@@ -330,14 +330,6 @@
 	padding-top: 7px;
 	padding-bottom: 7px;
 }
-.dt-table.compact .dt-cell-primary {
-	gap: 8px;
-}
-.dt-table.compact .dt-avatar {
-	width: 22px;
-	height: 22px;
-	font-size: 9.5px;
-}
 
 /* ─── Cell building blocks ─── */
 .dt-cell {
@@ -382,6 +374,17 @@
 }
 .dt-avatar.square {
 	border-radius: var(--r-sm);
+}
+
+/* Compact density — переопределения идут после базовых правил, иначе
+   noDescendingSpecificity: более специфичный селектор выше по файлу. */
+.dt-table.compact .dt-cell-primary {
+	gap: 8px;
+}
+.dt-table.compact .dt-avatar {
+	width: 22px;
+	height: 22px;
+	font-size: 9.5px;
 }
 .dt-cell-title {
 	font-size: 13px;

@@ -27,6 +27,8 @@ export const Sidebar = () => {
 	const isOverviewActive = !!useMatch("/doc-show/:id");
 	const [search, setSearch] = useState("");
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+	const toggleGroup = (id: string) =>
+		setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
 	const [addOpen, setAddOpen] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [groupToDelete, setGroupToDelete] = useState<{
@@ -161,14 +163,18 @@ export const Sidebar = () => {
 					const isOpen = q ? true : !collapsed[group.id];
 					return (
 						<div className={s.sidebarGroup} key={group.id}>
+							{/* biome-ignore lint/a11y/useSemanticElements: внутри шапки лежит кнопка удаления группы, а вложенные <button> невалидны */}
 							<div
 								className={s.sidebarGroupHeader}
-								onClick={() =>
-									setCollapsed((prev) => ({
-										...prev,
-										[group.id]: !prev[group.id],
-									}))
-								}
+								role="button"
+								tabIndex={0}
+								aria-expanded={isOpen}
+								onClick={() => toggleGroup(group.id)}
+								onKeyDown={(e) => {
+									if (e.key !== "Enter" && e.key !== " ") return;
+									e.preventDefault();
+									toggleGroup(group.id);
+								}}
 							>
 								<span className={s.sidebarGroupLabel}>{group.label}</span>
 								{group.endpoints.length === 0 && (

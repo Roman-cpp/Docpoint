@@ -28,7 +28,7 @@ const PlatformCard = ({
 				<span className={s.pfCardName}>{platform.name}</span>
 			</Link>
 
-			<div className={s.pfCardMenu} onClick={(e) => e.stopPropagation()}>
+			<div className={s.pfCardMenu}>
 				<DropMenu>
 					<DropMenu.Trigger>
 						<button type="button" className={s.sbMenuBtn} aria-label="Действия">

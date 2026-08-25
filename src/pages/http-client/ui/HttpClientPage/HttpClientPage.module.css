@@ -1086,14 +1086,14 @@
 .headersTable {
 	width: 100%;
 }
-.headersTable tr:first-child td {
-	padding-top: 16px;
-}
 .headersTable td {
 	padding: 6px 16px;
 	font-size: 12px;
 	vertical-align: top;
 	border-bottom: 1px solid var(--border);
+}
+.headersTable tr:first-child td {
+	padding-top: 16px;
 }
 .headersTable tr:last-child td {
 	border-bottom: none;

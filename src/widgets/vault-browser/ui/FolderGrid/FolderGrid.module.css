@@ -47,12 +47,6 @@
 	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.06);
 	transform: translateY(-1px);
 }
-.fe-folder .fe-tile {
-	margin-bottom: 0;
-	width: 36px;
-	height: 36px;
-	flex-shrink: 0;
-}
 .fe-folder-body {
 	flex: 1;
 	min-width: 0;
@@ -106,6 +100,14 @@
 	height: 40px;
 	border-radius: var(--r-lg);
 	margin-bottom: 14px;
+}
+/* Плитка в строке папки — меньше и без отступа. Идёт после базовой,
+   чтобы селекторы шли по возрастанию специфичности. */
+.fe-folder .fe-tile {
+	margin-bottom: 0;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
 }
 .fe-tile-folder {
 	color: var(--blue);

@@ -8,7 +8,7 @@ import s from "../HttpHistoryPage.module.css";
 /* ─── Helpers ─── */
 export function hcStatusClass(code: number): string {
 	if (code === 0) return "err";
-	return "s" + String(code)[0];
+	return `s${String(code)[0]}`;
 }
 
 const STATUS_TEXT: Record<number, string> = {
@@ -159,28 +159,41 @@ const HcJsonNode: FC<{ name?: string; value: unknown; last: boolean }> = ({
 	const closeBr = isArr ? "]" : "}";
 	const empty = entries.length === 0;
 
+	/* Шапка ветки: у пустых `{}`/`[]` разворачивать нечего, поэтому они
+	   остаются обычной строкой, а не отключённой кнопкой. */
+	const head = (
+		<>
+			<span className={s["hc-json-caret"]}>
+				{!empty && <Caret open={open} />}
+			</span>
+			{keyPart}
+			<span style={{ color: JSON_COLORS.punct }}>{openBr}</span>
+			{(!open || empty) && (
+				<>
+					{!empty && (
+						<span className={s["hc-json-count"]}>{entries.length}</span>
+					)}
+					<span style={{ color: JSON_COLORS.punct }}>{closeBr}</span>
+					{comma}
+				</>
+			)}
+		</>
+	);
+
 	return (
 		<div>
-			<div
-				className={s["hc-json-row"]}
-				style={empty ? undefined : { cursor: "pointer" }}
-				onClick={empty ? undefined : () => setOpen((o) => !o)}
-			>
-				<span className={s["hc-json-caret"]}>
-					{!empty && <Caret open={open} />}
-				</span>
-				{keyPart}
-				<span style={{ color: JSON_COLORS.punct }}>{openBr}</span>
-				{(!open || empty) && (
-					<>
-						{!empty && (
-							<span className={s["hc-json-count"]}>{entries.length}</span>
-						)}
-						<span style={{ color: JSON_COLORS.punct }}>{closeBr}</span>
-						{comma}
-					</>
-				)}
-			</div>
+			{empty ? (
+				<div className={s["hc-json-row"]}>{head}</div>
+			) : (
+				<button
+					type="button"
+					className={`${s["hc-json-row"]} ${s["hc-json-row-toggle"]}`}
+					onClick={() => setOpen((o) => !o)}
+					aria-expanded={open}
+				>
+					{head}
+				</button>
+			)}
 			{open && !empty && (
 				<>
 					<div className={s["hc-json-children"]}>
@@ -419,7 +432,6 @@ export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
 	if (!request)
 		return (
 			<>
-				{/* biome-ignore lint/a11y/noStaticElementInteractions: scrim closes the drawer on click */}
 				{/* biome-ignore lint/a11y/useKeyWithClickEvents: Escape handled at window level */}
 				<div className={s["hc-drawer-scrim"]} onClick={onClose} />
 				<div
@@ -458,7 +470,6 @@ export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
 
 	return (
 		<>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: scrim closes the drawer on click */}
 			{/* biome-ignore lint/a11y/useKeyWithClickEvents: Escape handled at window level */}
 			<div className={s["hc-drawer-scrim"]} onClick={onClose} />
 			<div

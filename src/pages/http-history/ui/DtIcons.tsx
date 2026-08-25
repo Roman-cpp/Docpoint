@@ -18,6 +18,7 @@ export const DtCheckbox: FC<DtCheckboxProps> = ({
 }) => {
 	const cls = indeterminate ? s.indeterminate : checked ? s.checked : undefined;
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: нативный input потребовал бы визуально скрытого поля и переезда :focus-visible на :has(); кнопка с role="checkbox" уже даёт фокус, Space/Enter и озвучку состояния
 		<button
 			type="button"
 			className={cx(s["dt-cb"], cls)}

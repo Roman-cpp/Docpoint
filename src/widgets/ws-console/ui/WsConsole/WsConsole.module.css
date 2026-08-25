@@ -390,7 +390,15 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
 	padding: 9px 16px;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	background: transparent;
+	border: none;
 	cursor: pointer;
 	transition: background 0.12s;
 }

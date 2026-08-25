@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { cx } from "@/shared/lib/cx";
 import { ArrowDownIcon, ArrowUpIcon } from "@/shared/svg";
 import {
 	createHeaderDraft,
@@ -79,9 +80,7 @@ function prettyJson(text: string): string {
 /* ─── SYSTEM ROW (open / closed / error / status) ── */
 const SystemRow: FC<{ msg: WsMessage }> = ({ msg }) => (
 	<div className={s.systemRow}>
-		<span
-			className={`${s.systemIcon}${msg.kind === "error" ? " " + s.systemError : ""}`}
-		>
+		<span className={cx(s.systemIcon, msg.kind === "error" && s.systemError)}>
 			{msg.kind === "error" ? (
 				<svg
 					aria-hidden="true"
@@ -132,7 +131,12 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 
 	return (
 		<div className={s.logRow}>
-			<div className={s.logRowHead} onClick={() => setOpen((o) => !o)}>
+			<button
+				type="button"
+				className={s.logRowHead}
+				onClick={() => setOpen((o) => !o)}
+				aria-expanded={open}
+			>
 				<span className={`${s.dirIcon} ${msg.kind === "out" ? s.out : s.in}`}>
 					{msg.kind === "out" ? <ArrowUpIcon /> : <ArrowDownIcon />}
 				</span>
@@ -140,7 +144,7 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 				<span className={s.logTime}>{msg.ts}</span>
 				<svg
 					aria-hidden="true"
-					className={`${s.chevron}${open ? " " + s.open : ""}`}
+					className={cx(s.chevron, open && s.open)}
 					width="12"
 					height="12"
 					viewBox="0 0 12 12"
@@ -152,7 +156,7 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 				>
 					<path d="M3 4.5L6 7.5 9 4.5" />
 				</svg>
-			</div>
+			</button>
 
 			{open && (
 				<div className={s.logDetail}>
@@ -391,7 +395,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 				/>
 				<button
 					type="button"
-					className={`${s.connectBtn}${connected ? " " + s.disconnect : ""}`}
+					className={cx(s.connectBtn, connected && s.disconnect)}
 					onClick={toggleConnection}
 					disabled={connecting}
 				>
@@ -406,7 +410,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 						<button
 							type="button"
 							key={t}
-							className={`${s.tab}${tab === t ? " " + s.active : ""}`}
+							className={cx(s.tab, tab === t && s.active)}
 							onClick={() => setTab(t)}
 						>
 							{t}

@@ -69,10 +69,18 @@ export const RequestTabs: FC<RequestTabsProps> = ({
 					const isEditing = editing === request.id;
 
 					return (
+						// biome-ignore lint/a11y/useSemanticElements: внутри вкладки лежат кнопки переименования/закрытия и поле ввода — вложенные <button> невалидны
 						<div
 							key={request.id}
 							className={`${s.tab}${isActive ? ` ${s.active}` : ""}`}
+							role="button"
+							tabIndex={0}
 							onClick={() => onSelect(request.id)}
+							onKeyDown={(e) => {
+								if (e.key !== "Enter" && e.key !== " ") return;
+								e.preventDefault();
+								onSelect(request.id);
+							}}
 							onDoubleClick={() => startRename(request)}
 							onContextMenu={(e) => {
 								e.preventDefault();

@@ -51,11 +51,18 @@ function Root({ open, onOpenChange, width, children, className }: RootProps) {
 
 	return (
 		<DialogContext.Provider value={{ close }}>
-			<div className={s.overlay} onClick={close}>
+			<div
+				className={s.overlay}
+				onClick={(e) => {
+					if (e.target === e.currentTarget) close();
+				}}
+				onKeyDown={(e) => {
+					if (e.key === "Escape") close();
+				}}
+			>
 				<div
 					className={`${s.box}${className ? ` ${className}` : ""}`}
 					style={boxStyle}
-					onClick={(e) => e.stopPropagation()}
 				>
 					{children}
 				</div>

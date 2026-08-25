@@ -214,7 +214,6 @@ const EnumEditor: FC<EnumEditorProps> = ({ values, onChange }) => {
 				</button>
 			</div>
 			{values.map((v, i) => (
-				// biome-ignore lint/suspicious/noArrayIndexKey: enum rows have no stable id
 				<div className={s.enumRow} key={i}>
 					<Input
 						value={v.val}

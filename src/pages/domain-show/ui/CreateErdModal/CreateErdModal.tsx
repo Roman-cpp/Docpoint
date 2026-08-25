@@ -36,7 +36,6 @@ export const CreateErdModal: FC<Props> = ({
 			</Dialog.Header>
 			<Dialog.Body>
 				<Field label="Название" required>
-					{/* biome-ignore lint/a11y/noAutofocus: focusing the first field on open */}
 					<Input
 						value={name}
 						onChange={(e) => setName(e.target.value)}
