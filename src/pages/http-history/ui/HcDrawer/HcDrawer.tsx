@@ -223,6 +223,7 @@ const HcCopyBtn: FC<{ text: string; label?: string }> = ({
 	const [done, setDone] = useState(false);
 	return (
 		<button
+			type="button"
 			className={s["hc-code-copy"]}
 			onClick={() => {
 				try {
@@ -259,6 +260,7 @@ const HcRequestBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 			<div className={s["hc-tabs"]}>
 				{tabs.map((t) => (
 					<button
+						type="button"
 						key={t.id}
 						className={cx(s["hc-tab"], tab === t.id && s.active)}
 						onClick={() => setTab(t.id)}
@@ -352,6 +354,7 @@ const HcResponseBlock: FC<{ r: HistoryRecord }> = ({ r }) => {
 				<div className={s["hc-tabs"]}>
 					{tabs.map((t) => (
 						<button
+							type="button"
 							key={t.id}
 							className={cx(s["hc-tab"], tab === t.id && s.active)}
 							disabled={t.disabled}
@@ -428,11 +431,13 @@ export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
 						<div className={s["hc-drawer-head-top"]}>
 							<span className={s["hc-drawer-title"]} />
 							<button
+								type="button"
 								className={s["hc-drawer-close"]}
 								onClick={onClose}
 								aria-label="Закрыть"
 							>
 								<svg
+									aria-hidden="true"
 									viewBox="0 0 14 14"
 									fill="none"
 									stroke="currentColor"
@@ -465,11 +470,13 @@ export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
 					<div className={s["hc-drawer-head-top"]}>
 						<span className={s["hc-drawer-title"]}></span>
 						<button
+							type="button"
 							className={s["hc-drawer-close"]}
 							onClick={onClose}
 							aria-label="Закрыть"
 						>
 							<svg
+								aria-hidden="true"
 								viewBox="0 0 14 14"
 								fill="none"
 								stroke="currentColor"
@@ -493,6 +500,7 @@ export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
 							<HcUrl url={request.url} />
 						</div>
 						<button
+							type="button"
 							className={s["hc-copy-url"]}
 							title="Скопировать URL"
 							onClick={() => {

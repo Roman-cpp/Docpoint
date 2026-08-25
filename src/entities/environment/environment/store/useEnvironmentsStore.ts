@@ -33,7 +33,7 @@ export const useEnvironmentsStore = ({
 
 	const environments = useQuery<Environment[]>({
 		queryKey: environmentKeys.list(docId ?? ""),
-		queryFn: () => getEnvironmentsByDocApi(docId!),
+		queryFn: () => getEnvironmentsByDocApi(docId ?? ""),
 		enabled: !!docId,
 	});
 

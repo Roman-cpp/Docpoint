@@ -63,6 +63,7 @@ export const Sidebar = () => {
 			>
 				<div className={s.searchInputWrap} style={{ flex: 1 }}>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 16 16"
 						fill="none"
 						stroke="currentColor"
@@ -127,6 +128,7 @@ export const Sidebar = () => {
 							}}
 						>
 							<svg
+								aria-hidden="true"
 								width="13"
 								height="13"
 								viewBox="0 0 13 13"
@@ -203,6 +205,7 @@ export const Sidebar = () => {
 									</button>
 								)}
 								<svg
+									aria-hidden="true"
 									className={`${s.sidebarGroupChevron} ${isOpen ? s.open : ""}`}
 									viewBox="0 0 12 12"
 									fill="none"

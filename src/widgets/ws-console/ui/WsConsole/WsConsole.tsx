@@ -84,6 +84,7 @@ const SystemRow: FC<{ msg: WsMessage }> = ({ msg }) => (
 		>
 			{msg.kind === "error" ? (
 				<svg
+					aria-hidden="true"
 					width="16"
 					height="16"
 					viewBox="0 0 16 16"
@@ -98,6 +99,7 @@ const SystemRow: FC<{ msg: WsMessage }> = ({ msg }) => (
 				</svg>
 			) : (
 				<svg
+					aria-hidden="true"
 					width="16"
 					height="16"
 					viewBox="0 0 16 16"
@@ -137,6 +139,7 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 				<span className={s.logText}>{msg.text}</span>
 				<span className={s.logTime}>{msg.ts}</span>
 				<svg
+					aria-hidden="true"
 					className={`${s.chevron}${open ? " " + s.open : ""}`}
 					width="12"
 					height="12"
@@ -159,7 +162,9 @@ const LogRow: FC<{ msg: WsMessage }> = ({ msg }) => {
 							<option>Raw</option>
 						</select>
 						<div className={s.detailSpacer} />
-						<button className={s.detailAction}>Show Hexdump</button>
+						<button type="button" className={s.detailAction}>
+							Show Hexdump
+						</button>
 					</div>
 					<div className={s.detailCode}>
 						<div className={s.detailGutter}>
@@ -385,6 +390,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 					onChange={(e) => setUrl(e.target.value)}
 				/>
 				<button
+					type="button"
 					className={`${s.connectBtn}${connected ? " " + s.disconnect : ""}`}
 					onClick={toggleConnection}
 					disabled={connecting}
@@ -398,6 +404,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 				<div className={s.tabsBar}>
 					{TABS.map((t) => (
 						<button
+							type="button"
 							key={t}
 							className={`${s.tab}${tab === t ? " " + s.active : ""}`}
 							onClick={() => setTab(t)}
@@ -450,8 +457,9 @@ export const WsConsole: FC<WsConsoleProps> = ({
 						<option>JSON</option>
 						<option>Raw</option>
 					</select>
-					<button className={s.iconBtn} title="Clear">
+					<button className={s.iconBtn} title="Clear" type="button">
 						<svg
+							aria-hidden="true"
 							width="14"
 							height="14"
 							viewBox="0 0 14 14"
@@ -466,6 +474,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 					</button>
 					<div className={s.footerSpacer} />
 					<button
+						type="button"
 						className={s.sendBtn}
 						onClick={send}
 						disabled={!connected || !draft.trim()}
@@ -486,8 +495,14 @@ export const WsConsole: FC<WsConsoleProps> = ({
 					>
 						{connected ? "Connected" : "Disconnected"}
 					</span>
-					<button className={s.headerDots} title="More">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+					<button className={s.headerDots} title="More" type="button">
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 16 16"
+							fill="currentColor"
+							aria-hidden="true"
+						>
 							<circle cx="3" cy="8" r="1.4" />
 							<circle cx="8" cy="8" r="1.4" />
 							<circle cx="13" cy="8" r="1.4" />
@@ -498,6 +513,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 				<div className={s.toolbar}>
 					<div className={s.searchWrap}>
 						<svg
+							aria-hidden="true"
 							width="13"
 							height="13"
 							viewBox="0 0 13 13"
@@ -525,8 +541,13 @@ export const WsConsole: FC<WsConsoleProps> = ({
 						<option value="in">Received</option>
 						<option value="out">Sent</option>
 					</select>
-					<button className={s.clearBtn} onClick={() => setMessages([])}>
+					<button
+						className={s.clearBtn}
+						onClick={() => setMessages([])}
+						type="button"
+					>
 						<svg
+							aria-hidden="true"
 							width="12"
 							height="12"
 							viewBox="0 0 14 14"

@@ -50,7 +50,6 @@ export const CreateEntryDialog: FC<{
 					onKeyDown={(e) => {
 						if (e.key === "Enter") confirm();
 					}}
-					autoFocus
 				/>
 			</Dialog.Body>
 			<Dialog.Footer>

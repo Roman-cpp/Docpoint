@@ -47,10 +47,11 @@ export const CopyBtn: FC<{ text: string }> = ({ text }) => {
 		setTimeout(() => setCopied(false), 1500);
 	};
 	return (
-		<button className={s.copyBtn} onClick={copy}>
+		<button className={s.copyBtn} onClick={copy} type="button">
 			{copied ? (
 				<>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 12 12"
 						fill="none"
 						stroke="currentColor"
@@ -64,6 +65,7 @@ export const CopyBtn: FC<{ text: string }> = ({ text }) => {
 			) : (
 				<>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 12 12"
 						fill="none"
 						stroke="currentColor"
@@ -191,6 +193,7 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 						const r = detail.responses[key];
 						return (
 							<button
+								type="button"
 								key={key}
 								className={`${s.responseTab} ${activeResponse === key ? s.active : ""}`}
 								onClick={() => setActiveResponse(key)}

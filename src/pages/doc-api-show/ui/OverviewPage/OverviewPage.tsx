@@ -197,9 +197,9 @@ export const OverviewPage = () => {
 								className={s.schemaKey}
 								style={{
 									color:
-										parseInt(code) >= 500
+										parseInt(code, 10) >= 500
 											? "var(--red)"
-											: parseInt(code) >= 400
+											: parseInt(code, 10) >= 400
 												? "var(--amber)"
 												: "var(--green)",
 								}}

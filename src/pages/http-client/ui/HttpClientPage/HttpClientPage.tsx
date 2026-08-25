@@ -106,8 +106,9 @@ const KVEditor: FC<KVEditorProps> = ({ rows, onChange }) => {
 						value={row.value}
 						onChange={(e) => upd(row.id, "value", e.target.value)}
 					/>
-					<button className={s.kvDel} onClick={() => del(row.id)}>
+					<button className={s.kvDel} onClick={() => del(row.id)} type="button">
 						<svg
+							aria-hidden="true"
 							viewBox="0 0 11 11"
 							fill="none"
 							stroke="currentColor"
@@ -119,8 +120,9 @@ const KVEditor: FC<KVEditorProps> = ({ rows, onChange }) => {
 					</button>
 				</div>
 			))}
-			<button className={s.kvAdd} onClick={add}>
+			<button className={s.kvAdd} onClick={add} type="button">
 				<svg
+					aria-hidden="true"
 					viewBox="0 0 12 12"
 					fill="none"
 					stroke="currentColor"
@@ -201,6 +203,7 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 			<div className={s.panelTabs}>
 				{TABS.map((t) => (
 					<button
+						type="button"
 						key={t.id}
 						className={`${s.panelTab}${tab === t.id ? " " + s.active : ""}`}
 						onClick={() => setTab(t.id)}
@@ -224,7 +227,12 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 					<>
 						<KVEditor rows={headers} onChange={setHeaders} />
 						<div className={`${s.callout} ${s.info}`} style={{ marginTop: 12 }}>
-							<svg className={s.calloutIcon} viewBox="0 0 14 14" fill="none">
+							<svg
+								className={s.calloutIcon}
+								viewBox="0 0 14 14"
+								fill="none"
+								aria-hidden="true"
+							>
 								<circle
 									cx="7"
 									cy="7"
@@ -261,7 +269,11 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 								<option value="none">None</option>
 							</select>
 							{bodyType === "json" && (
-								<button className={s.bodyFormatBtn} onClick={formatJSON}>
+								<button
+									className={s.bodyFormatBtn}
+									onClick={formatJSON}
+									type="button"
+								>
 									Format JSON
 								</button>
 							)}
@@ -301,6 +313,7 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 								["None", "Bearer Token", "Basic Auth", "API Key"] as AuthType[]
 							).map((t) => (
 								<button
+									type="button"
 									key={t}
 									className={`${s.authTypeBtn}${authType === t ? " " + s.active : ""}`}
 									onClick={() => setAuthType(t)}
@@ -381,7 +394,12 @@ const RequestPanel: FC<RequestPanelProps> = (props) => {
 
 						{authType === "None" && (
 							<div className={`${s.callout} ${s.warn}`}>
-								<svg className={s.calloutIcon} viewBox="0 0 14 14" fill="none">
+								<svg
+									className={s.calloutIcon}
+									viewBox="0 0 14 14"
+									fill="none"
+									aria-hidden="true"
+								>
 									<path
 										d="M7 1.5l5.5 10H1.5L7 1.5zm0 4v3m0 1.5v.5"
 										stroke="#75591A"
@@ -452,6 +470,7 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 				{emptyBar}
 				<div className={s.emptyState}>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 44 44"
 						fill="none"
 						stroke="currentColor"
@@ -487,6 +506,7 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 				<div className={s.resMetaSep} />
 				<div className={s.resMetaItem}>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 11 11"
 						fill="none"
 						stroke="currentColor"
@@ -501,6 +521,7 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 				<div className={s.resMetaSep} />
 				<div className={s.resMetaItem}>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 11 11"
 						fill="none"
 						stroke="currentColor"
@@ -511,8 +532,9 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 					</svg>
 					{response.size}
 				</div>
-				<button className={s.resCopy} onClick={copy}>
+				<button className={s.resCopy} onClick={copy} type="button">
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 10 10"
 						fill="none"
 						stroke="currentColor"
@@ -531,6 +553,7 @@ const ResponsePanel: FC<ResponsePanelProps> = ({ response, loading }) => {
 			<div className={s.resTabsBar}>
 				{(["body", "headers"] as const).map((t) => (
 					<button
+						type="button"
 						key={t}
 						className={`${s.resTab}${tab === t ? " " + s.active : ""}`}
 						onClick={() => setTab(t)}
@@ -632,6 +655,7 @@ const Sidebar: FC<SidebarProps> = ({
 		const ss = statusStyle(h.status);
 		return (
 			<button
+				type="button"
 				key={h.id}
 				className={`${s.historyItem}${activeId === h.id ? " " + s.active : ""}`}
 				onClick={() => onSelect(h)}
@@ -662,7 +686,7 @@ const Sidebar: FC<SidebarProps> = ({
 		<div className={s.sidebar} style={style}>
 			<div className={s.sidebarHeader}>
 				<span className={s.sidebarTitle}>History</span>
-				<button className={s.sidebarClear} onClick={onClear}>
+				<button className={s.sidebarClear} onClick={onClear} type="button">
 					Clear
 				</button>
 			</div>
@@ -670,6 +694,7 @@ const Sidebar: FC<SidebarProps> = ({
 			<div className={s.sidebarSearch}>
 				<div className={s.sidebarSearchWrap}>
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 12 12"
 						fill="none"
 						stroke="currentColor"
@@ -749,8 +774,9 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 		<div className={s.tweaksPanel}>
 			<div className={s.tweaksHeader}>
 				<span className={s.tweaksTitle}>Tweaks</span>
-				<button className={s.tweaksClose} onClick={onClose}>
+				<button className={s.tweaksClose} onClick={onClose} type="button">
 					<svg
+						aria-hidden="true"
 						viewBox="0 0 11 11"
 						fill="none"
 						stroke="currentColor"
@@ -766,6 +792,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 					<div className={s.tweakToggleRow}>
 						<span className={s.tweakToggleLbl}>Syntax highlight</span>
 						<button
+							type="button"
 							className={`${s.toggleSw}${tweaks.highlight ? " " + s.on : ""}`}
 							onClick={() => setTweak("highlight", !tweaks.highlight)}
 						/>
@@ -776,6 +803,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 					<div className={s.tweakOptions}>
 						{(["Light", "Dark"] as const).map((o) => (
 							<button
+								type="button"
 								key={o}
 								className={`${s.tweakOpt}${tweaks.theme === o ? " " + s.active : ""}`}
 								onClick={() => setTweak("theme", o)}
@@ -790,6 +818,7 @@ const TweaksPanel: FC<TweaksPanelProps> = ({
 					<div className={s.tweakOptions}>
 						{(["Small", "Default", "Large"] as const).map((o) => (
 							<button
+								type="button"
 								key={o}
 								className={`${s.tweakOpt}${tweaks.fontSize === o ? " " + s.active : ""}`}
 								onClick={() => setTweak("fontSize", o)}
@@ -1161,6 +1190,7 @@ export const HttpClientPage: FC = () => {
 										))}
 									</select>
 									<svg
+										aria-hidden="true"
 										className={s.methodSelectChevron}
 										viewBox="0 0 10 10"
 										fill="none"
@@ -1181,6 +1211,7 @@ export const HttpClientPage: FC = () => {
 								/>
 
 								<button
+									type="button"
 									className={s.sendBtn}
 									onClick={send}
 									disabled={loading || !url.trim()}
@@ -1192,6 +1223,7 @@ export const HttpClientPage: FC = () => {
 									) : (
 										<>
 											<svg
+												aria-hidden="true"
 												width="12"
 												height="12"
 												viewBox="0 0 12 12"

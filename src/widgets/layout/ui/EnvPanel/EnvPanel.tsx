@@ -50,6 +50,7 @@ export const EnvPanel: FC = () => {
 							onClick={() => setOpen(false)}
 						>
 							<svg
+								aria-hidden="true"
 								viewBox="0 0 11 11"
 								fill="none"
 								stroke="currentColor"
@@ -100,11 +101,13 @@ export const EnvPanel: FC = () => {
 			)}
 
 			<button
+				type="button"
 				className={`${s.toggleBtn}${open ? ` ${s.open}` : ""}`}
 				onClick={() => setOpen((v) => !v)}
 				title="Environment variables"
 			>
 				<svg
+					aria-hidden="true"
 					viewBox="0 0 14 14"
 					fill="none"
 					stroke="currentColor"

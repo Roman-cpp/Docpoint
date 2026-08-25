@@ -71,6 +71,7 @@ export const MessagesPanel: FC<MessagesPanelProps> = ({
 			<div className={s.sidebarHead}>
 				<span>Examples</span>
 				<button
+					type="button"
 					className={s.addBtn}
 					onClick={() => setEditing(null)}
 					title="Добавить сообщение"

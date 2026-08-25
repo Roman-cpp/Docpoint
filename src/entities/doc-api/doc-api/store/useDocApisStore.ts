@@ -30,7 +30,7 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 
 	const doc = useQuery<Doc | null>({
 		queryKey: docKeys.detail(id ?? ""),
-		queryFn: () => getDocApi(id!),
+		queryFn: () => getDocApi(id ?? ""),
 		enabled: Boolean(id),
 	});
 

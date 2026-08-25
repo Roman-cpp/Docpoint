@@ -54,6 +54,7 @@ export const DeleteVariableModal: FC<DeleteVariableModalProps> = ({
 						aria-label="Закрыть"
 					>
 						<svg
+							aria-hidden="true"
 							viewBox="0 0 11 11"
 							fill="none"
 							stroke="currentColor"

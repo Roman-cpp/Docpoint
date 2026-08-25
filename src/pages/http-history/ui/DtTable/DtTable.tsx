@@ -112,7 +112,6 @@ export function DtTable<T>({
 							isActive && s.active,
 							onRowClick && s.clickable,
 						)}
-						tabIndex={0}
 						style={{ gridTemplateColumns: template }}
 						onClick={onRowClick ? () => onRowClick(row.original) : undefined}
 						onKeyDown={
