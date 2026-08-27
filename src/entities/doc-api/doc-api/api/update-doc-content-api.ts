@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-/** Persist the markdown body of a doc to its `<id>.md` file in the vault. */
+/** Записать markdown-тело документа в его файл `<id>.md`. */
 export function updateDocContentApi(
 	id: string,
 	content: string,

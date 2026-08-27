@@ -40,7 +40,7 @@ export function parseWebsocketImport(raw: string): ImportWebsocketPayload {
 	const websocket = json.websocket;
 	if (!isRecord(websocket))
 		throw new Error(
-			"Нет блока websocket — при импорте в домен он обязателен: из него берутся имя и адрес сокета",
+			"Нет блока websocket — при импорте в каталог он обязателен: из него берутся имя и адрес сокета",
 		);
 
 	const name = text(websocket.name);

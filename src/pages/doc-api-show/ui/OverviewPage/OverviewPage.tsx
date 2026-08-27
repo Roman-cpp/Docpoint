@@ -1,5 +1,10 @@
-import { Link, useLocation } from "react-router";
+import { useState } from "react";
+import { Link } from "react-router";
+import { useDocsStore } from "@/entities/doc-api";
+import type { HttpMethod } from "@/entities/shared/http-method";
 import {
+	actionfetchDocApi,
+	EditDocApiModal,
 	selectDocApi,
 	selectEntities,
 	selectGroups,
@@ -11,21 +16,25 @@ import {
 } from "@/features/environment";
 import { joinUrl } from "@/shared/lib/url";
 import s from "@/shared/styles/apiDocs.module.css";
+import { CatalogBackLink } from "@/widgets/catalog-explorer";
 
-interface DocOrigin {
-	domainId?: string;
-	domainName?: string;
-}
+const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
+	GET: { color: "var(--get)", bg: "var(--get-bg)" },
+	POST: { color: "var(--post)", bg: "var(--post-bg)" },
+	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
+	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
+	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
+	HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
+};
 
 export const OverviewPage = () => {
 	const doc = useDocApiStore(selectDocApi);
 	const groups = useDocApiStore(selectGroups);
 	const entities = useDocApiStore(selectEntities);
 	const env = useEnvironmentsStore(selectSelectedEnvironment);
-
-	// When the doc was opened from a domain page, `state` carries it so we
-	// can offer a link back to that domain.
-	const origin = useLocation().state as DocOrigin | null;
+	const fetchDoc = useDocApiStore(actionfetchDocApi);
+	const { updateDocAsync, isUpdating } = useDocsStore();
+	const [editing, setEditing] = useState(false);
 
 	const endpointCount =
 		groups?.reduce((sum, g) => sum + g.endpoints.length, 0) ?? 0;
@@ -38,34 +47,58 @@ export const OverviewPage = () => {
 	// документ добавляет от себя.
 	const baseUrl = joinUrl(env?.baseUrl, env?.prefix, doc.prefix) || "—";
 
+	const saveDoc = async (updates: Parameters<typeof updateDocAsync>[0]) => {
+		try {
+			await updateDocAsync(updates);
+			// Имя и описание уехали в дерево, версия и префикс — в поля документа:
+			// рабочий стор страницы перечитывается целиком.
+			await fetchDoc(doc.id);
+			setEditing(false);
+		} catch {
+			/* тост показывает мутация */
+		}
+	};
+
 	return (
 		<div>
 			<div className={s.breadcrumb}>
-				{origin?.domainId && (
-					<>
-						<Link className={s.bcItem} to={`/domain-show/${origin.domainId}`}>
-							← {origin.domainName ?? "Домен"}
-						</Link>
-						<span className={s.bcSep}>/</span>
-					</>
-				)}
+				<CatalogBackLink nodeId={doc.id} className={s.bcItem} />
+				<span className={s.bcSep}>/</span>
 				<span className={s.bcCurrent}>Overview</span>
 			</div>
+
 			<div className={s.endpointHeader}>
-				<h1
-					style={{
-						fontFamily: "var(--font-serif)",
-						fontSize: "30px",
-						fontWeight: 400,
-						letterSpacing: "-0.3px",
-						lineHeight: 1.2,
-						marginBottom: "10px",
-					}}
-				>
-					{doc.name}
-				</h1>
-				<p className={s.endpointDesc}>{doc.desc}</p>
+				<div className={s.endpointTitleRow}>
+					<h1
+						style={{
+							fontFamily: "var(--font-serif)",
+							fontSize: "30px",
+							fontWeight: 400,
+							letterSpacing: "-0.3px",
+							lineHeight: 1.2,
+						}}
+					>
+						{doc.name}
+					</h1>
+					<button
+						type="button"
+						className={s.overviewEditBtn}
+						onClick={() => setEditing(true)}
+					>
+						Редактировать
+					</button>
+				</div>
 			</div>
+
+			{editing && (
+				<EditDocApiModal
+					open
+					onOpenChange={(open) => !open && !isUpdating && setEditing(false)}
+					doc={doc}
+					isSaving={isUpdating}
+					onSave={saveDoc}
+				/>
+			)}
 
 			<div className={s.overviewGrid}>
 				<div className={s.overviewCard}>
@@ -82,137 +115,94 @@ export const OverviewPage = () => {
 				</div>
 				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Endpoints</div>
-					<div className={s.overviewCardValue}>
-						{endpointCount} endpoints across {resourceCount} resources
-					</div>
+					<div className={s.overviewCardValue}>{endpointCount}</div>
 				</div>
-				{/* <div className={s.overviewCard}>
-					<div className={s.overviewCardLabel}>Auth</div>
-					<div className={s.overviewCardValue}>
-						Bearer token via <code>/auth/token</code>
-					</div>
-				</div> */}
+				<div className={s.overviewCard}>
+					<div className={s.overviewCardLabel}>Resources</div>
+					<div className={s.overviewCardValue}>{resourceCount}</div>
+				</div>
 			</div>
 
 			<div className={s.divider} />
-			{/*<div className={s.sectionBlock}>
-				<div className={s.sectionLabel}>Authentication</div>
-				<p
-					style={{
-						fontSize: "14px",
-						color: "var(--ink-mid)",
-						lineHeight: 1.75,
-						marginBottom: "14px",
-					}}
-				>
-					Most endpoints require a Bearer token in the{" "}
-					<span className={s.ic}>Authorization</span> header. Obtain a token via{" "}
-					<span className={s.ic}>POST /auth/token</span>. Tokens expire after{" "}
-					<strong>60 minutes</strong>; use the refresh token to extend the
-					session.
-				</p>
-				{/* <div className={s.codeBlock}>
-					<div className={s.codeHeader}>
-						<span className={s.codeLang}>HTTP Header</span>
-						<CopyBtn text="Authorization: Bearer {your_token}" />
-					</div>
-					<div className={s.codeBody}>
-						<pre>
-							<span className={s.hlK}>Authorization</span>
-							{": Bearer "}
-							<span className={s.hlS}>{"{" + "your_token" + "}"}</span>
-						</pre>
-					</div>
-				</div>
-			</div> */}
 
-			{/*<div className={s.sectionBlock}>
-				<div className={s.sectionLabel}>Rate Limiting</div>
-				<p
-					style={{
-						fontSize: "14px",
-						color: "var(--ink-mid)",
-						lineHeight: 1.75,
-						marginBottom: "14px",
-					}}
-				>
-					API requests are limited to <strong>1 000 requests / hour</strong> per
-					token. Rate limit headers are included in every response.
-				</p>
-				<div className={s.schemaBlock}>
-					{[
-						["X-RateLimit-Limit", "string", "Maximum requests per window"],
-						[
-							"X-RateLimit-Remaining",
-							"string",
-							"Requests left in current window",
-						],
-						[
-							"X-RateLimit-Reset",
-							"string",
-							"Unix timestamp when window resets",
-						],
-						[
-							"Retry-After",
-							"string",
-							"Seconds to wait if rate limited (429 only)",
-						],
-					].map(([k, t, d]) => (
-						<div className={s.schemaRow} key={k}>
-							<span className={s.schemaKey}>{k}</span>
-							<span className={s.schemaType}>{t}</span>
-							<span className={s.schemaDesc}>{d}</span>
-						</div>
-					))}
-				</div>
-			</div> */}
-
+			{/* Навигация по документу: группа → её эндпоинты. Ничего, кроме метода
+			    и пути — описания и теги живут на странице самого эндпоинта. */}
 			<div className={s.sectionBlock}>
-				<div className={s.sectionLabel}>Errors</div>
-				<p
-					style={{
-						fontSize: "14px",
-						color: "var(--ink-mid)",
-						lineHeight: 1.75,
-						marginBottom: "14px",
-					}}
-				>
-					All errors follow a consistent shape with a machine-readable{" "}
-					<span className={s.ic}>error</span> code and a human-readable{" "}
-					<span className={s.ic}>message</span>.
-				</p>
-				<div className={s.schemaBlock}>
-					{[
-						["400", "Bad Request", "Invalid query params or request format"],
-						["401", "Unauthorized", "Missing or invalid token"],
-						["403", "Forbidden", "Token lacks required scope"],
-						["404", "Not Found", "Resource doesn't exist"],
-						["409", "Conflict", "Duplicate resource (e.g. email taken)"],
-						["422", "Unprocessable", "Validation errors in request body"],
-						["429", "Too Many Requests", "Rate limit exceeded"],
-						["500", "Server Error", "Internal error — please retry"],
-					].map(([code, label, desc]) => (
-						<div className={s.schemaRow} key={code}>
-							<span
-								className={s.schemaKey}
-								style={{
-									color:
-										parseInt(code, 10) >= 500
-											? "var(--red)"
-											: parseInt(code, 10) >= 400
-												? "var(--amber)"
-												: "var(--green)",
-								}}
-							>
-								{code}
-							</span>
-							<span className={s.schemaType} style={{ color: "var(--ink)" }}>
-								{label}
-							</span>
-							<span className={s.schemaDesc}>{desc}</span>
-						</div>
-					))}
-				</div>
+				<div className={s.sectionLabel}>Endpoints</div>
+				{endpointCount === 0 ? (
+					<div className={s.emptyState}>
+						<span>Пока нет ни одного эндпоинта</span>
+					</div>
+				) : (
+					<div style={{ display: "grid", gap: "18px" }}>
+						{groups?.map((group) => {
+							if (group.endpoints.length === 0) return null;
+							return (
+								<div key={group.id}>
+									<div
+										style={{
+											fontSize: "12px",
+											fontWeight: 600,
+											color: "var(--ink-mid)",
+											marginBottom: "8px",
+										}}
+									>
+										{group.label}
+									</div>
+									<div
+										style={{
+											border: "1px solid var(--border)",
+											borderRadius: "10px",
+											overflow: "hidden",
+										}}
+									>
+										{group.endpoints.map((ep, i) => {
+											const ms = METHOD_STYLES[ep.method];
+											return (
+												<Link
+													key={ep.id}
+													to={`/endpoint-show/${ep.id}`}
+													style={{
+														display: "flex",
+														alignItems: "center",
+														gap: "10px",
+														padding: "9px 14px",
+														borderTop:
+															i === 0 ? "none" : "1px solid var(--border)",
+														color: "var(--ink)",
+														textDecoration: "none",
+													}}
+												>
+													<span
+														className={s.methodBadge}
+														style={{
+															color: ms?.color,
+															background: ms?.bg,
+															fontSize: "10px",
+															padding: "2px 7px",
+															minWidth: "52px",
+															textAlign: "center",
+														}}
+													>
+														{ep.method}
+													</span>
+													<span
+														style={{
+															fontFamily: "var(--font-mono)",
+															fontSize: "13px",
+														}}
+													>
+														{ep.path}
+													</span>
+												</Link>
+											);
+										})}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
 			</div>
 		</div>
 	);

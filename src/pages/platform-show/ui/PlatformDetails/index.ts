@@ -1,1 +1,0 @@
-export { PlatformDetails } from "./PlatformDetails";

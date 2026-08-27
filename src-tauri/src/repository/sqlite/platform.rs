@@ -1,6 +1,5 @@
 use crate::domain::platform::dto::{CreatePlatformDTO, UpdatePlatformDTO};
 use crate::domain::platform::entity::Platform;
-use crate::domain::doc_api::doc_api::entity::DocApi;
 use crate::domain::environment::environment::entity::{EnvValue, Environment};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
@@ -95,59 +94,6 @@ impl PlatformRepository for PlatformRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         Ok(())
-    }
-
-    // A platform's docs are those attached to any of its domains, joined
-    // through docs.domain_id -> domains.platform_id (migrations 0013, 0014).
-    async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<DocApi>, String> {
-        let rows = sqlx::query(
-            "SELECT docs.* FROM docs \
-             JOIN domains ON docs.domain_id = domains.id \
-             WHERE domains.platform_id = ?",
-        )
-        .bind(platform_id)
-        .fetch_all(self.db)
-        .await
-        .map_err(|e| e.to_string())?;
-
-        if rows.is_empty() {
-            return Ok(vec![]);
-        }
-
-        let ids: Vec<String> = rows.iter().map(|r| r.get("id")).collect();
-
-        let mut tq = sqlx::QueryBuilder::new("SELECT * FROM docs_tag WHERE doc_id IN (");
-        let mut sep = tq.separated(",");
-        for id in &ids {
-            sep.push_bind(id);
-        }
-        tq.push(")");
-
-        let tag_rows = tq
-            .build()
-            .fetch_all(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(rows
-            .iter()
-            .map(|r| {
-                let id: String = r.get("id");
-                let tags: Vec<String> = tag_rows
-                    .iter()
-                    .filter(|t| t.get::<String, _>("doc_id") == id)
-                    .map(|t| t.get("tag"))
-                    .collect();
-                DocApi {
-                    id,
-                    name: r.get("name"),
-                    version: r.get("version"),
-                    desc: r.get("desc"),
-                    prefix: r.get("prefix"),
-                    tags,
-                }
-            })
-            .collect())
     }
 
     async fn environments_by_platform(

@@ -1,21 +1,19 @@
+mod catalog;
 mod doc_api;
 mod endpoint;
 mod env_auth;
 mod environment;
 mod erd;
 mod platform;
-mod domain_svc;
 mod shared;
-mod vault;
 mod websocket;
 
+pub use catalog::*;
 pub use doc_api::*;
 pub use endpoint::*;
 pub use env_auth::*;
 pub use environment::*;
 pub use erd::*;
 pub use platform::*;
-pub use domain_svc::*;
 pub use shared::*;
-pub use vault::*;
 pub use websocket::*;

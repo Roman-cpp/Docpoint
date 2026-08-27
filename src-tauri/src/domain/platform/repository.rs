@@ -1,6 +1,5 @@
 use super::dto::{CreatePlatformDTO, UpdatePlatformDTO};
 use super::entity::Platform;
-use crate::domain::doc_api::doc_api::entity::DocApi;
 use crate::domain::environment::environment::entity::Environment;
 
 pub trait PlatformRepository {
@@ -9,9 +8,5 @@ pub trait PlatformRepository {
     async fn create(&self, platform: &CreatePlatformDTO) -> Result<Platform, String>;
     async fn update(&self, platform: &UpdatePlatformDTO) -> Result<(), String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
-    async fn docs_by_platform(&self, platform_id: &str) -> Result<Vec<DocApi>, String>;
-    async fn environments_by_platform(
-        &self,
-        platform_id: &str,
-    ) -> Result<Vec<Environment>, String>;
+    async fn environments_by_platform(&self, platform_id: &str) -> Result<Vec<Environment>, String>;
 }

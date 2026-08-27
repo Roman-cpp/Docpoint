@@ -300,17 +300,70 @@ impl GroupRepo<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::doc_api::doc_api::dto::CreateDocApiDTO;
-    use crate::domain::doc_api::doc_api::repository::DocRepository;
-    use crate::repository::sqlite::doc_api::DocRepo;
+    use crate::domain::catalog::dto::NewNode;
+    use crate::domain::catalog::entity::NodeKind;
+    use crate::domain::catalog::repository::CatalogRepository;
+    use crate::domain::doc_api::doc_api::dto::DocApiPayload;
+    use crate::domain::doc_api::doc_api::repository::DocApiRepository;
+    use crate::repository::sqlite::catalog::CatalogRepo;
+    use crate::repository::sqlite::doc_api::DocApiRepo;
     use serde::Deserialize;
     use sqlx::sqlite::SqlitePoolOptions;
 
-    /// Ровно то, что читает команда `import_doc`.
+    /// Заголовок импортируемого файла. Разбирает его фронтенд — он же собирает
+    /// из него узел дерева, — поэтому здесь повторена ровно та часть, которая
+    /// доезжает до бэкенда.
     #[derive(Deserialize)]
     struct ImportFile {
-        doc: CreateDocApiDTO,
+        doc: ImportDoc,
         groups: Vec<CreateGroupDTO>,
+    }
+
+    #[derive(Deserialize)]
+    struct ImportDoc {
+        name: String,
+        #[serde(default)]
+        version: String,
+        #[serde(default)]
+        desc: String,
+        #[serde(default)]
+        prefix: String,
+        #[serde(default)]
+        tags: Vec<String>,
+    }
+
+    /// Документ на своём месте в дереве: платформа, узел, поля документа.
+    /// Ровно то, что делает `import_doc` до того, как отдать группы репозиторию.
+    async fn imported_doc(pool: &SqlitePool, doc: ImportDoc) -> String {
+        sqlx::query("INSERT OR IGNORE INTO platforms (id, name) VALUES ('p1', 'P')")
+            .execute(pool)
+            .await
+            .unwrap();
+
+        let node = CatalogRepo::new(pool)
+            .create(&NewNode {
+                platform_id: "p1",
+                parent_id: None,
+                kind: NodeKind::DocApi,
+                name: &doc.name,
+                desc: &doc.desc,
+            })
+            .await
+            .unwrap();
+
+        DocApiRepo::new(pool)
+            .create(
+                &node.id,
+                &DocApiPayload {
+                    version: doc.version,
+                    prefix: doc.prefix,
+                    tags: doc.tags,
+                },
+            )
+            .await
+            .unwrap();
+
+        node.id
     }
 
     /// Схема из настоящих миграций — тест ловит и рассинхрон с ними.
@@ -329,11 +382,11 @@ mod tests {
     /// разъедется с DTO — документация не сможет соврать молча.
     #[tokio::test]
     async fn the_documented_example_imports_with_its_test_requests() {
-        let raw = include_str!("../../../../docs/import/doc-api-example-import.json");
+        let raw = include_str!("../../../../docs/docpoint/doc-api/doc-api-example-import.json");
         let file: ImportFile = serde_json::from_str(raw).expect("пример не разбирается");
 
         let pool = db().await;
-        let doc_id = DocRepo::new(&pool).create(&file.doc).await.unwrap();
+        let doc_id = imported_doc(&pool, file.doc).await;
         GroupRepo::new(&pool).create(&doc_id, &file.groups).await.unwrap();
 
         // Наборы легли на свои эндпоинты, а не куда попало.
@@ -450,7 +503,7 @@ mod tests {
         let file: ImportFile = serde_json::from_str(raw).unwrap();
 
         let pool = db().await;
-        let doc_id = DocRepo::new(&pool).create(&file.doc).await.unwrap();
+        let doc_id = imported_doc(&pool, file.doc).await;
         let err = GroupRepo::new(&pool)
             .create(&doc_id, &file.groups)
             .await
@@ -472,7 +525,7 @@ mod tests {
         let file: ImportFile = serde_json::from_str(raw).unwrap();
 
         let pool = db().await;
-        let doc_id = DocRepo::new(&pool).create(&file.doc).await.unwrap();
+        let doc_id = imported_doc(&pool, file.doc).await;
         GroupRepo::new(&pool).create(&doc_id, &file.groups).await.unwrap();
 
         let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint_requests")

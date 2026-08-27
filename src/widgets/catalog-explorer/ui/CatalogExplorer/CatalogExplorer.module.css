@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════════════════════
+   ПРОВОДНИК ПЛАТФОРМЫ — путь сверху, содержимое каталога под ним.
+   ═══════════════════════════════════════════════════════════════ */
+
+.explorer {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	height: 100%;
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	overflow: hidden;
+	background: var(--surface);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+}
+
+/* ═══════════════ TOOLBAR ═══════════════ */
+.toolbar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 18px;
+	border-bottom: 1px solid var(--border);
+}
+
+.crumbs {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 6px;
+	flex: 1;
+	min-width: 0;
+}
+.crumbItem {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+}
+.crumbSep {
+	font-family: var(--font-serif);
+	font-size: 15px;
+	color: var(--ink-low);
+}
+.crumb {
+	border: none;
+	padding: 0;
+	background: none;
+	font-family: var(--font-sans);
+	font-size: 13.5px;
+	color: var(--ink-low);
+	cursor: pointer;
+}
+.crumb:hover {
+	color: var(--ink);
+	text-decoration: underline;
+}
+.crumbCurrent {
+	color: var(--ink);
+	font-weight: var(--fw-medium);
+}
+
+/* Крошка-приёмник, пока над ней висит перетаскиваемый узел. */
+.crumbDrop {
+	color: var(--ink);
+	box-shadow: inset 0 -1px 0 0 var(--ink);
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.action {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	background: var(--surface);
+	font-family: var(--font-sans);
+	font-size: 12.5px;
+	color: var(--ink);
+	cursor: pointer;
+	transition:
+		border-color var(--t-base),
+		background var(--t-base);
+}
+.action:hover {
+	border-color: var(--border-h);
+	background: var(--surface-2, rgba(40, 34, 26, 0.04));
+}
+
+/* ═══════════════ LISTING ═══════════════ */
+.listing {
+	flex: 1;
+	min-height: 0;
+	padding: 18px;
+	overflow-y: auto;
+}
+
+.empty {
+	padding: 48px 24px;
+	text-align: center;
+	font-size: 13.5px;
+	color: var(--ink-low);
+	border: 1px dashed var(--border-h);
+	border-radius: var(--r-xl);
+}

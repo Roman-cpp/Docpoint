@@ -1,11 +1,9 @@
-export { createDocApi } from "./doc-api/api/create-doc-api";
-export { deleteDocApi } from "./doc-api/api/delete-doc-api";
 export { getAllDocsApi } from "./doc-api/api/get-all-docs-api";
 export { getDocApi } from "./doc-api/api/get-doc-api";
 export { getDocContentApi } from "./doc-api/api/get-doc-content-api";
 export { updateDocApi } from "./doc-api/api/update-doc-api";
 export { updateDocContentApi } from "./doc-api/api/update-doc-content-api";
-export type { CreateDocDTO, UpdateDocDTO } from "./doc-api/model/doc-api.dto";
+export type { UpdateDocDTO } from "./doc-api/model/doc-api.dto";
 export type { Doc } from "./doc-api/model/doc-api.entity";
 export type { UseDocsStoreParams } from "./doc-api/store/useDocApisStore";
 export { docKeys, useDocsStore } from "./doc-api/store/useDocApisStore";

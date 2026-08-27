@@ -1,21 +1,22 @@
 import { type FC, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { toast } from "@/core/toast";
-import { parseScopeKey } from "@/entities/shared/file-scope";
-import { exportMarkdownApi, type Markdown } from "@/entities/vault";
+import {
+	catalogRoute,
+	nodePath,
+	useCatalogNode,
+	useCatalogTree,
+} from "@/entities/catalog";
+import { exportMarkdownApi, withMarkdownExt } from "@/entities/markdown";
+import { type SaveStatus, useMarkdownContent } from "@/features/markdown";
 import { cx } from "@/shared/lib/cx";
 import { ChevronLeftIcon, CopyIcon, DocIcon, DownloadIcon } from "@/shared/svg";
 import { MarkdownEditor } from "@/shared/ui-kit/MarkdownEditor";
 import { MarkdownView } from "@/shared/ui-kit/MarkdownView";
 import { Header } from "@/widgets/header";
 import { extractToc } from "../../lib/toc";
-import type { MarkdownFile } from "../../model/sampleFiles";
-import {
-	type SaveStatus,
-	useMarkdownContent,
-} from "../../model/useMarkdownContent";
-import { FileSidebar } from "../FileSidebar";
 import s from "../MarkdownShowPage.module.css";
+import { SiblingSidebar } from "../SiblingSidebar";
 
 type View = "rendered" | "edit";
 
@@ -27,87 +28,40 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 	error: "Ошибка сохранения",
 };
 
-/* 129024 → "126 КБ" (binary, ru locale). */
-const formatBytes = (bytes: number): string => {
-	const units = ["Б", "КБ", "МБ", "ГБ"];
-	let value = bytes;
-	let unit = 0;
-	while (value >= 1024 && unit < units.length - 1) {
-		value /= 1024;
-		unit += 1;
-	}
-	const rounded =
-		value >= 10 || unit === 0 ? Math.round(value) : Math.round(value * 10) / 10;
-	return `${rounded.toLocaleString("ru-RU")} ${units[unit]}`;
+/** «2026-08-27 09:14:00» из БД → «27 авг. 2026 г., 09:14». Время хранится в UTC. */
+const formatUpdated = (value: string): string => {
+	const date = new Date(`${value.replace(" ", "T")}Z`);
+	return Number.isNaN(date.getTime())
+		? value
+		: date.toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 };
 
-/* Folder shown in the viewer's breadcrumb — the scope root has no name. */
-const parentFolder = (path: string): string => {
-	const slash = path.lastIndexOf("/");
-	return slash === -1 ? "Файлы" : path.slice(0, slash);
-};
-
-/* Map a file read from the vault into the viewer's display shape. */
-const toViewFile = (md: Markdown): MarkdownFile => ({
-	id: md.path,
-	folder: parentFolder(md.path),
-	name: md.name,
-	size: formatBytes(md.size),
-	updated: new Date(md.updated * 1000).toLocaleString("ru-RU", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}),
-	content: md.content,
-});
-
-/* ═══════════════ MAIN PAGE ═══════════════ */
+/**
+ * Читалка markdown-документа дерева: слева соседи по каталогу, в центре текст
+ * или редактор с автосохранением, справа оглавление.
+ */
 export const MarkdownShowPage: FC = () => {
-	const [searchParams] = useSearchParams();
+	const { id = "" } = useParams<{ id: string }>();
 	const navigate = useNavigate();
-	// A scope-relative path means nothing on its own, so the scope travels with
-	// it in the URL. Either half missing means no real file is open.
-	const scopeParam = searchParams.get("scope");
-	const fileParam = searchParams.get("file");
-	const scope = useMemo(
-		() => (scopeParam ? parseScopeKey(scopeParam) : null),
-		[scopeParam],
-	);
+
+	const { node } = useCatalogNode(id);
+	const { nodes } = useCatalogTree(node?.platformId ?? "");
+	const { doc, content, status, onChange } = useMarkdownContent(id);
+
 	const [view, setView] = useState<View>("rendered");
 	const [activeHeading, setActiveHeading] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
 	const readerRef = useRef<HTMLDivElement>(null);
 
-	// Load the real vault file named in `?file=<id>` and autosave edits to disk.
-	// Resolves to `null` when the param is absent or the file can't be read, so
-	// the page falls back to the read-only sample browser.
-	const {
-		file: vaultFile,
-		content: vaultContent,
-		status,
-		onChange,
-	} = useMarkdownContent(scope, fileParam);
-	const isVault = vaultFile !== null;
-
-	// Sample files are read-only — never expose the editor for them.
-	const effectiveView: View = isVault || view !== "edit" ? view : "rendered";
-
-	const file: MarkdownFile | null = vaultFile
-		? { ...toViewFile(vaultFile), content: vaultContent }
-		: null;
-
-	// Both memos key on the raw text, not on `file` — the latter is a fresh
-	// object every render, which would defeat them.
-	const docSource = vaultFile ? vaultContent : "";
-	const toc = useMemo(() => extractToc(docSource), [docSource]);
-
-	// Render the document once per file — keeps scroll-spy state changes from
-	// re-parsing the whole Markdown tree on every scroll frame.
+	// Оба мемо держатся за сам текст, а не за `doc`: последний — новый объект на
+	// каждый рендер, и мемоизация просто не сработала бы.
+	const toc = useMemo(() => extractToc(content), [content]);
 	const docBody = useMemo(
-		() => <MarkdownView>{docSource}</MarkdownView>,
-		[docSource],
+		() => <MarkdownView>{content}</MarkdownView>,
+		[content],
 	);
 
-	// Scroll-spy for the TOC — throttled with rAF to avoid layout thrash.
+	// Подсветка активного заголовка в оглавлении, троттлится через rAF.
 	useEffect(() => {
 		const root = readerRef.current;
 		if (!root) return;
@@ -121,8 +75,8 @@ export const MarkdownShowPage: FC = () => {
 			for (const h of heads) {
 				if (h.getBoundingClientRect().top < 140) current = h.id;
 			}
-			// Bail out when the active heading hasn't changed — otherwise every
-			// scroll frame would re-render the page.
+			// Не трогаем состояние, пока заголовок тот же, — иначе каждый кадр
+			// прокрутки перерисовывал бы страницу.
 			setActiveHeading((prev) => (prev === current ? prev : current));
 		};
 		const onScroll = () => {
@@ -137,30 +91,27 @@ export const MarkdownShowPage: FC = () => {
 		};
 	}, []);
 
-	const goTo = (id: string) => {
+	const goTo = (headingId: string) => {
 		const el = readerRef.current?.querySelector<HTMLElement>(
-			`#${CSS.escape(id)}`,
+			`#${CSS.escape(headingId)}`,
 		);
-		// `scrollIntoView` targets the right scroll container and honours the
-		// `scroll-margin-top` set on headings, so it lands below the sticky toolbar.
+		// `scrollIntoView` попадает в нужный контейнер прокрутки и учитывает
+		// `scroll-margin-top` заголовков — текст встаёт под липкой панелью.
 		el?.scrollIntoView({ behavior: "smooth", block: "start" });
 	};
 
 	const copyAll = () => {
-		if (!file) return;
-		navigator.clipboard?.writeText(file.content).catch(() => {});
+		if (!doc) return;
+		navigator.clipboard?.writeText(content).catch(() => {});
 		setCopied(true);
 		setTimeout(() => setCopied(false), 1500);
 	};
 
-	// Export the current document through the native "save file" dialog.
+	/** Выгрузка документа наружу через системный диалог сохранения. */
 	const exportFile = async () => {
-		if (!file) return;
-		const name = file.name.toLowerCase().endsWith(".md")
-			? file.name
-			: `${file.name}.md`;
+		if (!doc) return;
 		try {
-			await exportMarkdownApi(file.content, name);
+			await exportMarkdownApi(content, withMarkdownExt(doc.name));
 		} catch (err) {
 			toast({
 				variant: "error",
@@ -170,66 +121,78 @@ export const MarkdownShowPage: FC = () => {
 		}
 	};
 
+	const path = node ? nodePath(nodes, node.parentId) : [];
+	const parent = path[path.length - 1];
+
 	return (
 		<div className={s.frame}>
 			<Header section="Документы / Markdown" activeLink="docs" />
 
 			<div className={s.body}>
-				{/* ─── File browser ─── */}
-				{scope && <FileSidebar scope={scope} activePath={fileParam} />}
+				{node && <SiblingSidebar nodes={nodes} node={node} />}
 
-				{/* ─── Reader ─── */}
 				<div className={s.reader} ref={readerRef}>
 					<div className={s.toolbar}>
 						<button
 							type="button"
 							className={s.toolBtn}
-							onClick={() => navigate(-1)}
+							onClick={() =>
+								node
+									? navigate(catalogRoute(node.platformId, node.parentId))
+									: navigate(-1)
+							}
 						>
 							<ChevronLeftIcon size={13} /> Назад
 						</button>
+
 						<div className={s.bc}>
-							{file ? (
+							{doc ? (
 								<>
-									<span className={s.bcItem}>{file.folder}</span>
+									<span className={s.bcItem}>
+										{parent?.name ?? "Все документы"}
+									</span>
 									<span className={s.bcSep}>/</span>
-									<span className={s.bcCur}>{file.name}</span>
+									<span className={s.bcCur}>{doc.name}</span>
 								</>
 							) : (
-								<span className={s.bcCur}>Файл не выбран</span>
+								<span className={s.bcCur}>Документ не найден</span>
 							)}
 						</div>
+
 						<div className={s.toolbarActions}>
-							{effectiveView === "edit" && (
+							{view === "edit" && (
 								<span className={s.saveStatus}>{STATUS_LABEL[status]}</span>
 							)}
 							<div className={s.toolSeg}>
 								<button
 									type="button"
-									className={cx(effectiveView === "rendered" && s.segActive)}
+									className={cx(view === "rendered" && s.segActive)}
 									onClick={() => setView("rendered")}
 								>
 									Просмотр
 								</button>
-								{/* Editing only applies to real vault files. */}
-								{isVault && (
-									<button
-										type="button"
-										className={cx(effectiveView === "edit" && s.segActive)}
-										onClick={() => setView("edit")}
-									>
-										Редактировать
-									</button>
-								)}
+								<button
+									type="button"
+									className={cx(view === "edit" && s.segActive)}
+									onClick={() => setView("edit")}
+									disabled={!doc}
+								>
+									Редактировать
+								</button>
 							</div>
-							<button type="button" className={s.toolBtn} onClick={copyAll}>
+							<button
+								type="button"
+								className={s.toolBtn}
+								onClick={copyAll}
+								disabled={!doc}
+							>
 								<CopyIcon size={13} /> {copied ? "Скопировано" : "Копировать"}
 							</button>
 							<button
 								type="button"
 								className={s.toolBtn}
 								onClick={exportFile}
-								disabled={!file}
+								disabled={!doc}
 							>
 								<DownloadIcon size={13} /> Экспортировать
 							</button>
@@ -239,21 +202,19 @@ export const MarkdownShowPage: FC = () => {
 					<div className={s.readerRow}>
 						<div className={s.docWrap}>
 							<div className={s.doc}>
-								{file ? (
+								{doc ? (
 									<>
 										<div className={s.docMeta}>
 											<span className={s.pill}>
-												<DocIcon /> {file.name}
+												<DocIcon /> {doc.name}
 											</span>
 											<span className={s.sep}>·</span>
-											<span>{file.size}</span>
-											<span className={s.sep}>·</span>
-											<span>обновлён {file.updated}</span>
+											<span>обновлён {formatUpdated(doc.updatedAt)}</span>
 										</div>
 
-										{effectiveView === "edit" ? (
+										{view === "edit" ? (
 											<MarkdownEditor
-												value={vaultContent}
+												value={content}
 												onChange={onChange}
 												className={s.editorHost}
 											/>
@@ -262,13 +223,16 @@ export const MarkdownShowPage: FC = () => {
 										)}
 									</>
 								) : (
-									<p className={s.docMeta}>Файл не найден или не выбран</p>
+									<p className={s.docMeta}>
+										{status === "loading"
+											? "Загрузка документа…"
+											: "Документ не найден"}
+									</p>
 								)}
 							</div>
 						</div>
 
-						{/* ─── TOC ─── */}
-						{effectiveView === "rendered" && toc.length > 0 && (
+						{view === "rendered" && toc.length > 0 && (
 							<nav className={s.toc}>
 								<div className={s.tocH}>На этой странице</div>
 								<div className={s.tocList}>

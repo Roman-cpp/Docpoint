@@ -1,6 +1,8 @@
 import { type FC, useState } from "react";
-import { useLocation, useParams } from "react-router";
+import { useParams } from "react-router";
 import { useDocWebsocket } from "@/entities/websocket";
+import { EditWebsocketModal } from "@/features/websocket";
+import { CatalogBackLink } from "@/widgets/catalog-explorer";
 import { Header } from "@/widgets/header";
 import { DEFAULT_WS_DRAFT, WsConsole } from "@/widgets/ws-console";
 import { MessagesPanel } from "../MessagesPanel";
@@ -13,16 +15,17 @@ import s from "./DocWsShowPage.module.css";
  */
 export const DocWsShowPage: FC = () => {
 	const { id = "" } = useParams<{ id: string }>();
-	// Карточка домена кладёт имя и адрес в состояние роутера — до ответа
-	// запроса шапка показывает их, чтобы страница не открывалась пустой.
-	const location = useLocation();
-	const hint = location.state as { name?: string; url?: string } | null;
-
-	const { websocket, isWebsocketLoading } = useDocWebsocket(id);
+	const {
+		websocket,
+		isWebsocketLoading,
+		updateWebsocket,
+		isUpdatingWebsocket,
+	} = useDocWebsocket(id);
 	const [draft, setDraft] = useState(DEFAULT_WS_DRAFT);
+	const [editing, setEditing] = useState(false);
 
-	const name = websocket?.name ?? hint?.name ?? "";
-	const url = websocket?.url ?? hint?.url ?? "";
+	const name = websocket?.name ?? "";
+	const url = websocket?.url ?? "";
 	const missing = !isWebsocketLoading && !websocket;
 
 	return (
@@ -30,7 +33,7 @@ export const DocWsShowPage: FC = () => {
 			<Header section="doc-ws" activeLink="websocket" />
 
 			<div className={s.body}>
-				{missing && !hint ? (
+				{missing ? (
 					<div className={s.notFound}>
 						WebSocket не найден — возможно, он был удалён.
 					</div>
@@ -40,9 +43,18 @@ export const DocWsShowPage: FC = () => {
 
 						<div className={s.main}>
 							<div className={s.docHead}>
+								<CatalogBackLink nodeId={id} className={s.docBack} />
 								<div className={s.docTitleRow}>
 									<h1 className={s.docName}>{name || "WebSocket"}</h1>
 									<span className={s.docTag}>doc-ws</span>
+									<button
+										type="button"
+										className={s.docEdit}
+										onClick={() => setEditing(true)}
+										disabled={!websocket}
+									>
+										Изменить
+									</button>
 								</div>
 								{websocket?.desc && (
 									<p className={s.docDesc}>{websocket.desc}</p>
@@ -58,6 +70,19 @@ export const DocWsShowPage: FC = () => {
 					</>
 				)}
 			</div>
+
+			{editing && websocket && (
+				<EditWebsocketModal
+					open
+					onOpenChange={(open) => !open && setEditing(false)}
+					websocket={websocket}
+					isSaving={isUpdatingWebsocket}
+					onSave={(updates) => {
+						updateWebsocket(updates);
+						setEditing(false);
+					}}
+				/>
+			)}
 		</div>
 	);
 };

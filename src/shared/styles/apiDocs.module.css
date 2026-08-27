@@ -1236,3 +1236,21 @@
 	color: var(--ink);
 	border-bottom-color: var(--ink);
 }
+
+/* ═══════════════ OVERVIEW — правка документа ═══════════════ */
+.overviewEditBtn {
+	padding: 5px 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	background: var(--surface);
+	font-family: var(--font-sans);
+	font-size: 12.5px;
+	color: var(--ink);
+	cursor: pointer;
+	transition:
+		border-color var(--t-base),
+		background var(--t-base);
+}
+.overviewEditBtn:hover {
+	border-color: var(--border-h);
+}

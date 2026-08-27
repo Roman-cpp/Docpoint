@@ -1,27 +1,55 @@
-use crate::domain::{
-    doc_api::doc_api::dto::UpdateDocApiDTO,
-    environment::environment::entity::{EnvValue, Environment},
-};
-
-use crate::domain::doc_api::doc_api::dto::CreateDocApiDTO;
+use crate::domain::doc_api::doc_api::dto::DocApiPayload;
 use crate::domain::doc_api::doc_api::entity::DocApi;
-use sqlx::{Row, SqlitePool};
-use uuid::Uuid;
-use crate::domain::doc_api::doc_api::repository::DocRepository;
+use crate::domain::doc_api::doc_api::repository::DocApiRepository;
+use crate::domain::environment::environment::entity::{EnvValue, Environment};
+use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
 
-pub struct DocRepo<'a> {
+/// Документ склеен из узла дерева (имя, описание) и своей строки в `doc_api`.
+const SELECT_DOC: &str = "SELECT n.id, n.name, n.desc, d.version, d.prefix \
+                          FROM doc_api d JOIN catalog_node n ON n.id = d.id";
+
+pub struct DocApiRepo<'a> {
     pub db: &'a SqlitePool,
 }
 
-impl<'a> DocRepo<'a> {
+impl<'a> DocApiRepo<'a> {
     pub fn new(db: &'a SqlitePool) -> Self {
         Self { db }
     }
+
+    async fn tags(&self, doc_id: &str) -> Result<Vec<String>, String> {
+        let rows = sqlx::query("SELECT tag FROM doc_api_tag WHERE doc_id = ?")
+            .bind(doc_id)
+            .fetch_all(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(rows.iter().map(|r| r.get::<String, _>("tag")).collect())
+    }
+
+    async fn write_tags(&self, doc_id: &str, tags: &[String]) -> Result<(), String> {
+        sqlx::query("DELETE FROM doc_api_tag WHERE doc_id = ?")
+            .bind(doc_id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for tag in tags {
+            sqlx::query("INSERT INTO doc_api_tag (doc_id, tag) VALUES (?, ?)")
+                .bind(doc_id)
+                .bind(tag)
+                .execute(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+
+        Ok(())
+    }
 }
 
-impl DocRepository for DocRepo<'_> {
+impl DocApiRepository for DocApiRepo<'_> {
     async fn all(&self) -> Result<Vec<DocApi>, String> {
-        let rows = sqlx::query("SELECT * FROM docs")
+        let rows = sqlx::query(&format!("{SELECT_DOC} ORDER BY n.name"))
             .fetch_all(self.db)
             .await
             .map_err(|e| e.to_string())?;
@@ -30,44 +58,29 @@ impl DocRepository for DocRepo<'_> {
             return Ok(vec![]);
         }
 
-        let ids: Vec<String> = rows.iter().map(|r| r.get("id")).collect();
-
-        let mut tq = sqlx::QueryBuilder::new("SELECT * FROM docs_tag WHERE doc_id IN (");
-        let mut sep = tq.separated(",");
-        for id in &ids {
-            sep.push_bind(id);
-        }
-        tq.push(")");
-
-        let tag_rows = tq
-            .build()
+        // Теги всех документов одним запросом — иначе список из сотни доков
+        // превращается в сотню запросов.
+        let tag_rows = sqlx::query("SELECT doc_id, tag FROM doc_api_tag")
             .fetch_all(self.db)
             .await
             .map_err(|e| e.to_string())?;
 
         Ok(rows
             .iter()
-            .map(|r| {
-                let id: String = r.get("id");
-                let tags: Vec<String> = tag_rows
+            .map(|row| {
+                let id: String = row.get("id");
+                let tags = tag_rows
                     .iter()
                     .filter(|t| t.get::<String, _>("doc_id") == id)
                     .map(|t| t.get("tag"))
                     .collect();
-                DocApi {
-                    id,
-                    name: r.get("name"),
-                    version: r.get("version"),
-                    desc: r.get("desc"),
-                    prefix: r.get("prefix"),
-                    tags,
-                }
+                doc_from_row(row, tags)
             })
             .collect())
     }
 
     async fn find(&self, id: &str) -> Result<Option<DocApi>, String> {
-        let row = sqlx::query("SELECT * FROM docs WHERE id = ?")
+        let row = sqlx::query(&format!("{SELECT_DOC} WHERE n.id = ?"))
             .bind(id)
             .fetch_optional(self.db)
             .await
@@ -77,102 +90,41 @@ impl DocRepository for DocRepo<'_> {
             return Ok(None);
         };
 
-        let tag_rows = sqlx::query("SELECT tag FROM docs_tag WHERE doc_id = ?")
+        let tags = self.tags(id).await?;
+
+        Ok(Some(doc_from_row(&row, tags)))
+    }
+
+    async fn create(&self, id: &str, payload: &DocApiPayload) -> Result<(), String> {
+        sqlx::query("INSERT INTO doc_api (id, version, prefix) VALUES (?, ?, ?)")
             .bind(id)
-            .fetch_all(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(Some(DocApi {
-            id: row.get("id"),
-            name: row.get("name"),
-            version: row.get("version"),
-            desc: row.get("desc"),
-            prefix: row.get("prefix"),
-            tags: tag_rows.iter().map(|r| r.get::<String, _>("tag")).collect(),
-        }))
-    }
-
-    async fn create(&self, doc: &CreateDocApiDTO) -> Result<String, String> {
-        let id = Uuid::new_v4().to_string();
-
-        sqlx::query("INSERT INTO docs (id, name, version, desc, prefix) VALUES (?, ?, ?, ?, ?)")
-            .bind(&id)
-            .bind(&doc.name)
-            .bind(&doc.version)
-            .bind(&doc.desc)
-            .bind(&doc.prefix)
+            .bind(&payload.version)
+            .bind(&payload.prefix)
             .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;
 
-        for tag in &doc.tags {
-            sqlx::query("INSERT INTO docs_tag (doc_id, tag) VALUES (?, ?)")
-                .bind(&id)
-                .bind(tag)
-                .execute(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-
-        Ok(id)
+        self.write_tags(id, &payload.tags).await
     }
 
-    async fn update(&self, doc: &UpdateDocApiDTO) -> Result<String, String> {
-        sqlx::query("UPDATE docs SET name = ?, desc = ?, prefix = ? WHERE id = ?")
-            .bind(&doc.name)
-            .bind(&doc.desc)
-            .bind(&doc.prefix)
-            .bind(&doc.id)
-            .execute(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        sqlx::query("DELETE FROM docs_tag WHERE doc_id = ?")
-            .bind(&doc.id)
-            .execute(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        for tag in &doc.tags {
-            sqlx::query("INSERT INTO docs_tag (doc_id, tag) VALUES (?, ?)")
-                .bind(&doc.id)
-                .bind(tag)
-                .execute(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-
-        Ok(doc.id.clone())
-    }
-
-    async fn delete(&self, id: &str) -> Result<(), String> {
-        let mut conn = self.db.acquire().await.map_err(|e| e.to_string())?;
-
-        sqlx::query("PRAGMA foreign_keys = ON")
-            .execute(&mut *conn)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        // Environments are owned by platforms, not docs, so deleting a doc does not
-        // touch them (docs.domain_id is ON DELETE SET NULL on the domain side).
-        sqlx::query("DELETE FROM docs WHERE id = ?")
+    async fn update(&self, id: &str, payload: &DocApiPayload) -> Result<(), String> {
+        sqlx::query("UPDATE doc_api SET version = ?, prefix = ? WHERE id = ?")
+            .bind(&payload.version)
+            .bind(&payload.prefix)
             .bind(id)
-            .execute(&mut *conn)
+            .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;
 
-        Ok(())
+        self.write_tags(id, &payload.tags).await
     }
 
+    /// Окружения документа — это окружения платформы, в дереве которой он лежит
+    /// (`catalog_node.platform_id`).
     async fn environments_by_doc(&self, doc_id: &str) -> Result<Vec<Environment>, String> {
-        // A doc's environments are those of the platform owning the domain it
-        // belongs to (docs.domain_id -> domains.platform_id). Docs with no
-        // domain, or a domain with no platform, have none.
         let rows = sqlx::query(
-            "SELECT * FROM environments WHERE platform_id = (\
-                 SELECT platform_id FROM domains \
-                 WHERE id = (SELECT domain_id FROM docs WHERE id = ?))",
+            "SELECT * FROM environments WHERE platform_id = \
+                 (SELECT platform_id FROM catalog_node WHERE id = ?)",
         )
         .bind(doc_id)
         .fetch_all(self.db)
@@ -208,5 +160,16 @@ impl DocRepository for DocRepo<'_> {
         }
 
         Ok(environments)
+    }
+}
+
+fn doc_from_row(row: &SqliteRow, tags: Vec<String>) -> DocApi {
+    DocApi {
+        id: row.get("id"),
+        name: row.get("name"),
+        desc: row.get("desc"),
+        version: row.get("version"),
+        prefix: row.get("prefix"),
+        tags,
     }
 }

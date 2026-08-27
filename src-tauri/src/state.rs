@@ -19,13 +19,10 @@ pub struct WsConn {
 pub struct AppState {
     pub db: SqlitePool,
     pub selected_environment_id: Mutex<Option<String>>,
-    /// Root of the user's file tree: `platforms/<platform_id>/files` and
-    /// `platforms/<platform_id>/domains/<domain_id>/files`.
-    pub vault_dir: PathBuf,
-    /// Markdown bodies of doc-api documents, one `<doc_id>.md` file per doc.
-    /// Deliberately outside `vault_dir` so these app-managed files never show up
-    /// in the file explorer, where a user could delete one and orphan its row.
-    pub docs_dir: PathBuf,
+    /// Тела документов, по файлу `<node_id>.md` на узел: обзорная часть doc-api
+    /// и markdown-документы. Имя и место документа задаёт дерево в БД, поэтому
+    /// на диске лежат только тела и переименование их не касается.
+    pub content_dir: PathBuf,
     /// Live WebSocket connections keyed by connection id.
     pub ws_conns: DashMap<String, WsConn>,
     /// Shared HTTP client with a cookie jar that lives for the app session,

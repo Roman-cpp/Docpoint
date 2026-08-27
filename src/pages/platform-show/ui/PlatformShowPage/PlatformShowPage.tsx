@@ -1,260 +1,23 @@
-import { type FC, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { type Domain, usePlatformDomains } from "@/entities/domain";
-import { usePlatformsStore } from "@/entities/platform";
-import { platformScope } from "@/entities/shared/file-scope";
-import { markdownRoute } from "@/entities/vault";
-import { DomainModal } from "@/features/domain";
+import type { FC } from "react";
+import { useParams, useSearchParams } from "react-router";
 import {
 	actionFetchEnvironmentsPlatform,
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { actionFetchPlatform, usePlatformStore } from "@/features/platform";
-import { PencilIcon, PlusIcon, TrashIcon } from "@/shared/svg";
-import { ContextMenu, Dialog } from "@/shared/ui-kit/modal";
+import { CatalogExplorer } from "@/widgets/catalog-explorer";
 import { Header } from "@/widgets/header";
 import { SidebarPlatform } from "@/widgets/sidebar";
-import { VaultBrowser } from "@/widgets/vault-browser";
-import { PlatformDetails } from "../PlatformDetails";
 import b from "./PlatformShowPage.module.css";
 
-/* ═══════════════ OVERVIEW ═══════════════ */
-const Overview: FC<{ id: string }> = ({ id }) => {
-	const { platforms } = usePlatformsStore();
-	const {
-		domains,
-		isDomainsLoading,
-		createDomain,
-		isCreatingDomain,
-		updateDomain,
-		isUpdatingDomain,
-		deleteDomainAsync,
-		isDeletingDomain,
-	} = usePlatformDomains(id);
-	const [isDomainModalOpen, setIsDomainModalOpen] = useState(false);
-	const [editingDomain, setEditingDomain] = useState<Domain | null>(null);
-	const [pendingDelete, setPendingDelete] = useState<Domain | null>(null);
-	const [domMenu, setDomMenu] = useState<{
-		x: number;
-		y: number;
-		dom: Domain;
-	} | null>(null);
-	/** Which section is shown: platform details, domains, or files. */
-	const [tab, setTab] = useState<"details" | "domains" | "files">("domains");
-	/** Меню «добавить домен»: открывается правым кликом по свободной области. */
-	const [pageMenu, setPageMenu] = useState<{ x: number; y: number } | null>(
-		null,
-	);
-	const navigate = useNavigate();
-
-	/** Правый клик по свободной области вкладки «Домены». Карточки доменов
-	 *  гасят событие сами, а «Подробности» и «Файлы» показывают собственные
-	 *  меню и помечают событие обработанным — второе меню поверх не нужно. */
-	const openPageMenu = (e: React.MouseEvent) => {
-		if (e.defaultPrevented || tab !== "domains") return;
-		e.preventDefault();
-		setPageMenu({ x: e.clientX, y: e.clientY });
-	};
-
-	const platform = platforms.find((p) => p.id === id);
-
-	if (!platform) {
-		return (
-			<div className={b.overview}>
-				<div className={b.content}>
-					<header className={b.hero}>
-						<div className={b.ovEyebrow}>Платформа</div>
-						<h1 className={b.ovTitle}>Платформа не найдена</h1>
-					</header>
-				</div>
-			</div>
-		);
-	}
-
-	return (
-		<div className={b.overview} onContextMenu={openPageMenu}>
-			<div className={b.content}>
-				<div className={b.tabs} role="tablist">
-					<button
-						type="button"
-						role="tab"
-						aria-selected={tab === "details"}
-						className={`${b.tab} ${tab === "details" ? b.tabActive : ""}`}
-						onClick={() => setTab("details")}
-					>
-						Подробности
-					</button>
-					<button
-						type="button"
-						role="tab"
-						aria-selected={tab === "domains"}
-						className={`${b.tab} ${tab === "domains" ? b.tabActive : ""}`}
-						onClick={() => setTab("domains")}
-					>
-						Домены
-					</button>
-					<button
-						type="button"
-						role="tab"
-						aria-selected={tab === "files"}
-						className={`${b.tab} ${tab === "files" ? b.tabActive : ""}`}
-						onClick={() => setTab("files")}
-					>
-						Файлы платформы
-					</button>
-				</div>
-
-				{tab === "details" && <PlatformDetails platform={platform} />}
-
-				{tab === "domains" && (
-					<section className={b.section}>
-						{isDomainsLoading ? (
-							<p className={b.ovSub}>Загрузка доменов…</p>
-						) : domains.length === 0 ? (
-							<div className={b.emptyState}>
-								<p className={b.emptyText}>
-									К этой платформе пока не прикреплён ни один домен — нажмите
-									правой кнопкой мыши, чтобы добавить
-								</p>
-							</div>
-						) : (
-							<div className={b.apiCardsGrid}>
-								{domains.map((dom) => (
-									<button
-										type="button"
-										key={dom.id}
-										className={`${b.apiCard} ${b.domCard}`}
-										onClick={() => navigate(`/domain-show/${dom.id}`)}
-										onContextMenu={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											setDomMenu({ x: e.clientX, y: e.clientY, dom });
-										}}
-									>
-										<div className={b.acName}>{dom.name}</div>
-										{dom.desc && <div className={b.acDesc}>{dom.desc}</div>}
-									</button>
-								))}
-							</div>
-						)}
-					</section>
-				)}
-
-				{tab === "files" && (
-					<VaultBrowser
-						scope={platformScope(id)}
-						rootLabel="Файлы платформы"
-						onOpenFile={(filePath) =>
-							navigate(markdownRoute(platformScope(id), filePath))
-						}
-					/>
-				)}
-			</div>
-
-			<DomainModal
-				open={isDomainModalOpen || editingDomain != null}
-				onOpenChange={(open) => {
-					if (open) return;
-					setIsDomainModalOpen(false);
-					setEditingDomain(null);
-				}}
-				platformId={id}
-				domain={editingDomain}
-				onCreate={(dto) =>
-					createDomain(dto, { onSuccess: () => setIsDomainModalOpen(false) })
-				}
-				onUpdate={(dto) =>
-					updateDomain(dto, { onSuccess: () => setEditingDomain(null) })
-				}
-				isSaving={editingDomain ? isUpdatingDomain : isCreatingDomain}
-			/>
-
-			<ContextMenu.Root
-				open={!!pageMenu}
-				x={pageMenu?.x ?? 0}
-				y={pageMenu?.y ?? 0}
-				onClose={() => setPageMenu(null)}
-			>
-				<ContextMenu.Item
-					icon={<PlusIcon />}
-					onSelect={() => setIsDomainModalOpen(true)}
-				>
-					Добавить домен
-				</ContextMenu.Item>
-			</ContextMenu.Root>
-
-			<ContextMenu.Root
-				open={!!domMenu}
-				x={domMenu?.x ?? 0}
-				y={domMenu?.y ?? 0}
-				onClose={() => setDomMenu(null)}
-			>
-				<ContextMenu.Item
-					icon={<PencilIcon />}
-					onSelect={() => domMenu && setEditingDomain(domMenu.dom)}
-				>
-					Редактировать
-				</ContextMenu.Item>
-
-				<ContextMenu.Separator />
-
-				<ContextMenu.Item
-					danger
-					icon={<TrashIcon />}
-					onSelect={() => domMenu && setPendingDelete(domMenu.dom)}
-				>
-					Удалить домен
-				</ContextMenu.Item>
-			</ContextMenu.Root>
-
-			{pendingDelete && (
-				<Dialog.Root
-					open
-					onOpenChange={(open) =>
-						!open && !isDeletingDomain && setPendingDelete(null)
-					}
-				>
-					<Dialog.Header>
-						<Dialog.Title>Удалить домен?</Dialog.Title>
-						<Dialog.Close />
-					</Dialog.Header>
-					<Dialog.Body>
-						<p className={b.ovSub} style={{ margin: 0 }}>
-							Домен «{pendingDelete.name}» будет удалён без возможности
-							восстановления.
-						</p>
-					</Dialog.Body>
-					<Dialog.Footer>
-						<Dialog.BtnCancel
-							onClick={() => setPendingDelete(null)}
-							disabled={isDeletingDomain}
-						>
-							Отмена
-						</Dialog.BtnCancel>
-						<Dialog.BtnDanger
-							onClick={async () => {
-								if (isDeletingDomain) return;
-								try {
-									await deleteDomainAsync(pendingDelete.id);
-									setPendingDelete(null);
-								} catch {
-									/* error toast handled by the mutation */
-								}
-							}}
-							disabled={isDeletingDomain}
-						>
-							{isDeletingDomain ? "Удаляем…" : "Удалить"}
-						</Dialog.BtnDanger>
-					</Dialog.Footer>
-				</Dialog.Root>
-			)}
-		</div>
-	);
-};
-
-/* ═══════════════ MAIN PAGE ═══════════════ */
+/**
+ * Страница платформы — проводник по её дереву. Открытый каталог живёт в
+ * `?catalog=<id>`, поэтому ссылку на место в дереве можно передать или оставить
+ * себе в истории браузера.
+ */
 export const PlatformShowPage: FC = () => {
 	const { id } = useParams<{ id: string }>();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const fetchEnvironments = useEnvironmentsStore(
 		actionFetchEnvironmentsPlatform,
 	);
@@ -264,6 +27,14 @@ export const PlatformShowPage: FC = () => {
 
 	fetchEnvironments(id);
 	fetchPlatform(id);
+	const catalogId = searchParams.get("catalog");
+
+	const openCatalog = (nextId: string | null) => {
+		const next = new URLSearchParams(searchParams);
+		if (nextId) next.set("catalog", nextId);
+		else next.delete("catalog");
+		setSearchParams(next, { replace: true });
+	};
 
 	return (
 		<div className={b.wrapper}>
@@ -271,7 +42,16 @@ export const PlatformShowPage: FC = () => {
 
 			<div className={b.shell}>
 				<SidebarPlatform />
-				<Overview id={id} />
+
+				<main className={b.main}>
+					<div className={b.explorer}>
+						<CatalogExplorer
+							platformId={id}
+							catalogId={catalogId}
+							onOpenCatalog={openCatalog}
+						/>
+					</div>
+				</main>
 			</div>
 		</div>
 	);

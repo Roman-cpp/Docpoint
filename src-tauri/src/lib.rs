@@ -4,25 +4,25 @@ mod repository;
 mod service;
 mod state;
 
-use state::AppState;
 use service::{
-    attach_doc, authenticate_environment, clear_environment_session, create_directory, create_doc, create_endpoint, create_environment, create_platform, create_schema, create_domain, create_variable, delete_directory, delete_doc,
-    delete_endpoint, delete_environment, duplicate_environment, delete_group, delete_platform, delete_schema, delete_domain, delete_variable, import_doc, import_file, read_doc, read_doc_content, read_docs, write_doc_content,
-    create_endpoint_request, delete_endpoint_request, list_endpoint_requests, save_endpoint_request,
-    environments_by_platform, read_directory, read_environment_auth, read_environments_by_doc, read_groups,
-    read_all_domains, read_platform, read_platform_docs, read_platform_domains, read_platforms, read_schemas, read_domain_docs,
-    save_json_file, send_request, set_environment_access_token, set_selected_environment, update_doc, update_endpoint, update_environment,
-    update_environment_auth, update_param_value, update_platform, update_schema, update_domain, update_variable,
-    write_groups, write_schemas,
-    create_markdown, delete_file, export_markdown, move_entry, read_markdown, update_markdown,
-    read_erds, read_domain_erds, create_erd, update_erd, delete_erd,
-    read_erd_schemas, create_erd_schema,
-    read_relations, create_relation, delete_relation,
-    ws_connect, ws_send, ws_disconnect,
-    read_websockets, read_domain_websockets, create_websocket, update_websocket, delete_websocket,
-    read_websocket_messages, create_websocket_message, update_websocket_message, delete_websocket_message,
+    authenticate_environment, clear_environment_session, create_endpoint, create_endpoint_request,
+    create_environment, create_erd_schema, create_node, create_platform, create_relation,
+    create_schema, create_variable, create_websocket_message, delete_endpoint,
+    delete_endpoint_request, delete_environment, delete_group, delete_node, delete_platform,
+    delete_relation, delete_schema, delete_variable, delete_websocket_message,
+    duplicate_environment, environments_by_platform, export_markdown, import_doc,
+    list_endpoint_requests, move_node, read_catalog_tree, read_doc, read_doc_content, read_docs,
+    read_environment_auth, read_environments_by_doc, read_erd_schemas, read_groups, read_markdown,
+    read_node, read_platform, read_platforms, read_relations, read_schemas, read_websocket,
+    read_websocket_messages, read_websockets, rename_node, save_endpoint_request, save_json_file,
+    send_request, set_environment_access_token, set_selected_environment, update_doc,
+    update_endpoint, update_environment, update_environment_auth, update_markdown,
+    update_param_value, update_platform, update_schema, update_variable, update_websocket,
+    update_websocket_message, write_doc_content, write_groups, write_schemas, ws_connect,
+    ws_disconnect, ws_send,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
+use state::AppState;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -40,13 +40,10 @@ pub fn run() {
             let app_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_dir)?;
 
-            // User files, browsable from the app.
-            let vault_dir = app_dir.join("vault");
-            std::fs::create_dir_all(&vault_dir)?;
-
-            // App-managed doc-api bodies, deliberately outside the vault.
-            let docs_dir = app_dir.join("docs");
-            std::fs::create_dir_all(&docs_dir)?;
+            // Тела документов: имя и место задаёт дерево в БД, здесь лежит
+            // только текст, файлом на узел.
+            let content_dir = app_dir.join("content");
+            std::fs::create_dir_all(&content_dir)?;
 
             let db_path = app_dir.join("docpoint.db");
             let options = SqliteConnectOptions::new()
@@ -61,18 +58,10 @@ pub fn run() {
                 sqlx::migrate!("./migrations").run(&pool).await
             })?;
 
-            // On-disk half of migration 0029: the vault folder that held a
-            // platform's services is now called `domains`.
-            tauri::async_runtime::block_on(async {
-                service::provision::migrate_vault_layout(&vault_dir).await
-            })
-            .map_err(std::io::Error::other)?;
-
             app.manage(AppState {
                 db: pool,
                 selected_environment_id: Default::default(),
-                vault_dir,
-                docs_dir,
+                content_dir,
                 ws_conns: Default::default(),
                 http_client: infrastructure::http_client::build_client(),
             });
@@ -81,15 +70,21 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             save_json_file,
             send_request,
+            export_markdown,
+            read_catalog_tree,
+            read_node,
+            create_node,
+            rename_node,
+            move_node,
+            delete_node,
+            read_markdown,
+            update_markdown,
             read_docs,
             read_doc,
             read_doc_content,
             write_doc_content,
-            create_doc,
             update_doc,
-            delete_doc,
             import_doc,
-            import_file,
             read_groups,
             write_groups,
             create_endpoint,
@@ -125,29 +120,7 @@ pub fn run() {
             create_platform,
             update_platform,
             delete_platform,
-            attach_doc,
-            read_platform_docs,
-            read_platform_domains,
-            read_all_domains,
-            read_domain_docs,
-            create_domain,
-            update_domain,
-            delete_domain,
             environments_by_platform,
-            read_directory,
-            create_directory,
-            delete_directory,
-            read_markdown,
-            create_markdown,
-            update_markdown,
-            delete_file,
-            move_entry,
-            export_markdown,
-            read_erds,
-            read_domain_erds,
-            create_erd,
-            update_erd,
-            delete_erd,
             read_erd_schemas,
             create_erd_schema,
             read_relations,
@@ -157,10 +130,8 @@ pub fn run() {
             ws_send,
             ws_disconnect,
             read_websockets,
-            read_domain_websockets,
-            create_websocket,
+            read_websocket,
             update_websocket,
-            delete_websocket,
             read_websocket_messages,
             create_websocket_message,
             update_websocket_message,

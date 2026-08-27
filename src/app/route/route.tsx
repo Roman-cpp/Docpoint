@@ -23,13 +23,7 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
-				path: "/domain-show/:id",
-				lazy: async () => ({
-					Component: (await import("@/pages/domain-show")).DomainShowPage,
-				}),
-			},
-			{
-				path: "/markdown-show",
+				path: "/markdown-show/:id",
 				lazy: async () => ({
 					Component: (await import("@/pages/markdown-show")).MarkdownShowPage,
 				}),
@@ -50,12 +44,6 @@ export const router = createBrowserRouter([
 				path: "/http-history",
 				lazy: async () => ({
 					Component: (await import("@/pages/http-history")).HttpHistoryPage,
-				}),
-			},
-			{
-				path: "/domains",
-				lazy: async () => ({
-					Component: (await import("@/pages/domains")).DomainsPage,
 				}),
 			},
 			{

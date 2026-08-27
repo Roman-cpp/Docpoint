@@ -1,8 +1,10 @@
-use crate::domain::websocket::doc_websocket::dto::{CreateDocWebsocketDTO, UpdateDocWebsocketDTO};
 use crate::domain::websocket::doc_websocket::entity::DocWebsocket;
 use crate::domain::websocket::doc_websocket::repository::DocWebsocketRepository;
-use sqlx::{Row, SqlitePool};
-use uuid::Uuid;
+use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+
+/// Сокет склеен из узла дерева (имя, описание) и своей строки в `doc_ws`.
+const SELECT_WS: &str = "SELECT n.id, n.name, n.desc, w.url \
+                         FROM doc_ws w JOIN catalog_node n ON n.id = w.id";
 
 pub struct DocWebsocketRepo<'a> {
     pub db: &'a SqlitePool,
@@ -16,69 +18,28 @@ impl<'a> DocWebsocketRepo<'a> {
 
 impl DocWebsocketRepository for DocWebsocketRepo<'_> {
     async fn all(&self) -> Result<Vec<DocWebsocket>, String> {
-        let rows =
-            sqlx::query("SELECT id, name, desc, url, created_at FROM doc_websockets ORDER BY name")
-                .fetch_all(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
+        let rows = sqlx::query(&format!("{SELECT_WS} ORDER BY n.name"))
+            .fetch_all(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
-        Ok(rows
-            .iter()
-            .map(|r| DocWebsocket {
-                id: r.get("id"),
-                name: r.get("name"),
-                desc: r.get("desc"),
-                url: r.get("url"),
-                created_at: r.get("created_at"),
-            })
-            .collect())
+        Ok(rows.iter().map(ws_from_row).collect())
     }
 
-    async fn by_domain(&self, domain_id: &str) -> Result<Vec<DocWebsocket>, String> {
-        let rows = sqlx::query(
-            "SELECT id, name, desc, url, created_at FROM doc_websockets WHERE domain_id = ? ORDER BY name",
-        )
-        .bind(domain_id)
-        .fetch_all(self.db)
-        .await
-        .map_err(|e| e.to_string())?;
+    async fn find(&self, id: &str) -> Result<Option<DocWebsocket>, String> {
+        let row = sqlx::query(&format!("{SELECT_WS} WHERE n.id = ?"))
+            .bind(id)
+            .fetch_optional(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
-        Ok(rows
-            .iter()
-            .map(|r| DocWebsocket {
-                id: r.get("id"),
-                name: r.get("name"),
-                desc: r.get("desc"),
-                url: r.get("url"),
-                created_at: r.get("created_at"),
-            })
-            .collect())
+        Ok(row.as_ref().map(ws_from_row))
     }
 
-    async fn create(&self, dto: &CreateDocWebsocketDTO) -> Result<String, String> {
-        let id = Uuid::new_v4().to_string();
-
-        sqlx::query(
-            "INSERT INTO doc_websockets (id, name, desc, url, domain_id) VALUES (?, ?, ?, ?, ?)",
-        )
-        .bind(&id)
-        .bind(&dto.name)
-        .bind(&dto.desc)
-        .bind(&dto.url)
-        .bind(&dto.domain_id)
-        .execute(self.db)
-        .await
-        .map_err(|e| e.to_string())?;
-
-        Ok(id)
-    }
-
-    async fn update(&self, dto: &UpdateDocWebsocketDTO) -> Result<(), String> {
-        sqlx::query("UPDATE doc_websockets SET name = ?, desc = ?, url = ? WHERE id = ?")
-            .bind(&dto.name)
-            .bind(&dto.desc)
-            .bind(&dto.url)
-            .bind(&dto.id)
+    async fn create(&self, id: &str, url: &str) -> Result<(), String> {
+        sqlx::query("INSERT INTO doc_ws (id, url) VALUES (?, ?)")
+            .bind(id)
+            .bind(url)
             .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;
@@ -86,13 +47,23 @@ impl DocWebsocketRepository for DocWebsocketRepo<'_> {
         Ok(())
     }
 
-    async fn delete(&self, id: &str) -> Result<(), String> {
-        sqlx::query("DELETE FROM doc_websockets WHERE id = ?")
+    async fn update(&self, id: &str, url: &str) -> Result<(), String> {
+        sqlx::query("UPDATE doc_ws SET url = ? WHERE id = ?")
+            .bind(url)
             .bind(id)
             .execute(self.db)
             .await
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+}
+
+fn ws_from_row(row: &SqliteRow) -> DocWebsocket {
+    DocWebsocket {
+        id: row.get("id"),
+        name: row.get("name"),
+        desc: row.get("desc"),
+        url: row.get("url"),
     }
 }

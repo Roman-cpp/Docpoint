@@ -1,0 +1,56 @@
+/* ═══════════════════════════════════════════════════════════════
+   Выбор каталога-приёмника: плоский список дерева с отступами.
+   ═══════════════════════════════════════════════════════════════ */
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	max-height: 320px;
+	overflow-y: auto;
+	padding: 4px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--surface);
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+	border: none;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink);
+	font-family: var(--font-sans);
+	font-size: 13.5px;
+	text-align: left;
+	cursor: pointer;
+	transition: background var(--t-base);
+}
+.row:hover:not(:disabled) {
+	background: var(--surface-2, rgba(40, 34, 26, 0.04));
+}
+.row:disabled {
+	color: var(--ink-low);
+	cursor: default;
+}
+
+.rowActive {
+	background: var(--surface-2, rgba(40, 34, 26, 0.06));
+	font-weight: var(--fw-medium);
+}
+
+.name {
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.hint {
+	font-size: 11px;
+	color: var(--ink-low);
+}

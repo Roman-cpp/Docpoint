@@ -516,7 +516,7 @@ export const HcDrawer: FC<{ onClose: () => void }> = ({ onClose }) => {
 							title="Скопировать URL"
 							onClick={() => {
 								try {
-									navigator.clipboard?.writeText(r.url);
+									navigator.clipboard?.writeText(request.url);
 								} catch {
 									/* clipboard unavailable */
 								}

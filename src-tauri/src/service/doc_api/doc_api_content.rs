@@ -1,20 +1,25 @@
-use crate::domain::doc_api::doc_content::repository::DocContentRepository;
-use crate::repository::filesystem::doc_content::DocContentRepo;
+use crate::domain::catalog::repository::CatalogRepository;
+use crate::domain::content::repository::ContentRepository;
+use crate::repository::filesystem::content::ContentRepo;
+use crate::repository::sqlite::catalog::CatalogRepo;
 use crate::state::AppState;
 use tauri::State;
 
-/// Read the markdown body of a doc.
+/// Обзорная часть doc-api — markdown-тело документа.
 #[tauri::command]
 pub async fn read_doc_content(state: State<'_, AppState>, id: String) -> Result<String, String> {
-    DocContentRepo::new(&state.docs_dir).read(&id).await
+    ContentRepo::new(&state.content_dir).read(&id).await
 }
 
-/// Persist the markdown body of a doc.
 #[tauri::command]
 pub async fn write_doc_content(
     state: State<'_, AppState>,
     id: String,
     content: String,
 ) -> Result<(), String> {
-    DocContentRepo::new(&state.docs_dir).write(&id, &content).await
+    ContentRepo::new(&state.content_dir)
+        .write(&id, &content)
+        .await?;
+
+    CatalogRepo::new(&state.db).touch(&id).await
 }

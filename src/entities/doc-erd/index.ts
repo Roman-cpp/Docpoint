@@ -1,8 +1,3 @@
-export { createErdApi } from "./doc-erd/api/create-erd-api";
-export { getDomainErdsApi } from "./doc-erd/api/get-domain-erds-api";
-export type { CreateDocErdDTO } from "./doc-erd/model/doc-erd.dto";
-export type { DocErd } from "./doc-erd/model/doc-erd.entity";
-export { docErdKeys, useDomainErds } from "./doc-erd/store/useDocErds";
 export { createEntityApi } from "./entity/api/create-entity-api";
 export { createErdEntityApi } from "./entity/api/create-erd-entity-api";
 export { deleteEntityApi } from "./entity/api/delete-entity-api";

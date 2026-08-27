@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import { createDocApi } from "../api/create-doc-api";
-import { deleteDocApi } from "../api/delete-doc-api";
 import { getAllDocsApi } from "../api/get-all-docs-api";
 import { getDocApi } from "../api/get-doc-api";
 import { updateDocApi } from "../api/update-doc-api";
-import type { CreateDocDTO, UpdateDocDTO } from "../model/doc-api.dto";
+import type { UpdateDocDTO } from "../model/doc-api.dto";
 import type { Doc } from "../model/doc-api.entity";
 
 export const docKeys = {
@@ -32,37 +30,6 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 		queryKey: docKeys.detail(id ?? ""),
 		queryFn: () => getDocApi(id ?? ""),
 		enabled: Boolean(id),
-	});
-
-	const createDoc = useMutation({
-		mutationFn: (dto: CreateDocDTO) => createDocApi(dto),
-		onSuccess: () => {
-			toast({ title: "OK", description: "Документ создан" });
-			queryClient.invalidateQueries({ queryKey: docKeys.lists() });
-		},
-		onError: (error: Error) => {
-			toast({
-				title: "Ошибка",
-				description: error.message,
-				variant: "error",
-			});
-		},
-	});
-
-	const deleteDoc = useMutation({
-		mutationFn: (deletedId: string) => deleteDocApi(deletedId),
-		onSuccess: (_data, deletedId) => {
-			toast({ title: "OK", description: "Документ удалён" });
-			queryClient.removeQueries({ queryKey: docKeys.detail(deletedId) });
-			queryClient.invalidateQueries({ queryKey: docKeys.lists() });
-		},
-		onError: (error: Error) => {
-			toast({
-				title: "Ошибка",
-				description: error.message,
-				variant: "error",
-			});
-		},
 	});
 
 	const updateDoc = useMutation({
@@ -95,15 +62,9 @@ export const useDocsStore = ({ id }: UseDocsStoreParams = {}) => {
 		isDocError: doc.isError,
 		docError: doc.error,
 
-		createDoc: createDoc.mutate,
-		createDocAsync: createDoc.mutateAsync,
 		updateDoc: updateDoc.mutate,
 		updateDocAsync: updateDoc.mutateAsync,
-		deleteDoc: deleteDoc.mutate,
-		deleteDocAsync: deleteDoc.mutateAsync,
 
-		isCreating: createDoc.isPending,
 		isUpdating: updateDoc.isPending,
-		isDeleting: deleteDoc.isPending,
 	};
 };

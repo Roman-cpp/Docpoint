@@ -4,7 +4,18 @@ use crate::repository::sqlite::doc_websocket::DocWebsocketRepo;
 use crate::state::AppState;
 use tauri::State;
 
+/// Все документированные сокеты — список для ws-клиента, которому дерево не
+/// нужно: он выбирает подключение, а не место в каталоге.
 #[tauri::command]
 pub async fn read_websockets(state: State<'_, AppState>) -> Result<Vec<DocWebsocket>, String> {
     DocWebsocketRepo::new(&state.db).all().await
+}
+
+/// Один сокет по id — страница doc-ws открывается по ссылке и знает только его.
+#[tauri::command]
+pub async fn read_websocket(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Option<DocWebsocket>, String> {
+    DocWebsocketRepo::new(&state.db).find(&id).await
 }

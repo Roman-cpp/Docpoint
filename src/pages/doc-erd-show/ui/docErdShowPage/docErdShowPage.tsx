@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link, useLocation, useParams } from "react-router";
+import { useParams } from "react-router";
 import {
 	type CreateEntityDTO,
 	createErdEntityApi,
@@ -7,6 +7,7 @@ import {
 	getRelationsApi,
 	type SchemaField,
 } from "@/entities/doc-erd";
+import { CatalogBackLink } from "@/widgets/catalog-explorer";
 import { Header } from "@/widgets/header";
 import styles from "../CanvasPage.module.css";
 
@@ -36,16 +37,8 @@ const blankEntity = (name: string): CreateEntityDTO => ({
 	],
 });
 
-interface ErdOrigin {
-	domainId?: string;
-	domainName?: string;
-}
-
 export function DocErdShowPage() {
 	const { id } = useParams<{ id: string }>();
-	// When the ERD was opened from a domain page, `state` carries it so we
-	// can offer a link back to that domain.
-	const origin = useLocation().state as ErdOrigin | null;
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	// Holds the live scene and a bound render callback so toolbar actions
 	// (outside the effect) can mutate and repaint the diagram.
@@ -180,11 +173,7 @@ export function DocErdShowPage() {
 			<Header section="Документы / ERD" activeLink="docs" />
 
 			<div className={styles.page}>
-				{origin?.domainId && (
-					<Link className={styles.back} to={`/domain-show/${origin.domainId}`}>
-						← {origin.domainName ?? "Домен"}
-					</Link>
-				)}
+				{id && <CatalogBackLink nodeId={id} className={styles.back} />}
 				<div className={styles.toolbar}>
 					<p className={styles.hint}>
 						Тяните от поля к полю — связь · клик по связи, затем ✕ — удалить ·

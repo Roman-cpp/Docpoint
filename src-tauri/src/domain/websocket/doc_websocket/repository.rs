@@ -1,10 +1,10 @@
-use super::dto::{CreateDocWebsocketDTO, UpdateDocWebsocketDTO};
 use super::entity::DocWebsocket;
 
+/// Полезная нагрузка doc-ws — один адрес. Узел дерева заводит и удаляет
+/// репозиторий каталога.
 pub trait DocWebsocketRepository {
     async fn all(&self) -> Result<Vec<DocWebsocket>, String>;
-    async fn by_domain(&self, domain_id: &str) -> Result<Vec<DocWebsocket>, String>;
-    async fn create(&self, dto: &CreateDocWebsocketDTO) -> Result<String, String>;
-    async fn update(&self, dto: &UpdateDocWebsocketDTO) -> Result<(), String>;
-    async fn delete(&self, id: &str) -> Result<(), String>;
+    async fn find(&self, id: &str) -> Result<Option<DocWebsocket>, String>;
+    async fn create(&self, id: &str, url: &str) -> Result<(), String>;
+    async fn update(&self, id: &str, url: &str) -> Result<(), String>;
 }

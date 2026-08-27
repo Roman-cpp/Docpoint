@@ -5,21 +5,17 @@ use crate::domain::platform::entity::Platform;
 use crate::domain::platform::repository::PlatformRepository;
 use crate::repository::sqlite::environment::EnvironmentRepo;
 use crate::repository::sqlite::platform::PlatformRepo;
-use crate::service::vault::provision::{create_platform_description, create_platform_dirs};
 use crate::state::AppState;
 use tauri::State;
 
-/// Create a platform, its default `local` environment, the vault directory
-/// holding its files, and the markdown file describing it.
+/// Создать платформу и её окружение по умолчанию. Дерево каталогов у новой
+/// платформы пустое — узлы заводит пользователь.
 #[tauri::command]
 pub async fn create_platform(
     state: State<'_, AppState>,
     platform: CreatePlatformDTO,
 ) -> Result<Platform, String> {
     let created = PlatformRepo::new(&state.db).create(&platform).await?;
-
-    create_platform_dirs(&state.vault_dir, &created.id).await?;
-    create_platform_description(&state.vault_dir, &created.id, &created.name, &created.desc).await?;
 
     let environment = CreateEnvironmentDTO {
         env: "local".to_string(),

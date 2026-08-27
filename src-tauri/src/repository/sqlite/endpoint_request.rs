@@ -347,7 +347,9 @@ mod tests {
 
         pool.execute(sqlx::raw_sql(
             r#"
-            INSERT INTO docs (id,name,version) VALUES ('d1','D','v1');
+            INSERT INTO platforms (id,name) VALUES ('p1','P');
+            INSERT INTO catalog_node (id,platform_id,kind,name) VALUES ('d1','p1','doc_api','D');
+            INSERT INTO doc_api (id,version) VALUES ('d1','v1');
             INSERT INTO "group" (id,doc_id,label,sort_ord) VALUES ('g1','d1','G',0);
             INSERT INTO endpoint (id,group_id,method,path,name,description,auth,sort_ord)
               VALUES ('e1','g1','GET','/posts/{postId}/comments/{commentId}','C','',0,0);

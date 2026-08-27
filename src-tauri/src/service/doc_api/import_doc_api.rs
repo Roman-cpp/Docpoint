@@ -1,20 +1,23 @@
-use crate::domain::doc_api::doc_api::dto::CreateDocApiDTO;
-use crate::domain::doc_api::doc_api::repository::DocRepository;
-use crate::repository::sqlite::doc_api::DocRepo;
+use crate::domain::catalog::dto::CreateNodeDTO;
 use crate::domain::doc_api::group::dto::CreateGroupDTO;
 use crate::domain::doc_api::group::repository::GroupRepository;
 use crate::repository::sqlite::group::GroupRepo;
+use crate::service::catalog::create_tree_node;
 use crate::state::AppState;
 use tauri::State;
 
+/// Импорт doc-api из файла: тот же путь создания, что и у ручного, плюс группы
+/// с эндпоинтами из файла. Место в дереве задаёт вызывающая сторона — импорт
+/// кладёт документ туда, где открыт проводник.
 #[tauri::command]
 pub async fn import_doc(
     state: State<'_, AppState>,
-    doc: CreateDocApiDTO,
+    node: CreateNodeDTO,
     groups: Vec<CreateGroupDTO>,
 ) -> Result<String, String> {
-    let db = &state.db;
-    let doc_id = DocRepo::new(db).create(&doc).await?;
-    GroupRepo::new(db).create(&doc_id, &groups).await?;
-    Ok(doc_id)
+    let created = create_tree_node(&state, &node).await?;
+
+    GroupRepo::new(&state.db).create(&created.id, &groups).await?;
+
+    Ok(created.id)
 }
