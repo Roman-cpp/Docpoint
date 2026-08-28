@@ -12,7 +12,12 @@ import {
 	useCatalogTree,
 } from "@/entities/catalog";
 import {
-	CreateNodeDialog,
+	CreateCatalogDialog,
+	CreateDocApiDialog,
+	CreateDocErdDialog,
+	CreateDocWsDialog,
+	CreateMarkdownDialog,
+	type CreateNodeDialogProps,
 	DeleteNodeDialog,
 	MoveNodeDialog,
 	RenameNodeDialog,
@@ -43,6 +48,16 @@ import { ContextMenu } from "@/shared/ui-kit/modal";
 import { NodeGrid } from "../NodeGrid";
 import { NodeIcon } from "../NodeIcon";
 import s from "./CatalogExplorer.module.css";
+
+/** Окно создания для каждого вида узла: свои поля у каждого свои, а контракт
+ *  общий, поэтому выбор сводится к поиску по виду. */
+const CREATE_DIALOG_BY_KIND: Record<NodeKind, FC<CreateNodeDialogProps>> = {
+	catalog: CreateCatalogDialog,
+	docApi: CreateDocApiDialog,
+	docWs: CreateDocWsDialog,
+	docErd: CreateDocErdDialog,
+	markdown: CreateMarkdownDialog,
+};
 
 /** Виды узлов в порядке, в котором они предлагаются в меню создания. */
 const CREATABLE: NodeKind[] = [
@@ -111,6 +126,7 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 	const crumbs = nodePath(nodes, catalogId);
 	const children = childrenOf(nodes, catalogId);
 	const currentName = crumbs[crumbs.length - 1]?.name;
+	const CreateDialog = creating ? CREATE_DIALOG_BY_KIND[creating] : null;
 
 	/* ─── Навигация ─── */
 
@@ -472,9 +488,8 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 				)}
 			</ContextMenu.Root>
 
-			{creating && (
-				<CreateNodeDialog
-					kind={creating}
+			{CreateDialog && (
+				<CreateDialog
 					parentName={currentName}
 					isSaving={isCreatingNode}
 					onClose={() => setCreating(null)}
