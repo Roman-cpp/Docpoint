@@ -67,7 +67,6 @@
   "path": "/auth/login",
   "name": "Login",
   "description": "Аутентификация пользователя...",
-  "tags": ["public"],
   "auth": false,
   "pathParams": [],
   "queryParams": [],
@@ -83,7 +82,6 @@
 | `path` | string | Путь эндпоинта (можно с параметрами: `/users/{id}`) |
 | `name` | string | Человекочитаемое имя эндпоинта |
 | `description` | string | Подробное описание |
-| `tags` | string[] | Метки (`public`, `admin`, `paginated`, `destructive` и т. п.) |
 | `auth` | boolean | `true`, если требуется аутентификация |
 | `pathParams` | Param[] | Описания сегментов пути. Какие сегменты есть, задаёт `path` — здесь у них появляются тип и описание |
 | `queryParams` | Param[] | Параметры строки запроса |
@@ -304,7 +302,6 @@
           "path": "/ping",
           "name": "Ping",
           "description": "Проверка доступности.",
-          "tags": [],
           "auth": false,
           "queryParams": [],
           "bodyParams": [],

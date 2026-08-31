@@ -12,8 +12,6 @@ pub struct CreateEndpointDTO {
     #[serde(default)]
     pub description: String,
     #[serde(default)]
-    pub tags: Vec<String>,
-    #[serde(default)]
     pub auth: bool,
     /// Описания сегментов пути; сам перечень сегментов берётся из `path`.
     #[serde(rename = "pathParams", default)]
@@ -38,8 +36,6 @@ pub struct UpdateEndpointDTO {
     pub name: String,
     #[serde(default)]
     pub description: String,
-    #[serde(default)]
-    pub tags: Vec<String>,
     #[serde(default)]
     pub auth: bool,
     /// Описания сегментов пути; сам перечень сегментов берётся из `path`.

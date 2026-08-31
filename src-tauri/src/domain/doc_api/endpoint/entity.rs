@@ -23,7 +23,6 @@ pub struct Endpoint {
     pub path: String,
     pub name: String,
     pub description: String,
-    pub tags: Vec<String>,
     pub auth: bool,
     /// Описания сегментов пути: имя совпадает с тем, что стоит в фигурных
     /// скобках `path`. Сам перечень сегментов задаёт путь, а не эта секция —

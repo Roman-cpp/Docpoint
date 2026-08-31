@@ -84,15 +84,6 @@ impl EndpointRepository for EndpointRepo<'_> {
         .await
         .map_err(|e| e.to_string())?;
 
-        for tag in &endpoint.tags {
-            sqlx::query("INSERT INTO endpoint_tag (endpoint_id, tag) VALUES (?, ?)")
-                .bind(&endpoint_id)
-                .bind(tag)
-                .execute(db)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-
         let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
         insert_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
         insert_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
@@ -151,22 +142,6 @@ impl EndpointRepository for EndpointRepo<'_> {
         .await
         .map_err(|e| e.to_string())?;
 
-        // Теги и параметры редактируются целиком, поэтому пересоздаём их.
-        sqlx::query("DELETE FROM endpoint_tag WHERE endpoint_id = ?")
-            .bind(&endpoint.id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        for tag in &endpoint.tags {
-            sqlx::query("INSERT INTO endpoint_tag (endpoint_id, tag) VALUES (?, ?)")
-                .bind(&endpoint.id)
-                .bind(tag)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-
         // Параметры всех видов правятся целиком, поэтому пересоздаём их.
         sqlx::query("DELETE FROM param WHERE endpoint_id = ?")
             .bind(&endpoint.id)
@@ -186,7 +161,7 @@ impl EndpointRepository for EndpointRepo<'_> {
     async fn delete(&self, endpoint_id: &str) -> Result<(), String> {
         let mut conn = self.db.acquire().await.map_err(|e| e.to_string())?;
 
-        // Ensure dependent rows (tags, params, responses → response fields)
+        // Ensure dependent rows (params, responses → response fields)
         // are removed via ON DELETE CASCADE.
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&mut *conn)

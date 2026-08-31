@@ -169,11 +169,6 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 					{detail.auth && (
 						<span className={`${s.tag} ${s.tagAuth}`}>🔐 Auth required</span>
 					)}
-					{detail.tags.map((t) => (
-						<span className={s.tag} key={t}>
-							{t}
-						</span>
-					))}
 				</div>
 				<p className={s.endpointDesc} style={{ marginTop: "14px" }}>
 					{detail.description}

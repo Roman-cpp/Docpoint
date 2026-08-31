@@ -60,7 +60,6 @@ interface FormValues {
 	path: string;
 	name: string;
 	description: string;
-	tagsInput: string;
 	auth: boolean;
 	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
@@ -97,7 +96,6 @@ const toFormValues = (endpoint: Endpoint): FormValues => ({
 	path: endpoint.path,
 	name: endpoint.name,
 	description: endpoint.description,
-	tagsInput: endpoint.tags.join(", "),
 	auth: endpoint.auth,
 	pathParams: (endpoint.pathParams ?? []).map(toDraft),
 	queryParams: (endpoint.queryParams ?? []).map(toDraft),
@@ -138,11 +136,6 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	};
 
 	const submit = handleSubmit(async (values) => {
-		const tags = values.tagsInput
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean);
-
 		try {
 			setIsSaving(true);
 			await updateEndpoint({
@@ -151,7 +144,6 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				path: values.path.trim(),
 				name: values.name.trim(),
 				description: values.description.trim(),
-				tags,
 				auth: values.auth,
 				pathParams: values.pathParams.map(fromDraft),
 				queryParams: values.queryParams.map(fromDraft),
@@ -249,20 +241,6 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 								placeholder="Что делает этот endpoint"
 								rows={3}
 								style={{ width: "100%" }}
-							/>
-						)}
-					/>
-				</Field>
-
-				<Field label="Теги" hint="Список через запятую">
-					<Controller
-						control={control}
-						name="tagsInput"
-						render={({ field }) => (
-							<Input
-								{...field}
-								placeholder="payments, v1, internal"
-								style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 							/>
 						)}
 					/>

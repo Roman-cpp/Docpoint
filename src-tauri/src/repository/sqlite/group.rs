@@ -72,13 +72,6 @@ impl GroupRepository for GroupRepo<'_> {
         }
         pq.push(") ORDER BY sort_ord");
 
-        let mut tq = sqlx::QueryBuilder::new("SELECT * FROM endpoint_tag WHERE endpoint_id IN (");
-        let mut sep = tq.separated(",");
-        for id in &endpoint_ids {
-            sep.push_bind(id);
-        }
-        tq.push(")");
-
         let mut rq = sqlx::QueryBuilder::new("SELECT * FROM response WHERE endpoint_id IN (");
         let mut sep = rq.separated(",");
         for id in &endpoint_ids {
@@ -86,9 +79,8 @@ impl GroupRepository for GroupRepo<'_> {
         }
         rq.push(")");
 
-        let (param_rows, tag_rows, response_rows) = tokio::try_join!(
+        let (param_rows, response_rows) = tokio::try_join!(
             pq.build().fetch_all(db),
-            tq.build().fetch_all(db),
             rq.build().fetch_all(db),
         )
         .map_err(|e| e.to_string())?;
@@ -121,12 +113,6 @@ impl GroupRepository for GroupRepo<'_> {
             .iter()
             .map(|e| {
                 let eid: String = e.get("id");
-
-                let tags: Vec<String> = tag_rows
-                    .iter()
-                    .filter(|t| t.get::<String, _>("endpoint_id") == eid)
-                    .map(|t| t.get("tag"))
-                    .collect();
 
                 let params_of = |kind: &str| -> Vec<ParamDef> {
                     param_rows
@@ -183,7 +169,6 @@ impl GroupRepository for GroupRepo<'_> {
                     path: e.get("path"),
                     name: e.get("name"),
                     description: e.get("description"),
-                    tags,
                     auth: e.get::<i64, _>("auth") != 0,
                     path_params,
                     query_params,
@@ -513,7 +498,7 @@ mod tests {
             "doc": { "name": "My API", "desc": "d" },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/ping", "name": "Ping", "description": "",
-                "tags": [], "auth": false, "queryParams": [], "bodyParams": [], "responses": {}
+                "auth": false, "queryParams": [], "bodyParams": [], "responses": {}
             }]}]
         }"#;
         let file: ImportFile = serde_json::from_str(raw).unwrap();

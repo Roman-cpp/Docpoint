@@ -68,7 +68,6 @@ interface FormValues {
 	path: string;
 	name: string;
 	description: string;
-	tagsInput: string;
 	auth: boolean;
 	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
@@ -101,7 +100,6 @@ const makeDefaults = (groups: Group[]): FormValues => ({
 	path: "",
 	name: "",
 	description: "",
-	tagsInput: "",
 	auth: false,
 	pathParams: [],
 	queryParams: [],
@@ -145,17 +143,11 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 	};
 
 	const submit = handleSubmit((values) => {
-		const tags = values.tagsInput
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean);
-
 		const endpoint: CreateEndpointDTO = {
 			method: values.method,
 			path: values.path.trim(),
 			name: values.name.trim(),
 			description: values.description.trim(),
-			tags,
 			auth: values.auth,
 			pathParams: values.pathParams.map(fromDraft),
 			queryParams: values.queryParams.map(fromDraft),
@@ -289,20 +281,6 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 								placeholder="Что делает этот endpoint"
 								rows={3}
 								style={{ width: "100%" }}
-							/>
-						)}
-					/>
-				</Field>
-
-				<Field label="Теги" hint="Список через запятую">
-					<Controller
-						control={control}
-						name="tagsInput"
-						render={({ field }) => (
-							<Input
-								{...field}
-								placeholder="payments, v1, internal"
-								style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 							/>
 						)}
 					/>

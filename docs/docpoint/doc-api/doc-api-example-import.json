@@ -12,7 +12,6 @@
 					"path": "/auth/login",
 					"name": "Login",
 					"description": "Аутентификация пользователя. Возвращает Bearer-токен для последующих запросов.",
-					"tags": ["public"],
 					"auth": false,
 					"queryParams": [],
 					"bodyParams": [
@@ -85,7 +84,6 @@
 					"path": "/auth/logout",
 					"name": "Logout",
 					"description": "Инвалидирует текущий Bearer-токен пользователя.",
-					"tags": ["auth-required"],
 					"auth": true,
 					"queryParams": [],
 					"bodyParams": [],
@@ -107,7 +105,6 @@
 					"path": "/users",
 					"name": "List users",
 					"description": "Возвращает постраничный список пользователей. Доступно только администраторам.",
-					"tags": ["paginated", "admin"],
 					"auth": true,
 					"queryParams": [
 						{
@@ -202,7 +199,6 @@
 					"path": "/users/{id}",
 					"name": "Get user",
 					"description": "Возвращает профиль конкретного пользователя по UUID.",
-					"tags": ["auth-required"],
 					"auth": true,
 					"pathParams": [
 						{
@@ -279,7 +275,6 @@
 					"path": "/users",
 					"name": "Create user",
 					"description": "Регистрирует нового пользователя. Доступно только администраторам.",
-					"tags": ["admin"],
 					"auth": true,
 					"queryParams": [],
 					"bodyParams": [
@@ -358,7 +353,6 @@
 					"path": "/users/{id}",
 					"name": "Update user",
 					"description": "Частичное обновление профиля пользователя. Администратор может менять роль.",
-					"tags": ["auth-required"],
 					"auth": true,
 					"pathParams": [
 						{
@@ -415,7 +409,6 @@
 					"path": "/users/{id}",
 					"name": "Delete user",
 					"description": "Удаляет пользователя и все связанные данные. Необратимая операция.",
-					"tags": ["admin", "destructive"],
 					"auth": true,
 					"pathParams": [
 						{
@@ -472,7 +465,6 @@
 					"path": "/tasks",
 					"name": "List tasks",
 					"description": "Возвращает задачи текущего пользователя. Можно фильтровать по статусу и проекту.",
-					"tags": ["paginated", "auth-required"],
 					"auth": true,
 					"queryParams": [
 						{
@@ -559,7 +551,6 @@
 					"path": "/tasks",
 					"name": "Create task",
 					"description": "Создаёт новую задачу в указанном проекте.",
-					"tags": ["auth-required"],
 					"auth": true,
 					"queryParams": [],
 					"bodyParams": [
@@ -670,7 +661,6 @@
 					"path": "/tasks/{id}",
 					"name": "Update task",
 					"description": "Обновляет поля задачи. Для смены статуса используется это же поле.",
-					"tags": ["auth-required"],
 					"auth": true,
 					"pathParams": [
 						{
@@ -772,7 +762,6 @@
 					"path": "/tasks/{id}",
 					"name": "Delete task",
 					"description": "Удаляет задачу.",
-					"tags": ["auth-required"],
 					"auth": true,
 					"pathParams": [
 						{

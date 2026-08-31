@@ -28,7 +28,6 @@ export interface Endpoint {
 	path: string;
 	name: string;
 	description: string;
-	tags: string[];
 	auth: boolean;
 	/** Описания сегментов пути. Какие сегменты есть, задаёт `path`. */
 	pathParams: Param[];
