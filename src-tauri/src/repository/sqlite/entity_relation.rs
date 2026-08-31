@@ -1,8 +1,8 @@
-use crate::domain::doc_erd::entity_relation::dto::CreateRelationDTO;
+use crate::domain::doc_erd::entity_relation::dto::RelationEndpointsDTO;
 use crate::domain::doc_erd::entity_relation::entity::EntityRelation;
+use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
-use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
 
 pub struct RelationRepo<'a> {
     pub db: &'a SqlitePool,
@@ -20,8 +20,9 @@ impl RelationRepository for RelationRepo<'_> {
             "SELECT r.id, r.from_entity, r.from_field, r.to_entity, r.to_field \
              FROM entity_relation r \
              JOIN entities e ON e.id = r.from_entity \
-             WHERE e.doc_id = ?",
+             WHERE e.doc_id = ? OR e.doc_erd_id = ?",
         )
+        .bind(doc_id)
         .bind(doc_id)
         .fetch_all(self.db)
         .await
@@ -39,7 +40,7 @@ impl RelationRepository for RelationRepo<'_> {
             .collect())
     }
 
-    async fn create(&self, dto: &CreateRelationDTO) -> Result<String, String> {
+    async fn create(&self, dto: &RelationEndpointsDTO) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
 
         sqlx::query(
@@ -58,12 +59,18 @@ impl RelationRepository for RelationRepo<'_> {
         Ok(id)
     }
 
-    async fn delete(&self, id: &str) -> Result<(), String> {
-        sqlx::query("DELETE FROM entity_relation WHERE id = ?")
-            .bind(id)
-            .execute(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
+    async fn delete(&self, dto: &RelationEndpointsDTO) -> Result<(), String> {
+        sqlx::query(
+            "DELETE FROM entity_relation \
+             WHERE from_entity = ? AND from_field = ? AND to_entity = ? AND to_field = ?",
+        )
+        .bind(&dto.from_entity)
+        .bind(&dto.from_field)
+        .bind(&dto.to_entity)
+        .bind(&dto.to_field)
+        .execute(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }

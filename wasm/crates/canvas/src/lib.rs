@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
@@ -17,11 +17,18 @@ use domain::table::model::{ColKind, Column, Table, HEADER_H, ROW_H};
 // ---------------------------------------------------------------------------
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct EntityDTO {
     id: String,
     name: String,
     #[serde(default)]
     fields: Vec<FieldDTO>,
+    /// Сохранённое положение на холсте. `None` — сущность ещё не размещали;
+    /// [`Scene::load`] разложит её автолейаутом и вернёт результат на запись.
+    #[serde(default)]
+    pos_x: Option<f64>,
+    #[serde(default)]
+    pos_y: Option<f64>,
 }
 
 #[derive(Deserialize)]
@@ -33,6 +40,19 @@ struct FieldDTO {
     nullable: bool,
 }
 
+/// Shape accepted by [`Scene::add_table`] — the table the creation form on the
+/// JS side has just persisted, forwarded verbatim as `CreateEntityDTO`. Keys
+/// the diagram does not draw (`desc`, `type`, `req`, …) are ignored.
+#[derive(Deserialize)]
+struct NewTableDTO {
+    /// Id, который вернула команда `create_erd_schema`: без него сцена не
+    /// смогла бы ни сохранить позицию таблицы, ни привязать к ней связь.
+    id: String,
+    name: String,
+    #[serde(default)]
+    fields: Vec<FieldDTO>,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RelationDTO {
@@ -40,6 +60,57 @@ struct RelationDTO {
     from_field: String,
     to_entity: String,
     to_field: String,
+}
+
+// ---------------------------------------------------------------------------
+// Wire shapes for `Scene::take_pending`. The scene never talks to the backend
+// itself: it accumulates what changed and hands the batch to JS, which spends
+// it on the `update_schema_positions`, `create_relation` and `delete_relation`
+// commands. Field names match those commands' payloads verbatim.
+// ---------------------------------------------------------------------------
+
+/// A table's new position, addressed by entity id.
+#[derive(Serialize)]
+struct TablePosition {
+    id: String,
+    x: f64,
+    y: f64,
+}
+
+/// A relation's two ends in database terms. The `entity_relation` table has a
+/// UNIQUE over exactly this tuple, so it addresses a relation as well as its id
+/// would — and the scene, which knows only entities and fields, never has to
+/// carry relation ids around.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RelationEndpoints {
+    from_entity: String,
+    from_field: String,
+    to_entity: String,
+    to_field: String,
+}
+
+/// Everything the scene has changed since the last flush.
+#[derive(Serialize)]
+struct Pending {
+    moves: Vec<TablePosition>,
+    links: Vec<RelationEndpoints>,
+    unlinks: Vec<RelationEndpoints>,
+}
+
+/// Which icon a column gets. Primary keys win, then the foreign-key side of a
+/// relation, then nullability. Shared by [`Scene::load`] and
+/// [`Scene::add_table`] so a table looks the same however it entered the scene.
+fn col_kind(pk: bool, nullable: bool, is_fk: bool) -> ColKind {
+    if pk {
+        ColKind::Pk
+    } else if is_fk {
+        ColKind::Fk
+    } else if nullable {
+        ColKind::Nullable
+    } else {
+        ColKind::Plain
+    }
 }
 
 const TAU: f64 = std::f64::consts::PI * 2.0;
@@ -85,6 +156,10 @@ struct DragState {
     index: usize,
     offset_x: f64,
     offset_y: f64,
+    /// Позиция таблицы в момент захвата — с ней сравнивается конечная, чтобы
+    /// клик без перетаскивания не порождал запись в БД.
+    start_x: f64,
+    start_y: f64,
 }
 
 /// An in-progress canvas pan: the screen position where the drag began and the
@@ -153,9 +228,14 @@ pub struct Scene {
     selected_rel: Option<usize>,
     // The column row whose ports are currently revealed (cursor hovering it).
     hover_col: Option<Endpoint>,
-    // Desired CSS cursor for the current pointer state; read by JS.
+    // Desired CSS cursor foрr the current pointer state; read by JS.
     cursor: String,
     laid_out: bool,
+    // Изменения, которые JS ещё не сохранил. Сцена только копит их, забирает
+    // и очищает — `take_pending`.
+    pending_moves: Vec<TablePosition>,
+    pending_links: Vec<RelationEndpoints>,
+    pending_unlinks: Vec<RelationEndpoints>,
 }
 
 #[wasm_bindgen]
@@ -181,6 +261,9 @@ impl Scene {
             hover_col: None,
             cursor: "default".to_string(),
             laid_out: false,
+            pending_moves: Vec::new(),
+            pending_links: Vec::new(),
+            pending_unlinks: Vec::new(),
         };
         scene.seed_sample();
         scene
@@ -204,38 +287,67 @@ impl Scene {
         self.tables.len()
     }
 
-    /// Appends a new table built from the default template, centered in the
-    /// current viewport, and selects it. Flags the layout dirty so the next
-    /// render measures the new table's text and fits its width.
-    pub fn add_table(&mut self) {
+    /// Appends the table described by `table`, centered in the current viewport,
+    /// and selects it. Flags the layout dirty so the next render measures the
+    /// new table's text and fits its width.
+    ///
+    /// `table` is `{ id, name, fields: [{ name, pk, nullable }] }` — the very
+    /// object the JS form just sent to `create_erd_schema`, plus the id that
+    /// command returned, so the drawn table and the persisted entity cannot
+    /// disagree. A brand-new table takes part in no relations yet, so none of
+    /// its columns can be a foreign key.
+    pub fn add_table(&mut self, table: JsValue) -> Result<(), JsValue> {
+        let dto: NewTableDTO = serde_wasm_bindgen::from_value(table)?;
+
+        let columns: Vec<Column> = dto
+            .fields
+            .iter()
+            .map(|f| Column::new(f.name.clone(), f.pk, f.nullable))
+            .collect();
+
+        // Center on the viewport by the table's full height. Offsetting by the
+        // header alone was fine for the fixed three-row template, but a table
+        // the form filled with a dozen columns would hang off the bottom.
         let (wx, wy) = self.screen_to_world(self.width * 0.5, self.height * 0.5);
-        let name = format!("new_table_{}", self.tables.len() + 1);
-        let table = Table::from_template(name, wx - MIN_TABLE_W * 0.5, wy - HEADER_H);
-        self.tables.push(table);
+        let h = HEADER_H + columns.len() as f64 * ROW_H;
+        let (x, y) = (wx - MIN_TABLE_W * 0.5, wy - h * 0.5);
+
+        // Позиция уходит на запись сразу: иначе после перезагрузки таблица
+        // уехала бы в сетку автолейаута, а не осталась там, где появилась.
+        self.pending_moves.push(TablePosition {
+            id: dto.id.clone(),
+            x,
+            y,
+        });
+
+        self.tables
+            .push(Table::new(dto.id, dto.name, columns, x, y));
         self.selected = Some(self.tables.len() - 1);
         self.laid_out = false;
+        Ok(())
     }
 
     /// Replaces the scene's contents with a diagram built from persisted data:
     /// the `entities` and `relations` are the JSON returned by the `read_schemas`
     /// and `read_relations` Tauri commands, forwarded as-is from JS.
     ///
-    /// Tables are auto-laid-out in a simple column grid (entities carry no stored
-    /// position). A column's icon kind is derived here: primary keys win, then
-    /// any field that is the target (`to`) of a relation is shown as a foreign
-    /// key, then nullability. Relations are remapped from `(entityId, fieldName)`
-    /// addressing to the positional `(tableIndex, columnIndex)` the renderer uses;
-    /// any endpoint that cannot be resolved drops the relation.
+    /// A table keeps the position it was last dragged to (`posX` / `posY`); an
+    /// entity that has none yet is auto-laid-out in a simple column grid and
+    /// that result is queued for saving, so the grid runs exactly once in an
+    /// entity's life and every later open rebuilds the diagram from the database.
+    ///
+    /// Relations are remapped from `(entityId, fieldName)` addressing to the
+    /// positional `(tableIndex, columnIndex)` the renderer uses; any endpoint
+    /// that cannot be resolved drops the relation. Column icons are derived from
+    /// the resulting relation set by [`Scene::refresh_kinds`].
     pub fn load(&mut self, entities: JsValue, relations: JsValue) -> Result<(), JsValue> {
         let entities: Vec<EntityDTO> = serde_wasm_bindgen::from_value(entities)?;
         let relations: Vec<RelationDTO> = serde_wasm_bindgen::from_value(relations)?;
 
-        // Fields that sit on the foreign-key side of some relation, by
-        // (entity id, field name) — used to pick the FK icon.
-        let fk_fields: HashSet<(&str, &str)> = relations
-            .iter()
-            .map(|r| (r.to_entity.as_str(), r.to_field.as_str()))
-            .collect();
+        // Что не успели сохранить для прошлой диаграммы, к этой отношения не имеет.
+        self.pending_moves.clear();
+        self.pending_links.clear();
+        self.pending_unlinks.clear();
 
         // (entity id, field name) -> (table index, column index), so relation
         // endpoints can be resolved to the positional form the scene uses.
@@ -249,19 +361,7 @@ impl Scene {
                 .enumerate()
                 .map(|(ci, f)| {
                     endpoint_of.insert((entity.id.clone(), f.name.clone()), (ti, ci));
-                    let kind = if f.pk {
-                        ColKind::Pk
-                    } else if fk_fields.contains(&(entity.id.as_str(), f.name.as_str())) {
-                        ColKind::Fk
-                    } else if f.nullable {
-                        ColKind::Nullable
-                    } else {
-                        ColKind::Plain
-                    };
-                    Column {
-                        name: f.name.clone(),
-                        kind,
-                    }
+                    Column::new(f.name.clone(), f.pk, f.nullable)
                 })
                 .collect();
 
@@ -270,24 +370,37 @@ impl Scene {
             const COL_W: f64 = 260.0;
             const GAP_Y: f64 = 40.0;
             let cols = (entities.len() as f64).sqrt().ceil().max(1.0) as usize;
-            let mut table = Table {
-                x: ORIGIN + (ti % cols) as f64 * COL_W,
-                y: 0.0,
-                w: 0.0,
-                name: entity.name.clone(),
-                columns,
-            };
-            // Stack vertically within each grid column so tall tables don't overlap.
             let col = ti % cols;
-            let y = ORIGIN
+            // Stack vertically within each grid column so tall tables don't overlap.
+            let auto_y = ORIGIN
                 + tables
                     .iter()
                     .skip(col)
                     .step_by(cols)
                     .map(|t: &Table| t.height() + GAP_Y)
                     .sum::<f64>();
-            table.y = y;
-            tables.push(table);
+            let auto_x = ORIGIN + col as f64 * COL_W;
+
+            // Сохранённая позиция всегда побеждает автолейаут.
+            let (x, y) = match (entity.pos_x, entity.pos_y) {
+                (Some(x), Some(y)) => (x, y),
+                _ => {
+                    self.pending_moves.push(TablePosition {
+                        id: entity.id.clone(),
+                        x: auto_x,
+                        y: auto_y,
+                    });
+                    (auto_x, auto_y)
+                }
+            };
+
+            tables.push(Table::new(
+                entity.id.clone(),
+                entity.name.clone(),
+                columns,
+                x,
+                y,
+            ));
         }
 
         let relations = relations
@@ -308,6 +421,7 @@ impl Scene {
         self.pan = None;
         self.link = None;
         self.laid_out = false;
+        self.refresh_kinds();
         Ok(())
     }
 
@@ -331,9 +445,15 @@ impl Scene {
         // 1. The delete badge of the currently selected relation.
         if let Some(ri) = self.selected_rel {
             if self.over_delete_badge(ri, wx, wy) {
+                // Концы снимаем до удаления: после него индекс уже ни к чему
+                // не разрешается.
+                if let Some(ends) = self.relation_endpoints(ri) {
+                    self.pending_unlinks.push(ends);
+                }
                 self.relations.remove(ri);
                 self.selected_rel = None;
                 self.cursor = "default".to_string();
+                self.refresh_kinds();
                 return false;
             }
         }
@@ -366,6 +486,8 @@ impl Scene {
                 index,
                 offset_x: wx - t.x,
                 offset_y: wy - t.y,
+                start_x: t.x,
+                start_y: t.y,
             });
             self.selected = Some(index);
             self.selected_rel = None;
@@ -444,8 +566,8 @@ impl Scene {
     }
 
     /// Ends any interaction. A relation drag dropped on a column row of a
-    /// different table creates a new relation. Returns `true` when a redraw is
-    /// needed.
+    /// different table creates a new relation; a table drag that actually moved
+    /// the table queues its new position. Returns `true` when a redraw is needed.
     pub fn on_mouse_up(&mut self, x: f64, y: f64) -> bool {
         let mut dirty = false;
 
@@ -453,17 +575,36 @@ impl Scene {
             let (wx, wy) = self.screen_to_world(x, y);
             if let Some((ti, ci)) = self.hit_row(wx, wy) {
                 let to: Endpoint = (ti, ci);
-                let valid = ti != link.from.0
-                    && !self.relations.iter().any(|r| r.connects(link.from, to));
+                let valid =
+                    ti != link.from.0 && !self.relations.iter().any(|r| r.connects(link.from, to));
                 if valid {
                     self.relations.push(Relation::new(link.from, to));
-                    self.selected_rel = Some(self.relations.len() - 1);
+                    let ri = self.relations.len() - 1;
+                    self.selected_rel = Some(ri);
+                    // Иконка FK должна появиться сразу, а не после перезагрузки.
+                    self.refresh_kinds();
+                    if let Some(ends) = self.relation_endpoints(ri) {
+                        self.pending_links.push(ends);
+                    }
                 }
             }
             dirty = true;
         }
 
-        self.drag = None;
+        // Таблицу отпустили. Позицию сохраняем, только если она действительно
+        // изменилась — иначе каждый клик по таблице писал бы в базу.
+        if let Some(drag) = self.drag.take() {
+            if let Some(t) = self.tables.get(drag.index) {
+                if !t.id.is_empty() && (t.x != drag.start_x || t.y != drag.start_y) {
+                    self.pending_moves.push(TablePosition {
+                        id: t.id.clone(),
+                        x: t.x,
+                        y: t.y,
+                    });
+                }
+            }
+        }
+
         self.pan = None;
         dirty
     }
@@ -471,6 +612,62 @@ impl Scene {
     /// Whether a table drag, relation drag, or pan is currently active.
     pub fn is_interacting(&self) -> bool {
         self.drag.is_some() || self.pan.is_some() || self.link.is_some()
+    }
+
+    // -----------------------------------------------------------------------
+    // Persistence hand-off
+    // -----------------------------------------------------------------------
+
+    /// Whether anything is waiting to be saved. A cheap guard so JS can skip
+    /// serializing an empty batch after every pointer event.
+    pub fn has_pending(&self) -> bool {
+        !self.pending_moves.is_empty()
+            || !self.pending_links.is_empty()
+            || !self.pending_unlinks.is_empty()
+    }
+
+    /// Takes the accumulated changes — `{ moves, links, unlinks }` — and clears
+    /// the queue. The scene deliberately does not persist anything itself: it
+    /// only records what changed, and JS spends the batch on the matching Tauri
+    /// commands.
+    pub fn take_pending(&mut self) -> Result<JsValue, JsValue> {
+        let pending = Pending {
+            moves: std::mem::take(&mut self.pending_moves),
+            links: std::mem::take(&mut self.pending_links),
+            unlinks: std::mem::take(&mut self.pending_unlinks),
+        };
+        Ok(serde_wasm_bindgen::to_value(&pending)?)
+    }
+
+    /// Relation `ri`'s two ends in database terms. `None` when the relation
+    /// touches a table with no entity id (the pre-`load` sample schema) or a
+    /// column index that no longer resolves.
+    fn relation_endpoints(&self, ri: usize) -> Option<RelationEndpoints> {
+        let rel = self.relations.get(ri)?;
+        let from = self.tables.get(rel.from.0)?;
+        let to = self.tables.get(rel.to.0)?;
+        if from.id.is_empty() || to.id.is_empty() {
+            return None;
+        }
+        Some(RelationEndpoints {
+            from_entity: from.id.clone(),
+            from_field: from.columns.get(rel.from.1)?.name.clone(),
+            to_entity: to.id.clone(),
+            to_field: to.columns.get(rel.to.1)?.name.clone(),
+        })
+    }
+
+    /// Recomputes every column's icon from the current relation set: primary
+    /// keys win, then the foreign-key side of a relation, then nullability.
+    /// Called after any change to the relations so what is on screen matches
+    /// what a reload would draw.
+    fn refresh_kinds(&mut self) {
+        let fk: HashSet<Endpoint> = self.relations.iter().map(|r| r.to).collect();
+        for (ti, table) in self.tables.iter_mut().enumerate() {
+            for (ci, col) in table.columns.iter_mut().enumerate() {
+                col.kind = col_kind(col.pk, col.nullable, fk.contains(&(ti, ci)));
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -958,12 +1155,15 @@ impl Scene {
         fn col(name: &str, kind: ColKind) -> Column {
             Column {
                 name: name.to_string(),
+                pk: kind == Pk,
+                nullable: kind == Nullable,
                 kind,
             }
         }
 
         self.tables = vec![
             Table {
+                id: String::new(),
                 x: 60.0,
                 y: 60.0,
                 w: MIN_TABLE_W,
@@ -980,6 +1180,7 @@ impl Scene {
                 ],
             },
             Table {
+                id: String::new(),
                 x: 420.0,
                 y: 60.0,
                 w: MIN_TABLE_W,
@@ -993,6 +1194,7 @@ impl Scene {
                 ],
             },
             Table {
+                id: String::new(),
                 x: 780.0,
                 y: 40.0,
                 w: MIN_TABLE_W,
@@ -1010,6 +1212,7 @@ impl Scene {
                 ],
             },
             Table {
+                id: String::new(),
                 x: 420.0,
                 y: 320.0,
                 w: MIN_TABLE_W,
@@ -1024,6 +1227,7 @@ impl Scene {
                 ],
             },
             Table {
+                id: String::new(),
                 x: 60.0,
                 y: 400.0,
                 w: MIN_TABLE_W,
@@ -1038,6 +1242,7 @@ impl Scene {
                 ],
             },
             Table {
+                id: String::new(),
                 x: 780.0,
                 y: 440.0,
                 w: MIN_TABLE_W,

@@ -209,10 +209,17 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 		await updateEntityApi(entity);
 
 		// Оптимистично обновляем выбранную entity, чтобы UI не моргал до refetch.
+		// Мержим, а не подменяем целиком: DTO несёт только те поля, которые
+		// команда и правит, — позиция на ERD-холсте, например, в него не входит
+		// и должна пережить сохранение схемы.
 		set((state) => ({
-			entities: state.entities.map((e) => (e.id === entity.id ? entity : e)),
+			entities: state.entities.map((e) =>
+				e.id === entity.id ? { ...e, ...entity } : e,
+			),
 			selectedEntity:
-				state.selectedEntity?.id === entity.id ? entity : state.selectedEntity,
+				state.selectedEntity?.id === entity.id
+					? { ...state.selectedEntity, ...entity }
+					: state.selectedEntity,
 		}));
 
 		await get().fetchDocApi(docId);

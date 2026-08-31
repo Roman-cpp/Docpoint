@@ -1,4 +1,4 @@
-use crate::domain::doc_erd::entity::dto::{CreateEntityDTO, UpdateEntityDTO};
+use crate::domain::doc_erd::entity::dto::{CreateEntityDTO, EntityPositionDTO, UpdateEntityDTO};
 use crate::domain::doc_erd::entity::entity::{Entity, EntityField, EnumValue};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
@@ -37,6 +37,10 @@ impl EntityRepository for EntityRepo<'_> {
 
     async fn update(&self, schema: &UpdateEntityDTO) -> Result<(), String> {
         update_schema(self.db, schema).await
+    }
+
+    async fn update_positions(&self, positions: &[EntityPositionDTO]) -> Result<(), String> {
+        update_positions(self.db, positions).await
     }
 
     async fn delete(&self, entity_id: &str) -> Result<(), String> {
@@ -141,6 +145,8 @@ async fn read_schemas_by(
                 name: s.get("name"),
                 desc: s.get("desc"),
                 fields,
+                pos_x: s.get("pos_x"),
+                pos_y: s.get("pos_y"),
             }
         })
         .collect())
@@ -203,6 +209,30 @@ async fn insert_schema(
     }
 
     Ok(entity_id)
+}
+
+/// Записывает позиции таблиц одной транзакцией: холст сбрасывает сюда всю
+/// накопленную пачку сразу, и либо приезжает вся раскладка, либо ничего.
+async fn update_positions(db: &SqlitePool, positions: &[EntityPositionDTO]) -> Result<(), String> {
+    if positions.is_empty() {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    for pos in positions {
+        sqlx::query("UPDATE entities SET pos_x = ?, pos_y = ? WHERE id = ?")
+            .bind(pos.x)
+            .bind(pos.y)
+            .bind(&pos.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 async fn delete_schema(db: &SqlitePool, entity_id: &str) -> Result<(), String> {

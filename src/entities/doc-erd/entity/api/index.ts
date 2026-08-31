@@ -5,3 +5,4 @@ export { getEntitiesApi } from "./get-entities-api";
 export { getErdEntitiesApi } from "./get-erd-entities-api";
 export { updateEntitiesApi } from "./update-entities-api";
 export { updateEntityApi } from "./update-entity-api";
+export { updateEntityPositionsApi } from "./update-entity-positions-api";

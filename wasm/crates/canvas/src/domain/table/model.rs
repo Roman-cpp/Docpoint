@@ -25,22 +25,45 @@ pub enum ColKind {
 }
 
 /// A single column within a table.
+///
+/// `pk` and `nullable` are the column's own facts, carried over from the
+/// persisted field. `kind` is only the icon derived from them plus the scene's
+/// current relations — `Scene::refresh_kinds` recomputes it whenever a relation
+/// appears or goes away, so the flags have to stay around to derive it from.
 pub struct Column {
     pub name: String,
+    pub pk: bool,
+    pub nullable: bool,
     pub kind: ColKind,
 }
 
-/// Columns a freshly-created table starts with, as `(name, kind)` pairs.
-/// This is the canonical "blank table" shape used by [`Table::from_template`].
-pub const DEFAULT_COLUMNS: &[(&str, ColKind)] = &[
-    ("id", ColKind::Pk),
-    ("created_at", ColKind::Plain),
-    ("updated_at", ColKind::Plain),
-];
+impl Column {
+    /// A column with no relation attached yet — the icon starts at whatever
+    /// `pk` / `nullable` alone imply, and `Scene::refresh_kinds` upgrades it to
+    /// the foreign-key glyph once a relation points at it.
+    pub fn new(name: impl Into<String>, pk: bool, nullable: bool) -> Column {
+        Column {
+            name: name.into(),
+            pk,
+            nullable,
+            kind: if pk {
+                ColKind::Pk
+            } else if nullable {
+                ColKind::Nullable
+            } else {
+                ColKind::Plain
+            },
+        }
+    }
+}
 
 /// A single table node: header plus a stack of column rows. `w` is computed
 /// once from the rendered text widths (see `Scene::ensure_layout`).
 pub struct Table {
+    /// Id сущности в БД — им адресуются и сохранение позиции, и концы связей.
+    /// Пустая строка означает «таблица не персистится»: так помечена демо-схема,
+    /// которой сцена заполняется до первого `load`.
+    pub id: String,
     pub x: f64,
     pub y: f64,
     pub w: f64,
@@ -49,19 +72,23 @@ pub struct Table {
 }
 
 impl Table {
-    /// Builds a blank table from [`DEFAULT_COLUMNS`] at the given top-left
-    /// world position. Width is left at `0.0` as a placeholder — the layout
-    /// pass (`Scene::ensure_layout`) measures the text and sets the real width
+    /// Builds a table with the given columns at the given top-left world
+    /// position. Width is left at `0.0` as a placeholder — the layout pass
+    /// (`Scene::ensure_layout`) measures the text and sets the real width
     /// before the table is ever drawn.
-    pub fn from_template(name: impl Into<String>, x: f64, y: f64) -> Table {
-        let columns = DEFAULT_COLUMNS
-            .iter()
-            .map(|&(name, kind)| Column {
-                name: name.to_string(),
-                kind,
-            })
-            .collect();
+    ///
+    /// There is deliberately no built-in "blank table" template any more: the
+    /// columns a new table starts with are chosen in the creation form on the
+    /// JS side, so keeping a second default here could only drift from it.
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        columns: Vec<Column>,
+        x: f64,
+        y: f64,
+    ) -> Table {
         Table {
+            id: id.into(),
             x,
             y,
             w: 0.0,

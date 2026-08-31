@@ -5,8 +5,14 @@ export { getEntitiesApi } from "./api/get-entities-api";
 export { getErdEntitiesApi } from "./api/get-erd-entities-api";
 export { updateEntitiesApi } from "./api/update-entities-api";
 export { updateEntityApi } from "./api/update-entity-api";
+export { updateEntityPositionsApi } from "./api/update-entity-positions-api";
 export type { CreateEntityDTO, UpdateEntityDTO } from "./model/entity.dto";
-export type { Entity, EnumValue, SchemaField } from "./model/entity.entity";
+export type {
+	Entity,
+	EntityPosition,
+	EnumValue,
+	SchemaField,
+} from "./model/entity.entity";
 export {
 	EntityFieldsEditor,
 	emptyField,

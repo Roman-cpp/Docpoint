@@ -20,7 +20,6 @@
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-opener": "^2",
         "axios": "^1.16.0",
-        "canvas-wasm": "^0.2.0",
         "codemirror": "^6.0.2",
         "rc-dock": "^4.0.0-alpha.2",
         "react": "^19.1.0",
@@ -651,8 +650,6 @@
     "call-bind-apply-helpers": ["call-bind-apply-helpers@1.0.2", "", { "dependencies": { "es-errors": "^1.3.0", "function-bind": "^1.1.2" } }, ""],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001791", "", {}, ""],
-
-    "canvas-wasm": ["canvas-wasm@0.2.0", "", {}, "sha512-ewazZcCcNR8luPnsjzEfo8Ojq5mNoJ25ts8xCJMI8OZQD5soWMfu4tOGSLIgvrd4ySczBpnlRXvK5TFZTc6rLQ=="],
 
     "ccount": ["ccount@2.0.1", "", {}, ""],
 

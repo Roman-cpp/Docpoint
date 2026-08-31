@@ -1,41 +1,30 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
+import { toast } from "@/core/toast";
 import {
-	type CreateEntityDTO,
-	createErdEntityApi,
+	createRelationApi,
+	deleteRelationApi,
+	type EntityPosition,
 	getErdEntitiesApi,
 	getRelationsApi,
-	type SchemaField,
+	type RelationEndpoints,
+	updateEntityPositionsApi,
 } from "@/entities/doc-erd";
+import { type CreatedTable, CreateTableModal } from "@/features/doc-erd";
 import { CatalogBackLink } from "@/widgets/catalog-explorer";
 import { Header } from "@/widgets/header";
 import styles from "../CanvasPage.module.css";
 
-/** Builds a schema field with the editor's defaults, overriding as needed. */
-const field = (over: Partial<SchemaField> & { name: string }): SchemaField => ({
-	type: "string",
-	req: false,
-	nullable: false,
-	pk: false,
-	desc: "",
-	note: "",
-	example: "",
-	...over,
-});
-
 /**
- * Mirrors the wasm `Table::from_template` blank table (DEFAULT_COLUMNS) so the
- * persisted entity matches what `add_table` draws on the canvas.
+ * Изменения, накопленные сценой с прошлого сброса (`Scene::take_pending`).
+ * Сцена ничего не сохраняет сама — она лишь копит, что поменялось, а разложить
+ * это по командам Tauri должна страница.
  */
-const blankEntity = (name: string): CreateEntityDTO => ({
-	name,
-	desc: "",
-	fields: [
-		field({ name: "id", type: "uuid", req: true, pk: true }),
-		field({ name: "created_at", type: "timestamp", req: true }),
-		field({ name: "updated_at", type: "timestamp", req: true }),
-	],
-});
+interface ScenePending {
+	moves: EntityPosition[];
+	links: RelationEndpoints[];
+	unlinks: RelationEndpoints[];
+}
 
 export function DocErdShowPage() {
 	const { id } = useParams<{ id: string }>();
@@ -44,21 +33,18 @@ export function DocErdShowPage() {
 	// (outside the effect) can mutate and repaint the diagram.
 	const sceneRef = useRef<import("canvas-wasm").Scene | null>(null);
 	const renderRef = useRef<(() => void) | null>(null);
+	const flushRef = useRef<(() => void) | null>(null);
 
-	const handleAddTable = () => {
+	const [createOpen, setCreateOpen] = useState(false);
+
+	// The modal persists the entity first, so by the time this runs the table
+	// exists in the schema and only needs drawing.
+	const handleCreated = (table: CreatedTable) => {
 		const scene = sceneRef.current;
 		if (!scene) return;
-		scene.add_table();
+		scene.add_table(table);
 		renderRef.current?.();
-
-		// Persist the freshly-added table as a new entity. The wasm names it
-		// `new_table_{count}` after pushing, so `table_count()` gives that count.
-		if (id) {
-			createErdEntityApi(
-				id,
-				blankEntity(`new_table_${scene.table_count()}`),
-			).catch((err) => console.error("Failed to persist new entity", err));
-		}
+		flushRef.current?.();
 	};
 
 	useEffect(() => {
@@ -70,6 +56,37 @@ export function DocErdShowPage() {
 
 		let scene: import("canvas-wasm").Scene | null = null;
 		let disposed = false;
+
+		// Записи выстроены в цепочку, а не пущены параллельно: перетаскивание
+		// сбрасывает позиции пачками, и обгон одного вызова другим оставил бы в
+		// базе устаревшую координату. `.catch` в конце звена нужен, чтобы одна
+		// неудачная запись не обрывала всю очередь.
+		let writes: Promise<void> = Promise.resolve();
+
+		const flush = () => {
+			if (!scene?.has_pending()) return;
+			const pending = scene.take_pending() as ScenePending;
+
+			writes = writes
+				.then(async () => {
+					if (pending.moves.length > 0) {
+						await updateEntityPositionsApi(pending.moves);
+					}
+					for (const link of pending.links) {
+						await createRelationApi(link);
+					}
+					for (const unlink of pending.unlinks) {
+						await deleteRelationApi(unlink);
+					}
+				})
+				.catch((err: unknown) => {
+					toast({
+						variant: "error",
+						title: "Не удалось сохранить диаграмму",
+						description: err instanceof Error ? err.message : String(err),
+					});
+				});
+		};
 
 		// Pointer position in CSS pixels, relative to the canvas.
 		const getPos = (e: MouseEvent) => {
@@ -96,6 +113,8 @@ export function DocErdShowPage() {
 			scene.on_mouse_down(x, y);
 			canvas.style.cursor = scene.cursor();
 			scene.render(ctx);
+			// Клик по крестику на связи удаляет её ещё в mousedown.
+			flush();
 		};
 
 		const handleMouseMove = (e: MouseEvent) => {
@@ -112,6 +131,8 @@ export function DocErdShowPage() {
 			const dirty = scene.on_mouse_up(x, y);
 			canvas.style.cursor = scene.cursor();
 			if (dirty) scene.render(ctx);
+			// Здесь оседают и конец перетаскивания таблицы, и новая связь.
+			flush();
 		};
 
 		const handleWheel = (e: WheelEvent) => {
@@ -134,6 +155,7 @@ export function DocErdShowPage() {
 			scene = new Scene();
 			sceneRef.current = scene;
 			renderRef.current = () => scene?.render(ctx);
+			flushRef.current = flush;
 
 			// Populate the diagram from the ERD's persisted schema. Without an id
 			// there is nothing to show, so the scene stays empty.
@@ -146,6 +168,10 @@ export function DocErdShowPage() {
 				scene.load(entities, relations);
 			}
 			resize();
+			// Сущностям без сохранённой позиции её только что назначил
+			// автолейаут — закрепляем результат, чтобы он не пересчитывался при
+			// каждом открытии.
+			flush();
 		});
 
 		canvas.addEventListener("mousedown", handleMouseDown);
@@ -165,6 +191,7 @@ export function DocErdShowPage() {
 			scene = null;
 			sceneRef.current = null;
 			renderRef.current = null;
+			flushRef.current = null;
 		};
 	}, [id]);
 
@@ -182,7 +209,8 @@ export function DocErdShowPage() {
 					<button
 						type="button"
 						className={styles.addBtn}
-						onClick={handleAddTable}
+						onClick={() => setCreateOpen(true)}
+						disabled={!id}
 					>
 						<span className={styles.addBtnIcon} aria-hidden>
 							+
@@ -192,6 +220,15 @@ export function DocErdShowPage() {
 				</div>
 				<canvas ref={canvasRef} className={styles.canvas} />
 			</div>
+
+			{id && (
+				<CreateTableModal
+					open={createOpen}
+					onOpenChange={setCreateOpen}
+					docErdId={id}
+					onCreated={handleCreated}
+				/>
+			)}
 		</div>
 	);
 }

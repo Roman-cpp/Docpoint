@@ -20,7 +20,8 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"canvas-wasm": ["./wasm/pkg/canvas/canvas_wasm"]
 		}
 	},
 	"include": ["src"],

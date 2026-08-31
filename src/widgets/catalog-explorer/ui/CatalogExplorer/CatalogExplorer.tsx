@@ -28,6 +28,11 @@ import {
 	useImportExportDoc,
 } from "@/features/doc-api";
 import {
+	type ImportErdPayload,
+	parseErdImport,
+	useImportErd,
+} from "@/features/doc-erd";
+import {
 	type ImportWebsocketPayload,
 	parseWebsocketImport,
 	useImportWebsocket,
@@ -105,6 +110,7 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 	const target = { platformId, parentId: catalogId };
 	const { importDocAsync, isImporting } = useImportExportDoc(target);
 	const { importWebsocket, isImportingWebsocket } = useImportWebsocket(target);
+	const { importErd, isImportingErd } = useImportErd(target);
 
 	const [menu, setMenu] = useState<{
 		x: number;
@@ -122,6 +128,7 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 
 	const docInputRef = useRef<HTMLInputElement>(null);
 	const wsInputRef = useRef<HTMLInputElement>(null);
+	const erdInputRef = useRef<HTMLInputElement>(null);
 
 	const crumbs = nodePath(nodes, catalogId);
 	const children = childrenOf(nodes, catalogId);
@@ -251,6 +258,26 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 		importWebsocket(payload);
 	};
 
+	const importErdFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const raw = await readFile(e);
+		if (!raw) return;
+
+		let payload: ImportErdPayload;
+		try {
+			// Разбор файла объясняет свои ошибки сам, мутация — свои.
+			payload = parseErdImport(raw);
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось прочитать файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+			return;
+		}
+
+		importErd(payload);
+	};
+
 	const exportNode = async (node: CatalogNode) => {
 		try {
 			await exportDoc(node.id, node.name);
@@ -356,6 +383,12 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 								>
 									{isImportingWebsocket ? "Импорт…" : "WebSocket (JSON)"}
 								</DropMenu.Item>
+								<DropMenu.Item
+									disabled={isImportingErd}
+									onClick={() => erdInputRef.current?.click()}
+								>
+									{isImportingErd ? "Импорт…" : "ERD-диаграмма (JSON)"}
+								</DropMenu.Item>
 							</DropMenu.Content>
 						</DropMenu>
 					</div>
@@ -404,6 +437,13 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 				accept="application/json,.json"
 				style={{ display: "none" }}
 				onChange={importWsFile}
+			/>
+			<input
+				ref={erdInputRef}
+				type="file"
+				accept="application/json,.json"
+				style={{ display: "none" }}
+				onChange={importErdFile}
 			/>
 
 			<ContextMenu.Root
@@ -483,6 +523,13 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 							onSelect={() => wsInputRef.current?.click()}
 						>
 							WebSocket (JSON)
+						</ContextMenu.Item>
+						<ContextMenu.Item
+							icon={<UploadIcon />}
+							disabled={isImportingErd}
+							onSelect={() => erdInputRef.current?.click()}
+						>
+							ERD-диаграмма (JSON)
 						</ContextMenu.Item>
 					</>
 				)}

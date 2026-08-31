@@ -10,16 +10,26 @@ export default defineConfig(async () => ({
 	resolve: {
 		alias: {
 			"@": new URL("./src", import.meta.url).pathname,
+
+			// Локальный wasm-модуль подключён алиасом прямо на выхлоп
+			// wasm-pack, а не зависимостью в package.json. Причин две.
+			//
+			// 1. В реестре npm уже есть чужой пакет с именем `canvas-wasm`, и
+			//    любой `bun install` затирал им локальную сборку в node_modules.
+			//    Алиас разрешается раньше node_modules, коллизия исключена.
+			// 2. Файл лежит вне node_modules, поэтому esbuild не пре-бандлит его
+			//    и не переписывает `import.meta.url` — `new URL("…_bg.wasm",
+			//    import.meta.url)` внутри обвязки продолжает находить .wasm.
+			//
+			// Пересобрать: `bun run wasm`.
+			"canvas-wasm": new URL(
+				"./wasm/pkg/canvas/canvas_wasm.js",
+				import.meta.url,
+			).pathname,
 		},
 	},
 
-	// `canvas-wasm` is built with wasm-pack's `web` target: its JS locates the
-	// `.wasm` via `new URL("canvas_wasm_bg.wasm", import.meta.url)` and fetches
-	// it at `init()`. esbuild's dep pre-bundling rewrites `import.meta.url` and
-	// breaks that lookup, so exclude it and let Vite serve the module as-is.
 	optimizeDeps: {
-		exclude: ["canvas-wasm"],
-
 		// The markdown renderer is code-split, so Vite would only discover this
 		// graph the first time a document is opened — and then re-optimise with a
 		// full page reload in the middle of the session. Keep in sync with

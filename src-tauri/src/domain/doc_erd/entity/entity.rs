@@ -6,6 +6,12 @@ pub struct Entity {
     pub name: String,
     pub desc: String,
     pub fields: Vec<EntityField>,
+    /// Позиция таблицы на ERD-холсте; `None` — сущность ещё не размещали и
+    /// сцена разложит её автолейаутом (см. миграцию 0033).
+    #[serde(rename = "posX", default)]
+    pub pos_x: Option<f64>,
+    #[serde(rename = "posY", default)]
+    pub pos_y: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
