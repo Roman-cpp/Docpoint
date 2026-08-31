@@ -17,26 +17,13 @@ import {
 	updateEndpointApi,
 	updateParamValueApi,
 } from "@/entities/doc-api";
-import type {
-	CreateEntityDTO,
-	Entity,
-	UpdateEntityDTO,
-} from "@/entities/doc-erd";
-import {
-	createEntityApi,
-	deleteEntityApi,
-	getEntitiesApi,
-	updateEntityApi,
-} from "@/entities/doc-erd";
 
 type DocApiState = {
 	doc: Doc | null;
 	groups: Group[] | null;
-	entities: Entity[];
 
 	selectedGroup: Group | null;
 	selectedEndpoint: Endpoint | null;
-	selectedEntity: Entity | null;
 };
 
 type DocApiActions = {
@@ -45,7 +32,6 @@ type DocApiActions = {
 
 	selectGroup: (groupId: string) => void;
 	selectEndpoint: (endpointId: string) => void;
-	selectEntity: (entityId: string) => void;
 
 	updateEndpointParamValue: (
 		endpointId: string,
@@ -65,20 +51,14 @@ type DocApiActions = {
 	deleteEndpoint: (endpointId: string) => Promise<void>;
 
 	deleteGroup: (groupId: string) => Promise<void>;
-
-	updateEntity: (entity: UpdateEntityDTO) => Promise<void>;
-	addEntity: (schema: CreateEntityDTO) => Promise<string>;
-	deleteEntity: (entityId: string) => Promise<void>;
 };
 
 const initialState: DocApiState = {
 	doc: null,
 	groups: [],
-	entities: [],
 
 	selectedGroup: null,
 	selectedEndpoint: null,
-	selectedEntity: null,
 };
 
 export type DocApiStore = DocApiState & DocApiActions;
@@ -104,14 +84,6 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 			selectedEndpoint: groups
 				.flatMap((group) => group.endpoints)
 				.find((endpoint) => endpoint.id === endpointId),
-		});
-	},
-	selectEntity: (entityId: string) => {
-		const { entities } = get();
-
-		if (!entities) return;
-		set({
-			selectedEntity: entities.find((endpoint) => endpoint.id === entityId),
 		});
 	},
 	updateEndpointParamValue: async (endpointId, kind, name, value) => {
@@ -202,64 +174,13 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 		await get().fetchDocApi(docId);
 	},
 
-	updateEntity: async (entity) => {
-		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocApiStore] updateEntity: no doc loaded");
-
-		await updateEntityApi(entity);
-
-		// Оптимистично обновляем выбранную entity, чтобы UI не моргал до refetch.
-		// Мержим, а не подменяем целиком: DTO несёт только те поля, которые
-		// команда и правит, — позиция на ERD-холсте, например, в него не входит
-		// и должна пережить сохранение схемы.
-		set((state) => ({
-			entities: state.entities.map((e) =>
-				e.id === entity.id ? { ...e, ...entity } : e,
-			),
-			selectedEntity:
-				state.selectedEntity?.id === entity.id
-					? { ...state.selectedEntity, ...entity }
-					: state.selectedEntity,
-		}));
-
-		await get().fetchDocApi(docId);
-	},
-
-	addEntity: async (schema) => {
-		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocApiStore] addEntity: no doc loaded");
-
-		const newId = await createEntityApi(docId, schema);
-		await get().fetchDocApi(docId);
-
-		// Сразу выделяем созданную entity.
-		get().selectEntity(newId);
-
-		return newId;
-	},
-
-	deleteEntity: async (entityId) => {
-		const docId = get().doc?.id;
-		if (!docId) throw new Error("[DocApiStore] deleteEntity: no doc loaded");
-
-		await deleteEntityApi(entityId);
-
-		// Сбрасываем выбор, если удалили текущую entity.
-		if (get().selectedEntity?.id === entityId) {
-			set({ selectedEntity: null });
-		}
-
-		await get().fetchDocApi(docId);
-	},
-
 	fetchDocApi: async (id) => {
 		try {
-			const [doc, groups, entities] = await Promise.all([
+			const [doc, groups] = await Promise.all([
 				getDocApi(id),
 				getGroupsApi(id),
-				getEntitiesApi(id),
 			]);
-			set({ doc, groups, entities });
+			set({ doc, groups });
 		} catch (e) {
 			console.error("[DocApiStore] fetchDocApi failed:", e);
 			throw e;
@@ -275,7 +196,6 @@ export const useDocApiStore = create<DocApiStore>()(
 			partialize: (state) => ({
 				doc: state.doc,
 				groups: state.groups,
-				entities: state.entities,
 			}),
 		}),
 		{ name: "DocApiStore" },

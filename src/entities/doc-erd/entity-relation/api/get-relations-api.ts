@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { EntityRelation } from "../model/entity-relation.entity";
 
-export function getRelationsApi(docId: string): Promise<EntityRelation[]> {
-	return invoke("read_relations", { docId });
+/** Связи одной ERD-диаграммы: обе сущности связи принадлежат ей же. */
+export function getRelationsApi(docErdId: string): Promise<EntityRelation[]> {
+	return invoke("read_relations", { docErdId });
 }

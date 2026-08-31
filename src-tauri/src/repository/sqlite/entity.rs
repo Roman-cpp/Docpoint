@@ -15,16 +15,8 @@ impl<'a> EntityRepo<'a> {
 }
 
 impl EntityRepository for EntityRepo<'_> {
-    async fn all(&self, doc_id: &str) -> Result<Vec<Entity>, String> {
-        read_schemas_by(self.db, "doc_id", doc_id).await
-    }
-
     async fn all_by_erd(&self, doc_erd_id: &str) -> Result<Vec<Entity>, String> {
-        read_schemas_by(self.db, "doc_erd_id", doc_erd_id).await
-    }
-
-    async fn create(&self, doc_id: &str, schema: &CreateEntityDTO) -> Result<String, String> {
-        insert_schema(self.db, EntityOwner::Doc(doc_id), schema).await
+        read_schemas_by(self.db, doc_erd_id).await
     }
 
     async fn create_for_erd(
@@ -32,7 +24,7 @@ impl EntityRepository for EntityRepo<'_> {
         doc_erd_id: &str,
         schema: &CreateEntityDTO,
     ) -> Result<String, String> {
-        insert_schema(self.db, EntityOwner::Erd(doc_erd_id), schema).await
+        insert_schema(self.db, doc_erd_id, schema).await
     }
 
     async fn update(&self, schema: &UpdateEntityDTO) -> Result<(), String> {
@@ -48,23 +40,10 @@ impl EntityRepository for EntityRepo<'_> {
     }
 }
 
-/// Which side an entity is attached to. Entities created from an API doc carry
-/// a `doc_id`; entities drawn on an ERD canvas carry a `doc_erd_id` and no doc.
-enum EntityOwner<'a> {
-    Doc(&'a str),
-    Erd(&'a str),
-}
-
-/// Loads entities (with fields and enum values) filtered by a single owner
-/// column. `column` is a trusted literal (`"doc_id"` / `"doc_erd_id"`), never
-/// user input, so interpolating it into the SQL is safe.
-async fn read_schemas_by(
-    db: &SqlitePool,
-    column: &str,
-    value: &str,
-) -> Result<Vec<Entity>, String> {
-    let entity_rows = sqlx::query(&format!("SELECT * FROM entities WHERE {column} = ?"))
-        .bind(value)
+/// Loads entities (with fields and enum values) belonging to one ERD diagram.
+async fn read_schemas_by(db: &SqlitePool, doc_erd_id: &str) -> Result<Vec<Entity>, String> {
+    let entity_rows = sqlx::query("SELECT * FROM entities WHERE doc_erd_id = ?")
+        .bind(doc_erd_id)
         .fetch_all(db)
         .await
         .map_err(|e| e.to_string())?;
@@ -155,19 +134,13 @@ async fn read_schemas_by(
 /// Вставляет одну entity вместе с полями и enum-значениями, возвращает её id.
 async fn insert_schema(
     db: &SqlitePool,
-    owner: EntityOwner<'_>,
+    doc_erd_id: &str,
     schema: &CreateEntityDTO,
 ) -> Result<String, String> {
     let entity_id = Uuid::new_v4().to_string();
 
-    let (doc_id, doc_erd_id) = match owner {
-        EntityOwner::Doc(id) => (Some(id), None),
-        EntityOwner::Erd(id) => (None, Some(id)),
-    };
-
-    sqlx::query("INSERT INTO entities (id, doc_id, doc_erd_id, name, desc) VALUES (?, ?, ?, ?, ?)")
+    sqlx::query("INSERT INTO entities (id, doc_erd_id, name, desc) VALUES (?, ?, ?, ?)")
         .bind(&entity_id)
-        .bind(doc_id)
         .bind(doc_erd_id)
         .bind(&schema.name)
         .bind(&schema.desc)
@@ -470,6 +443,68 @@ mod tests {
             .unwrap();
 
         assert_eq!(relation_count(&pool).await, 1);
+    }
+
+    /// Миграция 0034: сущность принадлежит только диаграмме.
+    #[tokio::test]
+    async fn dropping_doc_id_keeps_diagram_tables_and_drops_document_schemas() {
+        let pool = test_db::through("0033").await;
+        sqlx::query("INSERT INTO platforms (id, name) VALUES ('p1', 'P')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO catalog_node (id, platform_id, parent_id, kind, name) \
+             VALUES ('erd1', 'p1', NULL, 'doc_erd', 'Схема'), \
+                    ('api1', 'p1', NULL, 'doc_api', 'API')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query("INSERT INTO doc_api (id, version, prefix) VALUES ('api1', '1', '')")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        // Сущность диаграммы — с позицией, и схема документа — без диаграммы.
+        sqlx::query(
+            "INSERT INTO entities (id, doc_id, doc_erd_id, name, desc, pos_x, pos_y) \
+             VALUES ('e1', NULL, 'erd1', 'users', '', 40.0, 80.0), \
+                    ('e2', 'api1', NULL, 'Payment', '', NULL, NULL)",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO entity_field (entity_id, name, type) \
+             VALUES ('e1', 'id', 'uuid'), ('e2', 'sum', 'numeric')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        test_db::apply(&pool, "0034_entities_drop_doc_id.sql").await;
+
+        let ids: Vec<String> = sqlx::query_scalar("SELECT id FROM entities ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        assert_eq!(ids, vec!["e1"], "схема документа уходит вместе с колонкой");
+
+        // Позиция таблицы переживает пересборку таблицы.
+        let (x, y): (Option<f64>, Option<f64>) =
+            sqlx::query_as("SELECT pos_x, pos_y FROM entities WHERE id = 'e1'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!((x, y), (Some(40.0), Some(80.0)));
+
+        // Поля осиротевшей сущности не остаются мусором, а поля живой — на месте.
+        let owners: Vec<String> = sqlx::query_scalar("SELECT entity_id FROM entity_field")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        assert_eq!(owners, vec!["e1"]);
     }
 
     #[tokio::test]

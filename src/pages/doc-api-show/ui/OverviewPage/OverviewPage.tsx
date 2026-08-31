@@ -6,7 +6,6 @@ import {
 	actionfetchDocApi,
 	EditDocApiModal,
 	selectDocApi,
-	selectEntities,
 	selectGroups,
 	useDocApiStore,
 } from "@/features/doc-api";
@@ -30,7 +29,6 @@ const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
 export const OverviewPage = () => {
 	const doc = useDocApiStore(selectDocApi);
 	const groups = useDocApiStore(selectGroups);
-	const entities = useDocApiStore(selectEntities);
 	const env = useEnvironmentsStore(selectSelectedEnvironment);
 	const fetchDoc = useDocApiStore(actionfetchDocApi);
 	const { updateDocAsync, isUpdating } = useDocsStore();
@@ -38,7 +36,6 @@ export const OverviewPage = () => {
 
 	const endpointCount =
 		groups?.reduce((sum, g) => sum + g.endpoints.length, 0) ?? 0;
-	const resourceCount = entities.length;
 
 	if (!doc) return null;
 
@@ -116,10 +113,6 @@ export const OverviewPage = () => {
 				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Endpoints</div>
 					<div className={s.overviewCardValue}>{endpointCount}</div>
-				</div>
-				<div className={s.overviewCard}>
-					<div className={s.overviewCardLabel}>Resources</div>
-					<div className={s.overviewCardValue}>{resourceCount}</div>
 				</div>
 			</div>
 

@@ -15,15 +15,14 @@ impl<'a> RelationRepo<'a> {
 }
 
 impl RelationRepository for RelationRepo<'_> {
-    async fn by_doc(&self, doc_id: &str) -> Result<Vec<EntityRelation>, String> {
+    async fn by_erd(&self, doc_erd_id: &str) -> Result<Vec<EntityRelation>, String> {
         let rows = sqlx::query(
             "SELECT r.id, r.from_entity, r.from_field, r.to_entity, r.to_field \
              FROM entity_relation r \
              JOIN entities e ON e.id = r.from_entity \
-             WHERE e.doc_id = ? OR e.doc_erd_id = ?",
+             WHERE e.doc_erd_id = ?",
         )
-        .bind(doc_id)
-        .bind(doc_id)
+        .bind(doc_erd_id)
         .fetch_all(self.db)
         .await
         .map_err(|e| e.to_string())?;

@@ -1,9 +1,6 @@
-export { createEntityApi } from "./entity/api/create-entity-api";
 export { createErdEntityApi } from "./entity/api/create-erd-entity-api";
 export { deleteEntityApi } from "./entity/api/delete-entity-api";
-export { getEntitiesApi } from "./entity/api/get-entities-api";
 export { getErdEntitiesApi } from "./entity/api/get-erd-entities-api";
-export { updateEntitiesApi } from "./entity/api/update-entities-api";
 export { updateEntityApi } from "./entity/api/update-entity-api";
 export { updateEntityPositionsApi } from "./entity/api/update-entity-positions-api";
 export type {
