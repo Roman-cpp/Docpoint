@@ -280,6 +280,41 @@ async fn update_schema(db: &SqlitePool, schema: &UpdateEntityDTO) -> Result<(), 
         .await
         .map_err(|e| e.to_string())?;
 
+    // Связи адресуют колонки именами, а не id: переименованная и удалённая
+    // колонка одинаково оставляют связь висеть в пустоте. Холст такую связь
+    // молча не рисует, но строка остаётся в базе и «оживёт», если колонку с тем
+    // же именем когда-нибудь заведут заново, — поэтому убираем её здесь же, в
+    // одной транзакции с правкой полей.
+    let mut cleanup = sqlx::QueryBuilder::new("DELETE FROM entity_relation WHERE (from_entity = ");
+    cleanup.push_bind(&schema.id);
+    cleanup.push(" AND from_field NOT IN (");
+    let mut names = cleanup.separated(",");
+    for field in &schema.fields {
+        names.push_bind(&field.name);
+    }
+    // Пустой список полей формой не пропускается, но NOT IN () — синтаксическая
+    // ошибка, поэтому подставляем заведомо несуществующее имя.
+    if schema.fields.is_empty() {
+        names.push_bind("");
+    }
+    cleanup.push(")) OR (to_entity = ");
+    cleanup.push_bind(&schema.id);
+    cleanup.push(" AND to_field NOT IN (");
+    let mut names = cleanup.separated(",");
+    for field in &schema.fields {
+        names.push_bind(&field.name);
+    }
+    if schema.fields.is_empty() {
+        names.push_bind("");
+    }
+    cleanup.push("))");
+
+    cleanup
+        .build()
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
     for (fi, field) in schema.fields.iter().enumerate() {
         let result = sqlx::query(
             "INSERT INTO entity_field \
@@ -316,4 +351,134 @@ async fn update_schema(db: &SqlitePool, schema: &UpdateEntityDTO) -> Result<(), 
     tx.commit().await.map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::doc_erd::entity::entity::EntityField;
+    use crate::domain::doc_erd::entity_relation::dto::RelationEndpointsDTO;
+    use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
+    use crate::repository::sqlite::entity_relation::RelationRepo;
+    use crate::repository::sqlite::test_db;
+
+    /// Платформа с ERD-узлом, к которому цепляются сущности.
+    async fn db() -> SqlitePool {
+        let pool = test_db::migrated().await;
+        sqlx::query("INSERT INTO platforms (id, name) VALUES ('p1', 'P')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO catalog_node (id, platform_id, parent_id, kind, name) \
+             VALUES ('erd1', 'p1', NULL, 'doc_erd', 'Схема')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        pool
+    }
+
+    fn field(name: &str) -> EntityField {
+        EntityField {
+            name: name.to_string(),
+            type_: "int".into(),
+            req: false,
+            nullable: false,
+            pk: false,
+            desc: String::new(),
+            note: String::new(),
+            example: String::new(),
+            enum_: vec![],
+        }
+    }
+
+    fn schema(name: &str, fields: &[&str]) -> CreateEntityDTO {
+        CreateEntityDTO {
+            name: name.to_string(),
+            desc: String::new(),
+            fields: fields.iter().map(|f| field(f)).collect(),
+        }
+    }
+
+    async fn relation_count(pool: &SqlitePool) -> i64 {
+        sqlx::query_scalar("SELECT COUNT(*) FROM entity_relation")
+            .fetch_one(pool)
+            .await
+            .unwrap()
+    }
+
+    /// Пара связанных таблиц: users.id → orders.user_id.
+    async fn linked(pool: &SqlitePool) -> (String, String) {
+        let repo = EntityRepo::new(pool);
+        let users = repo
+            .create_for_erd("erd1", &schema("users", &["id"]))
+            .await
+            .unwrap();
+        let orders = repo
+            .create_for_erd("erd1", &schema("orders", &["id", "user_id"]))
+            .await
+            .unwrap();
+
+        RelationRepo::new(pool)
+            .create(&RelationEndpointsDTO {
+                from_entity: users.clone(),
+                from_field: "id".into(),
+                to_entity: orders.clone(),
+                to_field: "user_id".into(),
+            })
+            .await
+            .unwrap();
+
+        (users, orders)
+    }
+
+    #[tokio::test]
+    async fn renaming_a_column_takes_its_relations_with_it() {
+        // Связь адресует колонку именем: после переименования ей не на что
+        // указывать. Холст такую связь не рисует, но строка осталась бы в базе
+        // и вернулась бы, заведи кто-нибудь колонку с прежним именем.
+        let pool = db().await;
+        let (_, orders) = linked(&pool).await;
+
+        EntityRepo::new(&pool)
+            .update(&UpdateEntityDTO {
+                id: orders,
+                name: "orders".into(),
+                desc: String::new(),
+                fields: vec![field("id"), field("owner_id")],
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(relation_count(&pool).await, 0);
+    }
+
+    #[tokio::test]
+    async fn a_relation_survives_edits_that_do_not_touch_its_columns() {
+        let pool = db().await;
+        let (_, orders) = linked(&pool).await;
+
+        EntityRepo::new(&pool)
+            .update(&UpdateEntityDTO {
+                id: orders,
+                name: "purchases".into(),
+                desc: "Переименовали таблицу и добавили колонку".into(),
+                fields: vec![field("id"), field("user_id"), field("total")],
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(relation_count(&pool).await, 1);
+    }
+
+    #[tokio::test]
+    async fn deleting_a_table_deletes_its_relations() {
+        let pool = db().await;
+        let (users, _) = linked(&pool).await;
+
+        EntityRepo::new(&pool).delete(&users).await.unwrap();
+
+        assert_eq!(relation_count(&pool).await, 0);
+    }
 }

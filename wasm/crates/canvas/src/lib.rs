@@ -98,6 +98,33 @@ struct Pending {
     unlinks: Vec<RelationEndpoints>,
 }
 
+/// Видимая часть мира в мировых координатах. Всё, что сюда не попадает, не
+/// рисуется вовсе: на диаграмме из сотни таблиц за экраном обычно почти все.
+#[derive(Clone, Copy)]
+struct Viewport {
+    left: f64,
+    top: f64,
+    right: f64,
+    bottom: f64,
+}
+
+impl Viewport {
+    /// Пересекается ли с прямоугольником. Поля запаса нет — вызывающая сторона
+    /// уже расширила область на толщину теней и рамок.
+    fn hits(&self, x: f64, y: f64, w: f64, h: f64) -> bool {
+        x + w >= self.left && x <= self.right && y + h >= self.top && y <= self.bottom
+    }
+}
+
+/// Насколько подробно рисовать таблицу. Ниже половинного масштаба строки
+/// колонок нечитаемы, а стоят они дороже всего остального вместе взятого:
+/// текст, иконка и смена стиля на каждую строку каждой таблицы.
+#[derive(Clone, Copy, PartialEq)]
+enum Detail {
+    Full,
+    Compact,
+}
+
 /// Which icon a column gets. Primary keys win, then the foreign-key side of a
 /// relation, then nullability. Shared by [`Scene::load`] and
 /// [`Scene::add_table`] so a table looks the same however it entered the scene.
@@ -228,8 +255,9 @@ pub struct Scene {
     selected_rel: Option<usize>,
     // The column row whose ports are currently revealed (cursor hovering it).
     hover_col: Option<Endpoint>,
-    // Desired CSS cursor foрr the current pointer state; read by JS.
-    cursor: String,
+    // Desired CSS cursor for the current pointer state; read by JS. Статическая
+    // строка: вариантов горстка, а выбирается он на каждом движении мыши.
+    cursor: &'static str,
     laid_out: bool,
     // Изменения, которые JS ещё не сохранил. Сцена только копит их, забирает
     // и очищает — `take_pending`.
@@ -259,7 +287,7 @@ impl Scene {
             selected: None,
             selected_rel: None,
             hover_col: None,
-            cursor: "default".to_string(),
+            cursor: "default",
             laid_out: false,
             pending_moves: Vec::new(),
             pending_links: Vec::new(),
@@ -285,6 +313,15 @@ impl Scene {
     /// Number of tables in the scene.
     pub fn table_count(&self) -> usize {
         self.tables.len()
+    }
+
+    /// Id сущности под выделением — по нему JS находит таблицу, чтобы открыть
+    /// её форму. Индекс для этого не годится: он живёт только внутри сцены и
+    /// разъезжается с любым списком на стороне JS. `None` — ничего не выбрано
+    /// либо выбрана таблица демо-схемы, которой в базе нет.
+    pub fn selected_id(&self) -> Option<String> {
+        let t = self.tables.get(self.selected?)?;
+        (!t.id.is_empty()).then(|| t.id.clone())
     }
 
     /// Appends the table described by `table`, centered in the current viewport,
@@ -432,7 +469,7 @@ impl Scene {
     /// The CSS cursor name matching the current pointer state. Read by JS after
     /// every pointer event.
     pub fn cursor(&self) -> String {
-        self.cursor.clone()
+        self.cursor.to_string()
     }
 
     /// Routes a left-button press, in priority order: delete a selected
@@ -452,7 +489,7 @@ impl Scene {
                 }
                 self.relations.remove(ri);
                 self.selected_rel = None;
-                self.cursor = "default".to_string();
+                self.cursor = "default";
                 self.refresh_kinds();
                 return false;
             }
@@ -467,7 +504,7 @@ impl Scene {
                 from_right: right,
                 cursor: (wx, wy),
             });
-            self.cursor = "crosshair".to_string();
+            self.cursor = "crosshair";
             return false;
         }
 
@@ -475,7 +512,7 @@ impl Scene {
         if let Some(ri) = self.hit_relation(wx, wy) {
             self.selected = None;
             self.selected_rel = Some(ri);
-            self.cursor = "pointer".to_string();
+            self.cursor = "pointer";
             return false;
         }
 
@@ -491,7 +528,7 @@ impl Scene {
             });
             self.selected = Some(index);
             self.selected_rel = None;
-            self.cursor = "grabbing".to_string();
+            self.cursor = "grabbing";
             return true;
         }
 
@@ -504,7 +541,7 @@ impl Scene {
             cam_x: self.cam_x,
             cam_y: self.cam_y,
         });
-        self.cursor = "grabbing".to_string();
+        self.cursor = "grabbing";
         false
     }
 
@@ -519,7 +556,7 @@ impl Scene {
                 t.x = wx - drag.offset_x;
                 t.y = wy - drag.offset_y;
             }
-            self.cursor = "grabbing".to_string();
+            self.cursor = "grabbing";
             return true;
         }
 
@@ -530,14 +567,14 @@ impl Scene {
                 link.cursor = (wx, wy);
             }
             self.hover_col = target;
-            self.cursor = "crosshair".to_string();
+            self.cursor = "crosshair";
             return true;
         }
 
         if let Some(pan) = &self.pan {
             self.cam_x = pan.cam_x + (x - pan.start_x);
             self.cam_y = pan.cam_y + (y - pan.start_y);
-            self.cursor = "grabbing".to_string();
+            self.cursor = "grabbing";
             return true;
         }
 
@@ -559,8 +596,7 @@ impl Scene {
             "grab"
         } else {
             "default"
-        }
-        .to_string();
+        };
 
         prev != self.hover_col
     }
@@ -603,6 +639,9 @@ impl Scene {
                     });
                 }
             }
+            // Перерисовать нужно в любом случае: сцена вышла из движения, и к
+            // карточкам возвращаются тени.
+            dirty = true;
         }
 
         self.pan = None;
@@ -694,6 +733,16 @@ impl Scene {
     /// Ports sit at each row's vertical center on the left and right edges.
     fn hit_port(&self, wx: f64, wy: f64) -> Option<(usize, usize, bool)> {
         for (ti, t) in self.tables.iter().enumerate().rev() {
+            // Порты сидят на боках таблицы, поэтому дальше её габаритов плюс
+            // допуск искать нечего — иначе на каждое движение мыши перебирались
+            // бы все колонки всех таблиц схемы.
+            if wx < t.x - PORT_HIT
+                || wx > t.x + t.w + PORT_HIT
+                || wy < t.y - PORT_HIT
+                || wy > t.y + t.height() + PORT_HIT
+            {
+                continue;
+            }
             for ci in 0..t.columns.len() {
                 let cy = t.row_y(ci);
                 for (right, px) in [(false, t.x), (true, t.x + t.w)] {
@@ -714,6 +763,15 @@ impl Scene {
             let Some(c) = self.rel_curve(rel) else {
                 continue;
             };
+            // Дешёвая отбраковка по габаритам кривой: иначе на каждое движение
+            // мыши считались бы по 24 точки безье на каждую связь схемы.
+            let x0 = c.ax.min(c.bx).min(c.c1x).min(c.c2x) - tol;
+            let x1 = c.ax.max(c.bx).max(c.c1x).max(c.c2x) + tol;
+            let y0 = c.ay.min(c.by) - tol;
+            let y1 = c.ay.max(c.by) + tol;
+            if wx < x0 || wx > x1 || wy < y0 || wy > y1 {
+                continue;
+            }
             const N: usize = 24;
             let mut prev = c.point(0.0);
             for k in 1..=N {
@@ -780,7 +838,23 @@ impl Scene {
     // Rendering
     // -----------------------------------------------------------------------
 
+    /// Видимая область в мировых координатах, расширенная на запас под тени и
+    /// рамки, — чтобы у края экрана ничего не мигало.
+    fn viewport(&self) -> Viewport {
+        const MARGIN: f64 = 48.0;
+        Viewport {
+            left: -self.cam_x / self.scale - MARGIN,
+            top: -self.cam_y / self.scale - MARGIN,
+            right: (self.width - self.cam_x) / self.scale + MARGIN,
+            bottom: (self.height - self.cam_y) / self.scale + MARGIN,
+        }
+    }
+
     /// Clears and redraws the whole scene: grid, relations, then tables.
+    ///
+    /// Кадр стоит ровно столько, сколько видно на экране: за его пределами не
+    /// рисуется ничего, а на отдалении таблицы теряют строки колонок. Без этого
+    /// схема на сотню таблиц перерисовывалась целиком на каждое движение мыши.
     pub fn render(&mut self, ctx: &CanvasRenderingContext2d) {
         self.ensure_layout(ctx);
 
@@ -794,11 +868,27 @@ impl Scene {
         ctx.translate(self.cam_x, self.cam_y).ok();
         ctx.scale(self.scale, self.scale).ok();
 
-        self.draw_grid(ctx);
-        self.draw_relations(ctx);
+        let view = self.viewport();
+        let detail = if self.scale < 0.5 {
+            Detail::Compact
+        } else {
+            Detail::Full
+        };
+
+        self.draw_grid(ctx, view);
+        self.draw_relations(ctx, view);
+
+        // Тень — гауссово размытие на карточку, самая дорогая примитива здесь.
+        // Пока сцену тянут, кадры идут подряд и разница незаметна, поэтому в
+        // движении тени нет, а в покое она возвращается одной перерисовкой.
+        let shadows = !self.is_interacting();
         for (i, table) in self.tables.iter().enumerate() {
-            draw_table(ctx, table, self.selected == Some(i));
+            if !view.hits(table.x, table.y, table.w, table.height()) {
+                continue;
+            }
+            draw_table(ctx, table, self.selected == Some(i), detail, shadows);
         }
+
         // Editing overlays sit above the tables.
         self.draw_ports(ctx);
         self.draw_link_preview(ctx);
@@ -823,35 +913,53 @@ impl Scene {
     }
 
     /// Dotted background grid, drawn across the visible world region.
-    fn draw_grid(&self, ctx: &CanvasRenderingContext2d) {
-        const STEP: f64 = 28.0;
-        let left = -self.cam_x / self.scale;
-        let top = -self.cam_y / self.scale;
-        let right = (self.width - self.cam_x) / self.scale;
-        let bottom = (self.height - self.cam_y) / self.scale;
+    ///
+    /// Шаг удваивается по мере отдаления, чтобы плотность точек **на экране**
+    /// оставалась постоянной. С фиксированным мировым шагом число точек росло
+    /// квадратично: на минимальном масштабе выходило под тридцать тысяч заливок
+    /// за кадр — и все размером в треть пикселя, то есть невидимые.
+    fn draw_grid(&self, ctx: &CanvasRenderingContext2d, view: Viewport) {
+        const BASE: f64 = 28.0;
+        /// Ниже этого расстояния между точками на экране сетка сливается в фон.
+        const MIN_ON_SCREEN: f64 = 18.0;
 
-        let start_x = (left / STEP).floor() * STEP;
-        let start_y = (top / STEP).floor() * STEP;
+        let mut step = BASE;
+        while step * self.scale < MIN_ON_SCREEN {
+            step *= 2.0;
+        }
+
+        // Точка держит свой экранный размер: мир под ней растянут масштабом.
+        let dot = 1.5 / self.scale;
 
         ctx.set_fill_style_str(COL_GRID);
-        let mut gx = start_x;
-        while gx < right {
-            let mut gy = start_y;
-            while gy < bottom {
-                ctx.fill_rect(gx, gy, 1.5, 1.5);
-                gy += STEP;
+        let mut gx = (view.left / step).floor() * step;
+        while gx < view.right {
+            let mut gy = (view.top / step).floor() * step;
+            while gy < view.bottom {
+                ctx.fill_rect(gx, gy, dot, dot);
+                gy += step;
             }
-            gx += STEP;
+            gx += step;
         }
     }
 
     /// Draws every relation as a bezier curve with crow's-foot endpoints. The
     /// selected relation is highlighted in the accent color.
-    fn draw_relations(&self, ctx: &CanvasRenderingContext2d) {
+    fn draw_relations(&self, ctx: &CanvasRenderingContext2d, view: Viewport) {
         for (i, rel) in self.relations.iter().enumerate() {
             let Some(c) = self.rel_curve(rel) else {
                 continue;
             };
+            // Кривая целиком лежит в прямоугольнике своих опорных точек, так
+            // что его и хватает, чтобы отсечь связь за экраном.
+            let (x0, x1) = (
+                c.ax.min(c.bx).min(c.c1x).min(c.c2x),
+                c.ax.max(c.bx).max(c.c1x).max(c.c2x),
+            );
+            let (y0, y1) = (c.ay.min(c.by), c.ay.max(c.by));
+            if !view.hits(x0, y0, x1 - x0, y1 - y0) {
+                continue;
+            }
             let selected = self.selected_rel == Some(i);
             ctx.set_stroke_style_str(if selected { COL_REL_SEL } else { COL_REL });
             ctx.set_line_width(if selected { 2.0 } else { 1.5 });
@@ -999,22 +1107,32 @@ fn rounded_top(ctx: &CanvasRenderingContext2d, x: f64, y: f64, w: f64, h: f64, r
     ctx.close_path();
 }
 
-fn draw_table(ctx: &CanvasRenderingContext2d, t: &Table, selected: bool) {
+fn draw_table(
+    ctx: &CanvasRenderingContext2d,
+    t: &Table,
+    selected: bool,
+    detail: Detail,
+    shadow: bool,
+) {
     let h = t.height();
 
     // Body — drawn with a soft drop shadow so surfaces read as cards on the
     // light canvas (mirrors --shadow-sm). The shadow is cleared immediately
     // afterwards so nothing else inherits it.
-    ctx.set_shadow_color(COL_SHADOW);
-    ctx.set_shadow_blur(12.0);
-    ctx.set_shadow_offset_x(0.0);
-    ctx.set_shadow_offset_y(3.0);
+    if shadow {
+        ctx.set_shadow_color(COL_SHADOW);
+        ctx.set_shadow_blur(12.0);
+        ctx.set_shadow_offset_x(0.0);
+        ctx.set_shadow_offset_y(3.0);
+    }
     rounded_rect(ctx, t.x, t.y, t.w, h, CORNER_R);
     ctx.set_fill_style_str(COL_TABLE_BG);
     ctx.fill();
-    ctx.set_shadow_color("rgba(0, 0, 0, 0)");
-    ctx.set_shadow_blur(0.0);
-    ctx.set_shadow_offset_y(0.0);
+    if shadow {
+        ctx.set_shadow_color("rgba(0, 0, 0, 0)");
+        ctx.set_shadow_blur(0.0);
+        ctx.set_shadow_offset_y(0.0);
+    }
 
     // Header band.
     rounded_top(ctx, t.x, t.y, t.w, HEADER_H, CORNER_R);
@@ -1033,18 +1151,22 @@ fn draw_table(ctx: &CanvasRenderingContext2d, t: &Table, selected: bool) {
         t.y + HEADER_H * 0.5 + 1.0,
     );
 
-    // Column rows.
-    ctx.set_font(FONT_ROW);
-    for (i, col) in t.columns.iter().enumerate() {
-        let cy = t.row_y(i);
-        let icon_cx = t.x + PAD_X + ICON_W * 0.5;
-        draw_col_icon(ctx, col.kind, icon_cx, cy);
+    // Column rows. На отдалении их не рисуем: имя колонки там всё равно
+    // нечитаемо, а строки — самая дорогая часть кадра. Высота таблицы при этом
+    // не меняется, поэтому связи приходят туда же, куда и при полном рисовании.
+    if detail == Detail::Full {
+        ctx.set_font(FONT_ROW);
+        for (i, col) in t.columns.iter().enumerate() {
+            let cy = t.row_y(i);
+            let icon_cx = t.x + PAD_X + ICON_W * 0.5;
+            draw_col_icon(ctx, col.kind, icon_cx, cy);
 
-        ctx.set_fill_style_str(match col.kind {
-            ColKind::Nullable => COL_TEXT_DIM,
-            _ => COL_TEXT,
-        });
-        let _ = ctx.fill_text(&col.name, t.x + PAD_X + ICON_W + TEXT_GAP, cy + 1.0);
+            ctx.set_fill_style_str(match col.kind {
+                ColKind::Nullable => COL_TEXT_DIM,
+                _ => COL_TEXT,
+            });
+            let _ = ctx.fill_text(&col.name, t.x + PAD_X + ICON_W + TEXT_GAP, cy + 1.0);
+        }
     }
 
     // Border (drawn last so it sits on top of the fills).

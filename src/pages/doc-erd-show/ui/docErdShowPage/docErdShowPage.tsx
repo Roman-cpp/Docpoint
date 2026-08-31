@@ -4,13 +4,19 @@ import { toast } from "@/core/toast";
 import {
 	createRelationApi,
 	deleteRelationApi,
+	type Entity,
 	type EntityPosition,
+	type EntityRelation,
 	getErdEntitiesApi,
 	getRelationsApi,
 	type RelationEndpoints,
 	updateEntityPositionsApi,
 } from "@/entities/doc-erd";
-import { type CreatedTable, CreateTableModal } from "@/features/doc-erd";
+import {
+	type CreatedTable,
+	CreateTableModal,
+	EditTableModal,
+} from "@/features/doc-erd";
 import { CatalogBackLink } from "@/widgets/catalog-explorer";
 import { Header } from "@/widgets/header";
 import styles from "../CanvasPage.module.css";
@@ -36,6 +42,14 @@ export function DocErdShowPage() {
 	const flushRef = useRef<(() => void) | null>(null);
 
 	const [createOpen, setCreateOpen] = useState(false);
+	// Схема, по которой построен холст: сцена рисует таблицы, но их поля,
+	// описания и типы живут только здесь — форме правки нужны именно они.
+	const [entities, setEntities] = useState<Entity[]>([]);
+	const [relations, setRelations] = useState<EntityRelation[]>([]);
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const reloadRef = useRef<(() => Promise<void>) | null>(null);
+
+	const editing = entities.find((e) => e.id === editingId) ?? null;
 
 	// The modal persists the entity first, so by the time this runs the table
 	// exists in the schema and only needs drawing.
@@ -45,6 +59,9 @@ export function DocErdShowPage() {
 		scene.add_table(table);
 		renderRef.current?.();
 		flushRef.current?.();
+		// Сцена таблицу уже нарисовала, но её поля нужны форме правки — и они
+		// живут в схеме, а не на холсте.
+		void reloadRef.current?.();
 	};
 
 	useEffect(() => {
@@ -88,6 +105,66 @@ export function DocErdShowPage() {
 				});
 		};
 
+		// Перерисовка через кадр анимации, а не прямо в обработчике события.
+		//
+		// Мышь шлёт события чаще, чем экран успевает обновиться, и синхронная
+		// отрисовка складывала их в очередь быстрее, чем та разгребалась, —
+		// окно переставало отвечать на схеме в сотню таблиц. Теперь событие
+		// только помечает сцену грязной, а рисуется она не чаще раза за кадр,
+		// уже из последней позиции курсора.
+		let frame = 0;
+		const draw = () => {
+			frame = 0;
+			if (!scene) return;
+			scene.render(ctx);
+		};
+		const requestDraw = () => {
+			if (frame === 0) frame = requestAnimationFrame(draw);
+		};
+
+		// Курсор пишем только на смену: присваивание style дёргает пересчёт
+		// стилей, а состояние курсора меняется куда реже, чем идут события.
+		let cursor = "";
+		const applyCursor = () => {
+			if (!scene) return;
+			const next = scene.cursor();
+			if (next !== cursor) {
+				cursor = next;
+				canvas.style.cursor = next;
+			}
+		};
+
+		// Перечитывание диаграммы из базы: после правки таблицы проще собрать
+		// сцену заново, чем чинить её по месту. Связи адресуются позициями
+		// колонок, и правка полей сдвигает их все разом; к тому же бэкенд при
+		// этом сам убирает связи на исчезнувшие колонки — после перечитывания
+		// холст показывает ровно то, что лежит в базе. Камера при этом на месте:
+		// `Scene::load` её не трогает.
+		const reload = async () => {
+			if (!id || !scene) return;
+			// Сперва дожидаемся незаписанных позиций: иначе только что созданная
+			// таблица прочиталась бы из базы без координат, и автолейаут увёл бы
+			// её из-под курсора в угол сетки.
+			flush();
+			await writes;
+			if (disposed || scene !== sceneRef.current) return;
+
+			const [nextEntities, nextRelations] = await Promise.all([
+				getErdEntitiesApi(id),
+				getRelationsApi(id),
+			]);
+			if (disposed || scene !== sceneRef.current) return;
+			setEntities(nextEntities);
+			setRelations(nextRelations);
+			scene.load(nextEntities, nextRelations);
+			requestDraw();
+			// Сущностям без сохранённой позиции её только что назначил
+			// автолейаут — закрепляем результат, чтобы он не пересчитывался при
+			// каждом открытии.
+			flush();
+		};
+		reloadRef.current = reload;
+
 		// Pointer position in CSS pixels, relative to the canvas.
 		const getPos = (e: MouseEvent) => {
 			const bounds = canvas.getBoundingClientRect();
@@ -104,15 +181,15 @@ export function DocErdShowPage() {
 			canvas.width = Math.round(cssW * dpr);
 			canvas.height = Math.round(cssH * dpr);
 			scene.resize(cssW, cssH, dpr);
-			scene.render(ctx);
+			requestDraw();
 		};
 
 		const handleMouseDown = (e: MouseEvent) => {
 			if (e.button !== 0 || !scene) return;
 			const { x, y } = getPos(e);
 			scene.on_mouse_down(x, y);
-			canvas.style.cursor = scene.cursor();
-			scene.render(ctx);
+			applyCursor();
+			requestDraw();
 			// Клик по крестику на связи удаляет её ещё в mousedown.
 			flush();
 		};
@@ -121,18 +198,27 @@ export function DocErdShowPage() {
 			if (!scene) return;
 			const { x, y } = getPos(e);
 			const dirty = scene.on_mouse_move(x, y);
-			canvas.style.cursor = scene.cursor();
-			if (dirty) scene.render(ctx);
+			applyCursor();
+			if (dirty) requestDraw();
 		};
 
 		const handleMouseUp = (e: MouseEvent) => {
 			if (!scene) return;
 			const { x, y } = getPos(e);
 			const dirty = scene.on_mouse_up(x, y);
-			canvas.style.cursor = scene.cursor();
-			if (dirty) scene.render(ctx);
+			applyCursor();
+			if (dirty) requestDraw();
 			// Здесь оседают и конец перетаскивания таблицы, и новая связь.
 			flush();
+		};
+
+		const handleDoubleClick = () => {
+			// Выделение проставил mousedown, пришедший перед двойным кликом, —
+			// сцену достаточно спросить. Повторный `on_mouse_down` здесь начал
+			// бы перетаскивание, которое некому завершить: своего mouseup у
+			// двойного клика нет, и таблица поехала бы за курсором.
+			const picked = scene?.selected_id();
+			if (picked) setEditingId(picked);
 		};
 
 		const handleWheel = (e: WheelEvent) => {
@@ -142,7 +228,7 @@ export function DocErdShowPage() {
 			// Smaller exponent => gentler zoom per notch.
 			const factor = Math.exp(-e.deltaY * 0.0015);
 			scene.zoom(x, y, factor);
-			scene.render(ctx);
+			requestDraw();
 		};
 
 		import("canvas-wasm").then(async ({ default: init, Scene }) => {
@@ -154,18 +240,13 @@ export function DocErdShowPage() {
 			if (disposed) return;
 			scene = new Scene();
 			sceneRef.current = scene;
-			renderRef.current = () => scene?.render(ctx);
+			renderRef.current = requestDraw;
 			flushRef.current = flush;
 
 			// Populate the diagram from the ERD's persisted schema. Without an id
 			// there is nothing to show, so the scene stays empty.
 			if (id) {
-				const [entities, relations] = await Promise.all([
-					getErdEntitiesApi(id),
-					getRelationsApi(id),
-				]);
-				if (disposed || scene !== sceneRef.current) return;
-				scene.load(entities, relations);
+				await reload();
 			}
 			resize();
 			// Сущностям без сохранённой позиции её только что назначил
@@ -175,6 +256,7 @@ export function DocErdShowPage() {
 		});
 
 		canvas.addEventListener("mousedown", handleMouseDown);
+		canvas.addEventListener("dblclick", handleDoubleClick);
 		canvas.addEventListener("wheel", handleWheel, { passive: false });
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseup", handleMouseUp);
@@ -182,7 +264,9 @@ export function DocErdShowPage() {
 
 		return () => {
 			disposed = true;
+			if (frame !== 0) cancelAnimationFrame(frame);
 			canvas.removeEventListener("mousedown", handleMouseDown);
+			canvas.removeEventListener("dblclick", handleDoubleClick);
 			canvas.removeEventListener("wheel", handleWheel);
 			window.removeEventListener("mousemove", handleMouseMove);
 			window.removeEventListener("mouseup", handleMouseUp);
@@ -192,6 +276,7 @@ export function DocErdShowPage() {
 			sceneRef.current = null;
 			renderRef.current = null;
 			flushRef.current = null;
+			reloadRef.current = null;
 		};
 	}, [id]);
 
@@ -203,8 +288,8 @@ export function DocErdShowPage() {
 				{id && <CatalogBackLink nodeId={id} className={styles.back} />}
 				<div className={styles.toolbar}>
 					<p className={styles.hint}>
-						Тяните от поля к полю — связь · клик по связи, затем ✕ — удалить ·
-						колесо — масштаб
+						Тяните от поля к полю — связь · двойной клик по таблице — правка ·
+						клик по связи, затем ✕ — удалить · колесо — масштаб
 					</p>
 					<button
 						type="button"
@@ -229,6 +314,17 @@ export function DocErdShowPage() {
 					onCreated={handleCreated}
 				/>
 			)}
+
+			<EditTableModal
+				open={!!editing}
+				onOpenChange={(next) => !next && setEditingId(null)}
+				table={editing}
+				relations={relations}
+				onSaved={() => {
+					setEditingId(null);
+					void reloadRef.current?.();
+				}}
+			/>
 		</div>
 	);
 }
