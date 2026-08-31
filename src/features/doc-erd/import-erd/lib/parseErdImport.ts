@@ -5,8 +5,6 @@ export interface ImportErdTable {
 	name: string;
 	desc: string;
 	fields: SchemaField[];
-	/** Позиция на холсте; `null` — в файле не задана, разложит автолейаут. */
-	position: { x: number; y: number } | null;
 }
 
 /** Связь из файла импорта: концы адресованы именами, а не id. */
@@ -39,13 +37,6 @@ const bool = (value: unknown, where: string): boolean => {
 	if (value === undefined || value === null) return false;
 	if (typeof value !== "boolean")
 		throw new Error(`${where}: ожидалось true или false`);
-	return value;
-};
-
-const coord = (value: unknown, where: string): number | undefined => {
-	if (value === undefined || value === null) return undefined;
-	if (typeof value !== "number" || !Number.isFinite(value))
-		throw new Error(`${where}: координата должна быть конечным числом`);
 	return value;
 };
 
@@ -122,18 +113,9 @@ const parseTable = (item: unknown, index: number): ImportErdTable => {
 		seen.add(field.name);
 	}
 
-	// Координаты задаются парой: одна половина позиции холсту бесполезна.
-	const x = coord(item.x, `Таблица «${name}»: x`);
-	const y = coord(item.y, `Таблица «${name}»: y`);
-	if ((x === undefined) !== (y === undefined))
-		throw new Error(`Таблица «${name}»: нужны обе координаты — и x, и y`);
-
-	return {
-		name,
-		desc: text(item.desc),
-		fields,
-		position: x !== undefined && y !== undefined ? { x, y } : null,
-	};
+	// Координат в файле нет: раскладку целиком считает `layoutErdTables` при
+	// импорте, а дальше положение живёт в базе и меняется перетаскиванием.
+	return { name, desc: text(item.desc), fields };
 };
 
 /**

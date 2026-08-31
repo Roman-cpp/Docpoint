@@ -8,8 +8,6 @@
 		{
 			"name": "accounts",
 			"desc": "Аккаунт клиента.",
-			"x": 40,
-			"y": 40,
 			"columns": [
 				{ "name": "id", "type": "uuid", "pk": true },
 				{
@@ -35,8 +33,6 @@
 		{
 			"name": "subscriptions",
 			"desc": "Подписка аккаунта на тариф.",
-			"x": 400,
-			"y": 40,
 			"columns": [
 				{ "name": "id", "type": "uuid", "pk": true },
 				{ "name": "account_id", "type": "uuid", "req": true },
@@ -55,7 +51,7 @@
 		},
 		{
 			"name": "payments",
-			"desc": "Списание по подписке. Координат нет — разложит автолейаут.",
+			"desc": "Списание по подписке.",
 			"columns": [
 				{ "name": "id", "type": "uuid", "pk": true },
 				{ "name": "subscription_id", "type": "uuid", "req": true },
