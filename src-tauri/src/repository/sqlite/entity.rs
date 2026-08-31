@@ -349,6 +349,10 @@ mod tests {
         .execute(&pool)
         .await
         .unwrap();
+        sqlx::query("INSERT INTO doc_erd (id) VALUES ('erd1')")
+            .execute(&pool)
+            .await
+            .unwrap();
         pool
     }
 
@@ -505,6 +509,81 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(owners, vec!["e1"]);
+    }
+
+    /// Диаграмма получает свою строку, а сущность — обязательного хозяина:
+    /// осиротевшие уходят при миграции, а удаление диаграммы уносит её таблицы.
+    #[tokio::test]
+    async fn entities_hang_on_a_diagram_row_that_takes_them_with_it() {
+        let pool = test_db::through("0035").await;
+        sqlx::query("INSERT INTO platforms (id, name) VALUES ('p1', 'P')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO catalog_node (id, platform_id, parent_id, kind, name) \
+             VALUES ('erd1', 'p1', NULL, 'doc_erd', 'Схема'), \
+                    ('cat1', 'p1', NULL, 'catalog', 'Папка')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        // Таблица диаграммы и осиротевшая сущность — такую оставлял прежний
+        // ON DELETE SET NULL после удаления узла.
+        sqlx::query(
+            "INSERT INTO entities (id, doc_erd_id, name, desc, pos_x, pos_y) \
+             VALUES ('e1', 'erd1', 'users', '', 40.0, 80.0), \
+                    ('e2', NULL, 'orphan', '', NULL, NULL)",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO entity_field (entity_id, name, type) \
+             VALUES ('e1', 'id', 'uuid'), ('e2', 'sum', 'numeric')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        test_db::apply(&pool, "0036_doc_erd.sql").await;
+
+        // Строка заводится каждому ERD-узлу и только ему.
+        let erds: Vec<String> = sqlx::query_scalar("SELECT id FROM doc_erd ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        assert_eq!(erds, vec!["erd1"]);
+
+        let ids: Vec<String> = sqlx::query_scalar("SELECT id FROM entities ORDER BY id")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        assert_eq!(ids, vec!["e1"], "сущность без диаграммы больше не хранится");
+
+        // Позиция таблицы переживает пересборку.
+        let (x, y): (Option<f64>, Option<f64>) =
+            sqlx::query_as("SELECT pos_x, pos_y FROM entities WHERE id = 'e1'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!((x, y), (Some(40.0), Some(80.0)));
+
+        // Узел → doc_erd → сущности → поля: каскад проходит всю цепочку.
+        sqlx::query("DELETE FROM catalog_node WHERE id = 'erd1'")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let left: i64 = sqlx::query_scalar(
+            "SELECT (SELECT COUNT(*) FROM doc_erd) + (SELECT COUNT(*) FROM entities) \
+                  + (SELECT COUNT(*) FROM entity_field)",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(left, 0, "от удалённой диаграммы ничего не остаётся");
     }
 
     #[tokio::test]

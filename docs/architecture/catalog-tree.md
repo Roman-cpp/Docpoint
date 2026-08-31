@@ -18,7 +18,7 @@ platforms
     ├── kind = 'catalog'   — папка
     ├── kind = 'doc_api'   → doc_api (prefix) + doc_api_tag
     ├── kind = 'doc_ws'    → doc_ws (url)
-    ├── kind = 'doc_erd'   → entities / entity_relation
+    ├── kind = 'doc_erd'   → doc_erd + entities / entity_relation
     └── kind = 'markdown'  → <content_dir>/<id>.md
 ```
 
