@@ -10,6 +10,7 @@ export { ChevronLeftIcon } from "./ui/ChevronLeftIcon";
 export { ChevronRightIcon } from "./ui/ChevronRightIcon";
 export { CloseIcon } from "./ui/CloseIcon";
 export { CopyIcon } from "./ui/CopyIcon";
+export { DatabaseIcon } from "./ui/DatabaseIcon";
 export { DocIcon } from "./ui/DocIcon";
 export { DownloadIcon } from "./ui/DownloadIcon";
 export { ErdIcon } from "./ui/ErdIcon";

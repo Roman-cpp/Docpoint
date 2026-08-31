@@ -1,5 +1,6 @@
 pub mod catalog;
 pub mod content;
+pub mod db_import;
 pub mod doc_api;
 pub mod doc_erd;
 pub mod environment;

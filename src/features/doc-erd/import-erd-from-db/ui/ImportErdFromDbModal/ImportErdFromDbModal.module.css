@@ -1,0 +1,85 @@
+.step {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.row {
+	display: grid;
+	grid-template-columns: 1fr 120px;
+	gap: 12px;
+}
+
+.pair {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.file {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.file > :first-child {
+	flex: 1;
+}
+
+.problem {
+	margin: 0;
+	color: var(--red);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+}
+
+.summary {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+	color: var(--ink-mid);
+	font-size: var(--fs-12);
+}
+
+.link {
+	background: none;
+	border: 0;
+	padding: 0;
+	color: var(--blue);
+	font: inherit;
+	cursor: pointer;
+}
+
+.tables {
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+.name {
+	font-family: var(--font-mono);
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.dim {
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+}
+
+.notices {
+	margin: 0;
+	padding: 10px 12px;
+	border: 1px solid var(--amber-border);
+	border-radius: var(--r-sm);
+	background: var(--amber-bg);
+	color: var(--ink-mid);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+	max-height: 140px;
+	overflow-y: auto;
+}
+
+.notices li + li {
+	margin-top: 4px;
+}

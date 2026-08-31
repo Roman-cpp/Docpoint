@@ -28,6 +28,7 @@ import {
 	useImportExportDoc,
 } from "@/features/doc-api";
 import {
+	ImportErdFromDbModal,
 	type ImportErdPayload,
 	parseErdImport,
 	useImportErd,
@@ -39,6 +40,7 @@ import {
 } from "@/features/websocket";
 import { cx } from "@/shared/lib/cx";
 import {
+	DatabaseIcon,
 	DownloadIcon,
 	EyeIcon,
 	MoveIcon,
@@ -111,6 +113,7 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 	const { importDocAsync, isImporting } = useImportExportDoc(target);
 	const { importWebsocket, isImportingWebsocket } = useImportWebsocket(target);
 	const { importErd, isImportingErd } = useImportErd(target);
+	const [dbImportOpen, setDbImportOpen] = useState(false);
 
 	const [menu, setMenu] = useState<{
 		x: number;
@@ -389,6 +392,12 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 								>
 									{isImportingErd ? "Импорт…" : "ERD-диаграмма (JSON)"}
 								</DropMenu.Item>
+								<DropMenu.Item
+									disabled={isImportingErd}
+									onClick={() => setDbImportOpen(true)}
+								>
+									ERD из базы данных…
+								</DropMenu.Item>
 							</DropMenu.Content>
 						</DropMenu>
 					</div>
@@ -444,6 +453,15 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 				accept="application/json,.json"
 				style={{ display: "none" }}
 				onChange={importErdFile}
+			/>
+
+			<ImportErdFromDbModal
+				open={dbImportOpen}
+				onOpenChange={setDbImportOpen}
+				target={target}
+				onImported={(erdId) =>
+					navigate(nodeRoute({ id: erdId, kind: "docErd" }) ?? "")
+				}
 			/>
 
 			<ContextMenu.Root
@@ -530,6 +548,13 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 							onSelect={() => erdInputRef.current?.click()}
 						>
 							ERD-диаграмма (JSON)
+						</ContextMenu.Item>
+						<ContextMenu.Item
+							icon={<DatabaseIcon />}
+							disabled={isImportingErd}
+							onSelect={() => setDbImportOpen(true)}
+						>
+							ERD из базы данных…
 						</ContextMenu.Item>
 					</>
 				)}

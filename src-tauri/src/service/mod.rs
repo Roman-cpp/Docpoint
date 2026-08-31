@@ -1,4 +1,5 @@
 mod catalog;
+mod db_import;
 mod doc_api;
 mod endpoint;
 mod env_auth;
@@ -9,6 +10,7 @@ mod shared;
 mod websocket;
 
 pub use catalog::*;
+pub use db_import::*;
 pub use doc_api::*;
 pub use endpoint::*;
 pub use env_auth::*;

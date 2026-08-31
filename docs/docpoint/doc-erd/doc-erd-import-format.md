@@ -177,3 +177,5 @@
 ```
 
 Полный пример доступен в [doc-erd-example-import.json](doc-erd-example-import.json).
+
+Схему можно не описывать руками, а прочитать из живой базы — см. [импорт ERD из базы данных](doc-erd-db-import.md).
