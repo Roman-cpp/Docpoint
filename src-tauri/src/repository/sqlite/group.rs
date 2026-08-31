@@ -323,8 +323,6 @@ mod tests {
     struct ImportDoc {
         name: String,
         #[serde(default)]
-        version: String,
-        #[serde(default)]
         desc: String,
         #[serde(default)]
         prefix: String,
@@ -355,7 +353,6 @@ mod tests {
             .create(
                 &node.id,
                 &DocApiPayload {
-                    version: doc.version,
                     prefix: doc.prefix,
                     tags: doc.tags,
                 },
@@ -491,7 +488,7 @@ mod tests {
     #[tokio::test]
     async fn a_path_param_that_is_not_in_the_path_stops_the_import() {
         let raw = r#"{
-            "doc": { "name": "My API", "version": "v1", "desc": "d", "tags": [] },
+            "doc": { "name": "My API", "desc": "d", "tags": [] },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/posts/{postId}", "name": "Post", "description": "",
                 "pathParams": [
@@ -516,7 +513,7 @@ mod tests {
     #[tokio::test]
     async fn a_file_without_requests_still_imports() {
         let raw = r#"{
-            "doc": { "name": "My API", "version": "v1", "desc": "d", "tags": [] },
+            "doc": { "name": "My API", "desc": "d", "tags": [] },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/ping", "name": "Ping", "description": "",
                 "tags": [], "auth": false, "queryParams": [], "bodyParams": [], "responses": {}

@@ -4,11 +4,8 @@ import type { CreateNodeDialogProps } from "../../model/create-node.type";
 import { useCreateNode } from "../../model/useCreateNode";
 import { CreateDialogShell } from "../CreateDialogShell";
 
-/** Версия по умолчанию: документ без версии читается хуже, чем с очевидной. */
-const DEFAULT_VERSION = "1.0.0";
-
-/** Новый документ HTTP API: версия, префикс путей и теги — его собственные
- *  поля, эндпоинты добавляются уже внутри документа. */
+/** Новый документ HTTP API: префикс путей и теги — его собственные поля,
+ *  эндпоинты добавляются уже внутри документа. */
 export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 	parentName,
 	isSaving = false,
@@ -16,7 +13,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 	onCreate,
 }) => {
 	const [name, setName] = useState("");
-	const [version, setVersion] = useState(DEFAULT_VERSION);
 	const [prefix, setPrefix] = useState("");
 	const [desc, setDesc] = useState("");
 	const [tagsInput, setTagsInput] = useState("");
@@ -31,7 +27,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 						desc: desc.trim(),
 						payload: {
 							kind: "docApi",
-							version: version.trim() || DEFAULT_VERSION,
 							prefix: prefix.trim(),
 							tags: tagsInput
 								.split(",")
@@ -61,15 +56,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 					}}
 					placeholder="Например, Payments API"
 					style={{ width: "100%" }}
-				/>
-			</Field>
-
-			<Field label="Версия">
-				<Input
-					value={version}
-					onChange={(e) => setVersion(e.target.value)}
-					placeholder={DEFAULT_VERSION}
-					style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 				/>
 			</Field>
 

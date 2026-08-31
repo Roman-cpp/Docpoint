@@ -5,7 +5,7 @@ use crate::domain::environment::environment::entity::{EnvValue, Environment};
 use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
 
 /// Документ склеен из узла дерева (имя, описание) и своей строки в `doc_api`.
-const SELECT_DOC: &str = "SELECT n.id, n.name, n.desc, d.version, d.prefix \
+const SELECT_DOC: &str = "SELECT n.id, n.name, n.desc, d.prefix \
                           FROM doc_api d JOIN catalog_node n ON n.id = d.id";
 
 pub struct DocApiRepo<'a> {
@@ -96,9 +96,8 @@ impl DocApiRepository for DocApiRepo<'_> {
     }
 
     async fn create(&self, id: &str, payload: &DocApiPayload) -> Result<(), String> {
-        sqlx::query("INSERT INTO doc_api (id, version, prefix) VALUES (?, ?, ?)")
+        sqlx::query("INSERT INTO doc_api (id, prefix) VALUES (?, ?)")
             .bind(id)
-            .bind(&payload.version)
             .bind(&payload.prefix)
             .execute(self.db)
             .await
@@ -108,8 +107,7 @@ impl DocApiRepository for DocApiRepo<'_> {
     }
 
     async fn update(&self, id: &str, payload: &DocApiPayload) -> Result<(), String> {
-        sqlx::query("UPDATE doc_api SET version = ?, prefix = ? WHERE id = ?")
-            .bind(&payload.version)
+        sqlx::query("UPDATE doc_api SET prefix = ? WHERE id = ?")
             .bind(&payload.prefix)
             .bind(id)
             .execute(self.db)
@@ -168,7 +166,6 @@ fn doc_from_row(row: &SqliteRow, tags: Vec<String>) -> DocApi {
         id: row.get("id"),
         name: row.get("name"),
         desc: row.get("desc"),
-        version: row.get("version"),
         prefix: row.get("prefix"),
         tags,
     }

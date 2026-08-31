@@ -20,7 +20,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 }) => {
 	const [name, setName] = useState(doc.name);
 	const [desc, setDesc] = useState(doc.desc);
-	const [version, setVersion] = useState(doc.version);
 	const [prefix, setPrefix] = useState(doc.prefix);
 	const [tagsInput, setTagsInput] = useState(doc.tags.join(", "));
 
@@ -37,7 +36,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 		onSave({
 			name: name.trim(),
 			desc: desc.trim(),
-			version: version.trim(),
 			prefix: prefix.trim(),
 			tags,
 			id: doc.id,
@@ -62,14 +60,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 						onChange={(e) => setName(e.target.value)}
 						placeholder="Например, Payments API"
 						style={{ width: "100%" }}
-					/>
-				</Field>
-				<Field label="Версия">
-					<Input
-						value={version}
-						onChange={(e) => setVersion(e.target.value)}
-						placeholder="1.0.0"
-						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 					/>
 				</Field>
 				<Field

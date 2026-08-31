@@ -105,12 +105,6 @@ export const OverviewPage = () => {
 					</div>
 				</div>
 				<div className={s.overviewCard}>
-					<div className={s.overviewCardLabel}>Version</div>
-					<div className={s.overviewCardValue}>
-						<code>{doc.version}</code>
-					</div>
-				</div>
-				<div className={s.overviewCard}>
 					<div className={s.overviewCardLabel}>Endpoints</div>
 					<div className={s.overviewCardValue}>{endpointCount}</div>
 				</div>

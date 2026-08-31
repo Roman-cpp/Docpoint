@@ -9,7 +9,6 @@ pub struct DocApi {
     pub id: String,
     pub name: String,
     pub desc: String,
-    pub version: String,
     /// Дописывается после префикса окружения при сборке URL запроса.
     pub prefix: String,
     pub tags: Vec<String>,

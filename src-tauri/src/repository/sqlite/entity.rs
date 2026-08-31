@@ -461,7 +461,7 @@ mod tests {
         .execute(&pool)
         .await
         .unwrap();
-        sqlx::query("INSERT INTO doc_api (id, version, prefix) VALUES ('api1', '1', '')")
+        sqlx::query("INSERT INTO doc_api (id, prefix) VALUES ('api1', '')")
             .execute(&pool)
             .await
             .unwrap();

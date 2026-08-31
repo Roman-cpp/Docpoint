@@ -2,11 +2,11 @@ import type { NodeKind } from "./catalog-node.entity";
 
 /**
  * Полезная нагрузка создаваемого узла. Вид узла выводится из неё, поэтому
- * создать doc-ws без адреса или doc-api без версии по ошибке нельзя.
+ * создать doc-ws без адреса или doc-api без префикса по ошибке нельзя.
  */
 export type NodePayload =
 	| { kind: "catalog" }
-	| { kind: "docApi"; version: string; prefix: string; tags: string[] }
+	| { kind: "docApi"; prefix: string; tags: string[] }
 	| { kind: "docWs"; url: string }
 	| { kind: "docErd" }
 	| { kind: "markdown"; content: string };

@@ -7,7 +7,7 @@ use crate::repository::sqlite::doc_api::DocApiRepo;
 use crate::state::AppState;
 use tauri::State;
 
-/// Имя и описание документа лежат в узле дерева, версия, префикс и теги — в его
+/// Имя и описание документа лежат в узле дерева, префикс и теги — в его
 /// полезной нагрузке, поэтому правка идёт в две таблицы.
 #[tauri::command]
 pub async fn update_doc(
@@ -26,7 +26,6 @@ pub async fn update_doc(
         .update(
             &doc.id,
             &DocApiPayload {
-                version: doc.version,
                 prefix: doc.prefix,
                 tags: doc.tags,
             },

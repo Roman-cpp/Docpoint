@@ -59,16 +59,11 @@ async fn write_payload(
         // Каталог — это сам узел, а ERD целиком описывается своими сущностями
         // и связями: собственных полей у них нет.
         NodePayload::Catalog | NodePayload::DocErd => Ok(()),
-        NodePayload::DocApi {
-            version,
-            prefix,
-            tags,
-        } => {
+        NodePayload::DocApi { prefix, tags } => {
             DocApiRepo::new(&state.db)
                 .create(
                     id,
                     &DocApiPayload {
-                        version: version.clone(),
                         prefix: prefix.clone(),
                         tags: tags.clone(),
                     },

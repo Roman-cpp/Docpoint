@@ -3,15 +3,13 @@ use serde::Deserialize;
 use super::entity::NodeKind;
 
 /// Полезная нагрузка создаваемого узла. Вид узла выводится из неё, поэтому
-/// создать doc-ws без адреса или doc-api без версии по ошибке нельзя.
+/// создать doc-ws без адреса или doc-api без префикса по ошибке нельзя.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum NodePayload {
     Catalog,
     #[serde(rename_all = "camelCase")]
     DocApi {
-        #[serde(default)]
-        version: String,
         #[serde(default)]
         prefix: String,
         #[serde(default)]

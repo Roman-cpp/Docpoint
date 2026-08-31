@@ -3,7 +3,6 @@ use serde::Deserialize;
 /// Собственные поля doc-api — то, что не помещается в узел дерева.
 #[derive(Debug, Default, Deserialize)]
 pub struct DocApiPayload {
-    pub version: String,
     pub prefix: String,
     pub tags: Vec<String>,
 }
@@ -15,8 +14,6 @@ pub struct UpdateDocApiDTO {
     pub name: String,
     #[serde(default)]
     pub desc: String,
-    #[serde(default)]
-    pub version: String,
     #[serde(default)]
     pub prefix: String,
     #[serde(default)]

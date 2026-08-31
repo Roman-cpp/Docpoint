@@ -4,7 +4,6 @@ export interface UpdateDocDTO {
 	id: string;
 	name: string;
 	desc: string;
-	version: string;
 	prefix: string;
 	tags: string[];
 }
