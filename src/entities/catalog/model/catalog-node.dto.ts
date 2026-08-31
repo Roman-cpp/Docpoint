@@ -6,7 +6,7 @@ import type { NodeKind } from "./catalog-node.entity";
  */
 export type NodePayload =
 	| { kind: "catalog" }
-	| { kind: "docApi"; prefix: string; tags: string[] }
+	| { kind: "docApi"; prefix: string }
 	| { kind: "docWs"; url: string }
 	| { kind: "docErd" }
 	| { kind: "markdown"; content: string };

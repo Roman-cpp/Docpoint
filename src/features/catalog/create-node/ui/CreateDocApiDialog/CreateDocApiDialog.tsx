@@ -4,8 +4,8 @@ import type { CreateNodeDialogProps } from "../../model/create-node.type";
 import { useCreateNode } from "../../model/useCreateNode";
 import { CreateDialogShell } from "../CreateDialogShell";
 
-/** Новый документ HTTP API: префикс путей и теги — его собственные поля,
- *  эндпоинты добавляются уже внутри документа. */
+/** Новый документ HTTP API: префикс путей — его собственное поле, эндпоинты
+ *  добавляются уже внутри документа. */
 export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 	parentName,
 	isSaving = false,
@@ -15,7 +15,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 	const [name, setName] = useState("");
 	const [prefix, setPrefix] = useState("");
 	const [desc, setDesc] = useState("");
-	const [tagsInput, setTagsInput] = useState("");
 	const create = useCreateNode({ isSaving, onClose, onCreate });
 
 	const trimmed = name.trim();
@@ -28,10 +27,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 						payload: {
 							kind: "docApi",
 							prefix: prefix.trim(),
-							tags: tagsInput
-								.split(",")
-								.map((tag) => tag.trim())
-								.filter(Boolean),
 						},
 					}
 				: null,
@@ -78,15 +73,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 					placeholder="За что отвечает этот API"
 					rows={3}
 					style={{ width: "100%" }}
-				/>
-			</Field>
-
-			<Field label="Теги" hint="Список через запятую">
-				<Input
-					value={tagsInput}
-					onChange={(e) => setTagsInput(e.target.value)}
-					placeholder="payments, v1, internal"
-					style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 				/>
 			</Field>
 		</CreateDialogShell>

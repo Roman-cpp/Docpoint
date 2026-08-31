@@ -4,7 +4,6 @@ use serde::Deserialize;
 #[derive(Debug, Default, Deserialize)]
 pub struct DocApiPayload {
     pub prefix: String,
-    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -16,6 +15,4 @@ pub struct UpdateDocApiDTO {
     pub desc: String,
     #[serde(default)]
     pub prefix: String,
-    #[serde(default)]
-    pub tags: Vec<String>,
 }

@@ -8,7 +8,6 @@ export interface ImportDocMeta {
 	name: string;
 	desc?: string;
 	prefix?: string;
-	tags?: string[];
 }
 
 /** Разобранный файл импорта doc-api. */
@@ -36,7 +35,6 @@ export function importDocApi(
 		payload: {
 			kind: "docApi",
 			prefix: payload.doc.prefix ?? "",
-			tags: payload.doc.tags ?? [],
 		},
 	};
 

@@ -21,7 +21,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 	const [name, setName] = useState(doc.name);
 	const [desc, setDesc] = useState(doc.desc);
 	const [prefix, setPrefix] = useState(doc.prefix);
-	const [tagsInput, setTagsInput] = useState(doc.tags.join(", "));
 
 	const close = () => {
 		if (isSaving) return;
@@ -29,15 +28,10 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 	};
 
 	const submit = () => {
-		const tags = tagsInput
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean);
 		onSave({
 			name: name.trim(),
 			desc: desc.trim(),
 			prefix: prefix.trim(),
-			tags,
 			id: doc.id,
 		});
 	};
@@ -80,14 +74,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 						placeholder="Краткое описание документа"
 						rows={3}
 						style={{ width: "100%" }}
-					/>
-				</Field>
-				<Field label="Теги" hint="Список через запятую">
-					<Input
-						value={tagsInput}
-						onChange={(e) => setTagsInput(e.target.value)}
-						placeholder="payments, v1, internal"
-						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
 					/>
 				</Field>
 			</Dialog.Body>

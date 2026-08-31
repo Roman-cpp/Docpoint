@@ -1,8 +1,7 @@
 {
 	"doc": {
 		"name": "Task Manager API",
-		"desc": "REST API для управления задачами, проектами и пользователями.",
-		"tags": ["REST", "JSON", "Auth required"]
+		"desc": "REST API для управления задачами, проектами и пользователями."
 	},
 	"groups": [
 		{

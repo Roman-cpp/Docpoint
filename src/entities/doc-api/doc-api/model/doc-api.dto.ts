@@ -5,5 +5,4 @@ export interface UpdateDocDTO {
 	name: string;
 	desc: string;
 	prefix: string;
-	tags: string[];
 }

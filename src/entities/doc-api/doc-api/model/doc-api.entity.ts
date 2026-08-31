@@ -4,5 +4,4 @@ export interface Doc {
 	desc: string;
 	/** Префикс документа: дописывается после префикса окружения. */
 	prefix: string;
-	tags: string[];
 }

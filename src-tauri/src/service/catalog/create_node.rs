@@ -63,13 +63,12 @@ async fn write_payload(
         // У диаграммы своих полей тоже нет, но строка ей нужна: к ней цепляются
         // сущности.
         NodePayload::DocErd => DocErdRepo::new(&state.db).create(id).await,
-        NodePayload::DocApi { prefix, tags } => {
+        NodePayload::DocApi { prefix } => {
             DocApiRepo::new(&state.db)
                 .create(
                     id,
                     &DocApiPayload {
                         prefix: prefix.clone(),
-                        tags: tags.clone(),
                     },
                 )
                 .await

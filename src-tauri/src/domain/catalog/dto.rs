@@ -12,8 +12,6 @@ pub enum NodePayload {
     DocApi {
         #[serde(default)]
         prefix: String,
-        #[serde(default)]
-        tags: Vec<String>,
     },
     #[serde(rename_all = "camelCase")]
     DocWs {

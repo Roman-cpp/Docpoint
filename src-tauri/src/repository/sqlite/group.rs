@@ -326,8 +326,6 @@ mod tests {
         desc: String,
         #[serde(default)]
         prefix: String,
-        #[serde(default)]
-        tags: Vec<String>,
     }
 
     /// Документ на своём месте в дереве: платформа, узел, поля документа.
@@ -354,7 +352,6 @@ mod tests {
                 &node.id,
                 &DocApiPayload {
                     prefix: doc.prefix,
-                    tags: doc.tags,
                 },
             )
             .await
@@ -488,7 +485,7 @@ mod tests {
     #[tokio::test]
     async fn a_path_param_that_is_not_in_the_path_stops_the_import() {
         let raw = r#"{
-            "doc": { "name": "My API", "desc": "d", "tags": [] },
+            "doc": { "name": "My API", "desc": "d" },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/posts/{postId}", "name": "Post", "description": "",
                 "pathParams": [
@@ -513,7 +510,7 @@ mod tests {
     #[tokio::test]
     async fn a_file_without_requests_still_imports() {
         let raw = r#"{
-            "doc": { "name": "My API", "desc": "d", "tags": [] },
+            "doc": { "name": "My API", "desc": "d" },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/ping", "name": "Ping", "description": "",
                 "tags": [], "auth": false, "queryParams": [], "bodyParams": [], "responses": {}

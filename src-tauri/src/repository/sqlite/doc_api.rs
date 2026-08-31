@@ -16,35 +16,6 @@ impl<'a> DocApiRepo<'a> {
     pub fn new(db: &'a SqlitePool) -> Self {
         Self { db }
     }
-
-    async fn tags(&self, doc_id: &str) -> Result<Vec<String>, String> {
-        let rows = sqlx::query("SELECT tag FROM doc_api_tag WHERE doc_id = ?")
-            .bind(doc_id)
-            .fetch_all(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(rows.iter().map(|r| r.get::<String, _>("tag")).collect())
-    }
-
-    async fn write_tags(&self, doc_id: &str, tags: &[String]) -> Result<(), String> {
-        sqlx::query("DELETE FROM doc_api_tag WHERE doc_id = ?")
-            .bind(doc_id)
-            .execute(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        for tag in tags {
-            sqlx::query("INSERT INTO doc_api_tag (doc_id, tag) VALUES (?, ?)")
-                .bind(doc_id)
-                .bind(tag)
-                .execute(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-
-        Ok(())
-    }
 }
 
 impl DocApiRepository for DocApiRepo<'_> {
@@ -54,29 +25,7 @@ impl DocApiRepository for DocApiRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-        if rows.is_empty() {
-            return Ok(vec![]);
-        }
-
-        // Теги всех документов одним запросом — иначе список из сотни доков
-        // превращается в сотню запросов.
-        let tag_rows = sqlx::query("SELECT doc_id, tag FROM doc_api_tag")
-            .fetch_all(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(rows
-            .iter()
-            .map(|row| {
-                let id: String = row.get("id");
-                let tags = tag_rows
-                    .iter()
-                    .filter(|t| t.get::<String, _>("doc_id") == id)
-                    .map(|t| t.get("tag"))
-                    .collect();
-                doc_from_row(row, tags)
-            })
-            .collect())
+        Ok(rows.iter().map(doc_from_row).collect())
     }
 
     async fn find(&self, id: &str) -> Result<Option<DocApi>, String> {
@@ -86,13 +35,7 @@ impl DocApiRepository for DocApiRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-        let Some(row) = row else {
-            return Ok(None);
-        };
-
-        let tags = self.tags(id).await?;
-
-        Ok(Some(doc_from_row(&row, tags)))
+        Ok(row.as_ref().map(doc_from_row))
     }
 
     async fn create(&self, id: &str, payload: &DocApiPayload) -> Result<(), String> {
@@ -103,7 +46,7 @@ impl DocApiRepository for DocApiRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-        self.write_tags(id, &payload.tags).await
+        Ok(())
     }
 
     async fn update(&self, id: &str, payload: &DocApiPayload) -> Result<(), String> {
@@ -114,7 +57,7 @@ impl DocApiRepository for DocApiRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-        self.write_tags(id, &payload.tags).await
+        Ok(())
     }
 
     /// Окружения документа — это окружения платформы, в дереве которой он лежит
@@ -161,12 +104,11 @@ impl DocApiRepository for DocApiRepo<'_> {
     }
 }
 
-fn doc_from_row(row: &SqliteRow, tags: Vec<String>) -> DocApi {
+fn doc_from_row(row: &SqliteRow) -> DocApi {
     DocApi {
         id: row.get("id"),
         name: row.get("name"),
         desc: row.get("desc"),
         prefix: row.get("prefix"),
-        tags,
     }
 }
