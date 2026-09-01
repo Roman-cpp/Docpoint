@@ -65,7 +65,6 @@ export const NodeGrid: FC<NodeGridProps> = ({
 				<section key={group.kind} className={s.section}>
 					<h2 className={s.sectionTitle}>
 						{KIND_GROUP_LABEL[group.kind]}
-						<span className={s.sectionCount}>{group.items.length}</span>
 					</h2>
 
 					<div className={s.grid}>
