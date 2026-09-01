@@ -39,6 +39,14 @@ const TOOLS: Tool[] = [
 		iconColor: "var(--ink)",
 		accent: "var(--amber)",
 	},
+	{
+		name: "Unix time",
+		desc: "Convert unix timestamps to readable dates and back.",
+		href: "/unix-time",
+		icon: "⏱",
+		iconColor: "var(--ink)",
+		accent: "var(--green)",
+	},
 ];
 
 /* ═══════════════ OVERVIEW ═══════════════ */
@@ -50,7 +58,8 @@ const Overview = () => {
 					<div className={s.ovEyebrow}>Toolbox</div>
 					<h1 className={s.ovTitle}>Инструменты</h1>
 					<p className={s.ovSub}>
-						Набор инструментов для работы с API: HTTP-клиент, WebSocket и JSON.
+						Набор инструментов для работы с API: HTTP-клиент, WebSocket, JSON и
+						unix-время.
 					</p>
 				</header>
 

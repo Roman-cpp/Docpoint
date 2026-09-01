@@ -22,6 +22,7 @@ const TOOL_LINKS: {
 	{ label: "HTTP Client", href: "/http-client", window: true },
 	{ label: "WebSocket", href: "/ws-client", window: true },
 	{ label: "JSON", href: "/json-viewer", window: true },
+	{ label: "Unix time", href: "/unix-time", window: true },
 ];
 
 interface HeaderProps {

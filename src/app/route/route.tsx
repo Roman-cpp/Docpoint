@@ -41,6 +41,12 @@ export const router = createBrowserRouter([
 				}),
 			},
 			{
+				path: "/unix-time",
+				lazy: async () => ({
+					Component: (await import("@/pages/unix-time")).UnixTimePage,
+				}),
+			},
+			{
 				path: "/http-history",
 				lazy: async () => ({
 					Component: (await import("@/pages/http-history")).HttpHistoryPage,

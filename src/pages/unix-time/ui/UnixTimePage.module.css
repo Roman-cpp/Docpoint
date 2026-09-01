@@ -1,0 +1,292 @@
+/* ═══════════════════════════════════════════════════════════════
+   UNIX TIME — перевод меток unix-времени в читаемую дату и обратно
+   ═══════════════════════════════════════════════════════════════ */
+
+.frame {
+	width: 100%;
+	height: 100vh;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+.page {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 28px 24px 48px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* ─── Часы ─── */
+.clock {
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	flex-wrap: wrap;
+	padding: 18px 20px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	box-shadow: var(--shadow-xs);
+}
+.clockMain {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.clockLabel {
+	font-size: var(--fs-11);
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.clockValue {
+	font-family: var(--font-mono);
+	font-size: var(--fs-28);
+	line-height: var(--lh-tight);
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+}
+.clockUnit {
+	font-size: var(--fs-11);
+	color: var(--ink-low);
+}
+.clockSide {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-left: 24px;
+	border-left: 1px solid var(--border);
+}
+.clockSideValue {
+	font-family: var(--font-mono);
+	font-size: var(--fs-13);
+	color: var(--ink-mid);
+	font-variant-numeric: tabular-nums;
+}
+.clockSideLabel {
+	font-size: var(--fs-11);
+	color: var(--ink-low);
+}
+.clockActions {
+	display: flex;
+	gap: 6px;
+	margin-left: auto;
+}
+
+/* ─── Карточка секции ─── */
+.card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 18px 20px 20px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	box-shadow: var(--shadow-xs);
+}
+.cardHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.cardTitle {
+	margin: 0;
+	font-family: var(--font-serif);
+	font-size: var(--fs-17);
+	font-weight: var(--fw-regular);
+	color: var(--ink);
+}
+.cardActions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* ─── Кнопки и селект ─── */
+.btn {
+	font-family: inherit;
+	font-size: var(--fs-12);
+	color: var(--ink-mid);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	padding: 5px 10px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		color var(--t-base),
+		border-color var(--t-base);
+}
+.btn:hover:not(:disabled) {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.btnWide {
+	align-self: flex-start;
+	margin-top: 2px;
+}
+.select {
+	font-family: inherit;
+	font-size: var(--fs-12);
+	color: var(--ink-mid);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	padding: 5px 8px;
+	cursor: pointer;
+	transition: border-color var(--t-base);
+}
+.select:hover {
+	border-color: var(--border-h);
+}
+
+/* Переключатель зоны: две кнопки в одной рамке. */
+.toggle {
+	display: inline-flex;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	padding: 2px;
+	gap: 2px;
+}
+.toggleBtn {
+	font-family: inherit;
+	font-size: var(--fs-12);
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	padding: 4px 10px;
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		color var(--t-base);
+}
+.toggleBtn:hover {
+	color: var(--ink);
+}
+.toggleActive {
+	background: var(--surface);
+	color: var(--ink);
+	box-shadow: var(--shadow-xs);
+}
+
+/* ─── Крупное поле ввода ─── */
+.bigInput {
+	width: 100%;
+	font-family: var(--font-mono);
+	font-size: var(--fs-20);
+	color: var(--ink);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	padding: 12px 14px;
+	outline: none;
+	font-variant-numeric: tabular-nums;
+	transition: border-color var(--t-base);
+}
+.bigInput:focus {
+	border-color: var(--border-h);
+}
+.bigInput::placeholder {
+	color: var(--ink-low);
+}
+.bigInputError {
+	border-color: var(--red-border);
+	background: var(--red-bg);
+}
+
+.hint {
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+}
+.hint b {
+	font-weight: var(--fw-medium);
+	color: var(--ink-mid);
+}
+.hintError {
+	color: var(--red);
+}
+
+/* ─── Строки результата ─── */
+.rows {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	overflow: hidden;
+}
+.row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 10px 8px 12px;
+	border-bottom: 1px solid var(--border);
+}
+.row:last-child {
+	border-bottom: none;
+}
+.row:hover {
+	background: var(--cat-bg);
+}
+.rowLabel {
+	flex-shrink: 0;
+	width: 180px;
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+}
+.rowValue {
+	flex: 1;
+	min-width: 0;
+	font-family: var(--font-mono);
+	font-size: var(--fs-13);
+	color: var(--ink-mid);
+	word-break: break-all;
+	font-variant-numeric: tabular-nums;
+}
+.rowValueStrong {
+	color: var(--ink);
+	font-size: var(--fs-14);
+}
+.copyBtn {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 5px;
+	color: var(--ink-low);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		color var(--t-base),
+		background var(--t-base),
+		opacity var(--t-base);
+}
+.row:hover .copyBtn,
+.copyBtn:focus-visible {
+	opacity: 1;
+}
+.copyBtn:hover {
+	color: var(--ink);
+	background: var(--surface);
+}
