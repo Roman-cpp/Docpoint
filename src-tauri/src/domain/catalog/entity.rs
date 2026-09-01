@@ -10,6 +10,7 @@ pub enum NodeKind {
     DocWs,
     DocErd,
     Markdown,
+    File,
 }
 
 impl NodeKind {
@@ -21,6 +22,7 @@ impl NodeKind {
             Self::DocWs => "doc_ws",
             Self::DocErd => "doc_erd",
             Self::Markdown => "markdown",
+            Self::File => "file",
         }
     }
 
@@ -31,6 +33,7 @@ impl NodeKind {
             "doc_ws" => Ok(Self::DocWs),
             "doc_erd" => Ok(Self::DocErd),
             "markdown" => Ok(Self::Markdown),
+            "file" => Ok(Self::File),
             other => Err(format!("unknown node kind: {other}")),
         }
     }
@@ -39,6 +42,12 @@ impl NodeKind {
     /// удалить с диска вместе со строкой.
     pub fn has_content(self) -> bool {
         matches!(self, Self::DocApi | Self::Markdown)
+    }
+
+    /// Лежит ли рядом с узлом загруженный файл. Определяет, что нужно убрать с
+    /// диска вместе со строкой.
+    pub fn has_file(self) -> bool {
+        matches!(self, Self::File)
     }
 
     /// Может ли узел содержать другие узлы. Документы — листья дерева.

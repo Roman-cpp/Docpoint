@@ -11,8 +11,9 @@ use service::{
     delete_endpoint, delete_endpoint_request, delete_environment, delete_group, delete_node,
     delete_platform, delete_relation, delete_schema, delete_variable, delete_websocket_message,
     duplicate_environment, environments_by_platform, export_markdown, import_doc, import_erd,
-    list_endpoint_requests, move_node, pick_db_file, read_catalog_tree, read_doc, read_doc_content,
-    read_docs, read_environment_auth, read_environments_by_doc, read_erd_schemas, read_groups,
+    list_endpoint_requests, move_node, open_file_node, pick_db_file, pick_file,
+    read_catalog_tree, read_doc, read_doc_content, read_docs, read_environment_auth,
+    read_environments_by_doc, read_erd_schemas, read_groups,
     read_markdown, read_node, read_platform, read_platforms, read_relations,
     read_websocket, read_websocket_messages, read_websockets, rename_node, save_endpoint_request,
     save_json_file, send_request, set_environment_access_token, set_selected_environment,
@@ -45,6 +46,12 @@ pub fn run() {
             let content_dir = app_dir.join("content");
             std::fs::create_dir_all(&content_dir)?;
 
+            // Загруженные файлы: каталог на узел, внутри — файл под своим
+            // именем. Лежат отдельно от тел документов, потому что имя и
+            // расширение здесь значащие — по ним файл открывает система.
+            let files_dir = app_dir.join("files");
+            std::fs::create_dir_all(&files_dir)?;
+
             let db_path = app_dir.join("docpoint.db");
             let options = SqliteConnectOptions::new()
                 .filename(&db_path)
@@ -62,6 +69,7 @@ pub fn run() {
                 db: pool,
                 selected_environment_id: Default::default(),
                 content_dir,
+                files_dir,
                 ws_conns: Default::default(),
                 http_client: infrastructure::http_client::build_client(),
             });
@@ -128,6 +136,8 @@ pub fn run() {
             db_list_schemas,
             db_introspect,
             pick_db_file,
+            pick_file,
+            open_file_node,
             ws_connect,
             ws_send,
             ws_disconnect,

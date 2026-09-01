@@ -1,0 +1,38 @@
+/* ═══════════════════════════════════════════════════════════════
+   Выбор файла: кнопка системного диалога и то, что уже выбрано.
+   ═══════════════════════════════════════════════════════════════ */
+
+.picker {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.chosen {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.chosenName {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	color: var(--ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.chosenSize {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+
+.empty {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	color: var(--ink-low);
+}

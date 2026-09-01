@@ -63,9 +63,7 @@ export const NodeGrid: FC<NodeGridProps> = ({
 		<div className={s.groups}>
 			{groups.map((group) => (
 				<section key={group.kind} className={s.section}>
-					<h2 className={s.sectionTitle}>
-						{KIND_GROUP_LABEL[group.kind]}
-					</h2>
+					<h2 className={s.sectionTitle}>{KIND_GROUP_LABEL[group.kind]}</h2>
 
 					<div className={s.grid}>
 						{group.items.map((node) => (
@@ -100,7 +98,7 @@ export const NodeGrid: FC<NodeGridProps> = ({
 								}}
 							>
 								<span className={cx(s.tile, s[`tile-${node.kind}`])}>
-									<NodeIcon kind={node.kind} size={20} />
+									<NodeIcon kind={node.kind} name={node.name} size={20} />
 								</span>
 
 								<span className={s.name} title={node.desc || node.name}>

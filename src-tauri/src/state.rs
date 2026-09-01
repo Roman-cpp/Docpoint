@@ -23,6 +23,10 @@ pub struct AppState {
     /// и markdown-документы. Имя и место документа задаёт дерево в БД, поэтому
     /// на диске лежат только тела и переименование их не касается.
     pub content_dir: PathBuf,
+    /// Загруженные файлы, по каталогу `<node_id>/` на узел: внутри лежит сам
+    /// файл под своим именем. Открывает его установленная в системе программа,
+    /// поэтому имя вместе с расширением важно сохранить.
+    pub files_dir: PathBuf,
     /// Live WebSocket connections keyed by connection id.
     pub ws_conns: DashMap<String, WsConn>,
     /// Shared HTTP client with a cookie jar that lives for the app session,

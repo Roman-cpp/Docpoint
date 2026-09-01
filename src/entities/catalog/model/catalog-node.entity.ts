@@ -1,5 +1,11 @@
 /** Вид узла дерева. `catalog` — папка, остальные виды — документы. */
-export type NodeKind = "catalog" | "docApi" | "docWs" | "docErd" | "markdown";
+export type NodeKind =
+	| "catalog"
+	| "docApi"
+	| "docWs"
+	| "docErd"
+	| "markdown"
+	| "file";
 
 /**
  * Узел дерева платформы. У документа id узла — это и есть id документа, так что

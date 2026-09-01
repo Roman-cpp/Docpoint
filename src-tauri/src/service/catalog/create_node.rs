@@ -5,13 +5,17 @@ use crate::domain::content::repository::ContentRepository;
 use crate::domain::doc_api::doc_api::dto::DocApiPayload;
 use crate::domain::doc_api::doc_api::repository::DocApiRepository;
 use crate::domain::doc_erd::doc_erd::repository::DocErdRepository;
+use crate::domain::file::repository::{DocFileRepository, FileAssetRepository};
 use crate::domain::websocket::doc_websocket::repository::DocWebsocketRepository;
 use crate::repository::filesystem::content::ContentRepo;
+use crate::repository::filesystem::file::FileRepo;
 use crate::repository::sqlite::catalog::CatalogRepo;
 use crate::repository::sqlite::doc_api::DocApiRepo;
 use crate::repository::sqlite::doc_erd::DocErdRepo;
+use crate::repository::sqlite::doc_file::DocFileRepo;
 use crate::repository::sqlite::doc_websocket::DocWebsocketRepo;
 use crate::state::AppState;
+use std::path::Path;
 use tauri::State;
 
 /// Создать каталог или документ любого вида. Вид определяется полезной
@@ -76,6 +80,19 @@ async fn write_payload(
         NodePayload::DocWs { url } => DocWebsocketRepo::new(&state.db).create(id, url).await,
         NodePayload::Markdown { content } => {
             ContentRepo::new(&state.content_dir).write(id, content).await
+        }
+        NodePayload::File { source_path } => {
+            let files = FileRepo::new(&state.files_dir);
+            let stored = files.store(id, Path::new(source_path)).await?;
+
+            // Строки нет — файл в хранилище не найти: узел откатится, а его
+            // каталог остался бы там мусором.
+            if let Err(error) = DocFileRepo::new(&state.db).create(id, &stored).await {
+                let _ = files.delete(id).await;
+                return Err(error);
+            }
+
+            Ok(())
         }
     }
 }

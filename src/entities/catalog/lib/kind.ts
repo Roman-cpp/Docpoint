@@ -7,6 +7,7 @@ export const KIND_LABEL: Record<NodeKind, string> = {
 	docWs: "WebSocket",
 	docErd: "ERD-диаграмма",
 	markdown: "Markdown",
+	file: "Файл",
 };
 
 /** Заголовки групп одного вида — над списком однотипных узлов. */
@@ -16,6 +17,7 @@ export const KIND_GROUP_LABEL: Record<NodeKind, string> = {
 	docWs: "WebSocket",
 	docErd: "ERD-диаграммы",
 	markdown: "Markdown",
+	file: "Файлы",
 };
 
 /** Порядок, в котором виды узлов идут в списке: сначала каталоги, дальше
@@ -26,6 +28,7 @@ export const KIND_ORDER: NodeKind[] = [
 	"docErd",
 	"docWs",
 	"markdown",
+	"file",
 ];
 
 /** «2026-08-27 09:14:00» из БД → «27.08.2026». Время хранится в UTC. */

@@ -1,6 +1,7 @@
 pub mod catalog;
 pub mod doc_api;
 pub mod doc_erd;
+pub mod doc_file;
 pub mod doc_websocket;
 pub mod endpoint;
 pub mod endpoint_request;

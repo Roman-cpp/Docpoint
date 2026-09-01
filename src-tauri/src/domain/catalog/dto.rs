@@ -24,6 +24,13 @@ pub enum NodePayload {
         #[serde(default)]
         content: String,
     },
+    /// Путь к файлу на диске, который нужно забрать в хранилище. Сам файл в
+    /// нагрузку не кладётся: он может быть сколь угодно большим, а бэкенд
+    /// открывает его сам.
+    #[serde(rename_all = "camelCase")]
+    File {
+        source_path: String,
+    },
 }
 
 impl NodePayload {
@@ -34,6 +41,7 @@ impl NodePayload {
             Self::DocWs { .. } => NodeKind::DocWs,
             Self::DocErd => NodeKind::DocErd,
             Self::Markdown { .. } => NodeKind::Markdown,
+            Self::File { .. } => NodeKind::File,
         }
     }
 }

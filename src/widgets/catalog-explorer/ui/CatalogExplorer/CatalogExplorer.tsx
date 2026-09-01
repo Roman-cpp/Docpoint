@@ -11,11 +11,13 @@ import {
 	nodeRoute,
 	useCatalogTree,
 } from "@/entities/catalog";
+import { openFileApi } from "@/entities/file";
 import {
 	CreateCatalogDialog,
 	CreateDocApiDialog,
 	CreateDocErdDialog,
 	CreateDocWsDialog,
+	CreateFileDialog,
 	CreateMarkdownDialog,
 	type CreateNodeDialogProps,
 	DeleteNodeDialog,
@@ -64,6 +66,7 @@ const CREATE_DIALOG_BY_KIND: Record<NodeKind, FC<CreateNodeDialogProps>> = {
 	docWs: CreateDocWsDialog,
 	docErd: CreateDocErdDialog,
 	markdown: CreateMarkdownDialog,
+	file: CreateFileDialog,
 };
 
 /** Виды узлов в порядке, в котором они предлагаются в меню создания. */
@@ -73,6 +76,7 @@ const CREATABLE: NodeKind[] = [
 	"docWs",
 	"docErd",
 	"markdown",
+	"file",
 ];
 
 interface CatalogExplorerProps {
@@ -140,9 +144,27 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 
 	/* ─── Навигация ─── */
 
+	/** Загруженный файл открывает установленная в системе программа: своей
+	 *  страницы у него нет, и показывать pdf или таблицу приложение не умеет. */
+	const openFile = async (node: CatalogNode) => {
+		try {
+			await openFileApi(node.id);
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось открыть файл",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
 	const openNode = (node: CatalogNode) => {
 		if (node.kind === "catalog") {
 			onOpenCatalog(node.id);
+			return;
+		}
+		if (node.kind === "file") {
+			openFile(node);
 			return;
 		}
 		const route = nodeRoute(node);
@@ -477,10 +499,10 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 							icon={<EyeIcon size={14} />}
 							onSelect={() => menu.node && openNode(menu.node)}
 						>
-							Открыть
+							{menu.node.kind === "file" ? "Открыть в программе" : "Открыть"}
 						</ContextMenu.Item>
 
-						{menu.node.kind !== "catalog" && (
+						{nodeRoute(menu.node) !== null && (
 							<ContextMenu.Item
 								icon={<NewWindowIcon />}
 								onSelect={() => menu.node && openInNewWindow(menu.node)}

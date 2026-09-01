@@ -4,5 +4,6 @@ pub mod db_import;
 pub mod doc_api;
 pub mod doc_erd;
 pub mod environment;
+pub mod file;
 pub mod platform;
 pub mod websocket;

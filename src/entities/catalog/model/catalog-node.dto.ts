@@ -9,7 +9,9 @@ export type NodePayload =
 	| { kind: "docApi"; prefix: string }
 	| { kind: "docWs"; url: string }
 	| { kind: "docErd" }
-	| { kind: "markdown"; content: string };
+	| { kind: "markdown"; content: string }
+	/** Путь к файлу на диске: бэкенд заберёт его копией в своё хранилище. */
+	| { kind: "file"; sourcePath: string };
 
 export interface CreateNodeDTO {
 	platformId: string;

@@ -1,7 +1,7 @@
 import type { CatalogNode, NodeKind } from "../model/catalog-node.entity";
 
-/** Страница документа. У каталога своей страницы нет — он открывается в
- *  проводнике, поэтому `null`. */
+/** Страница документа. `null` — своей страницы нет: каталог открывается в
+ *  проводнике, а загруженный файл — установленной в системе программой. */
 export const nodeRoute = (
 	node: Pick<CatalogNode, "id" | "kind">,
 ): string | null => {
@@ -11,6 +11,7 @@ export const nodeRoute = (
 		docWs: `/doc-ws-show/${node.id}`,
 		docErd: `/doc-erd-show/${node.id}`,
 		markdown: `/markdown-show/${node.id}`,
+		file: null,
 	};
 
 	return routes[node.kind];
