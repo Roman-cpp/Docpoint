@@ -1,8 +1,8 @@
 use crate::domain::doc_erd::entity::dto::{CreateEntityDTO, EntityPositionDTO, UpdateEntityDTO};
 use crate::domain::doc_erd::entity::entity::{Entity, EntityField, EnumValue};
+use crate::domain::doc_erd::entity::repository::EntityRepository;
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
-use crate::domain::doc_erd::entity::repository::EntityRepository;
 
 pub struct EntityRepo<'a> {
     pub db: &'a SqlitePool,
@@ -61,29 +61,21 @@ async fn read_schemas_by(db: &SqlitePool, doc_erd_id: &str) -> Result<Vec<Entity
     }
     fq.push(") ORDER BY sort_ord");
 
-    let field_rows = fq
-        .build()
-        .fetch_all(db)
-        .await
-        .map_err(|e| e.to_string())?;
+    let field_rows = fq.build().fetch_all(db).await.map_err(|e| e.to_string())?;
 
     let field_ids: Vec<i64> = field_rows.iter().map(|r| r.get("id")).collect();
 
     let enum_rows = if field_ids.is_empty() {
         vec![]
     } else {
-        let mut eq =
-            sqlx::QueryBuilder::new("SELECT * FROM entity_field_enum WHERE field_id IN (");
+        let mut eq = sqlx::QueryBuilder::new("SELECT * FROM entity_field_enum WHERE field_id IN (");
         let mut sep = eq.separated(",");
         for id in &field_ids {
             sep.push_bind(id);
         }
         eq.push(")");
 
-        eq.build()
-            .fetch_all(db)
-            .await
-            .map_err(|e| e.to_string())?
+        eq.build().fetch_all(db).await.map_err(|e| e.to_string())?
     };
 
     Ok(entity_rows

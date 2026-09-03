@@ -9,8 +9,8 @@ pub async fn read_relations(
     state: State<'_, AppState>,
     doc_erd_id: String,
 ) -> Result<Vec<EntityRelation>, String> {
-    crate::logging::logged("read_relations", async {
-        RelationRepo::new(&state.db).by_erd(&doc_erd_id).await
-    }
-    .await)
+    crate::logging::logged(
+        "read_relations",
+        async { RelationRepo::new(&state.db).by_erd(&doc_erd_id).await }.await,
+    )
 }

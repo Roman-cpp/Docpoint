@@ -28,42 +28,45 @@ pub async fn import_erd(
     tables: Vec<ImportTableDTO>,
     relations: Vec<ImportRelationDTO>,
 ) -> Result<String, String> {
-    crate::logging::logged("import_erd", async {
-        let created = create_tree_node(&state, &node).await?;
+    crate::logging::logged(
+        "import_erd",
+        async {
+            let created = create_tree_node(&state, &node).await?;
 
-        let entities = EntityRepo::new(&state.db);
+            let entities = EntityRepo::new(&state.db);
 
-        let mut id_of: HashMap<&str, String> = HashMap::new();
-        let mut positions: Vec<EntityPositionDTO> = Vec::with_capacity(tables.len());
+            let mut id_of: HashMap<&str, String> = HashMap::new();
+            let mut positions: Vec<EntityPositionDTO> = Vec::with_capacity(tables.len());
 
-        for table in &tables {
-            let id = entities.create_for_erd(&created.id, &table.schema).await?;
-            positions.push(EntityPositionDTO {
-                id: id.clone(),
-                x: table.x,
-                y: table.y,
-            });
-            id_of.insert(table.schema.name.as_str(), id);
+            for table in &tables {
+                let id = entities.create_for_erd(&created.id, &table.schema).await?;
+                positions.push(EntityPositionDTO {
+                    id: id.clone(),
+                    x: table.x,
+                    y: table.y,
+                });
+                id_of.insert(table.schema.name.as_str(), id);
+            }
+
+            entities.update_positions(&positions).await?;
+
+            let relation_repo = RelationRepo::new(&state.db);
+
+            for relation in &relations {
+                relation_repo
+                    .create(&RelationEndpointsDTO {
+                        from_entity: entity_id(&id_of, &relation.from_table)?,
+                        from_field: relation.from_column.clone(),
+                        to_entity: entity_id(&id_of, &relation.to_table)?,
+                        to_field: relation.to_column.clone(),
+                    })
+                    .await?;
+            }
+
+            Ok(created.id)
         }
-
-        entities.update_positions(&positions).await?;
-
-        let relation_repo = RelationRepo::new(&state.db);
-
-        for relation in &relations {
-            relation_repo
-                .create(&RelationEndpointsDTO {
-                    from_entity: entity_id(&id_of, &relation.from_table)?,
-                    from_field: relation.from_column.clone(),
-                    to_entity: entity_id(&id_of, &relation.to_table)?,
-                    to_field: relation.to_column.clone(),
-                })
-                .await?;
-        }
-
-        Ok(created.id)
-    }
-    .await)
+        .await,
+    )
 }
 
 /// Id таблицы, созданной этим же импортом. Имени, которого нет среди таблиц

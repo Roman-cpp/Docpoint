@@ -14,25 +14,28 @@ pub async fn read_markdown(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<Option<MarkdownDoc>, String> {
-    crate::logging::logged("read_markdown", async {
-        let Some(node) = CatalogRepo::new(&state.db).find(&id).await? else {
-            return Ok(None);
-        };
+    crate::logging::logged(
+        "read_markdown",
+        async {
+            let Some(node) = CatalogRepo::new(&state.db).find(&id).await? else {
+                return Ok(None);
+            };
 
-        if node.kind != NodeKind::Markdown {
-            return Ok(None);
+            if node.kind != NodeKind::Markdown {
+                return Ok(None);
+            }
+
+            let content = ContentRepo::new(&state.content_dir).read(&node.id).await?;
+
+            Ok(Some(MarkdownDoc {
+                id: node.id,
+                name: node.name,
+                content,
+                updated_at: node.updated_at,
+            }))
         }
-
-        let content = ContentRepo::new(&state.content_dir).read(&node.id).await?;
-
-        Ok(Some(MarkdownDoc {
-            id: node.id,
-            name: node.name,
-            content,
-            updated_at: node.updated_at,
-        }))
-    }
-    .await)
+        .await,
+    )
 }
 
 /// Перезаписать тело markdown-документа.
@@ -42,12 +45,15 @@ pub async fn update_markdown(
     id: String,
     content: String,
 ) -> Result<(), String> {
-    crate::logging::logged("update_markdown", async {
-        ContentRepo::new(&state.content_dir)
-            .write(&id, &content)
-            .await?;
+    crate::logging::logged(
+        "update_markdown",
+        async {
+            ContentRepo::new(&state.content_dir)
+                .write(&id, &content)
+                .await?;
 
-        CatalogRepo::new(&state.db).touch(&id).await
-    }
-    .await)
+            CatalogRepo::new(&state.db).touch(&id).await
+        }
+        .await,
+    )
 }

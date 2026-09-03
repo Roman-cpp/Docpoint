@@ -12,10 +12,7 @@ pub enum WsEvent {
     /// A text frame received from the remote peer.
     Message { text: String },
     /// The socket was closed (by peer or by us).
-    Closed {
-        code: Option<u16>,
-        reason: String,
-    },
+    Closed { code: Option<u16>, reason: String },
     /// A transport/protocol error terminated the connection.
     Error { message: String },
 }

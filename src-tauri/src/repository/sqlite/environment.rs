@@ -2,9 +2,9 @@ use crate::domain::environment::environment::dto::{
     CreateEnvironmentDTO, CreateVariableDTO, UpdateEnvironmentDTO, UpdateVariableDTO,
 };
 use crate::domain::environment::environment::entity::{EnvValue, Environment};
+use crate::domain::environment::environment::repository::EnvironmentRepository;
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
-use crate::domain::environment::environment::repository::EnvironmentRepository;
 
 pub struct EnvironmentRepo<'a> {
     pub db: &'a SqlitePool,
@@ -50,12 +50,14 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
 
     async fn duplicate(&self, source_id: &str) -> Result<Environment, String> {
         // Read the source environment.
-        let src = sqlx::query("SELECT platform_id, env, label, base_url, prefix FROM environments WHERE id = ?")
-            .bind(source_id)
-            .fetch_optional(self.db)
-            .await
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| "Environment not found".to_string())?;
+        let src = sqlx::query(
+            "SELECT platform_id, env, label, base_url, prefix FROM environments WHERE id = ?",
+        )
+        .bind(source_id)
+        .fetch_optional(self.db)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Environment not found".to_string())?;
 
         let platform_id: Option<String> = src.get("platform_id");
         let env: String = src.get("env");
@@ -108,12 +110,13 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
         }
 
         // Copy auth config (without the access token — the copy needs its own).
-        if let Some(auth) =
-            sqlx::query("SELECT url, method, body, token_path FROM environment_auth WHERE environment_id = ?")
-                .bind(source_id)
-                .fetch_optional(self.db)
-                .await
-                .map_err(|e| e.to_string())?
+        if let Some(auth) = sqlx::query(
+            "SELECT url, method, body, token_path FROM environment_auth WHERE environment_id = ?",
+        )
+        .bind(source_id)
+        .fetch_optional(self.db)
+        .await
+        .map_err(|e| e.to_string())?
         {
             let auth_id = Uuid::new_v4().to_string();
             let url: String = auth.get("url");

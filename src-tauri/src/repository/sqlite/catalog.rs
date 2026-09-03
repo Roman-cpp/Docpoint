@@ -1,7 +1,7 @@
 use crate::domain::catalog::dto::{MoveNodeDTO, NewNode, RenameNodeDTO};
 use crate::domain::catalog::entity::{CatalogNode, NodeKind};
 use crate::domain::catalog::repository::CatalogRepository;
-use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 use uuid::Uuid;
 
 /// Колонки узла, которые читает [`node_from_row`]. Имена уточнены таблицей: в
@@ -61,11 +61,13 @@ impl CatalogRepository for CatalogRepo<'_> {
     }
 
     async fn find(&self, id: &str) -> Result<Option<CatalogNode>, String> {
-        let row = sqlx::query(&format!("SELECT {COLUMNS} FROM catalog_node WHERE catalog_node.id = ?"))
-            .bind(id)
-            .fetch_optional(self.db)
-            .await
-            .map_err(|e| e.to_string())?;
+        let row = sqlx::query(&format!(
+            "SELECT {COLUMNS} FROM catalog_node WHERE catalog_node.id = ?"
+        ))
+        .bind(id)
+        .fetch_optional(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
 
         row.as_ref().map(node_from_row).transpose()
     }
@@ -125,14 +127,12 @@ impl CatalogRepository for CatalogRepo<'_> {
             return Err("имя не может быть пустым".to_string());
         }
 
-        sqlx::query(
-            "UPDATE catalog_node SET name = ?, updated_at = datetime('now') WHERE id = ?",
-        )
-        .bind(name)
-        .bind(&dto.id)
-        .execute(self.db)
-        .await
-        .map_err(|e| write_error(e, name))?;
+        sqlx::query("UPDATE catalog_node SET name = ?, updated_at = datetime('now') WHERE id = ?")
+            .bind(name)
+            .bind(&dto.id)
+            .execute(self.db)
+            .await
+            .map_err(|e| write_error(e, name))?;
 
         Ok(())
     }
@@ -154,7 +154,12 @@ impl CatalogRepository for CatalogRepo<'_> {
         self.ensure_parent(&node.platform_id, parent_id).await?;
 
         if let Some(parent_id) = parent_id {
-            if self.subtree(&node.id).await?.iter().any(|n| n.id == parent_id) {
+            if self
+                .subtree(&node.id)
+                .await?
+                .iter()
+                .any(|n| n.id == parent_id)
+            {
                 return Err("нельзя перенести каталог внутрь самого себя".to_string());
             }
         }
@@ -309,7 +314,10 @@ mod tests {
             })
             .await
             .unwrap_err();
-        assert!(err.contains("внутрь самого себя"), "невнятная подсказка: {err}");
+        assert!(
+            err.contains("внутрь самого себя"),
+            "невнятная подсказка: {err}"
+        );
 
         // Наверх, в корень платформы, тот же каталог переезжает свободно.
         repo.move_to(&MoveNodeDTO {
@@ -379,6 +387,9 @@ mod tests {
             })
             .await
             .unwrap_err();
-        assert!(err.contains("другую платформу"), "невнятная подсказка: {err}");
+        assert!(
+            err.contains("другую платформу"),
+            "невнятная подсказка: {err}"
+        );
     }
 }

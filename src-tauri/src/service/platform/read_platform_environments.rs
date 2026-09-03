@@ -9,10 +9,13 @@ pub async fn environments_by_platform(
     state: State<'_, AppState>,
     platform_id: String,
 ) -> Result<Vec<Environment>, String> {
-    crate::logging::logged("environments_by_platform", async {
-        PlatformRepo::new(&state.db)
-            .environments_by_platform(&platform_id)
-            .await
-    }
-    .await)
+    crate::logging::logged(
+        "environments_by_platform",
+        async {
+            PlatformRepo::new(&state.db)
+                .environments_by_platform(&platform_id)
+                .await
+        }
+        .await,
+    )
 }

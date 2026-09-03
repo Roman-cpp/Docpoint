@@ -8,5 +8,6 @@ pub trait PlatformRepository {
     async fn create(&self, platform: &CreatePlatformDTO) -> Result<Platform, String>;
     async fn update(&self, platform: &UpdatePlatformDTO) -> Result<(), String>;
     async fn delete(&self, id: &str) -> Result<(), String>;
-    async fn environments_by_platform(&self, platform_id: &str) -> Result<Vec<Environment>, String>;
+    async fn environments_by_platform(&self, platform_id: &str)
+        -> Result<Vec<Environment>, String>;
 }

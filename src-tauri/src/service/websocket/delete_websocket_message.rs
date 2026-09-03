@@ -8,8 +8,13 @@ pub async fn delete_websocket_message(
     state: State<'_, AppState>,
     message_id: String,
 ) -> Result<(), String> {
-    crate::logging::logged("delete_websocket_message", async {
-        WebsocketMessageRepo::new(&state.db).delete(&message_id).await
-    }
-    .await)
+    crate::logging::logged(
+        "delete_websocket_message",
+        async {
+            WebsocketMessageRepo::new(&state.db)
+                .delete(&message_id)
+                .await
+        }
+        .await,
+    )
 }

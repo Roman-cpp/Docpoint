@@ -8,21 +8,20 @@ mod state;
 use service::{
     authenticate_environment, clear_environment_session, create_endpoint, create_endpoint_request,
     create_environment, create_erd_schema, create_node, create_platform, create_relation,
-    create_variable, create_websocket_message, db_introspect, db_list_schemas,
-    delete_endpoint, delete_endpoint_request, delete_environment, delete_group, delete_node,
-    delete_platform, delete_relation, delete_schema, delete_variable, delete_websocket_message,
+    create_variable, create_websocket_message, db_introspect, db_list_schemas, delete_endpoint,
+    delete_endpoint_request, delete_environment, delete_group, delete_node, delete_platform,
+    delete_relation, delete_schema, delete_variable, delete_websocket_message,
     duplicate_environment, environments_by_platform, export_markdown, import_doc, import_erd,
-    list_endpoint_requests, move_node, open_file_node, pick_db_file, pick_file,
-    read_catalog_tree, read_doc, read_doc_content, read_docs, read_environment_auth,
-    read_environment_proxy, read_environments_by_doc, read_erd_schemas, read_groups,
-    read_markdown, read_node, read_platform, read_platforms, read_relations,
-    read_websocket, read_websocket_messages, read_websockets, rename_node, save_endpoint_request,
-    save_json_file, send_request, set_environment_access_token, set_selected_environment,
-    update_doc, update_endpoint, update_environment, update_environment_auth,
-    update_environment_proxy, update_markdown,
+    list_endpoint_requests, move_node, open_file_node, pick_db_file, pick_file, read_catalog_tree,
+    read_doc, read_doc_content, read_docs, read_environment_auth, read_environment_proxy,
+    read_environments_by_doc, read_erd_schemas, read_groups, read_markdown, read_node,
+    read_platform, read_platforms, read_relations, read_websocket, read_websocket_messages,
+    read_websockets, rename_node, save_endpoint_request, save_json_file, send_request,
+    set_environment_access_token, set_selected_environment, update_doc, update_endpoint,
+    update_environment, update_environment_auth, update_environment_proxy, update_markdown,
     update_param_value, update_platform, update_schema, update_schema_positions, update_variable,
-    update_websocket, update_websocket_message, write_doc_content, write_groups,
-    ws_connect, ws_disconnect, ws_send,
+    update_websocket, update_websocket_message, write_doc_content, write_groups, ws_connect,
+    ws_disconnect, ws_send,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use state::AppState;
@@ -77,10 +76,11 @@ pub fn run() {
                 .filename(&db_path)
                 .create_if_missing(true);
 
-            let pool = tauri::async_runtime::block_on(async {
-                SqlitePool::connect_with(options).await
-            })
-            .inspect_err(|e| log::error!("не удалось открыть базу {}: {e}", db_path.display()))?;
+            let pool =
+                tauri::async_runtime::block_on(async { SqlitePool::connect_with(options).await })
+                    .inspect_err(|e| {
+                    log::error!("не удалось открыть базу {}: {e}", db_path.display())
+                })?;
 
             tauri::async_runtime::block_on(async {
                 sqlx::migrate!("./migrations").run(&pool).await

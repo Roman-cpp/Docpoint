@@ -1,6 +1,6 @@
 use crate::domain::websocket::doc_websocket::entity::DocWebsocket;
 use crate::domain::websocket::doc_websocket::repository::DocWebsocketRepository;
-use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 
 /// Сокет склеен из узла дерева (имя) и своей строки в `doc_ws`.
 const SELECT_WS: &str = "SELECT n.id, n.name, w.url \

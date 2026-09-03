@@ -143,7 +143,9 @@ mod tests {
             token_placement: placement.to_string(),
             ws_token_placement: "query".to_string(),
             access_token: Some("t".to_string()),
-            auth_cookies: [("sid".to_string(), "abc".to_string())].into_iter().collect(),
+            auth_cookies: [("sid".to_string(), "abc".to_string())]
+                .into_iter()
+                .collect(),
             auth_cookie_host: "api.example.com".to_string(),
         }
     }

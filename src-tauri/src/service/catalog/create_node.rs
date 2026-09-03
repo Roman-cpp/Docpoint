@@ -25,10 +25,10 @@ pub async fn create_node(
     state: State<'_, AppState>,
     node: CreateNodeDTO,
 ) -> Result<CatalogNode, String> {
-    crate::logging::logged("create_node", async {
-        create_tree_node(&state, &node).await
-    }
-    .await)
+    crate::logging::logged(
+        "create_node",
+        async { create_tree_node(&state, &node).await }.await,
+    )
 }
 
 /// Узел плюс его полезная нагрузка. Если нагрузка не записалась, узел
@@ -58,11 +58,7 @@ pub async fn create_tree_node(
     Ok(created)
 }
 
-async fn write_payload(
-    state: &AppState,
-    id: &str,
-    payload: &NodePayload,
-) -> Result<(), String> {
+async fn write_payload(state: &AppState, id: &str, payload: &NodePayload) -> Result<(), String> {
     match payload {
         // Каталог — это сам узел: собственных полей у него нет.
         NodePayload::Catalog => Ok(()),
@@ -81,7 +77,9 @@ async fn write_payload(
         }
         NodePayload::DocWs { url } => DocWebsocketRepo::new(&state.db).create(id, url).await,
         NodePayload::Markdown { content } => {
-            ContentRepo::new(&state.content_dir).write(id, content).await
+            ContentRepo::new(&state.content_dir)
+                .write(id, content)
+                .await
         }
         NodePayload::File { source_path } => {
             let files = FileRepo::new(&state.files_dir);

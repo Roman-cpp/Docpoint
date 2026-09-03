@@ -54,7 +54,10 @@ impl FileAssetRepository for FileRepo<'_> {
     async fn locate(&self, node_id: &str, filename: &str) -> Result<PathBuf, String> {
         let path = self.dir(node_id)?.join(safe_name(filename)?);
 
-        if !tokio::fs::try_exists(&path).await.map_err(|e| e.to_string())? {
+        if !tokio::fs::try_exists(&path)
+            .await
+            .map_err(|e| e.to_string())?
+        {
             return Err(format!("файл не найден в хранилище: {filename}"));
         }
 
@@ -87,10 +90,7 @@ fn file_name(source: &Path) -> Result<String, String> {
 /// Имя, прочитанное из БД. В базу оно попало из пути на диске — проверка на
 /// выход за пределы каталога узла нужна и здесь, а не только на записи.
 fn safe_name(filename: &str) -> Result<&str, String> {
-    if filename.is_empty()
-        || filename == ".."
-        || filename.contains('/')
-        || filename.contains('\\')
+    if filename.is_empty() || filename == ".." || filename.contains('/') || filename.contains('\\')
     {
         return Err(format!("invalid file name: {filename:?}"));
     }

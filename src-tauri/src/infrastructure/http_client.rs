@@ -171,7 +171,14 @@ where
         .into_iter()
         .map(|(name, value)| {
             let hidden = SECRET_HEADERS.contains(&name.to_ascii_lowercase().as_str());
-            (name.clone(), if hidden { "***".to_string() } else { value.clone() })
+            (
+                name.clone(),
+                if hidden {
+                    "***".to_string()
+                } else {
+                    value.clone()
+                },
+            )
         })
         .collect()
 }
@@ -181,7 +188,10 @@ fn url_for_log(url: &str) -> &str {
     url.split(['?', '#']).next().unwrap_or(url)
 }
 
-pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<ResponsePayload, String> {
+pub async fn send(
+    client: &reqwest::Client,
+    payload: RequestPayload,
+) -> Result<ResponsePayload, String> {
     log::debug!(
         target: "http",
         "{} {} headers={:?}",
@@ -195,26 +205,32 @@ pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<R
         if key.is_empty() {
             continue;
         }
-        let name = HeaderName::from_str(key).map_err(|e| format!("Invalid header name '{key}': {e}"))?;
-        let val = HeaderValue::from_str(value).map_err(|e| format!("Invalid header value for '{key}': {e}"))?;
+        let name =
+            HeaderName::from_str(key).map_err(|e| format!("Invalid header name '{key}': {e}"))?;
+        let val = HeaderValue::from_str(value)
+            .map_err(|e| format!("Invalid header value for '{key}': {e}"))?;
         header_map.insert(name, val);
     }
 
     let method = payload.method.to_uppercase();
     let request = match method.as_str() {
-        "GET"     => client.get(&payload.url),
-        "POST"    => client.post(&payload.url),
-        "PUT"     => client.put(&payload.url),
-        "DELETE"  => client.delete(&payload.url),
-        "PATCH"   => client.patch(&payload.url),
-        "HEAD"    => client.head(&payload.url),
+        "GET" => client.get(&payload.url),
+        "POST" => client.post(&payload.url),
+        "PUT" => client.put(&payload.url),
+        "DELETE" => client.delete(&payload.url),
+        "PATCH" => client.patch(&payload.url),
+        "HEAD" => client.head(&payload.url),
         "OPTIONS" => client.request(reqwest::Method::OPTIONS, &payload.url),
         _ => return Err(format!("Unsupported method: {method}")),
     };
 
     let request = request.headers(header_map);
     let request = if let Some(body) = payload.body {
-        if body.is_empty() { request } else { request.body(body) }
+        if body.is_empty() {
+            request
+        } else {
+            request.body(body)
+        }
     } else {
         request
     };
@@ -350,7 +366,9 @@ mod tests {
 
         // Хост заведомо несуществующий: если ответ пришёл, запрос ходил не
         // напрямую, а до прокси, который у нас и отвечает.
-        send(&client, get("http://nowhere.invalid/ping")).await.unwrap();
+        send(&client, get("http://nowhere.invalid/ping"))
+            .await
+            .unwrap();
 
         let seen = rx.recv().await.unwrap();
         assert!(

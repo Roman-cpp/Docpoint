@@ -10,8 +10,8 @@ pub async fn write_groups(
     doc_id: String,
     groups: Vec<CreateGroupDTO>,
 ) -> Result<(), String> {
-    crate::logging::logged("write_groups", async {
-        GroupRepo::new(&state.db).create(&doc_id, &groups).await
-    }
-    .await)
+    crate::logging::logged(
+        "write_groups",
+        async { GroupRepo::new(&state.db).create(&doc_id, &groups).await }.await,
+    )
 }

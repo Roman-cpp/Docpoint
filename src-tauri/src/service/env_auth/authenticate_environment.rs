@@ -15,12 +15,15 @@ pub async fn authenticate_environment(
     state: State<'_, AppState>,
     environment_id: String,
 ) -> Result<Option<EnvironmentAuthDTO>, String> {
-    crate::logging::logged("authenticate_environment", async {
-        // Через прокси окружения, если он задан: сервер авторизации обычно живёт
-        // за тем же периметром, что и API.
-        let proxy = proxy_repository::read_config(&state.db, &environment_id).await?;
-        let client = state.http_clients.get(proxy.as_ref())?;
-        token::authenticate(&client, &state.db, &environment_id).await
-    }
-    .await)
+    crate::logging::logged(
+        "authenticate_environment",
+        async {
+            // Через прокси окружения, если он задан: сервер авторизации обычно живёт
+            // за тем же периметром, что и API.
+            let proxy = proxy_repository::read_config(&state.db, &environment_id).await?;
+            let client = state.http_clients.get(proxy.as_ref())?;
+            token::authenticate(&client, &state.db, &environment_id).await
+        }
+        .await,
+    )
 }

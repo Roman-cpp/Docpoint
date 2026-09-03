@@ -23,7 +23,10 @@ pub struct ConnectError {
 
 impl ConnectError {
     fn transport(message: String) -> Self {
-        Self { message, status: None }
+        Self {
+            message,
+            status: None,
+        }
     }
 }
 
@@ -83,7 +86,10 @@ pub async fn connect(
                 if !body.is_empty() {
                     message.push_str(&format!(" — {body}"));
                 }
-                return Err(ConnectError { message, status: Some(status.as_u16()) });
+                return Err(ConnectError {
+                    message,
+                    status: Some(status.as_u16()),
+                });
             }
             Ok(Err(e)) => last_err = e.to_string(),
             Err(_) => last_err = "connection timed out after 15s".to_string(),
@@ -117,12 +123,19 @@ pub async fn connect(
         while let Some(item) = stream.next().await {
             match item {
                 Ok(Message::Text(text)) => {
-                    let _ = app.emit(&event, WsEvent::Message { text: text.to_string() });
+                    let _ = app.emit(
+                        &event,
+                        WsEvent::Message {
+                            text: text.to_string(),
+                        },
+                    );
                 }
                 Ok(Message::Binary(bytes)) => {
                     let _ = app.emit(
                         &event,
-                        WsEvent::Message { text: String::from_utf8_lossy(&bytes).into_owned() },
+                        WsEvent::Message {
+                            text: String::from_utf8_lossy(&bytes).into_owned(),
+                        },
                     );
                 }
                 Ok(Message::Close(frame)) => {
@@ -135,7 +148,12 @@ pub async fn connect(
                 // Ping/Pong are answered by tungstenite automatically.
                 Ok(_) => {}
                 Err(e) => {
-                    let _ = app.emit(&event, WsEvent::Error { message: e.to_string() });
+                    let _ = app.emit(
+                        &event,
+                        WsEvent::Error {
+                            message: e.to_string(),
+                        },
+                    );
                     break;
                 }
             }
@@ -149,7 +167,7 @@ pub async fn connect(
 /// Queues a text frame for delivery over an open connection.
 pub fn send(conn: &WsConn, text: String) -> Result<(), String> {
     conn.tx
-        .send(Message::Text(text.into()))
+        .send(Message::Text(text))
         .map_err(|_| "connection is closed".to_string())
 }
 

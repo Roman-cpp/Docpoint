@@ -1,4 +1,6 @@
-use crate::domain::doc_api::endpoint_request::dto::{ImportEndpointRequestDTO, SaveEndpointRequestDTO};
+use crate::domain::doc_api::endpoint_request::dto::{
+    ImportEndpointRequestDTO, SaveEndpointRequestDTO,
+};
 use crate::domain::doc_api::endpoint_request::entity::{
     BodyMode, EndpointRequest, ParamValue, RequestHeader,
 };
@@ -55,7 +57,8 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             .iter()
             .map(|r| {
                 let id: String = r.get("id");
-                let is_mine = |row: &&sqlx::sqlite::SqliteRow| row.get::<String, _>("request_id") == id;
+                let is_mine =
+                    |row: &&sqlx::sqlite::SqliteRow| row.get::<String, _>("request_id") == id;
 
                 let headers = header_rows
                     .iter()
@@ -257,16 +260,14 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
     async fn save(&self, request: &SaveEndpointRequestDTO) -> Result<(), String> {
         let mut tx = self.db.begin().await.map_err(|e| e.to_string())?;
 
-        sqlx::query(
-            "UPDATE endpoint_requests SET name = ?, body_mode = ?, body = ? WHERE id = ?",
-        )
-        .bind(&request.name)
-        .bind(request.body_mode.as_str())
-        .bind(&request.body)
-        .bind(&request.id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+        sqlx::query("UPDATE endpoint_requests SET name = ?, body_mode = ?, body = ? WHERE id = ?")
+            .bind(&request.name)
+            .bind(request.body_mode.as_str())
+            .bind(&request.body)
+            .bind(&request.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
         sqlx::query("DELETE FROM request_param_values WHERE request_id = ?")
             .bind(&request.id)
@@ -408,11 +409,17 @@ mod tests {
         let doc: serde_json::Value = serde_json::from_str(&body).unwrap();
 
         assert_eq!(doc["title"], "Привет \"мир\"");
-        assert_eq!(doc["count"], 7, "'007' приводится к числу, как Number() в JS");
+        assert_eq!(
+            doc["count"], 7,
+            "'007' приводится к числу, как Number() в JS"
+        );
         assert_eq!(doc["ratio"], 12.5);
         assert_eq!(doc["active"], true);
         assert_eq!(doc["port"], "{{PORT}}", "ссылку подставляют при отправке");
-        assert_eq!(doc["weird"], "не число", "неразобранное число остаётся строкой");
+        assert_eq!(
+            doc["weird"], "не число",
+            "неразобранное число остаётся строкой"
+        );
         assert!(
             doc.get("ушёл_из_схемы").is_none(),
             "значения вне схемы и раньше не отправлялись"

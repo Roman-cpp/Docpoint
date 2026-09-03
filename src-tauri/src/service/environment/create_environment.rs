@@ -11,10 +11,13 @@ pub async fn create_environment(
     platform_id: String,
     environment: CreateEnvironmentDTO,
 ) -> Result<Environment, String> {
-    crate::logging::logged("create_environment", async {
-        EnvironmentRepo::new(&state.db)
-            .create(&platform_id, &environment)
-            .await
-    }
-    .await)
+    crate::logging::logged(
+        "create_environment",
+        async {
+            EnvironmentRepo::new(&state.db)
+                .create(&platform_id, &environment)
+                .await
+        }
+        .await,
+    )
 }

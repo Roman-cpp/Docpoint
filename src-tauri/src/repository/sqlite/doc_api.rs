@@ -2,7 +2,7 @@ use crate::domain::doc_api::doc_api::dto::DocApiPayload;
 use crate::domain::doc_api::doc_api::entity::DocApi;
 use crate::domain::doc_api::doc_api::repository::DocApiRepository;
 use crate::domain::environment::environment::entity::{EnvValue, Environment};
-use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 
 /// Документ склеен из узла дерева (имя) и своей строки в `doc_api`.
 const SELECT_DOC: &str = "SELECT n.id, n.name, d.prefix \

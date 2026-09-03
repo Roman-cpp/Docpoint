@@ -8,10 +8,10 @@ use tauri::State;
 /// Обзорная часть doc-api — markdown-тело документа.
 #[tauri::command]
 pub async fn read_doc_content(state: State<'_, AppState>, id: String) -> Result<String, String> {
-    crate::logging::logged("read_doc_content", async {
-        ContentRepo::new(&state.content_dir).read(&id).await
-    }
-    .await)
+    crate::logging::logged(
+        "read_doc_content",
+        async { ContentRepo::new(&state.content_dir).read(&id).await }.await,
+    )
 }
 
 #[tauri::command]
@@ -20,12 +20,15 @@ pub async fn write_doc_content(
     id: String,
     content: String,
 ) -> Result<(), String> {
-    crate::logging::logged("write_doc_content", async {
-        ContentRepo::new(&state.content_dir)
-            .write(&id, &content)
-            .await?;
+    crate::logging::logged(
+        "write_doc_content",
+        async {
+            ContentRepo::new(&state.content_dir)
+                .write(&id, &content)
+                .await?;
 
-        CatalogRepo::new(&state.db).touch(&id).await
-    }
-    .await)
+            CatalogRepo::new(&state.db).touch(&id).await
+        }
+        .await,
+    )
 }

@@ -102,12 +102,11 @@ impl EndpointRepository for EndpointRepo<'_> {
 
         let endpoint_id = Uuid::new_v4().to_string();
 
-        let sort_ord: i64 =
-            sqlx::query_scalar("SELECT COUNT(*) FROM endpoint WHERE group_id = ?")
-                .bind(group_id)
-                .fetch_one(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
+        let sort_ord: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint WHERE group_id = ?")
+            .bind(group_id)
+            .fetch_one(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         sqlx::query(
             "INSERT INTO endpoint (id, group_id, method, path, name, description, auth, sort_ord) \

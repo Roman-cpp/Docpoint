@@ -8,11 +8,14 @@ use crate::infrastructure::db_import;
 /// пропускает.
 #[tauri::command]
 pub async fn db_list_schemas(conn: DbConnectionDTO) -> Result<Vec<String>, String> {
-    crate::logging::logged("db_list_schemas", async {
-        let mut source = db_import::connect(&conn).await?;
-        let result = source.schemas().await;
-        db_import::close(source).await;
-        result
-    }
-    .await)
+    crate::logging::logged(
+        "db_list_schemas",
+        async {
+            let mut source = db_import::connect(&conn).await?;
+            let result = source.schemas().await;
+            db_import::close(source).await;
+            result
+        }
+        .await,
+    )
 }

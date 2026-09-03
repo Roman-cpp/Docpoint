@@ -60,9 +60,7 @@ fn parse_set_cookie(raw: &str) -> Option<ParsedCookie> {
             Some((key, val)) if key.trim().eq_ignore_ascii_case("max-age") => {
                 val.trim().parse::<i64>().map(|v| v <= 0).unwrap_or(false)
             }
-            Some((key, val)) if key.trim().eq_ignore_ascii_case("expires") => {
-                val.contains("1970")
-            }
+            Some((key, val)) if key.trim().eq_ignore_ascii_case("expires") => val.contains("1970"),
             _ => false,
         }
     });
@@ -106,7 +104,7 @@ pub fn apply(headers: &mut HashMap<String, String>, jar: &CookieJar) {
 
     let mut pairs: Vec<String> = user_pairs.iter().map(|p| p.to_string()).collect();
     for (name, value) in jar {
-        if user_names.iter().any(|n| *n == name.as_str()) {
+        if user_names.contains(&name.as_str()) {
             continue;
         }
         pairs.push(format!("{name}={}", sanitize(value)));
@@ -209,7 +207,10 @@ mod tests {
     #[test]
     fn merge_ignores_malformed_headers() {
         let mut j = CookieJar::new();
-        merge_set_cookies(&mut j, &["".to_string(), "novalue".to_string(), "=x".to_string()]);
+        merge_set_cookies(
+            &mut j,
+            &["".to_string(), "novalue".to_string(), "=x".to_string()],
+        );
         assert!(j.is_empty());
     }
 
@@ -266,7 +267,10 @@ mod tests {
 
     #[test]
     fn cookies_stay_on_their_host_and_subdomains() {
-        assert!(host_matches("https://api.example.com/v1", "api.example.com"));
+        assert!(host_matches(
+            "https://api.example.com/v1",
+            "api.example.com"
+        ));
         assert!(host_matches("wss://api.example.com/ws", "api.example.com"));
         assert!(host_matches("https://a.example.com/x", "example.com"));
         assert!(!host_matches("https://evil.com/x", "example.com"));
@@ -274,5 +278,4 @@ mod tests {
         // Привязки ещё нет — не ограничиваем.
         assert!(host_matches("https://anything.dev", ""));
     }
-
 }

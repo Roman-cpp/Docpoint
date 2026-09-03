@@ -9,7 +9,10 @@ fn parse_cookies(raw: String) -> BTreeMap<String, String> {
     serde_json::from_str(&raw).unwrap_or_default()
 }
 
-pub async fn ensure_row(db: &SqlitePool, environment_id: &str) -> Result<EnvironmentAuthDTO, String> {
+pub async fn ensure_row(
+    db: &SqlitePool,
+    environment_id: &str,
+) -> Result<EnvironmentAuthDTO, String> {
     if let Some(existing) = read_by_env_id(db, environment_id).await? {
         return Ok(existing);
     }

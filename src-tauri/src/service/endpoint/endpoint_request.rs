@@ -10,10 +10,10 @@ pub async fn list_endpoint_requests(
     state: State<'_, AppState>,
     endpoint_id: String,
 ) -> Result<Vec<EndpointRequest>, String> {
-    crate::logging::logged("list_endpoint_requests", async {
-        EndpointRequestRepo::new(&state.db).list(&endpoint_id).await
-    }
-    .await)
+    crate::logging::logged(
+        "list_endpoint_requests",
+        async { EndpointRequestRepo::new(&state.db).list(&endpoint_id).await }.await,
+    )
 }
 
 #[tauri::command]
@@ -22,23 +22,23 @@ pub async fn create_endpoint_request(
     endpoint_id: String,
     name: String,
 ) -> Result<EndpointRequest, String> {
-    crate::logging::logged("create_endpoint_request", async {
-        EndpointRequestRepo::new(&state.db)
-            .create(&endpoint_id, &name)
-            .await
-    }
-    .await)
+    crate::logging::logged(
+        "create_endpoint_request",
+        async {
+            EndpointRequestRepo::new(&state.db)
+                .create(&endpoint_id, &name)
+                .await
+        }
+        .await,
+    )
 }
 
 #[tauri::command]
-pub async fn delete_endpoint_request(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<(), String> {
-    crate::logging::logged("delete_endpoint_request", async {
-        EndpointRequestRepo::new(&state.db).delete(&id).await
-    }
-    .await)
+pub async fn delete_endpoint_request(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    crate::logging::logged(
+        "delete_endpoint_request",
+        async { EndpointRequestRepo::new(&state.db).delete(&id).await }.await,
+    )
 }
 
 #[tauri::command]
@@ -46,8 +46,8 @@ pub async fn save_endpoint_request(
     state: State<'_, AppState>,
     request: SaveEndpointRequestDTO,
 ) -> Result<(), String> {
-    crate::logging::logged("save_endpoint_request", async {
-        EndpointRequestRepo::new(&state.db).save(&request).await
-    }
-    .await)
+    crate::logging::logged(
+        "save_endpoint_request",
+        async { EndpointRequestRepo::new(&state.db).save(&request).await }.await,
+    )
 }

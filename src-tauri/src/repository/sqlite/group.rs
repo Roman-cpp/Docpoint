@@ -1,16 +1,18 @@
-use crate::domain::doc_api::endpoint::entity::{Endpoint, ParamDef, ResponseDef, ResponseSchemaField};
+use crate::domain::doc_api::endpoint::entity::{
+    Endpoint, ParamDef, ResponseDef, ResponseSchemaField,
+};
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
-use crate::repository::sqlite::endpoint::EndpointRepo;
 use crate::domain::doc_api::endpoint_request::repository::{
     EndpointRequestRepository, RequestTarget,
 };
-use crate::repository::sqlite::endpoint_request::EndpointRequestRepo;
 use crate::domain::doc_api::group::dto::CreateGroupDTO;
 use crate::domain::doc_api::group::entity::Group;
+use crate::domain::doc_api::group::repository::GroupRepository;
+use crate::repository::sqlite::endpoint::EndpointRepo;
+use crate::repository::sqlite::endpoint_request::EndpointRequestRepo;
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::domain::doc_api::group::repository::GroupRepository;
 
 pub struct GroupRepo<'a> {
     pub db: &'a SqlitePool,
@@ -25,13 +27,11 @@ impl<'a> GroupRepo<'a> {
 impl GroupRepository for GroupRepo<'_> {
     async fn all(&self, doc_id: &str) -> Result<Vec<Group>, String> {
         let db = self.db;
-        let group_rows = sqlx::query(
-            r#"SELECT * FROM "group" WHERE doc_id = ? ORDER BY sort_ord"#,
-        )
-        .bind(doc_id)
-        .fetch_all(db)
-        .await
-        .map_err(|e| e.to_string())?;
+        let group_rows = sqlx::query(r#"SELECT * FROM "group" WHERE doc_id = ? ORDER BY sort_ord"#)
+            .bind(doc_id)
+            .fetch_all(db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         if group_rows.is_empty() {
             return Ok(vec![]);
@@ -46,11 +46,7 @@ impl GroupRepository for GroupRepo<'_> {
         }
         eq.push(") ORDER BY sort_ord");
 
-        let endpoint_rows = eq
-            .build()
-            .fetch_all(db)
-            .await
-            .map_err(|e| e.to_string())?;
+        let endpoint_rows = eq.build().fetch_all(db).await.map_err(|e| e.to_string())?;
 
         if endpoint_rows.is_empty() {
             return Ok(group_rows
@@ -79,11 +75,9 @@ impl GroupRepository for GroupRepo<'_> {
         }
         rq.push(")");
 
-        let (param_rows, response_rows) = tokio::try_join!(
-            pq.build().fetch_all(db),
-            rq.build().fetch_all(db),
-        )
-        .map_err(|e| e.to_string())?;
+        let (param_rows, response_rows) =
+            tokio::try_join!(pq.build().fetch_all(db), rq.build().fetch_all(db),)
+                .map_err(|e| e.to_string())?;
 
         let response_ids: Vec<i64> = response_rows.iter().map(|r| r.get("id")).collect();
 
@@ -98,10 +92,7 @@ impl GroupRepository for GroupRepo<'_> {
             }
             rfq.push(") ORDER BY sort_ord");
 
-            rfq.build()
-                .fetch_all(db)
-                .await
-                .map_err(|e| e.to_string())?
+            rfq.build().fetch_all(db).await.map_err(|e| e.to_string())?
         };
 
         let endpoint_group_map: HashMap<String, String> = endpoint_rows
@@ -181,7 +172,10 @@ impl GroupRepository for GroupRepo<'_> {
         let mut endpoint_by_group: HashMap<String, Vec<Endpoint>> = HashMap::new();
         for endpoint in endpoints {
             if let Some(gid) = endpoint_group_map.get(&endpoint.id) {
-                endpoint_by_group.entry(gid.clone()).or_default().push(endpoint);
+                endpoint_by_group
+                    .entry(gid.clone())
+                    .or_default()
+                    .push(endpoint);
             }
         }
 
@@ -250,12 +244,11 @@ impl GroupRepository for GroupRepo<'_> {
 impl GroupRepo<'_> {
     /// Создаёт новую (пустую) группу в конце списка и возвращает её id.
     pub async fn create_group(&self, doc_id: &str, label: &str) -> Result<String, String> {
-        let sort_ord: i64 =
-            sqlx::query_scalar(r#"SELECT COUNT(*) FROM "group" WHERE doc_id = ?"#)
-                .bind(doc_id)
-                .fetch_one(self.db)
-                .await
-                .map_err(|e| e.to_string())?;
+        let sort_ord: i64 = sqlx::query_scalar(r#"SELECT COUNT(*) FROM "group" WHERE doc_id = ?"#)
+            .bind(doc_id)
+            .fetch_one(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let group = CreateGroupDTO {
             label: label.to_string(),
@@ -264,19 +257,22 @@ impl GroupRepo<'_> {
         self.insert_group(doc_id, &group, sort_ord as usize).await
     }
 
-    async fn insert_group(&self, doc_id: &str, group: &CreateGroupDTO, sort_ord: usize) -> Result<String, String> {
+    async fn insert_group(
+        &self,
+        doc_id: &str,
+        group: &CreateGroupDTO,
+        sort_ord: usize,
+    ) -> Result<String, String> {
         let group_id = Uuid::new_v4().to_string();
 
-        sqlx::query(
-            r#"INSERT INTO "group" (id, doc_id, label, sort_ord) VALUES (?, ?, ?, ?)"#,
-        )
-        .bind(&group_id)
-        .bind(doc_id)
-        .bind(&group.label)
-        .bind(sort_ord as i64)
-        .execute(self.db)
-        .await
-        .map_err(|e| e.to_string())?;
+        sqlx::query(r#"INSERT INTO "group" (id, doc_id, label, sort_ord) VALUES (?, ?, ?, ?)"#)
+            .bind(&group_id)
+            .bind(doc_id)
+            .bind(&group.label)
+            .bind(sort_ord as i64)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Ok(group_id)
     }
@@ -330,12 +326,7 @@ mod tests {
             .unwrap();
 
         DocApiRepo::new(pool)
-            .create(
-                &node.id,
-                &DocApiPayload {
-                    prefix: doc.prefix,
-                },
-            )
+            .create(&node.id, &DocApiPayload { prefix: doc.prefix })
             .await
             .unwrap();
 
@@ -363,7 +354,10 @@ mod tests {
 
         let pool = db().await;
         let doc_id = imported_doc(&pool, file.doc).await;
-        GroupRepo::new(&pool).create(&doc_id, &file.groups).await.unwrap();
+        GroupRepo::new(&pool)
+            .create(&doc_id, &file.groups)
+            .await
+            .unwrap();
 
         // Наборы легли на свои эндпоинты, а не куда попало.
         let login_id: String = sqlx::query_scalar(
@@ -373,7 +367,10 @@ mod tests {
         .await
         .unwrap();
 
-        let login = EndpointRequestRepo::new(&pool).list(&login_id).await.unwrap();
+        let login = EndpointRequestRepo::new(&pool)
+            .list(&login_id)
+            .await
+            .unwrap();
         assert_eq!(
             login.iter().map(|r| r.name.as_str()).collect::<Vec<_>>(),
             ["Валидные учётные данные", "Неверный пароль — ждём 401"],
@@ -392,7 +389,10 @@ mod tests {
                 .fetch_one(&pool)
                 .await
                 .unwrap();
-        let tasks = EndpointRequestRepo::new(&pool).list(&create_task_id).await.unwrap();
+        let tasks = EndpointRequestRepo::new(&pool)
+            .list(&create_task_id)
+            .await
+            .unwrap();
         let nested: serde_json::Value = serde_json::from_str(&tasks[0].body).unwrap();
         assert_eq!(nested["title"], "Подготовить релиз");
         assert_eq!(nested["meta"]["labels"][0], "release");
@@ -409,9 +409,15 @@ mod tests {
         .fetch_one(&pool)
         .await
         .unwrap();
-        let del = EndpointRequestRepo::new(&pool).list(&delete_user_id).await.unwrap();
+        let del = EndpointRequestRepo::new(&pool)
+            .list(&delete_user_id)
+            .await
+            .unwrap();
         assert!(!del[0].headers[0].enabled);
-        assert!(del[0].values.iter().any(|v| v.kind == "path" && v.name == "id"));
+        assert!(del[0]
+            .values
+            .iter()
+            .any(|v| v.kind == "path" && v.name == "id"));
 
         // Набор, где заданы все части запроса разом: сегмент пути, строка
         // запроса, заголовок и тело.
@@ -421,7 +427,10 @@ mod tests {
         .fetch_one(&pool)
         .await
         .unwrap();
-        let patch = EndpointRequestRepo::new(&pool).list(&patch_task_id).await.unwrap();
+        let patch = EndpointRequestRepo::new(&pool)
+            .list(&patch_task_id)
+            .await
+            .unwrap();
         let value = |kind: &str, name: &str| {
             patch[0]
                 .values
@@ -436,7 +445,10 @@ mod tests {
             "булево значение параметра доезжает строкой"
         );
         assert_eq!(patch[0].headers[0].name, "Idempotency-Key");
-        assert!(patch[0].headers[0].enabled, "объект задаёт включённые заголовки");
+        assert!(
+            patch[0].headers[0].enabled,
+            "объект задаёт включённые заголовки"
+        );
         let patch_body: serde_json::Value = serde_json::from_str(&patch[0].body).unwrap();
         assert_eq!(patch_body["status"], "done");
 
@@ -502,7 +514,10 @@ mod tests {
 
         let pool = db().await;
         let doc_id = imported_doc(&pool, file.doc).await;
-        GroupRepo::new(&pool).create(&doc_id, &file.groups).await.unwrap();
+        GroupRepo::new(&pool)
+            .create(&doc_id, &file.groups)
+            .await
+            .unwrap();
 
         let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint_requests")
             .fetch_one(&pool)

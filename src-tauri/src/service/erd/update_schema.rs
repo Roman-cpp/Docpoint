@@ -9,8 +9,8 @@ pub async fn update_schema(
     state: State<'_, AppState>,
     schema: UpdateEntityDTO,
 ) -> Result<(), String> {
-    crate::logging::logged("update_schema", async {
-        EntityRepo::new(&state.db).update(&schema).await
-    }
-    .await)
+    crate::logging::logged(
+        "update_schema",
+        async { EntityRepo::new(&state.db).update(&schema).await }.await,
+    )
 }

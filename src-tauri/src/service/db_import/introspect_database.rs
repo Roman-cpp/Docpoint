@@ -15,17 +15,20 @@ pub async fn db_introspect(
     conn: DbConnectionDTO,
     schema: Option<String>,
 ) -> Result<DbIntrospectDTO, String> {
-    crate::logging::logged("db_introspect", async {
-        let name = schema
-            .or_else(|| conn.schema.clone())
-            .or_else(|| conn.database.clone())
-            .unwrap_or_else(|| "main".to_string());
+    crate::logging::logged(
+        "db_introspect",
+        async {
+            let name = schema
+                .or_else(|| conn.schema.clone())
+                .or_else(|| conn.database.clone())
+                .unwrap_or_else(|| "main".to_string());
 
-        let mut source = db_import::connect(&conn).await?;
-        let result = source.introspect(&name).await;
-        db_import::close(source).await;
+            let mut source = db_import::connect(&conn).await?;
+            let result = source.introspect(&name).await;
+            db_import::close(source).await;
 
-        Ok(normalize::to_erd(&result?))
-    }
-    .await)
+            Ok(normalize::to_erd(&result?))
+        }
+        .await,
+    )
 }

@@ -9,10 +9,13 @@ pub async fn update_schema_positions(
     state: State<'_, AppState>,
     positions: Vec<EntityPositionDTO>,
 ) -> Result<(), String> {
-    crate::logging::logged("update_schema_positions", async {
-        EntityRepo::new(&state.db)
-            .update_positions(&positions)
-            .await
-    }
-    .await)
+    crate::logging::logged(
+        "update_schema_positions",
+        async {
+            EntityRepo::new(&state.db)
+                .update_positions(&positions)
+                .await
+        }
+        .await,
+    )
 }

@@ -8,8 +8,8 @@ pub async fn update_environment_proxy(
     state: State<'_, AppState>,
     proxy: UpdateEnvironmentProxyDTO,
 ) -> Result<(), String> {
-    crate::logging::logged("update_environment_proxy", async {
-        repository::upsert(&state.db, &proxy).await
-    }
-    .await)
+    crate::logging::logged(
+        "update_environment_proxy",
+        async { repository::upsert(&state.db, &proxy).await }.await,
+    )
 }

@@ -9,8 +9,8 @@ pub async fn create_websocket_message(
     state: State<'_, AppState>,
     message: CreateWebsocketMessageDTO,
 ) -> Result<String, String> {
-    crate::logging::logged("create_websocket_message", async {
-        WebsocketMessageRepo::new(&state.db).create(&message).await
-    }
-    .await)
+    crate::logging::logged(
+        "create_websocket_message",
+        async { WebsocketMessageRepo::new(&state.db).create(&message).await }.await,
+    )
 }

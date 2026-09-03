@@ -1,6 +1,6 @@
 use crate::domain::doc_api::doc_api::repository::DocApiRepository;
-use crate::repository::sqlite::doc_api::DocApiRepo;
 use crate::domain::environment::environment::entity::Environment;
+use crate::repository::sqlite::doc_api::DocApiRepo;
 use crate::state::AppState;
 use tauri::State;
 
@@ -9,10 +9,13 @@ pub async fn read_environments_by_doc(
     state: State<'_, AppState>,
     doc_id: String,
 ) -> Result<Vec<Environment>, String> {
-    crate::logging::logged("read_environments_by_doc", async {
-        DocApiRepo::new(&state.db)
-            .environments_by_doc(&doc_id)
-            .await
-    }
-    .await)
+    crate::logging::logged(
+        "read_environments_by_doc",
+        async {
+            DocApiRepo::new(&state.db)
+                .environments_by_doc(&doc_id)
+                .await
+        }
+        .await,
+    )
 }

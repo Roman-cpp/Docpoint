@@ -9,8 +9,8 @@ pub async fn read_erd_schemas(
     state: State<'_, AppState>,
     doc_erd_id: String,
 ) -> Result<Vec<Entity>, String> {
-    crate::logging::logged("read_erd_schemas", async {
-        EntityRepo::new(&state.db).all_by_erd(&doc_erd_id).await
-    }
-    .await)
+    crate::logging::logged(
+        "read_erd_schemas",
+        async { EntityRepo::new(&state.db).all_by_erd(&doc_erd_id).await }.await,
+    )
 }

@@ -14,24 +14,22 @@ pub async fn update_doc(
     state: State<'_, AppState>,
     doc: UpdateDocApiDTO,
 ) -> Result<String, String> {
-    crate::logging::logged("update_doc", async {
-        CatalogRepo::new(&state.db)
-            .rename(&RenameNodeDTO {
-                id: doc.id.clone(),
-                name: doc.name.clone(),
-            })
-            .await?;
+    crate::logging::logged(
+        "update_doc",
+        async {
+            CatalogRepo::new(&state.db)
+                .rename(&RenameNodeDTO {
+                    id: doc.id.clone(),
+                    name: doc.name.clone(),
+                })
+                .await?;
 
-        DocApiRepo::new(&state.db)
-            .update(
-                &doc.id,
-                &DocApiPayload {
-                    prefix: doc.prefix,
-                },
-            )
-            .await?;
+            DocApiRepo::new(&state.db)
+                .update(&doc.id, &DocApiPayload { prefix: doc.prefix })
+                .await?;
 
-        Ok(doc.id)
-    }
-    .await)
+            Ok(doc.id)
+        }
+        .await,
+    )
 }

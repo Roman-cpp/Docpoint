@@ -8,8 +8,8 @@ use tauri::State;
 /// место в дереве.
 #[tauri::command]
 pub async fn read_docs(state: State<'_, AppState>) -> Result<Vec<DocApi>, String> {
-    crate::logging::logged("read_docs", async {
-        DocApiRepo::new(&state.db).all().await
-    }
-    .await)
+    crate::logging::logged(
+        "read_docs",
+        async { DocApiRepo::new(&state.db).all().await }.await,
+    )
 }

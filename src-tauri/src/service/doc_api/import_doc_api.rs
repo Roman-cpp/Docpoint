@@ -15,12 +15,17 @@ pub async fn import_doc(
     node: CreateNodeDTO,
     groups: Vec<CreateGroupDTO>,
 ) -> Result<String, String> {
-    crate::logging::logged("import_doc", async {
-        let created = create_tree_node(&state, &node).await?;
+    crate::logging::logged(
+        "import_doc",
+        async {
+            let created = create_tree_node(&state, &node).await?;
 
-        GroupRepo::new(&state.db).create(&created.id, &groups).await?;
+            GroupRepo::new(&state.db)
+                .create(&created.id, &groups)
+                .await?;
 
-        Ok(created.id)
-    }
-    .await)
+            Ok(created.id)
+        }
+        .await,
+    )
 }
