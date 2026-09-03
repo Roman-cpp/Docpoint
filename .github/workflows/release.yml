@@ -1,0 +1,118 @@
+# Сборка установочных пакетов под три ОС. Запускается по тегу `v*` — тогда
+# артефакты уходят в черновик релиза GitHub — или вручную, тогда они просто
+# прикладываются к прогону. На каждый push не запускается: сборка Tauri на
+# каждой ОС занимает 15–25 минут.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    name: Tag matches version
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      # Tauri берёт версию из tauri.conf.json; тег обязан ей соответствовать,
+      # иначе релиз v1.2.0 будет содержать пакеты 1.1.0.
+      - run: |
+          version=$(jq -r .version src-tauri/tauri.conf.json)
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "tauri.conf.json: $version, тег: $tag" >&2
+            exit 1
+          fi
+
+  build:
+    name: ${{ matrix.name }}
+    needs: [check-version]
+    # Ручной запуск идёт без проверки тега: needs с пропущенной джобой
+    # считается выполненным только при always().
+    if: always() && (needs.check-version.result == 'success' || needs.check-version.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ""
+          - name: macOS arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin
+          - name: macOS x64
+            os: macos-latest
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin
+          - name: Windows x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libxdo-dev \
+            build-essential \
+            patchelf
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }},wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri
+            wasm
+          key: ${{ matrix.target }}
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - run: bun install --frozen-lockfile
+
+      # beforeBuildCommand из tauri.conf.json сам соберёт wasm и фронт.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+          # Поля релиза заполняются только по тегу; при ручном запуске
+          # action только собирает.
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Docpoint {0}', github.ref_name) || '' }}
+          releaseDraft: true
+          prerelease: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docpoint-${{ matrix.target }}
+          path: |
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+          if-no-files-found: warn

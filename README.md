@@ -121,6 +121,25 @@ bun run tauri build
 `beforeBuildCommand`. Установочные пакеты появятся в
 `src-tauri/target/release/bundle`.
 
+### Релиз
+
+Пакеты под Linux, macOS и Windows собирает GitHub Actions,
+`.github/workflows/release.yml`. Порядок:
+
+1. Поднять версию в `package.json`, `src-tauri/tauri.conf.json` и
+   `src-tauri/Cargo.toml`.
+2. Поставить тег с той же версией и отправить его:
+
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+
+Workflow проверяет, что тег совпадает с версией в `tauri.conf.json`, собирает
+пакеты и кладёт их в черновик релиза на GitHub. Черновик публикуется руками.
+Тот же workflow можно запустить вручную со страницы Actions, тогда пакеты
+прикладываются к прогону без создания релиза. Сборки не подписаны.
+
 ## Структура репозитория
 
 ```text
