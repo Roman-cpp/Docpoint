@@ -137,3 +137,12 @@
 	color: var(--ink);
 	border-bottom-color: var(--ink);
 }
+
+/* Отказ бэкенда — в футере, слева от кнопок: окно после него не закрывается. */
+.saveError {
+	margin-right: auto;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	line-height: var(--lh-snug);
+	color: var(--red);
+}

@@ -38,12 +38,11 @@ export const Sidebar = () => {
 
 	if (!groups) return;
 
+	// Ошибку не глушим: её показывает само окно, оставаясь открытым.
 	const handleCreate = async (args: Parameters<typeof addEndpoint>[0]) => {
 		try {
 			setSaving(true);
 			await addEndpoint(args);
-		} catch (e) {
-			console.error("[Sidebar] addEndpoint failed:", e);
 		} finally {
 			setSaving(false);
 		}

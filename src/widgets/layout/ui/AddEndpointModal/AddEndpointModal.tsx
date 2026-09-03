@@ -25,7 +25,7 @@ interface AddEndpointModalProps {
 		groupId?: string;
 		groupLabel?: string;
 		endpoint: CreateEndpointDTO;
-	}) => void;
+	}) => void | Promise<void>;
 	isSaving?: boolean;
 }
 
@@ -120,7 +120,10 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 
 	// Сбрасываем форму при каждом открытии.
 	useEffect(() => {
-		if (open) reset(makeDefaults(groups));
+		if (open) {
+			reset(makeDefaults(groups));
+			setSaveError(null);
+		}
 	}, [open, groups, reset]);
 
 	const pathArray = useFieldArray({ control, name: "pathParams" });
@@ -128,6 +131,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 	const bodyArray = useFieldArray({ control, name: "bodyParams" });
 
 	const [tab, setTab] = useState<ParamTab>("query");
+	const [saveError, setSaveError] = useState<string | null>(null);
 	const activeArray =
 		tab === "path" ? pathArray : tab === "query" ? queryArray : bodyArray;
 	const arrayName = `${tab}Params` as const;
@@ -142,7 +146,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 		onOpenChange(false);
 	};
 
-	const submit = handleSubmit((values) => {
+	const submit = handleSubmit(async (values) => {
 		const endpoint: CreateEndpointDTO = {
 			method: values.method,
 			path: values.path.trim(),
@@ -156,12 +160,19 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 		};
 
 		const isNewGroup = values.groupChoice === NEW_GROUP;
-		onCreate({
-			groupId: isNewGroup ? undefined : values.groupChoice,
-			groupLabel: isNewGroup ? values.newGroupLabel.trim() : undefined,
-			endpoint,
-		});
-		onOpenChange(false);
+		try {
+			setSaveError(null);
+			await onCreate({
+				groupId: isNewGroup ? undefined : values.groupChoice,
+				groupLabel: isNewGroup ? values.newGroupLabel.trim() : undefined,
+				endpoint,
+			});
+			onOpenChange(false);
+		} catch (err) {
+			// Окно остаётся открытым: иначе отказ бэкенда выглядит как удачное
+			// создание, и введённая форма пропадает вместе с причиной.
+			setSaveError(err instanceof Error ? err.message : String(err));
+		}
 	});
 
 	const path = watch("path");
@@ -191,7 +202,14 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 		path.trim().length > 0 && name.trim().length > 0 && groupOk && !isSaving;
 
 	return (
-		<Dialog.Root open={open} onOpenChange={onOpenChange} width={620}>
+		<Dialog.Root
+			open={open}
+			onOpenChange={(next) => {
+				if (!next && isSaving) return;
+				onOpenChange(next);
+			}}
+			width={620}
+		>
 			<Dialog.Header>
 				<Dialog.Title>Новый endpoint</Dialog.Title>
 				<Dialog.Subtitle>
@@ -418,6 +436,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 				</div>
 			</Dialog.Body>
 			<Dialog.Footer>
+				{saveError && <span className={s.saveError}>{saveError}</span>}
 				<Dialog.BtnCancel onClick={close} disabled={isSaving}>
 					Отмена
 				</Dialog.BtnCancel>
