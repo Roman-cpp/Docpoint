@@ -127,8 +127,9 @@
 	align-items: center;
 	gap: 12px;
 	padding: 12px 28px;
-	background: color-mix(in oklab, var(--bg) 88%, transparent);
-	backdrop-filter: blur(8px);
+	/* Фон непрозрачный: размытие под липкой панелью заставляет WebKitGTK
+	   перерисовывать документ на каждом кадре прокрутки. */
+	background: var(--bg);
 	border-bottom: 1px solid var(--border);
 }
 .bc {

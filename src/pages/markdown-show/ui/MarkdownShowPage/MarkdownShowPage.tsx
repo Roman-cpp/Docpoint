@@ -61,32 +61,74 @@ export const MarkdownShowPage: FC = () => {
 		[content],
 	);
 
-	// Подсветка активного заголовка в оглавлении, троттлится через rAF.
+	// Подсветка активного заголовка в оглавлении: активен последний заголовок,
+	// верх которого ушёл выше линии в 140px от верха читалки. Пересечения линии
+	// считает IntersectionObserver — он не читает геометрию на каждом кадре
+	// прокрутки, а получает готовые прямоугольники от браузера. Документ
+	// рендерится лениво и меняется при переключении в редактор, поэтому набор
+	// заголовков пересобирается по мутациям DOM.
 	useEffect(() => {
 		const root = readerRef.current;
 		if (!root) return;
+
+		let observer: IntersectionObserver | null = null;
 		let frame = 0;
-		const measure = () => {
+		let order: string[] = [];
+		const passed = new Set<string>();
+
+		const apply = () => {
+			let current: string | null = null;
+			for (const id of order) {
+				if (passed.has(id)) current = id;
+			}
+			// Не трогаем состояние, пока заголовок тот же, — иначе каждое
+			// пересечение перерисовывало бы страницу.
+			setActiveHeading((prev) => (prev === current ? prev : current));
+		};
+
+		const observe = () => {
 			frame = 0;
+			observer?.disconnect();
+			passed.clear();
+
 			const heads = [
 				...root.querySelectorAll<HTMLElement>("h1[id],h2[id],h3[id],h4[id]"),
 			];
-			let current: string | null = null;
-			for (const h of heads) {
-				if (h.getBoundingClientRect().top < 140) current = h.id;
+			order = heads.map((h) => h.id);
+			if (heads.length === 0) {
+				apply();
+				return;
 			}
-			// Не трогаем состояние, пока заголовок тот же, — иначе каждый кадр
-			// прокрутки перерисовывал бы страницу.
-			setActiveHeading((prev) => (prev === current ? prev : current));
+
+			observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) {
+						const id = (entry.target as HTMLElement).id;
+						// `rootBounds` уже учитывает `rootMargin`, так что его верх —
+						// это и есть линия.
+						const line = entry.rootBounds?.top ?? 0;
+						if (entry.boundingClientRect.top < line) passed.add(id);
+						else passed.delete(id);
+					}
+					apply();
+				},
+				{ root, rootMargin: "-140px 0px 0px 0px" },
+			);
+			for (const h of heads) observer.observe(h);
 		};
-		const onScroll = () => {
+
+		const schedule = () => {
 			if (frame) return;
-			frame = requestAnimationFrame(measure);
+			frame = requestAnimationFrame(observe);
 		};
-		root.addEventListener("scroll", onScroll, { passive: true });
-		measure();
+
+		const mutations = new MutationObserver(schedule);
+		mutations.observe(root, { childList: true, subtree: true });
+		observe();
+
 		return () => {
-			root.removeEventListener("scroll", onScroll);
+			mutations.disconnect();
+			observer?.disconnect();
 			if (frame) cancelAnimationFrame(frame);
 		};
 	}, []);
