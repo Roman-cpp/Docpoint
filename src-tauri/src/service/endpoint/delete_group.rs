@@ -8,5 +8,8 @@ pub async fn delete_group(
     state: State<'_, AppState>,
     group_id: String,
 ) -> Result<(), String> {
-    GroupRepo::new(&state.db).delete(&group_id).await
+    crate::logging::logged("delete_group", async {
+        GroupRepo::new(&state.db).delete(&group_id).await
+    }
+    .await)
 }

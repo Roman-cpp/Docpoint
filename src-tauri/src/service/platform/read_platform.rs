@@ -9,5 +9,8 @@ pub async fn read_platform(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<Option<Platform>, String> {
-    PlatformRepo::new(&state.db).find_by_id(&id).await
+    crate::logging::logged("read_platform", async {
+        PlatformRepo::new(&state.db).find_by_id(&id).await
+    }
+    .await)
 }

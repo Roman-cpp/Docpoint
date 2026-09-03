@@ -9,5 +9,8 @@ pub async fn create_relation(
     state: State<'_, AppState>,
     relation: RelationEndpointsDTO,
 ) -> Result<String, String> {
-    RelationRepo::new(&state.db).create(&relation).await
+    crate::logging::logged("create_relation", async {
+        RelationRepo::new(&state.db).create(&relation).await
+    }
+    .await)
 }

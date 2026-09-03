@@ -13,25 +13,28 @@ pub async fn create_endpoint(
     group_label: Option<String>,
     endpoint: CreateEndpointDTO,
 ) -> Result<(), String> {
-    // Определяем целевую группу: либо существующую (`group_id`),
-    // либо создаём новую с названием `group_label`.
-    let group_id = match group_id {
-        Some(id) => id,
-        None => {
-            let label = group_label
-                .as_deref()
-                .map(str::trim)
-                .filter(|l| !l.is_empty())
-                .ok_or_else(|| "group_id or group_label is required".to_string())?;
+    crate::logging::logged("create_endpoint", async {
+        // Определяем целевую группу: либо существующую (`group_id`),
+        // либо создаём новую с названием `group_label`.
+        let group_id = match group_id {
+            Some(id) => id,
+            None => {
+                let label = group_label
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|l| !l.is_empty())
+                    .ok_or_else(|| "group_id or group_label is required".to_string())?;
 
-            GroupRepo::new(&state.db)
-                .create_group(&doc_id, label)
-                .await?
-        }
-    };
+                GroupRepo::new(&state.db)
+                    .create_group(&doc_id, label)
+                    .await?
+            }
+        };
 
-    EndpointRepo::new(&state.db)
-        .create(&group_id, &endpoint)
-        .await?;
-    Ok(())
+        EndpointRepo::new(&state.db)
+            .create(&group_id, &endpoint)
+            .await?;
+        Ok(())
+    }
+    .await)
 }

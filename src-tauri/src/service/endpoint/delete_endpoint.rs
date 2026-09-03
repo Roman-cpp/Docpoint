@@ -8,5 +8,8 @@ pub async fn delete_endpoint(
     state: State<'_, AppState>,
     endpoint_id: String,
 ) -> Result<(), String> {
-    EndpointRepo::new(&state.db).delete(&endpoint_id).await
+    crate::logging::logged("delete_endpoint", async {
+        EndpointRepo::new(&state.db).delete(&endpoint_id).await
+    }
+    .await)
 }

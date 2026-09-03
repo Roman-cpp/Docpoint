@@ -9,5 +9,8 @@ pub async fn delete_relation(
     state: State<'_, AppState>,
     relation: RelationEndpointsDTO,
 ) -> Result<(), String> {
-    RelationRepo::new(&state.db).delete(&relation).await
+    crate::logging::logged("delete_relation", async {
+        RelationRepo::new(&state.db).delete(&relation).await
+    }
+    .await)
 }

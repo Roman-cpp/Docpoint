@@ -1,8 +1,11 @@
 import { createBrowserRouter } from "react-router";
+import { RouteError } from "@/core/log";
 
 export const router = createBrowserRouter([
 	{
 		HydrateFallback: () => "Loading...",
+		// Ошибка рендера любой страницы оседает здесь, а не в белом экране.
+		ErrorBoundary: RouteError,
 		children: [
 			{
 				path: "/",

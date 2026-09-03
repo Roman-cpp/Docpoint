@@ -9,5 +9,8 @@ pub async fn update_endpoint(
     state: State<'_, AppState>,
     endpoint: UpdateEndpointDTO,
 ) -> Result<(), String> {
-    EndpointRepo::new(&state.db).update(&endpoint).await
+    crate::logging::logged("update_endpoint", async {
+        EndpointRepo::new(&state.db).update(&endpoint).await
+    }
+    .await)
 }

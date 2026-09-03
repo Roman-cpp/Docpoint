@@ -1,11 +1,4 @@
 use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-pub struct CreateEnvValueDTO {
-    pub name: String,
-    pub value: String,
-}
-
 #[derive(Debug, Deserialize)]
 pub struct CreateEnvironmentDTO {
     pub env: String,

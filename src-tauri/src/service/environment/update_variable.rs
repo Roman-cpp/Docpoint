@@ -9,5 +9,8 @@ pub async fn update_variable(
     state: State<'_, AppState>,
     variable: UpdateVariableDTO,
 ) -> Result<(), String> {
-    EnvironmentRepo::new(&state.db).update_variable(&variable).await
+    crate::logging::logged("update_variable", async {
+        EnvironmentRepo::new(&state.db).update_variable(&variable).await
+    }
+    .await)
 }

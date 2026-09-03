@@ -74,6 +74,7 @@ WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev
 | `docpoint.db` | База SQLite |
 | `content/` | Тела markdown и doc-api документов |
 | `files/` | Загруженные в дерево файлы |
+| `logs/docpoint.log` | Лог приложения, туда пишут и Rust, и webview |
 
 Чтобы начать с чистой базы, удалите файл базы, при следующем запуске она
 создастся заново:

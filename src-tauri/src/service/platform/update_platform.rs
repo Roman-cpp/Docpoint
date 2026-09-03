@@ -9,5 +9,8 @@ pub async fn update_platform(
     state: State<'_, AppState>,
     platform: UpdatePlatformDTO,
 ) -> Result<(), String> {
-    PlatformRepo::new(&state.db).update(&platform).await
+    crate::logging::logged("update_platform", async {
+        PlatformRepo::new(&state.db).update(&platform).await
+    }
+    .await)
 }

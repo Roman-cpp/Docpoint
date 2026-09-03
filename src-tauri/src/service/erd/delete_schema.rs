@@ -8,5 +8,8 @@ pub async fn delete_schema(
     state: State<'_, AppState>,
     entity_id: String,
 ) -> Result<(), String> {
-    EntityRepo::new(&state.db).delete(&entity_id).await
+    crate::logging::logged("delete_schema", async {
+        EntityRepo::new(&state.db).delete(&entity_id).await
+    }
+    .await)
 }

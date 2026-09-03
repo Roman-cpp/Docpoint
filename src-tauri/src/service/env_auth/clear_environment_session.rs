@@ -13,6 +13,9 @@ pub async fn clear_environment_session(
     state: State<'_, AppState>,
     environment_id: String,
 ) -> Result<(), String> {
-    repository::set_access_token(&state.db, &environment_id, None).await?;
-    repository::set_auth_cookies(&state.db, &environment_id, &BTreeMap::new(), "").await
+    crate::logging::logged("clear_environment_session", async {
+        repository::set_access_token(&state.db, &environment_id, None).await?;
+        repository::set_auth_cookies(&state.db, &environment_id, &BTreeMap::new(), "").await
+    }
+    .await)
 }

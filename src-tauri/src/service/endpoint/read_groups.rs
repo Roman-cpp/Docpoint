@@ -9,5 +9,8 @@ pub async fn read_groups(
     state: State<'_, AppState>,
     doc_id: String,
 ) -> Result<Vec<Group>, String> {
-    GroupRepo::new(&state.db).all(&doc_id).await
+    crate::logging::logged("read_groups", async {
+        GroupRepo::new(&state.db).all(&doc_id).await
+    }
+    .await)
 }

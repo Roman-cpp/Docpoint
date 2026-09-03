@@ -6,5 +6,8 @@ use tauri::State;
 
 #[tauri::command]
 pub async fn read_doc(state: State<'_, AppState>, id: String) -> Result<Option<DocApi>, String> {
-    DocApiRepo::new(&state.db).find(&id).await
+    crate::logging::logged("read_doc", async {
+        DocApiRepo::new(&state.db).find(&id).await
+    }
+    .await)
 }

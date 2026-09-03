@@ -151,7 +151,45 @@ impl Default for ClientPool {
     }
 }
 
+/// Заголовки, значения которых в лог не попадают: в них токены, сессии и
+/// пароли прокси. Сравнение без учёта регистра — заголовки его не различают.
+const SECRET_HEADERS: [&str; 5] = [
+    "authorization",
+    "proxy-authorization",
+    "cookie",
+    "set-cookie",
+    "x-api-key",
+];
+
+/// Заголовки для записи в лог: секретные заменены звёздочками, остальные как
+/// есть. Единственное место маскирования — чтобы правило не расходилось.
+pub fn masked_headers<'a, I>(headers: I) -> Vec<(String, String)>
+where
+    I: IntoIterator<Item = (&'a String, &'a String)>,
+{
+    headers
+        .into_iter()
+        .map(|(name, value)| {
+            let hidden = SECRET_HEADERS.contains(&name.to_ascii_lowercase().as_str());
+            (name.clone(), if hidden { "***".to_string() } else { value.clone() })
+        })
+        .collect()
+}
+
+/// Адрес без строки запроса: в ней часто лежат ключи API и подписи.
+fn url_for_log(url: &str) -> &str {
+    url.split(['?', '#']).next().unwrap_or(url)
+}
+
 pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<ResponsePayload, String> {
+    log::debug!(
+        target: "http",
+        "{} {} headers={:?}",
+        payload.method,
+        url_for_log(&payload.url),
+        masked_headers(&payload.headers)
+    );
+
     let mut header_map = HeaderMap::new();
     for (key, value) in &payload.headers {
         if key.is_empty() {
@@ -182,10 +220,20 @@ pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<R
     };
 
     let start = std::time::Instant::now();
-    let response = request.send().await.map_err(|e| e.to_string())?;
+    let response = request.send().await.map_err(|e| {
+        log::warn!(target: "http", "{} {}: {e}", method, url_for_log(&payload.url));
+        e.to_string()
+    })?;
     let duration_ms = start.elapsed().as_millis() as u64;
 
     let status = response.status();
+    log::info!(
+        target: "http",
+        "{} {} -> {} за {duration_ms} мс",
+        method,
+        url_for_log(&payload.url),
+        status.as_u16()
+    );
     let status_text = status.canonical_reason().unwrap_or("Unknown").to_string();
 
     let mut resp_headers = HashMap::new();
@@ -213,6 +261,27 @@ pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<R
 
 #[cfg(test)]
 mod tests {
+    /// Токены и куки в лог не попадают, регистр имени заголовка не важен.
+    #[test]
+    fn secret_headers_are_masked_in_logs() {
+        let headers = std::collections::HashMap::from([
+            ("Authorization".to_string(), "Bearer secret".to_string()),
+            ("COOKIE".to_string(), "sid=1".to_string()),
+            ("Accept".to_string(), "application/json".to_string()),
+        ]);
+        let mut masked = super::masked_headers(&headers);
+        masked.sort();
+        assert_eq!(
+            masked,
+            [
+                ("Accept".to_string(), "application/json".to_string()),
+                ("Authorization".to_string(), "***".to_string()),
+                ("COOKIE".to_string(), "***".to_string()),
+            ]
+        );
+        assert_eq!(super::url_for_log("https://a.b/c?key=1#x"), "https://a.b/c");
+    }
+
     use super::*;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;

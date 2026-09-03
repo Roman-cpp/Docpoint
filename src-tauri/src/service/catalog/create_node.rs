@@ -25,7 +25,10 @@ pub async fn create_node(
     state: State<'_, AppState>,
     node: CreateNodeDTO,
 ) -> Result<CatalogNode, String> {
-    create_tree_node(&state, &node).await
+    crate::logging::logged("create_node", async {
+        create_tree_node(&state, &node).await
+    }
+    .await)
 }
 
 /// Узел плюс его полезная нагрузка. Если нагрузка не записалась, узел

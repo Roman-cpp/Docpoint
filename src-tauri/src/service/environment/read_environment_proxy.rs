@@ -8,5 +8,8 @@ pub async fn read_environment_proxy(
     state: State<'_, AppState>,
     environment_id: String,
 ) -> Result<EnvironmentProxyDTO, String> {
-    repository::ensure_row(&state.db, &environment_id).await
+    crate::logging::logged("read_environment_proxy", async {
+        repository::ensure_row(&state.db, &environment_id).await
+    }
+    .await)
 }

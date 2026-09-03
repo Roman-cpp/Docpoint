@@ -14,19 +14,22 @@ use tauri::State;
 /// нужно убрать до того, как узлы исчезнут.
 #[tauri::command]
 pub async fn delete_platform(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    let platforms = PlatformRepo::new(&state.db);
+    crate::logging::logged("delete_platform", async {
+        let platforms = PlatformRepo::new(&state.db);
 
-    let Some(platform) = platforms.find_by_id(&id).await? else {
-        return Ok(());
-    };
+        let Some(platform) = platforms.find_by_id(&id).await? else {
+            return Ok(());
+        };
 
-    let content = ContentRepo::new(&state.content_dir);
-    for node in CatalogRepo::new(&state.db).tree(&platform.id).await? {
-        if node.kind.has_content() {
-            content.delete(&node.id).await?;
+        let content = ContentRepo::new(&state.content_dir);
+        for node in CatalogRepo::new(&state.db).tree(&platform.id).await? {
+            if node.kind.has_content() {
+                content.delete(&node.id).await?;
+            }
         }
-    }
 
-    platforms.delete(&platform.id).await?;
-    EnvironmentRepo::new(&state.db).delete(&platform.id).await
+        platforms.delete(&platform.id).await?;
+        EnvironmentRepo::new(&state.db).delete(&platform.id).await
+    }
+    .await)
 }

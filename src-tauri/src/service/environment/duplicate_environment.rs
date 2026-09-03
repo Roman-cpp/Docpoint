@@ -9,7 +9,10 @@ pub async fn duplicate_environment(
     state: State<'_, AppState>,
     environment_id: String,
 ) -> Result<Environment, String> {
-    EnvironmentRepo::new(&state.db)
-        .duplicate(&environment_id)
-        .await
+    crate::logging::logged("duplicate_environment", async {
+        EnvironmentRepo::new(&state.db)
+            .duplicate(&environment_id)
+            .await
+    }
+    .await)
 }

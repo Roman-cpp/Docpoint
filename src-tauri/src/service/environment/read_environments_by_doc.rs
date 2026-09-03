@@ -9,7 +9,10 @@ pub async fn read_environments_by_doc(
     state: State<'_, AppState>,
     doc_id: String,
 ) -> Result<Vec<Environment>, String> {
-    DocApiRepo::new(&state.db)
-        .environments_by_doc(&doc_id)
-        .await
+    crate::logging::logged("read_environments_by_doc", async {
+        DocApiRepo::new(&state.db)
+            .environments_by_doc(&doc_id)
+            .await
+    }
+    .await)
 }

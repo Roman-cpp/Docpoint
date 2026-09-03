@@ -6,5 +6,8 @@ use tauri::State;
 
 #[tauri::command]
 pub async fn read_platforms(state: State<'_, AppState>) -> Result<Vec<Platform>, String> {
-    PlatformRepo::new(&state.db).all().await
+    crate::logging::logged("read_platforms", async {
+        PlatformRepo::new(&state.db).all().await
+    }
+    .await)
 }

@@ -14,14 +14,17 @@ pub async fn update_websocket(
     state: State<'_, AppState>,
     websocket: UpdateDocWebsocketDTO,
 ) -> Result<(), String> {
-    CatalogRepo::new(&state.db)
-        .rename(&RenameNodeDTO {
-            id: websocket.id.clone(),
-            name: websocket.name.clone(),
-        })
-        .await?;
+    crate::logging::logged("update_websocket", async {
+        CatalogRepo::new(&state.db)
+            .rename(&RenameNodeDTO {
+                id: websocket.id.clone(),
+                name: websocket.name.clone(),
+            })
+            .await?;
 
-    DocWebsocketRepo::new(&state.db)
-        .update(&websocket.id, &websocket.url)
-        .await
+        DocWebsocketRepo::new(&state.db)
+            .update(&websocket.id, &websocket.url)
+            .await
+    }
+    .await)
 }

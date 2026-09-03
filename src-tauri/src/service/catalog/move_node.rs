@@ -8,5 +8,8 @@ use tauri::State;
 /// Вместе с каталогом переезжает всё его поддерево.
 #[tauri::command]
 pub async fn move_node(state: State<'_, AppState>, node: MoveNodeDTO) -> Result<(), String> {
-    CatalogRepo::new(&state.db).move_to(&node).await
+    crate::logging::logged("move_node", async {
+        CatalogRepo::new(&state.db).move_to(&node).await
+    }
+    .await)
 }

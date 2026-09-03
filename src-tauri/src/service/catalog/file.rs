@@ -16,29 +16,32 @@ use tauri_plugin_opener::OpenerExt;
 /// причём целиком в память.
 #[tauri::command]
 pub async fn pick_file() -> Result<Option<PickedFile>, String> {
-    let path = tokio::task::spawn_blocking(move || rfd::FileDialog::new().pick_file())
-        .await
-        .map_err(|e| e.to_string())?;
+    crate::logging::logged("pick_file", async {
+        let path = tokio::task::spawn_blocking(move || rfd::FileDialog::new().pick_file())
+            .await
+            .map_err(|e| e.to_string())?;
 
-    let Some(path) = path else {
-        return Ok(None);
-    };
+        let Some(path) = path else {
+            return Ok(None);
+        };
 
-    // Размер здесь только для показа в окне создания, поэтому недоступный файл
-    // не повод отказывать в выборе: о настоящей беде скажет копирование.
-    let size = tokio::fs::metadata(&path)
-        .await
-        .map(|meta| meta.len() as i64)
-        .unwrap_or(0);
+        // Размер здесь только для показа в окне создания, поэтому недоступный файл
+        // не повод отказывать в выборе: о настоящей беде скажет копирование.
+        let size = tokio::fs::metadata(&path)
+            .await
+            .map(|meta| meta.len() as i64)
+            .unwrap_or(0);
 
-    Ok(Some(PickedFile {
-        name: path
-            .file_name()
-            .map(|name| name.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        path: path.to_string_lossy().to_string(),
-        size,
-    }))
+        Ok(Some(PickedFile {
+            name: path
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+                .unwrap_or_default(),
+            path: path.to_string_lossy().to_string(),
+            size,
+        }))
+    }
+    .await)
 }
 
 /// Открыть загруженный файл той программой, которой этот тип файлов открывается
@@ -50,25 +53,28 @@ pub async fn open_file_node(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<(), String> {
-    let node = CatalogRepo::new(&state.db)
-        .find(&id)
-        .await?
-        .ok_or_else(|| format!("узел не найден: {id}"))?;
+    crate::logging::logged("open_file_node", async {
+        let node = CatalogRepo::new(&state.db)
+            .find(&id)
+            .await?
+            .ok_or_else(|| format!("узел не найден: {id}"))?;
 
-    if node.kind != NodeKind::File {
-        return Err(format!("«{}» — не файл", node.name));
+        if node.kind != NodeKind::File {
+            return Err(format!("«{}» — не файл", node.name));
+        }
+
+        let stored = DocFileRepo::new(&state.db)
+            .find(&id)
+            .await?
+            .ok_or_else(|| format!("у «{}» нет файла", node.name))?;
+
+        let path = FileRepo::new(&state.files_dir)
+            .locate(&id, &stored.filename)
+            .await?;
+
+        app.opener()
+            .open_path(path.to_string_lossy().to_string(), None::<&str>)
+            .map_err(|e| e.to_string())
     }
-
-    let stored = DocFileRepo::new(&state.db)
-        .find(&id)
-        .await?
-        .ok_or_else(|| format!("у «{}» нет файла", node.name))?;
-
-    let path = FileRepo::new(&state.files_dir)
-        .locate(&id, &stored.filename)
-        .await?;
-
-    app.opener()
-        .open_path(path.to_string_lossy().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())
+    .await)
 }

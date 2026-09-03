@@ -9,5 +9,8 @@ pub async fn update_environment(
     state: State<'_, AppState>,
     environment: UpdateEnvironmentDTO,
 ) -> Result<(), String> {
-    EnvironmentRepo::new(&state.db).update(&environment).await
+    crate::logging::logged("update_environment", async {
+        EnvironmentRepo::new(&state.db).update(&environment).await
+    }
+    .await)
 }

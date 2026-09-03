@@ -32,66 +32,69 @@ pub async fn ws_connect(
     headers: Option<HashMap<String, String>>,
     id: Option<String>,
 ) -> Result<String, String> {
-    let base_headers = headers.unwrap_or_default();
+    crate::logging::logged("ws_connect", async {
+        let base_headers = headers.unwrap_or_default();
 
-    let env_id = state
-        .selected_environment_id
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
-    let auth = match &env_id {
-        Some(env_id) => repository::read_by_env_id(&state.db, env_id).await?,
-        None => None,
-    };
+        let env_id = state
+            .selected_environment_id
+            .lock()
+            .map_err(|e| e.to_string())?
+            .clone();
+        let auth = match &env_id {
+            Some(env_id) => repository::read_by_env_id(&state.db, env_id).await?,
+            None => None,
+        };
 
-    // Авторизация, которую вызывающий задал сам, побеждает нашу и заодно
-    // выключает обновление ниже: обновлять чужое нам нечем.
-    let had_explicit_auth = auth
-        .as_ref()
-        .map(|auth| caller_brought_own_auth(&url, &base_headers, auth))
-        .unwrap_or(false);
+        // Авторизация, которую вызывающий задал сам, побеждает нашу и заодно
+        // выключает обновление ниже: обновлять чужое нам нечем.
+        let had_explicit_auth = auth
+            .as_ref()
+            .map(|auth| caller_brought_own_auth(&url, &base_headers, auth))
+            .unwrap_or(false);
 
-    let (target_url, target_headers) = match (&auth, had_explicit_auth) {
-        (Some(auth), false) => build_target(&url, &base_headers, auth),
-        _ => (url.clone(), base_headers.clone()),
-    };
+        let (target_url, target_headers) = match (&auth, had_explicit_auth) {
+            (Some(auth), false) => build_target(&url, &base_headers, auth),
+            _ => (url.clone(), base_headers.clone()),
+        };
 
-    let id = id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    let conn = match ws_client::connect(
-        app.clone(),
-        id.clone(),
-        target_url,
-        Some(target_headers),
-    )
-    .await
-    {
-        Ok(conn) => conn,
-        Err(err) => {
-            let expired = matches!(err.status, Some(401) | Some(403)) && !had_explicit_auth;
-            let refreshed = match (expired, &env_id) {
-                (true, Some(env_id)) => {
-                    // Запрос авторизации — обычный HTTP, поэтому уходит через
-                    // прокси окружения. Само рукопожатие WebSocket прокси не
-                    // знает и идёт напрямую.
-                    let proxy = proxy_repository::read_config(&state.db, env_id).await?;
-                    let client = state.http_clients.get(proxy.as_ref())?;
-                    token::authenticate(&client, &state.db, env_id).await?
-                }
-                _ => None,
-            };
-            let Some(fresh) = refreshed else {
-                return Err(err.message);
-            };
+        let id = id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+        let conn = match ws_client::connect(
+            app.clone(),
+            id.clone(),
+            target_url,
+            Some(target_headers),
+        )
+        .await
+        {
+            Ok(conn) => conn,
+            Err(err) => {
+                let expired = matches!(err.status, Some(401) | Some(403)) && !had_explicit_auth;
+                let refreshed = match (expired, &env_id) {
+                    (true, Some(env_id)) => {
+                        // Запрос авторизации — обычный HTTP, поэтому уходит через
+                        // прокси окружения. Само рукопожатие WebSocket прокси не
+                        // знает и идёт напрямую.
+                        let proxy = proxy_repository::read_config(&state.db, env_id).await?;
+                        let client = state.http_clients.get(proxy.as_ref())?;
+                        token::authenticate(&client, &state.db, env_id).await?
+                    }
+                    _ => None,
+                };
+                let Some(fresh) = refreshed else {
+                    return Err(err.message);
+                };
 
-            let (retry_url, retry_headers) = build_target(&url, &base_headers, &fresh);
-            ws_client::connect(app, id.clone(), retry_url, Some(retry_headers))
-                .await
-                .map_err(|e| e.message)?
-        }
-    };
+                let (retry_url, retry_headers) = build_target(&url, &base_headers, &fresh);
+                ws_client::connect(app, id.clone(), retry_url, Some(retry_headers))
+                    .await
+                    .map_err(|e| e.message)?
+            }
+        };
 
-    state.ws_conns.insert(id.clone(), conn);
-    Ok(id)
+        state.ws_conns.insert(id.clone(), conn);
+        Ok(id)
+    }
+    .await)
 }
 
 /// Прикладывает авторизацию окружения к копии цели подключения так, как просит

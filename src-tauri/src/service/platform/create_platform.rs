@@ -15,18 +15,21 @@ pub async fn create_platform(
     state: State<'_, AppState>,
     platform: CreatePlatformDTO,
 ) -> Result<Platform, String> {
-    let created = PlatformRepo::new(&state.db).create(&platform).await?;
+    crate::logging::logged("create_platform", async {
+        let created = PlatformRepo::new(&state.db).create(&platform).await?;
 
-    let environment = CreateEnvironmentDTO {
-        env: "local".to_string(),
-        label: "Local".to_string(),
-        base_url: "http://localhost/".to_string(),
-        prefix: "".to_string(),
-    };
+        let environment = CreateEnvironmentDTO {
+            env: "local".to_string(),
+            label: "Local".to_string(),
+            base_url: "http://localhost/".to_string(),
+            prefix: "".to_string(),
+        };
 
-    EnvironmentRepo::new(&state.db)
-        .create(&created.id, &environment)
-        .await?;
+        EnvironmentRepo::new(&state.db)
+            .create(&created.id, &environment)
+            .await?;
 
-    Ok(created)
+        Ok(created)
+    }
+    .await)
 }

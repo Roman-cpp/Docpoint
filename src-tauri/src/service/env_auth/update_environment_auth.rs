@@ -8,5 +8,8 @@ pub async fn update_environment_auth(
     state: State<'_, AppState>,
     auth: UpdateEnvironmentAuthDTO,
 ) -> Result<(), String> {
-    repository::upsert(&state.db, &auth).await
+    crate::logging::logged("update_environment_auth", async {
+        repository::upsert(&state.db, &auth).await
+    }
+    .await)
 }

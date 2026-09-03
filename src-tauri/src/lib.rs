@@ -1,5 +1,6 @@
 mod domain;
 mod infrastructure;
+mod logging;
 mod repository;
 mod service;
 mod state;
@@ -37,10 +38,28 @@ pub fn run() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     tauri::Builder::default()
+        .plugin(logging::plugin())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            logging::install_panic_hook();
+
+            // Первая запись сессии — то, с чего начинается разбор любого
+            // сообщения об ошибке: версия, ОС и где лежат данные.
+            let info = app.package_info();
+            log::info!(
+                "{} {} запускается на {} {}",
+                info.name,
+                info.version,
+                std::env::consts::OS,
+                std::env::consts::ARCH
+            );
+            if let Ok(log_dir) = app.path().app_log_dir() {
+                log::info!("логи: {}", log_dir.display());
+            }
+
             let app_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_dir)?;
+            log::info!("данные: {}", app_dir.display());
 
             // Тела документов: имя и место задаёт дерево в БД, здесь лежит
             // только текст, файлом на узел.
@@ -60,11 +79,14 @@ pub fn run() {
 
             let pool = tauri::async_runtime::block_on(async {
                 SqlitePool::connect_with(options).await
-            })?;
+            })
+            .inspect_err(|e| log::error!("не удалось открыть базу {}: {e}", db_path.display()))?;
 
             tauri::async_runtime::block_on(async {
                 sqlx::migrate!("./migrations").run(&pool).await
-            })?;
+            })
+            .inspect_err(|e| log::error!("миграции не применились: {e}"))?;
+            log::info!("миграции применены");
 
             app.manage(AppState {
                 db: pool,

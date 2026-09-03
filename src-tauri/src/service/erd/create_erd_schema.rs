@@ -10,7 +10,10 @@ pub async fn create_erd_schema(
     doc_erd_id: String,
     schema: CreateEntityDTO,
 ) -> Result<String, String> {
-    EntityRepo::new(&state.db)
-        .create_for_erd(&doc_erd_id, &schema)
-        .await
+    crate::logging::logged("create_erd_schema", async {
+        EntityRepo::new(&state.db)
+            .create_for_erd(&doc_erd_id, &schema)
+            .await
+    }
+    .await)
 }

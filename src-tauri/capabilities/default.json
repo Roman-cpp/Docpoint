@@ -5,6 +5,7 @@
 	"windows": ["main", "platform-*"],
 	"permissions": [
 		"core:default",
+		"log:default",
 		"opener:default",
 		"core:webview:allow-create-webview-window"
 	]

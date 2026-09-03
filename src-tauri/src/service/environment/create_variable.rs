@@ -11,7 +11,10 @@ pub async fn create_variable(
     environment_id: String,
     variable: CreateVariableDTO,
 ) -> Result<EnvValue, String> {
-    EnvironmentRepo::new(&state.db)
-        .create_variable(&environment_id, &variable)
-        .await
+    crate::logging::logged("create_variable", async {
+        EnvironmentRepo::new(&state.db)
+            .create_variable(&environment_id, &variable)
+            .await
+    }
+    .await)
 }

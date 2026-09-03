@@ -8,5 +8,8 @@ pub async fn read_environment_auth(
     state: State<'_, AppState>,
     environment_id: String,
 ) -> Result<EnvironmentAuthDTO, String> {
-    repository::ensure_row(&state.db, &environment_id).await
+    crate::logging::logged("read_environment_auth", async {
+        repository::ensure_row(&state.db, &environment_id).await
+    }
+    .await)
 }
