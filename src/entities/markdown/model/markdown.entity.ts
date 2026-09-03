@@ -2,7 +2,6 @@
 export interface Markdown {
 	id: string;
 	name: string;
-	desc: string;
 	content: string;
 	/** Время последней записи, `YYYY-MM-DD HH:MM:SS` в UTC. */
 	updatedAt: string;

@@ -7,7 +7,7 @@ use uuid::Uuid;
 /// Колонки узла, которые читает [`node_from_row`]. Имена уточнены таблицей: в
 /// запросе поддерева те же `id` и `name` есть и у рекурсивной выборки.
 const COLUMNS: &str = "catalog_node.id, catalog_node.platform_id, catalog_node.parent_id, \
-                       catalog_node.kind, catalog_node.name, catalog_node.desc, \
+                       catalog_node.kind, catalog_node.name, \
                        catalog_node.created_at, catalog_node.updated_at";
 
 pub struct CatalogRepo<'a> {
@@ -102,15 +102,14 @@ impl CatalogRepository for CatalogRepo<'_> {
         let id = Uuid::new_v4().to_string();
 
         sqlx::query(
-            "INSERT INTO catalog_node (id, platform_id, parent_id, kind, name, desc) \
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO catalog_node (id, platform_id, parent_id, kind, name) \
+             VALUES (?, ?, ?, ?, ?)",
         )
         .bind(&id)
         .bind(node.platform_id)
         .bind(node.parent_id)
         .bind(node.kind.as_db())
         .bind(name)
-        .bind(node.desc)
         .execute(self.db)
         .await
         .map_err(|e| write_error(e, name))?;
@@ -127,11 +126,9 @@ impl CatalogRepository for CatalogRepo<'_> {
         }
 
         sqlx::query(
-            "UPDATE catalog_node SET name = ?, desc = ?, updated_at = datetime('now') \
-             WHERE id = ?",
+            "UPDATE catalog_node SET name = ?, updated_at = datetime('now') WHERE id = ?",
         )
         .bind(name)
-        .bind(&dto.desc)
         .bind(&dto.id)
         .execute(self.db)
         .await
@@ -202,7 +199,6 @@ fn node_from_row(row: &SqliteRow) -> Result<CatalogNode, String> {
         parent_id: row.get("parent_id"),
         kind: NodeKind::from_db(row.get::<String, _>("kind").as_str())?,
         name: row.get("name"),
-        desc: row.get("desc"),
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     })
@@ -247,7 +243,6 @@ mod tests {
             parent_id: parent,
             kind,
             name,
-            desc: "",
         })
         .await
         .unwrap()
@@ -269,7 +264,6 @@ mod tests {
                 parent_id: None,
                 kind: NodeKind::DocApi,
                 name: "Биллинг",
-                desc: "",
             })
             .await
             .unwrap_err();
@@ -293,7 +287,6 @@ mod tests {
                 parent_id: Some(&doc.id),
                 kind: NodeKind::Markdown,
                 name: "notes.md",
-                desc: "",
             })
             .await
             .unwrap_err();
@@ -373,7 +366,6 @@ mod tests {
                 parent_id: None,
                 kind: NodeKind::Catalog,
                 name: "Чужой",
-                desc: "",
             })
             .await
             .unwrap();

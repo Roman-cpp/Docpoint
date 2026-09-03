@@ -3,7 +3,6 @@ import type { NodePayload } from "@/entities/catalog";
 /** Заготовка нового узла: место в дереве добавляет вызывающая сторона. */
 export interface NodeDraft {
 	name: string;
-	desc: string;
 	payload: NodePayload;
 }
 

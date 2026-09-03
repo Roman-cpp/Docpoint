@@ -12,7 +12,5 @@ pub struct UpdateDocApiDTO {
     pub id: String,
     pub name: String,
     #[serde(default)]
-    pub desc: String,
-    #[serde(default)]
     pub prefix: String,
 }

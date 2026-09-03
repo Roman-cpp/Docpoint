@@ -2,7 +2,7 @@ import { type FC, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/core/toast";
 import { formatFileSize, type PickedFile, pickFileApi } from "@/entities/file";
 import { UploadIcon } from "@/shared/svg";
-import { Button, Field, Input, Textarea } from "@/shared/ui-kit/controls";
+import { Button, Field, Input } from "@/shared/ui-kit/controls";
 import type { CreateNodeDialogProps } from "../../model/create-node.type";
 import { useCreateNode } from "../../model/useCreateNode";
 import { CreateDialogShell } from "../CreateDialogShell";
@@ -25,7 +25,6 @@ export const CreateFileDialog: FC<CreateNodeDialogProps> = ({
 }) => {
 	const [picked, setPicked] = useState<PickedFile | null>(null);
 	const [name, setName] = useState("");
-	const [desc, setDesc] = useState("");
 	/** Имя правили руками — следующий выбранный файл его больше не подменяет. */
 	const [named, setNamed] = useState(false);
 	const create = useCreateNode({ isSaving, onClose, onCreate });
@@ -61,7 +60,6 @@ export const CreateFileDialog: FC<CreateNodeDialogProps> = ({
 			picked && trimmed
 				? {
 						name: trimmed,
-						desc: desc.trim(),
 						payload: { kind: "file", sourcePath: picked.path },
 					}
 				: null,
@@ -117,16 +115,6 @@ export const CreateFileDialog: FC<CreateNodeDialogProps> = ({
 						if (e.key === "Enter") submit();
 					}}
 					placeholder="Например, Смета.xlsx"
-					style={{ width: "100%" }}
-				/>
-			</Field>
-
-			<Field label="Описание">
-				<Textarea
-					value={desc}
-					onChange={(e) => setDesc(e.target.value)}
-					placeholder="Что это за файл и зачем он здесь"
-					rows={3}
 					style={{ width: "100%" }}
 				/>
 			</Field>

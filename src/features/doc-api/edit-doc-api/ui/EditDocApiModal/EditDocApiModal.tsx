@@ -1,6 +1,6 @@
 import { type FC, useState } from "react";
 import type { Doc, UpdateDocDTO } from "@/entities/doc-api";
-import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
+import { Field, Input } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 
 interface EditDocApiModalProps {
@@ -19,7 +19,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 	isSaving = false,
 }) => {
 	const [name, setName] = useState(doc.name);
-	const [desc, setDesc] = useState(doc.desc);
 	const [prefix, setPrefix] = useState(doc.prefix);
 
 	const close = () => {
@@ -30,7 +29,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 	const submit = () => {
 		onSave({
 			name: name.trim(),
-			desc: desc.trim(),
 			prefix: prefix.trim(),
 			id: doc.id,
 		});
@@ -65,15 +63,6 @@ export const EditDocApiModal: FC<EditDocApiModalProps> = ({
 						onChange={(e) => setPrefix(e.target.value)}
 						placeholder="/payments"
 						style={{ width: "100%", fontFamily: "var(--font-mono)" }}
-					/>
-				</Field>
-				<Field label="Описание">
-					<Textarea
-						value={desc}
-						onChange={(e) => setDesc(e.target.value)}
-						placeholder="Краткое описание документа"
-						rows={3}
-						style={{ width: "100%" }}
 					/>
 				</Field>
 			</Dialog.Body>

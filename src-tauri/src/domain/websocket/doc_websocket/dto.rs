@@ -6,7 +6,5 @@ pub struct UpdateDocWebsocketDTO {
     pub id: String,
     pub name: String,
     #[serde(default)]
-    pub desc: String,
-    #[serde(default)]
     pub url: String,
 }

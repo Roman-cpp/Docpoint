@@ -43,7 +43,6 @@ pub async fn create_tree_node(
             parent_id: dto.parent_id.as_deref(),
             kind: dto.payload.kind(),
             name: &dto.name,
-            desc: &dto.desc,
         })
         .await?;
 

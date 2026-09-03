@@ -1,7 +1,7 @@
 /** Файл импорта WebSocket-документа: сам сокет плюс его примеры сообщений. */
 export interface ImportWebsocketPayload {
 	version: number;
-	websocket: { name: string; url: string; desc?: string };
+	websocket: { name: string; url: string };
 	messages: { name: string; desc?: string; payload: string }[];
 }
 
@@ -71,7 +71,7 @@ export function parseWebsocketImport(raw: string): ImportWebsocketPayload {
 
 	return {
 		version: 1,
-		websocket: { name, url, desc: text(websocket.desc) },
+		websocket: { name, url },
 		messages,
 	};
 }

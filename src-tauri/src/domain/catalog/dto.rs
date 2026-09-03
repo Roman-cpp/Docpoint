@@ -54,8 +54,6 @@ pub struct CreateNodeDTO {
     #[serde(default)]
     pub parent_id: Option<String>,
     pub name: String,
-    #[serde(default)]
-    pub desc: String,
     pub payload: NodePayload,
 }
 
@@ -65,7 +63,6 @@ pub struct NewNode<'a> {
     pub parent_id: Option<&'a str>,
     pub kind: NodeKind,
     pub name: &'a str,
-    pub desc: &'a str,
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,8 +70,6 @@ pub struct NewNode<'a> {
 pub struct RenameNodeDTO {
     pub id: String,
     pub name: String,
-    #[serde(default)]
-    pub desc: String,
 }
 
 #[derive(Debug, Deserialize)]

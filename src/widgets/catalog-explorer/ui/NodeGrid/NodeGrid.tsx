@@ -101,7 +101,7 @@ export const NodeGrid: FC<NodeGridProps> = ({
 									<NodeIcon kind={node.kind} name={node.name} size={20} />
 								</span>
 
-								<span className={s.name} title={node.desc || node.name}>
+								<span className={s.name} title={node.name}>
 									{node.name}
 								</span>
 								<span className={s.meta}>{formatNodeDate(node.updatedAt)}</span>

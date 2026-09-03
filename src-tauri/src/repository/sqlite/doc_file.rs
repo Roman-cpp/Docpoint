@@ -60,7 +60,6 @@ mod tests {
                 parent_id: None,
                 kind: NodeKind::File,
                 name: "Смета.xlsx",
-                desc: "",
             })
             .await
             .unwrap();

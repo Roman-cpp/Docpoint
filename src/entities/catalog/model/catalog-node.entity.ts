@@ -18,7 +18,6 @@ export interface CatalogNode {
 	parentId: string | null;
 	kind: NodeKind;
 	name: string;
-	desc: string;
 	/** Время создания и изменения, `YYYY-MM-DD HH:MM:SS` в UTC. */
 	createdAt: string;
 	updatedAt: string;

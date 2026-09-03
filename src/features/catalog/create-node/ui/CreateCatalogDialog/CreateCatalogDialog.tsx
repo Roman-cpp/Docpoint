@@ -16,11 +16,7 @@ export const CreateCatalogDialog: FC<CreateNodeDialogProps> = ({
 
 	const trimmed = name.trim();
 	const submit = () =>
-		create(
-			trimmed
-				? { name: trimmed, desc: "", payload: { kind: "catalog" } }
-				: null,
-		);
+		create(trimmed ? { name: trimmed, payload: { kind: "catalog" } } : null);
 
 	return (
 		<CreateDialogShell

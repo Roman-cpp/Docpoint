@@ -6,7 +6,6 @@ use serde::Serialize;
 pub struct MarkdownDoc {
     pub id: String,
     pub name: String,
-    pub desc: String,
     pub content: String,
     pub updated_at: String,
 }

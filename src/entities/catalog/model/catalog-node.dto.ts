@@ -18,7 +18,6 @@ export interface CreateNodeDTO {
 	/** `null` — создать в корне платформы. */
 	parentId: string | null;
 	name: string;
-	desc: string;
 	payload: NodePayload;
 }
 
@@ -26,7 +25,6 @@ export interface CreateNodeDTO {
 export interface RenameNodeDTO {
 	id: string;
 	name: string;
-	desc: string;
 }
 
 export interface MoveNodeDTO {

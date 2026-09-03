@@ -6,7 +6,6 @@ import type { CreateGroupDTO } from "@/entities/doc-api";
  *  не хранится — его задаёт открытый каталог. */
 export interface ImportDocMeta {
 	name: string;
-	desc?: string;
 	prefix?: string;
 }
 
@@ -31,7 +30,6 @@ export function importDocApi(
 		platformId: target.platformId,
 		parentId: target.parentId,
 		name: payload.doc.name,
-		desc: payload.doc.desc ?? "",
 		payload: {
 			kind: "docApi",
 			prefix: payload.doc.prefix ?? "",

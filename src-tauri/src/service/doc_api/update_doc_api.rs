@@ -7,8 +7,8 @@ use crate::repository::sqlite::doc_api::DocApiRepo;
 use crate::state::AppState;
 use tauri::State;
 
-/// Имя и описание документа лежат в узле дерева, префикс — в его полезной
-/// нагрузке, поэтому правка идёт в две таблицы.
+/// Имя документа лежит в узле дерева, префикс — в его полезной нагрузке,
+/// поэтому правка идёт в две таблицы.
 #[tauri::command]
 pub async fn update_doc(
     state: State<'_, AppState>,
@@ -18,7 +18,6 @@ pub async fn update_doc(
         .rename(&RenameNodeDTO {
             id: doc.id.clone(),
             name: doc.name.clone(),
-            desc: doc.desc.clone(),
         })
         .await?;
 

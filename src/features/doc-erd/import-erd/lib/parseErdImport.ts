@@ -18,7 +18,7 @@ export interface ImportErdRelation {
 /** Разобранный файл импорта ERD. */
 export interface ImportErdPayload {
 	version: 1;
-	erd: { name: string; desc: string };
+	erd: { name: string };
 	tables: ImportErdTable[];
 	relations: ImportErdRelation[];
 }
@@ -238,7 +238,7 @@ export function parseErdImport(raw: string): ImportErdPayload {
 
 	return {
 		version: 1,
-		erd: { name, desc: text(erd.desc) },
+		erd: { name },
 		tables,
 		relations: parseRelations(json.relations, tables),
 	};

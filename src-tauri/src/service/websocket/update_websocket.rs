@@ -7,8 +7,8 @@ use crate::repository::sqlite::doc_websocket::DocWebsocketRepo;
 use crate::state::AppState;
 use tauri::State;
 
-/// Имя и описание сокета лежат в узле дерева, адрес — в его полезной нагрузке,
-/// поэтому правка идёт в две таблицы.
+/// Имя сокета лежит в узле дерева, адрес — в его полезной нагрузке, поэтому
+/// правка идёт в две таблицы.
 #[tauri::command]
 pub async fn update_websocket(
     state: State<'_, AppState>,
@@ -18,7 +18,6 @@ pub async fn update_websocket(
         .rename(&RenameNodeDTO {
             id: websocket.id.clone(),
             name: websocket.name.clone(),
-            desc: websocket.desc.clone(),
         })
         .await?;
 

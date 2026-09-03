@@ -4,8 +4,8 @@ use crate::domain::doc_api::doc_api::repository::DocApiRepository;
 use crate::domain::environment::environment::entity::{EnvValue, Environment};
 use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
 
-/// Документ склеен из узла дерева (имя, описание) и своей строки в `doc_api`.
-const SELECT_DOC: &str = "SELECT n.id, n.name, n.desc, d.prefix \
+/// Документ склеен из узла дерева (имя) и своей строки в `doc_api`.
+const SELECT_DOC: &str = "SELECT n.id, n.name, d.prefix \
                           FROM doc_api d JOIN catalog_node n ON n.id = d.id";
 
 pub struct DocApiRepo<'a> {
@@ -108,7 +108,6 @@ fn doc_from_row(row: &SqliteRow) -> DocApi {
     DocApi {
         id: row.get("id"),
         name: row.get("name"),
-        desc: row.get("desc"),
         prefix: row.get("prefix"),
     }
 }

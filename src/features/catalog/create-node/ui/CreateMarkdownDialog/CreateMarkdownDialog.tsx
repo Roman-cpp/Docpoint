@@ -5,8 +5,7 @@ import type { CreateNodeDialogProps } from "../../model/create-node.type";
 import { useCreateNode } from "../../model/useCreateNode";
 import { CreateDialogShell } from "../CreateDialogShell";
 
-/** Новый markdown-документ. Описания у него нет — его роль играет сам текст,
- *  поэтому документ сразу открывается с заголовком из имени. */
+/** Новый markdown-документ. Он сразу открывается с заголовком из имени. */
 export const CreateMarkdownDialog: FC<CreateNodeDialogProps> = ({
 	parentName,
 	isSaving = false,
@@ -24,7 +23,6 @@ export const CreateMarkdownDialog: FC<CreateNodeDialogProps> = ({
 			trimmed
 				? {
 						name: withMarkdownExt(trimmed),
-						desc: "",
 						payload: { kind: "markdown", content: `# ${title}\n` },
 					}
 				: null,

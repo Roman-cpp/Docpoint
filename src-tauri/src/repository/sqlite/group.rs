@@ -308,8 +308,6 @@ mod tests {
     struct ImportDoc {
         name: String,
         #[serde(default)]
-        desc: String,
-        #[serde(default)]
         prefix: String,
     }
 
@@ -327,7 +325,6 @@ mod tests {
                 parent_id: None,
                 kind: NodeKind::DocApi,
                 name: &doc.name,
-                desc: &doc.desc,
             })
             .await
             .unwrap();
@@ -470,7 +467,7 @@ mod tests {
     #[tokio::test]
     async fn a_path_param_that_is_not_in_the_path_stops_the_import() {
         let raw = r#"{
-            "doc": { "name": "My API", "desc": "d" },
+            "doc": { "name": "My API" },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/posts/{postId}", "name": "Post", "description": "",
                 "pathParams": [
@@ -495,7 +492,7 @@ mod tests {
     #[tokio::test]
     async fn a_file_without_requests_still_imports() {
         let raw = r#"{
-            "doc": { "name": "My API", "desc": "d" },
+            "doc": { "name": "My API" },
             "groups": [{ "label": "Default", "endpoints": [{
                 "method": "GET", "path": "/ping", "name": "Ping", "description": "",
                 "auth": false, "queryParams": [], "bodyParams": [], "responses": {}

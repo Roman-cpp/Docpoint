@@ -1,5 +1,5 @@
 import { type FC, useState } from "react";
-import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
+import { Field, Input } from "@/shared/ui-kit/controls";
 import type { CreateNodeDialogProps } from "../../model/create-node.type";
 import { useCreateNode } from "../../model/useCreateNode";
 import { CreateDialogShell } from "../CreateDialogShell";
@@ -12,16 +12,11 @@ export const CreateDocErdDialog: FC<CreateNodeDialogProps> = ({
 	onCreate,
 }) => {
 	const [name, setName] = useState("");
-	const [desc, setDesc] = useState("");
 	const create = useCreateNode({ isSaving, onClose, onCreate });
 
 	const trimmed = name.trim();
 	const submit = () =>
-		create(
-			trimmed
-				? { name: trimmed, desc: desc.trim(), payload: { kind: "docErd" } }
-				: null,
-		);
+		create(trimmed ? { name: trimmed, payload: { kind: "docErd" } } : null);
 
 	return (
 		<CreateDialogShell
@@ -41,16 +36,6 @@ export const CreateDocErdDialog: FC<CreateNodeDialogProps> = ({
 						if (e.key === "Enter") submit();
 					}}
 					placeholder="Например, Схема биллинга"
-					style={{ width: "100%" }}
-				/>
-			</Field>
-
-			<Field label="Описание">
-				<Textarea
-					value={desc}
-					onChange={(e) => setDesc(e.target.value)}
-					placeholder="Что за схема и зачем"
-					rows={3}
 					style={{ width: "100%" }}
 				/>
 			</Field>

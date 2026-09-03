@@ -27,7 +27,6 @@ pub async fn read_markdown(
     Ok(Some(MarkdownDoc {
         id: node.id,
         name: node.name,
-        desc: node.desc,
         content,
         updated_at: node.updated_at,
     }))

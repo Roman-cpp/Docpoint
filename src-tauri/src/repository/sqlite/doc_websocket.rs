@@ -2,8 +2,8 @@ use crate::domain::websocket::doc_websocket::entity::DocWebsocket;
 use crate::domain::websocket::doc_websocket::repository::DocWebsocketRepository;
 use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
 
-/// Сокет склеен из узла дерева (имя, описание) и своей строки в `doc_ws`.
-const SELECT_WS: &str = "SELECT n.id, n.name, n.desc, w.url \
+/// Сокет склеен из узла дерева (имя) и своей строки в `doc_ws`.
+const SELECT_WS: &str = "SELECT n.id, n.name, w.url \
                          FROM doc_ws w JOIN catalog_node n ON n.id = w.id";
 
 pub struct DocWebsocketRepo<'a> {
@@ -63,7 +63,6 @@ fn ws_from_row(row: &SqliteRow) -> DocWebsocket {
     DocWebsocket {
         id: row.get("id"),
         name: row.get("name"),
-        desc: row.get("desc"),
         url: row.get("url"),
     }
 }

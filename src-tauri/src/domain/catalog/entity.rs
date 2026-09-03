@@ -66,7 +66,6 @@ pub struct CatalogNode {
     pub parent_id: Option<String>,
     pub kind: NodeKind,
     pub name: String,
-    pub desc: String,
     pub created_at: String,
     pub updated_at: String,
 }

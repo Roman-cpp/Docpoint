@@ -26,7 +26,6 @@ export const useImportWebsocket = (target: ImportWebsocketTarget) => {
 				platformId: target.platformId,
 				parentId: target.parentId,
 				name: payload.websocket.name,
-				desc: payload.websocket.desc ?? "",
 				payload: { kind: "docWs", url: payload.websocket.url },
 			});
 

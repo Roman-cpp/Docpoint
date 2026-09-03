@@ -30,7 +30,6 @@ export const useImportErd = (target: ImportErdTarget) => {
 				platformId: target.platformId,
 				parentId: target.parentId,
 				name: payload.erd.name,
-				desc: payload.erd.desc,
 				payload: { kind: "docErd" },
 			};
 

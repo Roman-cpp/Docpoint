@@ -1,22 +1,17 @@
 import { type FC, useState } from "react";
 import type { DocWebsocket } from "@/entities/websocket";
-import { Field, Input, Textarea } from "@/shared/ui-kit/controls";
+import { Field, Input } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 
 interface Props {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	websocket: DocWebsocket;
-	onSave: (data: {
-		id: string;
-		name: string;
-		desc: string;
-		url: string;
-	}) => void;
+	onSave: (data: { id: string; name: string; url: string }) => void;
 	isSaving?: boolean;
 }
 
-/** Edits the name, URL and description of an existing WebSocket doc. */
+/** Edits the name and URL of an existing WebSocket doc. */
 export const EditWebsocketModal: FC<Props> = ({
 	open,
 	onOpenChange,
@@ -26,7 +21,6 @@ export const EditWebsocketModal: FC<Props> = ({
 }) => {
 	const [name, setName] = useState(websocket.name);
 	const [url, setUrl] = useState(websocket.url);
-	const [desc, setDesc] = useState(websocket.desc);
 
 	const close = () => {
 		if (isSaving) return;
@@ -57,14 +51,6 @@ export const EditWebsocketModal: FC<Props> = ({
 						placeholder="wss://example.com/ws"
 					/>
 				</Field>
-				<Field label="Описание">
-					<Textarea
-						value={desc}
-						onChange={(e) => setDesc(e.target.value)}
-						placeholder="Необязательно"
-						rows={3}
-					/>
-				</Field>
 			</Dialog.Body>
 			<Dialog.Footer>
 				<Dialog.BtnCancel onClick={close} disabled={isSaving}>
@@ -76,7 +62,6 @@ export const EditWebsocketModal: FC<Props> = ({
 						onSave({
 							id: websocket.id,
 							name: name.trim(),
-							desc: desc.trim(),
 							url: url.trim(),
 						})
 					}

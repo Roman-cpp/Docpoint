@@ -56,9 +56,6 @@ export const DocWsShowPage: FC = () => {
 										Изменить
 									</button>
 								</div>
-								{websocket?.desc && (
-									<p className={s.docDesc}>{websocket.desc}</p>
-								)}
 							</div>
 
 							<WsConsole

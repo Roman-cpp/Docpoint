@@ -602,9 +602,7 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 					node={renaming}
 					isSaving={isRenamingNode}
 					onClose={() => setRenaming(null)}
-					onRename={(name, desc) =>
-						renameNodeAsync({ id: renaming.id, name, desc })
-					}
+					onRename={(name) => renameNodeAsync({ id: renaming.id, name })}
 				/>
 			)}
 
