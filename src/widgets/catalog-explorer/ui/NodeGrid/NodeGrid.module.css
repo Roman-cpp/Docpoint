@@ -40,8 +40,8 @@
 
 .grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-	gap: 14px;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 10px;
 }
 
 /* ═══════════════ CARD ═══════════════ */
@@ -51,11 +51,11 @@
 	flex-direction: column;
 	align-items: flex-start;
 	text-align: left;
-	gap: 4px;
-	min-height: 132px;
-	padding: 16px 18px 14px;
+	gap: 3px;
+	min-height: 96px;
+	padding: 12px 13px 10px;
 	border: 1px solid var(--border);
-	border-radius: var(--r-xl);
+	border-radius: var(--r-lg);
 	background: var(--surface);
 	cursor: pointer;
 	font-family: var(--font-sans);
@@ -82,7 +82,7 @@
 
 .name {
 	margin-top: auto;
-	font-size: 13.5px;
+	font-size: 12.5px;
 	color: var(--ink);
 	font-weight: var(--fw-medium);
 	white-space: nowrap;
@@ -93,7 +93,7 @@
 
 .meta {
 	font-family: var(--font-mono);
-	font-size: 11px;
+	font-size: 10.5px;
 	color: var(--ink-low);
 	white-space: nowrap;
 	overflow: hidden;
@@ -106,10 +106,10 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 40px;
-	height: 40px;
-	border-radius: var(--r-lg);
-	margin-bottom: 14px;
+	width: 30px;
+	height: 30px;
+	border-radius: var(--r-md);
+	margin-bottom: 10px;
 	color: var(--cat-ink);
 	background: var(--cat-bg);
 	border: 1px solid var(--border);

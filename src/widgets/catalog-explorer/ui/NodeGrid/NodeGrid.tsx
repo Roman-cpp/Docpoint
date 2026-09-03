@@ -98,7 +98,7 @@ export const NodeGrid: FC<NodeGridProps> = ({
 								}}
 							>
 								<span className={cx(s.tile, s[`tile-${node.kind}`])}>
-									<NodeIcon kind={node.kind} name={node.name} size={20} />
+									<NodeIcon kind={node.kind} name={node.name} size={16} />
 								</span>
 
 								<span className={s.name} title={node.name}>
