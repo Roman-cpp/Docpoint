@@ -46,3 +46,7 @@ dashmap = "6"
 tauri-plugin-log = "2"
 log = "0.4.34"
 
+[lints.clippy]
+# `doc_api/doc_api`, `environment/environment`: слайс и его главный модуль
+# намеренно называются одинаково, по образцу фронтовых слайсов.
+module_inception = "allow"
