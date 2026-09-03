@@ -16,6 +16,7 @@ import {
 import { joinUrl } from "@/shared/lib/url";
 import s from "@/shared/styles/apiDocs.module.css";
 import { CatalogBackLink } from "@/widgets/catalog-explorer";
+import o from "./OverviewPage.module.css";
 
 const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
 	GET: { color: "var(--get)", bg: "var(--get-bg)" },
@@ -66,17 +67,7 @@ export const OverviewPage = () => {
 
 			<div className={s.endpointHeader}>
 				<div className={s.endpointTitleRow}>
-					<h1
-						style={{
-							fontFamily: "var(--font-serif)",
-							fontSize: "30px",
-							fontWeight: 400,
-							letterSpacing: "-0.3px",
-							lineHeight: 1.2,
-						}}
-					>
-						{doc.name}
-					</h1>
+					<h1 className={o.title}>{doc.name}</h1>
 					<button
 						type="button"
 						className={s.overviewEditBtn}
@@ -112,8 +103,8 @@ export const OverviewPage = () => {
 
 			<div className={s.divider} />
 
-			{/* Навигация по документу: группа → её эндпоинты. Ничего, кроме метода
-			    и пути — описания и теги живут на странице самого эндпоинта. */}
+			{/* Навигация по документу: группа → её эндпоинты. Метод, путь и описание
+			    в одну строку — параметры и теги живут на странице самого эндпоинта. */}
 			<div className={s.sectionBlock}>
 				<div className={s.sectionLabel}>Endpoints</div>
 				{endpointCount === 0 ? (
@@ -121,66 +112,36 @@ export const OverviewPage = () => {
 						<span>Пока нет ни одного эндпоинта</span>
 					</div>
 				) : (
-					<div style={{ display: "grid", gap: "18px" }}>
+					<div className={o.groups}>
 						{groups?.map((group) => {
 							if (group.endpoints.length === 0) return null;
 							return (
 								<div key={group.id}>
-									<div
-										style={{
-											fontSize: "12px",
-											fontWeight: 600,
-											color: "var(--ink-mid)",
-											marginBottom: "8px",
-										}}
-									>
-										{group.label}
-									</div>
-									<div
-										style={{
-											border: "1px solid var(--border)",
-											borderRadius: "10px",
-											overflow: "hidden",
-										}}
-									>
-										{group.endpoints.map((ep, i) => {
+									<div className={o.groupLabel}>{group.label}</div>
+									<div className={o.groupList}>
+										{group.endpoints.map((ep) => {
 											const ms = METHOD_STYLES[ep.method];
 											return (
 												<Link
 													key={ep.id}
 													to={`/endpoint-show/${ep.id}`}
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "10px",
-														padding: "9px 14px",
-														borderTop:
-															i === 0 ? "none" : "1px solid var(--border)",
-														color: "var(--ink)",
-														textDecoration: "none",
-													}}
+													className={o.endpoint}
 												>
 													<span
-														className={s.methodBadge}
-														style={{
-															color: ms?.color,
-															background: ms?.bg,
-															fontSize: "10px",
-															padding: "2px 7px",
-															minWidth: "52px",
-															textAlign: "center",
-														}}
+														className={`${s.methodBadge} ${o.method}`}
+														style={{ color: ms?.color, background: ms?.bg }}
 													>
 														{ep.method}
 													</span>
-													<span
-														style={{
-															fontFamily: "var(--font-mono)",
-															fontSize: "13px",
-														}}
-													>
-														{ep.path}
-													</span>
+													<span className={o.path}>{ep.path}</span>
+													{ep.description && (
+														<span
+															className={`${s.paramDesc} ${o.desc}`}
+															title={ep.description}
+														>
+															{ep.description}
+														</span>
+													)}
 												</Link>
 											);
 										})}

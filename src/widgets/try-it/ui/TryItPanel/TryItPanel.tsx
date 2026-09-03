@@ -9,7 +9,6 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { useResponseStore } from "@/features/request";
-import { getEnvDotColor } from "@/shared/lib/env-color";
 import { HeadersEditor } from "@/shared/ui-kit/controls";
 import { buildUrl, canHaveBody } from "../../lib/buildRequest";
 import { getJsonError } from "../../lib/validateJson";
@@ -68,13 +67,6 @@ export const TryItPanel: FC = () => {
 		<div className={s.pane}>
 			<div className={s.header}>
 				<span className={s.title}>Try it</span>
-				<span className={s.envPill}>
-					<span
-						className={s.envDot}
-						style={{ background: getEnvDotColor(environment.env) }}
-					/>
-					{environment.label}
-				</span>
 			</div>
 
 			<div className={s.body}>

@@ -1,0 +1,86 @@
+.title {
+	font-family: var(--font-serif);
+	font-size: 30px;
+	font-weight: 400;
+	letter-spacing: -0.3px;
+	line-height: 1.2;
+}
+
+/* Ни сетка, ни строка не должны расти под содержимое: длинный путь и
+   описание сжимаются до ширины экрана, а не выталкивают список за него. */
+.groups {
+	display: grid;
+	/* Колонка не шире контейнера: у неявного auto-трека минимум — min-content
+	   содержимого, а строки с nowrap-текстом раздвинули бы его за экран. */
+	grid-template-columns: minmax(0, 1fr);
+	gap: 18px;
+	min-width: 0;
+}
+.groups > * {
+	min-width: 0;
+}
+
+.groupLabel {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--ink-mid);
+	margin-bottom: 8px;
+}
+
+.groupList {
+	min-width: 0;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+.endpoint {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	gap: 10px;
+	padding: 9px 14px;
+	color: var(--ink);
+	text-decoration: none;
+}
+.endpoint + .endpoint {
+	border-top: 1px solid var(--border);
+}
+.endpoint:hover {
+	background: var(--bg);
+}
+
+.method {
+	font-size: 10px;
+	padding: 2px 7px;
+	min-width: 52px;
+	text-align: center;
+}
+
+.path {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Описание — отдельная плашка у правого края: на своём фоне и с обрезкой
+   по ширине оно не сливается ни с путём, ни с подложкой строки. */
+.desc {
+	flex: 0 1 auto;
+	max-width: 45%;
+	min-width: 0;
+	padding: 2px 9px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--bg);
+	font-size: 12px;
+	line-height: 1.5;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
