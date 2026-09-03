@@ -443,6 +443,37 @@ h2.sectionHead {
 	letter-spacing: -0.1px;
 	color: var(--ink);
 }
+.sectionEdit {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	margin-left: auto;
+	padding: 4px 9px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	background: var(--surface);
+	color: var(--ink-mid);
+	font-family: var(--font-sans);
+	font-size: var(--fs-12);
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+	transition:
+		color var(--t-fast),
+		border-color var(--t-fast);
+}
+.sectionEdit:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+/* Секция без строк: рамка держит место и подсказывает, что тут можно добавить. */
+.sectionEmpty {
+	padding: 18px 16px;
+	border: 1px dashed var(--border-h);
+	border-radius: var(--r-lg);
+	font-size: 13px;
+	color: var(--ink-low);
+	text-align: center;
+}
 .sectionCount {
 	font-family: var(--font-mono);
 	font-size: var(--fs-10);

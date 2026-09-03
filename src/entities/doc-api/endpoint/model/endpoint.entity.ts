@@ -9,16 +9,18 @@ export interface Param {
 	value: string | null;
 }
 
-interface SchemaField {
+/** Поле схемы ответа: как документируется один ключ тела. */
+export interface ResponseField {
 	key: string;
 	type: string;
 	desc: string;
 	example?: string;
 }
 
-interface Response {
+/** Ответ эндпоинта под одним кодом статуса: подпись, схема и пример тела. */
+export interface EndpointResponse {
 	label: string;
-	schema: SchemaField[];
+	schema: ResponseField[];
 	example: string;
 }
 
@@ -33,5 +35,5 @@ export interface Endpoint {
 	pathParams: Param[];
 	queryParams: Param[];
 	bodyParams: Param[];
-	responses: Record<string, Response>;
+	responses: Record<string, EndpointResponse>;
 }

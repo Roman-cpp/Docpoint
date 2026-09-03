@@ -45,4 +45,7 @@ pub struct UpdateEndpointDTO {
     pub query_params: Vec<ParamDef>,
     #[serde(rename = "bodyParams", default)]
     pub body_params: Vec<ParamDef>,
+    /// Ответы правятся целиком, как и параметры: что пришло — то и остаётся.
+    #[serde(default)]
+    pub responses: HashMap<String, ResponseDef>,
 }

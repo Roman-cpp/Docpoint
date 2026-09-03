@@ -28,4 +28,5 @@ export type CreateEndpointDTO = Omit<Endpoint, "id"> & {
 	/** Наборы «Try it», переносимые вместе с эндпоинтом при импорте файла. */
 	requests?: ImportEndpointRequest[];
 };
-export type UpdateEndpointDTO = Omit<Endpoint, "responses">;
+/** Правка переписывает эндпоинт целиком, включая параметры и ответы. */
+export type UpdateEndpointDTO = Endpoint;

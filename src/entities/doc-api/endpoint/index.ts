@@ -8,4 +8,9 @@ export type {
 	ImportEndpointRequest,
 	UpdateEndpointDTO,
 } from "./model/endpoint.dto";
-export type { Endpoint, Param } from "./model/endpoint.entity";
+export type {
+	Endpoint,
+	EndpointResponse,
+	Param,
+	ResponseField,
+} from "./model/endpoint.entity";

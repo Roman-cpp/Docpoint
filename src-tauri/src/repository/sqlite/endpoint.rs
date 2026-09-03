@@ -1,8 +1,9 @@
 use crate::domain::doc_api::endpoint::dto::{CreateEndpointDTO, UpdateEndpointDTO};
-use crate::domain::doc_api::endpoint::entity::{path_segments, ParamDef};
-use sqlx::SqlitePool;
-use uuid::Uuid;
+use crate::domain::doc_api::endpoint::entity::{path_segments, ParamDef, ResponseDef};
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
+use sqlx::SqlitePool;
+use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Пишет параметры одного вида (`path`, `query`, `body`). Позиция в массиве
 /// становится `sort_ord` — по нему они потом и читаются.
@@ -28,6 +29,46 @@ async fn insert_params(
         .execute(&mut *conn)
         .await
         .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Пишет ответы эндпоинта вместе с полями их схем. Ключ карты — код статуса.
+async fn insert_responses(
+    conn: &mut sqlx::SqliteConnection,
+    endpoint_id: &str,
+    responses: &HashMap<String, ResponseDef>,
+) -> Result<(), String> {
+    for (status_code, resp) in responses {
+        let result = sqlx::query(
+            "INSERT INTO response (endpoint_id, status_code, label, example) \
+             VALUES (?, ?, ?, ?)",
+        )
+        .bind(endpoint_id)
+        .bind(status_code)
+        .bind(&resp.label)
+        .bind(&resp.example)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let resp_id = result.last_insert_rowid();
+
+        for (fi, field) in resp.schema.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO response_field (response_id, key, type, desc, example, sort_ord) \
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(resp_id)
+            .bind(&field.key)
+            .bind(&field.type_)
+            .bind(&field.desc)
+            .bind(&field.example)
+            .bind(fi as i64)
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
     }
     Ok(())
 }
@@ -88,39 +129,7 @@ impl EndpointRepository for EndpointRepo<'_> {
         insert_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
         insert_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
         insert_params(&mut conn, &endpoint_id, "body", &endpoint.body_params).await?;
-        drop(conn);
-
-        for (status_code, resp) in &endpoint.responses {
-            let result = sqlx::query(
-                "INSERT INTO response (endpoint_id, status_code, label, example) \
-                 VALUES (?, ?, ?, ?)",
-            )
-            .bind(&endpoint_id)
-            .bind(status_code)
-            .bind(&resp.label)
-            .bind(&resp.example)
-            .execute(db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-            let resp_id = result.last_insert_rowid();
-
-            for (fi, field) in resp.schema.iter().enumerate() {
-                sqlx::query(
-                    "INSERT INTO response_field (response_id, key, type, desc, example, sort_ord) \
-                     VALUES (?, ?, ?, ?, ?, ?)",
-                )
-                .bind(resp_id)
-                .bind(&field.key)
-                .bind(&field.type_)
-                .bind(&field.desc)
-                .bind(&field.example)
-                .bind(fi as i64)
-                .execute(db)
-                .await
-                .map_err(|e| e.to_string())?;
-            }
-        }
+        insert_responses(&mut conn, &endpoint_id, &endpoint.responses).await?;
 
         Ok(endpoint_id)
     }
@@ -152,6 +161,24 @@ impl EndpointRepository for EndpointRepo<'_> {
         insert_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
         insert_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
         insert_params(&mut tx, &endpoint.id, "body", &endpoint.body_params).await?;
+
+        // Ответы — так же целиком. Поля схем удаляются явно: каскад по внешнему
+        // ключу срабатывает только при включённом `foreign_keys`, а на это
+        // соединение полагаться нельзя.
+        sqlx::query(
+            "DELETE FROM response_field \
+             WHERE response_id IN (SELECT id FROM response WHERE endpoint_id = ?)",
+        )
+        .bind(&endpoint.id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+        sqlx::query("DELETE FROM response WHERE endpoint_id = ?")
+            .bind(&endpoint.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        insert_responses(&mut tx, &endpoint.id, &endpoint.responses).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
 
@@ -235,6 +262,89 @@ mod tests {
         insert_path_param(&pool)
             .await
             .expect("после 0031 сегмент пути описывается как параметр");
+    }
+
+    /// Правка эндпоинта переписывает его ответы целиком: старый код статуса
+    /// уходит вместе с полями схемы, новый появляется с ними.
+    #[tokio::test]
+    async fn update_replaces_responses_with_their_fields() {
+        use crate::domain::doc_api::endpoint::entity::ResponseSchemaField;
+
+        let pool = test_db::migrated().await;
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO platforms (id, name) VALUES ('p1', 'P');
+            INSERT INTO catalog_node (id, platform_id, kind, name) VALUES ('d1', 'p1', 'doc_api', 'D');
+            INSERT INTO doc_api (id, prefix) VALUES ('d1', '');
+            INSERT INTO "group" (id, doc_id, label, sort_ord) VALUES ('g1', 'd1', 'G', 0);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        let repo = EndpointRepo::new(&pool);
+        let response = |label: &str, key: &str| ResponseDef {
+            label: label.to_string(),
+            schema: vec![ResponseSchemaField {
+                key: key.to_string(),
+                type_: "string".to_string(),
+                desc: String::new(),
+                example: None,
+            }],
+            example: "{}".to_string(),
+        };
+
+        let id = repo
+            .create(
+                "g1",
+                &CreateEndpointDTO {
+                    method: "GET".into(),
+                    path: "/posts".into(),
+                    name: "P".into(),
+                    description: String::new(),
+                    auth: false,
+                    path_params: vec![],
+                    query_params: vec![],
+                    body_params: vec![],
+                    responses: HashMap::from([("200".to_string(), response("OK", "id"))]),
+                    requests: vec![],
+                },
+            )
+            .await
+            .unwrap();
+
+        repo.update(&UpdateEndpointDTO {
+            id: id.clone(),
+            method: "GET".into(),
+            path: "/posts".into(),
+            name: "P".into(),
+            description: String::new(),
+            auth: false,
+            path_params: vec![],
+            query_params: vec![],
+            body_params: vec![],
+            responses: HashMap::from([("404".to_string(), response("Not found", "error"))]),
+        })
+        .await
+        .unwrap();
+
+        let codes: Vec<String> =
+            sqlx::query_scalar("SELECT status_code FROM response WHERE endpoint_id = ?")
+                .bind(&id)
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        assert_eq!(codes, ["404"]);
+
+        let keys: Vec<String> = sqlx::query_scalar(
+            "SELECT key FROM response_field \
+             WHERE response_id IN (SELECT id FROM response WHERE endpoint_id = ?)",
+        )
+        .bind(&id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(keys, ["error"], "поля старого ответа не должны остаться");
     }
 
     async fn insert_path_param(pool: &SqlitePool) -> Result<(), sqlx::Error> {
