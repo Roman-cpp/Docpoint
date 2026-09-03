@@ -50,7 +50,6 @@ import {
 	TrashIcon,
 	UploadIcon,
 } from "@/shared/svg";
-import { DropMenu } from "@/shared/ui-kit/controls";
 import { ContextMenu } from "@/shared/ui-kit/modal";
 import { NodeGrid } from "../NodeGrid";
 import { NodeIcon } from "../NodeIcon";
@@ -367,42 +366,6 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 							</span>
 						))}
 					</nav>
-
-					<div className={s.actions}>
-						<DropMenu>
-							<DropMenu.Trigger>
-								<button type="button" className={s.action}>
-									<UploadIcon size={13} /> Импорт
-								</button>
-							</DropMenu.Trigger>
-							<DropMenu.Content>
-								<DropMenu.Item
-									disabled={isImporting}
-									onClick={() => docInputRef.current?.click()}
-								>
-									{isImporting ? "Импорт…" : "API-документ (JSON)"}
-								</DropMenu.Item>
-								<DropMenu.Item
-									disabled={isImportingWebsocket}
-									onClick={() => wsInputRef.current?.click()}
-								>
-									{isImportingWebsocket ? "Импорт…" : "WebSocket (JSON)"}
-								</DropMenu.Item>
-								<DropMenu.Item
-									disabled={isImportingErd}
-									onClick={() => erdInputRef.current?.click()}
-								>
-									{isImportingErd ? "Импорт…" : "ERD-диаграмма (JSON)"}
-								</DropMenu.Item>
-								<DropMenu.Item
-									disabled={isImportingErd}
-									onClick={() => setDbImportOpen(true)}
-								>
-									ERD из базы данных…
-								</DropMenu.Item>
-							</DropMenu.Content>
-						</DropMenu>
-					</div>
 				</header>
 
 				<div className={s.listing}>
