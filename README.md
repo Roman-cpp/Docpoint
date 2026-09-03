@@ -46,15 +46,25 @@
 - Системные зависимости Tauri 2 для вашей ОС, см.
   [prerequisites](https://v2.tauri.app/start/prerequisites/). На Linux это
   webkit2gtk-4.1, libappindicator, librsvg и сборочные инструменты
+- `wasm-pack` и target `wasm32-unknown-unknown`: часть фронтенда собирается из
+  Rust в WebAssembly
+
+  ```bash
+  rustup target add wasm32-unknown-unknown
+  cargo install wasm-pack
+  ```
 
 ### Первый запуск
 
 ```bash
 bun install
+bun run wasm
 bun run tauri dev
 ```
 
-Tauri поднимает Vite на `http://localhost:1420`, собирает Rust-часть и
+`bun run wasm` собирает крейт из `wasm/crates/canvas` в `wasm/pkg`. Папка не
+хранится в git, поэтому шаг нужен после клонирования и после правок в
+`wasm/`. Tauri поднимает Vite на `http://localhost:1420`, собирает Rust-часть и
 открывает окно приложения. Миграции базы применяются при старте.
 
 На Linux с WebKitGTK окно может открыться пустым или с артефактами. Тогда
@@ -107,7 +117,9 @@ bun run storybook
 bun run tauri build
 ```
 
-Установочные пакеты появятся в `src-tauri/target/release/bundle`.
+Перед сборкой фронтенда Tauri сам пересобирает wasm, это задано в
+`beforeBuildCommand`. Установочные пакеты появятся в
+`src-tauri/target/release/bundle`.
 
 ## Структура репозитория
 

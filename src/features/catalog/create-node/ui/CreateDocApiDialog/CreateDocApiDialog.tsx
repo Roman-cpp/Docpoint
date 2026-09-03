@@ -7,7 +7,6 @@ import { CreateDialogShell } from "../CreateDialogShell";
 /** Новый документ HTTP API: префикс путей — его собственное поле, эндпоинты
  *  добавляются уже внутри документа. */
 export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
-	parentName,
 	isSaving = false,
 	onClose,
 	onCreate,

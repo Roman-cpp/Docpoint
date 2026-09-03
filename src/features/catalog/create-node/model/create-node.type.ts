@@ -12,8 +12,6 @@ export interface NodeDraft {
  * подстраивая пропсы.
  */
 export interface CreateNodeDialogProps {
-	/** Имя каталога, в котором создаём; пусто — корень платформы. */
-	parentName?: string;
 	isSaving?: boolean;
 	onClose: () => void;
 	/** Ошибку показывает вызывающая мутация, поэтому окно на ней остаётся

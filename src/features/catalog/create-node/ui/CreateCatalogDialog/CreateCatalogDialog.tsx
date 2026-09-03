@@ -6,7 +6,6 @@ import { CreateDialogShell } from "../CreateDialogShell";
 
 /** Новая папка дерева. Кроме имени у каталога ничего своего нет. */
 export const CreateCatalogDialog: FC<CreateNodeDialogProps> = ({
-	parentName,
 	isSaving = false,
 	onClose,
 	onCreate,

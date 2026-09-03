@@ -57,7 +57,9 @@ import s from "./CatalogExplorer.module.css";
 
 /** Окно создания для каждого вида узла: свои поля у каждого свои, а контракт
  *  общий, поэтому выбор сводится к поиску по виду. */
-const CREATE_DIALOG_BY_KIND: Record<NodeKind, FC<CreateNodeDialogProps>> = {
+const CREATE_DIALOG_BY_KIND: Partial<
+	Record<NodeKind, FC<CreateNodeDialogProps>>
+> = {
 	catalog: CreateCatalogDialog,
 	docApi: CreateDocApiDialog,
 	docWs: CreateDocWsDialog,
@@ -134,7 +136,7 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 
 	const crumbs = nodePath(nodes, catalogId);
 	const children = childrenOf(nodes, catalogId);
-	const CreateDialog = creating ? CREATE_DIALOG_BY_KIND[creating] : null;
+	const CreateDialog = creating ? CREATE_DIALOG_BY_KIND[creating] : undefined;
 
 	/* ─── Навигация ─── */
 

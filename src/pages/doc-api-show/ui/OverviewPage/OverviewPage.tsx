@@ -104,9 +104,7 @@ export const OverviewPage = () => {
 			{/* Навигация по документу: группа → её эндпоинты. Метод, путь и описание
 			    в одну строку — параметры и теги живут на странице самого эндпоинта. */}
 			<div className={s.sectionBlock}>
-				<h2 className={s.sectionHead}>
-					Endpoints
-				</h2>
+				<h2 className={s.sectionHead}>Endpoints</h2>
 				{endpointCount === 0 ? (
 					<div className={o.empty}>Пока нет ни одного эндпоинта</div>
 				) : (
