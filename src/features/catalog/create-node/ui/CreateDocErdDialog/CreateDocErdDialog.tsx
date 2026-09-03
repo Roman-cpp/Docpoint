@@ -6,7 +6,6 @@ import { CreateDialogShell } from "../CreateDialogShell";
 
 /** Новая ERD-диаграмма. Таблицы и связи заводятся уже на её холсте. */
 export const CreateDocErdDialog: FC<CreateNodeDialogProps> = ({
-	parentName,
 	isSaving = false,
 	onClose,
 	onCreate,
@@ -21,7 +20,6 @@ export const CreateDocErdDialog: FC<CreateNodeDialogProps> = ({
 	return (
 		<CreateDialogShell
 			title="Новая ERD-диаграмма"
-			parentName={parentName}
 			canCreate={!!trimmed}
 			isSaving={isSaving}
 			onClose={onClose}

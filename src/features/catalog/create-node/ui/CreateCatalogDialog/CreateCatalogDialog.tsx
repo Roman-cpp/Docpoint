@@ -21,7 +21,6 @@ export const CreateCatalogDialog: FC<CreateNodeDialogProps> = ({
 	return (
 		<CreateDialogShell
 			title="Новый каталог"
-			parentName={parentName}
 			canCreate={!!trimmed}
 			isSaving={isSaving}
 			onClose={onClose}

@@ -3,7 +3,6 @@ export {
 	CreateDocApiDialog,
 	CreateDocErdDialog,
 	CreateDocWsDialog,
-	CreateFileDialog,
 	CreateMarkdownDialog,
 	type CreateNodeDialogProps,
 	type NodeDraft,

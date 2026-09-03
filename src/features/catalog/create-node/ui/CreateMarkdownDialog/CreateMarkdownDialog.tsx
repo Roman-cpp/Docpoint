@@ -7,7 +7,6 @@ import { CreateDialogShell } from "../CreateDialogShell";
 
 /** Новый markdown-документ. Он сразу открывается с заголовком из имени. */
 export const CreateMarkdownDialog: FC<CreateNodeDialogProps> = ({
-	parentName,
 	isSaving = false,
 	onClose,
 	onCreate,
@@ -31,7 +30,6 @@ export const CreateMarkdownDialog: FC<CreateNodeDialogProps> = ({
 	return (
 		<CreateDialogShell
 			title="Новый markdown-документ"
-			parentName={parentName}
 			canCreate={!!trimmed}
 			isSaving={isSaving}
 			onClose={onClose}

@@ -17,7 +17,6 @@ import {
 	CreateDocApiDialog,
 	CreateDocErdDialog,
 	CreateDocWsDialog,
-	CreateFileDialog,
 	CreateMarkdownDialog,
 	type CreateNodeDialogProps,
 	DeleteNodeDialog,
@@ -48,7 +47,6 @@ import {
 	MoveIcon,
 	NewWindowIcon,
 	PencilIcon,
-	PlusIcon,
 	TrashIcon,
 	UploadIcon,
 } from "@/shared/svg";
@@ -66,7 +64,6 @@ const CREATE_DIALOG_BY_KIND: Record<NodeKind, FC<CreateNodeDialogProps>> = {
 	docWs: CreateDocWsDialog,
 	docErd: CreateDocErdDialog,
 	markdown: CreateMarkdownDialog,
-	file: CreateFileDialog,
 };
 
 /** Виды узлов в порядке, в котором они предлагаются в меню создания. */
@@ -76,7 +73,6 @@ const CREATABLE: NodeKind[] = [
 	"docWs",
 	"docErd",
 	"markdown",
-	"file",
 ];
 
 interface CatalogExplorerProps {
@@ -139,7 +135,6 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 
 	const crumbs = nodePath(nodes, catalogId);
 	const children = childrenOf(nodes, catalogId);
-	const currentName = crumbs[crumbs.length - 1]?.name;
 	const CreateDialog = creating ? CREATE_DIALOG_BY_KIND[creating] : null;
 
 	/* ─── Навигация ─── */
@@ -377,21 +372,6 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 						<DropMenu>
 							<DropMenu.Trigger>
 								<button type="button" className={s.action}>
-									<PlusIcon size={13} /> Создать
-								</button>
-							</DropMenu.Trigger>
-							<DropMenu.Content>
-								{CREATABLE.map((kind) => (
-									<DropMenu.Item key={kind} onClick={() => setCreating(kind)}>
-										{KIND_LABEL[kind]}
-									</DropMenu.Item>
-								))}
-							</DropMenu.Content>
-						</DropMenu>
-
-						<DropMenu>
-							<DropMenu.Trigger>
-								<button type="button" className={s.action}>
 									<UploadIcon size={13} /> Импорт
 								</button>
 							</DropMenu.Trigger>
@@ -584,7 +564,6 @@ export const CatalogExplorer: FC<CatalogExplorerProps> = ({
 
 			{CreateDialog && (
 				<CreateDialog
-					parentName={currentName}
 					isSaving={isCreatingNode}
 					onClose={() => setCreating(null)}
 					onCreate={(draft) =>

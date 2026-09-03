@@ -6,7 +6,6 @@ import { CreateDialogShell } from "../CreateDialogShell";
 
 /** Новый документ WebSocket-подключения: имя и адрес, к которому подключаться. */
 export const CreateDocWsDialog: FC<CreateNodeDialogProps> = ({
-	parentName,
 	isSaving = false,
 	onClose,
 	onCreate,
@@ -29,7 +28,6 @@ export const CreateDocWsDialog: FC<CreateNodeDialogProps> = ({
 	return (
 		<CreateDialogShell
 			title="Новый WebSocket"
-			parentName={parentName}
 			canCreate={!!trimmed}
 			isSaving={isSaving}
 			onClose={onClose}

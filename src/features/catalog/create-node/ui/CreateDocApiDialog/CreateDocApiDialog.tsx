@@ -33,7 +33,6 @@ export const CreateDocApiDialog: FC<CreateNodeDialogProps> = ({
 	return (
 		<CreateDialogShell
 			title="Новый API-документ"
-			parentName={parentName}
 			canCreate={!!trimmed}
 			isSaving={isSaving}
 			onClose={onClose}

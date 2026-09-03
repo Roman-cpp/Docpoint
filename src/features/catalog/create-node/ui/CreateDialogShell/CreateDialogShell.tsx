@@ -3,8 +3,6 @@ import { Dialog } from "@/shared/ui-kit/modal";
 
 interface CreateDialogShellProps {
 	title: string;
-	/** Имя каталога-приёмника; пусто — корень платформы. */
-	parentName?: string;
 	/** Заполнено ли обязательное — от этого зависит кнопка создания. */
 	canCreate: boolean;
 	isSaving: boolean;
@@ -19,7 +17,6 @@ interface CreateDialogShellProps {
  */
 export const CreateDialogShell: FC<CreateDialogShellProps> = ({
 	title,
-	parentName,
 	canCreate,
 	isSaving,
 	onClose,
@@ -29,9 +26,6 @@ export const CreateDialogShell: FC<CreateDialogShellProps> = ({
 	<Dialog.Root open onOpenChange={(open) => !open && !isSaving && onClose()}>
 		<Dialog.Header>
 			<Dialog.Title>{title}</Dialog.Title>
-			<Dialog.Subtitle>
-				{parentName ? `В каталоге «${parentName}»` : "В корне платформы"}
-			</Dialog.Subtitle>
 			<Dialog.Close />
 		</Dialog.Header>
 
