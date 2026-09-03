@@ -134,6 +134,40 @@ impl EnvironmentRepository for EnvironmentRepo<'_> {
             .map_err(|e| e.to_string())?;
         }
 
+        // Прокси копируется вместе с окружением: копию заводят, чтобы ходить в
+        // тот же периметр другим набором данных, и без прокси она бы туда не
+        // достучалась.
+        if let Some(proxy) = sqlx::query(
+            "SELECT enabled, url, username, password, bypass, insecure FROM environment_proxy WHERE environment_id = ?",
+        )
+        .bind(source_id)
+        .fetch_optional(self.db)
+        .await
+        .map_err(|e| e.to_string())?
+        {
+            let proxy_id = Uuid::new_v4().to_string();
+            let enabled: i64 = proxy.get("enabled");
+            let url: String = proxy.get("url");
+            let username: String = proxy.get("username");
+            let password: String = proxy.get("password");
+            let bypass: String = proxy.get("bypass");
+            let insecure: i64 = proxy.get("insecure");
+            sqlx::query(
+                "INSERT INTO environment_proxy (id, environment_id, enabled, url, username, password, bypass, insecure) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            )
+            .bind(&proxy_id)
+            .bind(&new_id)
+            .bind(enabled)
+            .bind(&url)
+            .bind(&username)
+            .bind(&password)
+            .bind(&bypass)
+            .bind(insecure)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
         Ok(Environment {
             id: new_id,
             env,

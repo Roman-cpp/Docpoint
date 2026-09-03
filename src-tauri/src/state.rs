@@ -6,6 +6,8 @@ use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::tungstenite::Message;
 
+use crate::infrastructure::http_client::ClientPool;
+
 /// A live WebSocket connection owned by the backend.
 ///
 /// Outgoing frames are pushed onto `tx`, drained by the writer task.
@@ -29,7 +31,9 @@ pub struct AppState {
     pub files_dir: PathBuf,
     /// Live WebSocket connections keyed by connection id.
     pub ws_conns: DashMap<String, WsConn>,
-    /// Shared HTTP client with a cookie jar that lives for the app session,
-    /// so `Set-Cookie` from an auth request is replayed on later requests.
-    pub http_client: reqwest::Client,
+    /// HTTP-клиенты приложения: прямой и по одному на настройку прокси.
+    /// Прокси принадлежит окружению, а reqwest задаёт его на клиенте, поэтому
+    /// клиент выбирается на каждый запрос — см.
+    /// [`ClientPool::get`](crate::infrastructure::http_client::ClientPool::get).
+    pub http_clients: ClientPool,
 }

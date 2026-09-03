@@ -12,8 +12,10 @@ import {
 	deleteEnvironmentApi,
 	duplicateEnvironmentApi,
 	getEnvironmentAuthApi,
+	getEnvironmentProxyApi,
 	updateEnvironmentApi,
 	updateEnvironmentAuthApi,
+	updateEnvironmentProxyApi,
 	VariableModal,
 } from "@/entities/environment";
 import {
@@ -36,6 +38,7 @@ import { AuthRequestSection } from "../AuthRequestSection";
 import { EndpointSection } from "../EndpointSection";
 import s from "../EnvironmentPage.module.css";
 import { IdentificationSection } from "../IdentificationSection";
+import { ProxySection } from "../ProxySection";
 import { type AuthMethod, HTTP_METHODS } from "../parts";
 import { Sidebar } from "../Sidebar";
 import { VariablesSection } from "../VariablesSection";
@@ -101,6 +104,23 @@ export const EnvironmentPage: FC = () => {
 		wsTokenPlacement: WsTokenPlacement;
 	} | null>(null);
 
+	// Proxy config
+	const [proxyEnabled, setProxyEnabled] = useState(false);
+	const [proxyUrl, setProxyUrl] = useState("");
+	const [proxyUsername, setProxyUsername] = useState("");
+	const [proxyPassword, setProxyPassword] = useState("");
+	const [proxyBypass, setProxyBypass] = useState("");
+	const [proxyInsecure, setProxyInsecure] = useState(false);
+	const [proxyStatus, setProxyStatus] = useState<SaveStatus>("idle");
+	const loadedProxyRef = useRef<{
+		enabled: boolean;
+		url: string;
+		username: string;
+		password: string;
+		bypass: string;
+		insecure: boolean;
+	} | null>(null);
+
 	// Variable modal
 	const [modal, setModal] = useState<"create" | Variable | null>(null);
 	const [variableToDelete, setVariableToDelete] = useState<Variable | null>(
@@ -114,6 +134,7 @@ export const EnvironmentPage: FC = () => {
 	useEffect(() => {
 		if (!envId) {
 			loadedAuthRef.current = null;
+			loadedProxyRef.current = null;
 			return;
 		}
 		const env = envSnapshotRef.current;
@@ -147,6 +168,25 @@ export const EnvironmentPage: FC = () => {
 				wsTokenPlacement,
 			};
 		});
+		getEnvironmentProxyApi(envId).then((proxy) => {
+			if (cancelled) return;
+			setProxyEnabled(proxy.enabled);
+			setProxyUrl(proxy.url);
+			setProxyUsername(proxy.username);
+			setProxyPassword(proxy.password);
+			setProxyBypass(proxy.bypass);
+			setProxyInsecure(proxy.insecure);
+			setProxyStatus("idle");
+			loadedProxyRef.current = {
+				enabled: proxy.enabled,
+				url: proxy.url,
+				username: proxy.username,
+				password: proxy.password,
+				bypass: proxy.bypass,
+				insecure: proxy.insecure,
+			};
+		});
+
 		return () => {
 			cancelled = true;
 		};
@@ -237,6 +277,58 @@ export const EnvironmentPage: FC = () => {
 				variant: "error",
 				title: "Error",
 				description: "Failed to save auth config",
+			});
+		}
+	};
+
+	const saveProxy = async (overrides?: {
+		enabled?: boolean;
+		url?: string;
+		username?: string;
+		password?: string;
+		bypass?: string;
+		insecure?: boolean;
+	}) => {
+		if (!selectedEnv) return;
+		const loaded = loadedProxyRef.current;
+		const next = {
+			enabled: overrides?.enabled ?? proxyEnabled,
+			url: (overrides?.url ?? proxyUrl).trim(),
+			username: overrides?.username ?? proxyUsername,
+			password: overrides?.password ?? proxyPassword,
+			bypass: (overrides?.bypass ?? proxyBypass).trim(),
+			insecure: overrides?.insecure ?? proxyInsecure,
+		};
+		if (
+			loaded &&
+			next.enabled === loaded.enabled &&
+			next.url === loaded.url &&
+			next.username === loaded.username &&
+			next.password === loaded.password &&
+			next.bypass === loaded.bypass &&
+			next.insecure === loaded.insecure
+		) {
+			return;
+		}
+		setProxyStatus("saving");
+		try {
+			await updateEnvironmentProxyApi({
+				environmentId: selectedEnv.id,
+				...next,
+			});
+			loadedProxyRef.current = next;
+			setProxyStatus("saved");
+			setTimeout(
+				() =>
+					setProxyStatus((status) => (status === "saved" ? "idle" : status)),
+				1500,
+			);
+		} catch {
+			setProxyStatus("error");
+			toast({
+				variant: "error",
+				title: "Error",
+				description: "Failed to save proxy config",
 			});
 		}
 	};
@@ -445,6 +537,37 @@ export const EnvironmentPage: FC = () => {
 									prefix={prefix}
 									onPrefixChange={setPrefix}
 									onPrefixBlur={() => saveEnvironment()}
+								/>
+								<ProxySection
+									enabled={proxyEnabled}
+									onEnabledChange={(v) => {
+										setProxyEnabled(v);
+										saveProxy({ enabled: v });
+									}}
+									url={proxyUrl}
+									onUrlChange={setProxyUrl}
+									onUrlBlur={() => saveProxy()}
+									username={proxyUsername}
+									onUsernameChange={setProxyUsername}
+									onUsernameBlur={() => saveProxy()}
+									password={proxyPassword}
+									onPasswordChange={setProxyPassword}
+									onPasswordBlur={() => saveProxy()}
+									bypass={proxyBypass}
+									onBypassChange={setProxyBypass}
+									onBypassBlur={() => saveProxy()}
+									insecure={proxyInsecure}
+									onInsecureChange={(v) => {
+										setProxyInsecure(v);
+										saveProxy({ insecure: v });
+									}}
+									pillLabel={
+										proxyStatus === "saving"
+											? "сохраняем…"
+											: proxyStatus === "saved"
+												? "сохранено"
+												: undefined
+									}
 								/>
 								<AuthRequestSection
 									method={authMethod}

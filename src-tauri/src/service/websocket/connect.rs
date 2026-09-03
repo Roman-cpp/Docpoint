@@ -4,6 +4,7 @@ use tauri::{AppHandle, State};
 
 use crate::domain::environment::environment_auth::dto::EnvironmentAuthDTO;
 use crate::domain::environment::environment_auth::repository;
+use crate::domain::environment::environment_proxy::repository as proxy_repository;
 use crate::infrastructure::ws_client;
 use crate::service::env_auth::{cookies, token};
 use crate::state::AppState;
@@ -69,7 +70,12 @@ pub async fn ws_connect(
             let expired = matches!(err.status, Some(401) | Some(403)) && !had_explicit_auth;
             let refreshed = match (expired, &env_id) {
                 (true, Some(env_id)) => {
-                    token::authenticate(&state.http_client, &state.db, env_id).await?
+                    // Запрос авторизации — обычный HTTP, поэтому уходит через
+                    // прокси окружения. Само рукопожатие WebSocket прокси не
+                    // знает и идёт напрямую.
+                    let proxy = proxy_repository::read_config(&state.db, env_id).await?;
+                    let client = state.http_clients.get(proxy.as_ref())?;
+                    token::authenticate(&client, &state.db, env_id).await?
                 }
                 _ => None,
             };

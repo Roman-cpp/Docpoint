@@ -13,11 +13,12 @@ use service::{
     duplicate_environment, environments_by_platform, export_markdown, import_doc, import_erd,
     list_endpoint_requests, move_node, open_file_node, pick_db_file, pick_file,
     read_catalog_tree, read_doc, read_doc_content, read_docs, read_environment_auth,
-    read_environments_by_doc, read_erd_schemas, read_groups,
+    read_environment_proxy, read_environments_by_doc, read_erd_schemas, read_groups,
     read_markdown, read_node, read_platform, read_platforms, read_relations,
     read_websocket, read_websocket_messages, read_websockets, rename_node, save_endpoint_request,
     save_json_file, send_request, set_environment_access_token, set_selected_environment,
-    update_doc, update_endpoint, update_environment, update_environment_auth, update_markdown,
+    update_doc, update_endpoint, update_environment, update_environment_auth,
+    update_environment_proxy, update_markdown,
     update_param_value, update_platform, update_schema, update_schema_positions, update_variable,
     update_websocket, update_websocket_message, write_doc_content, write_groups,
     ws_connect, ws_disconnect, ws_send,
@@ -71,7 +72,7 @@ pub fn run() {
                 content_dir,
                 files_dir,
                 ws_conns: Default::default(),
-                http_client: infrastructure::http_client::build_client(),
+                http_clients: infrastructure::http_client::ClientPool::new(),
             });
             Ok(())
         })
@@ -116,6 +117,8 @@ pub fn run() {
             delete_variable,
             read_environment_auth,
             update_environment_auth,
+            read_environment_proxy,
+            update_environment_proxy,
             set_environment_access_token,
             authenticate_environment,
             clear_environment_session,

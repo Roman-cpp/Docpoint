@@ -33,3 +33,7 @@ export type {
 	TokenPlacement,
 	WsTokenPlacement,
 } from "./environment-auth/model/environment-auth.entity";
+export { getEnvironmentProxyApi } from "./environment-proxy/api/get-environment-proxy-api";
+export { updateEnvironmentProxyApi } from "./environment-proxy/api/update-environment-proxy-api";
+export type { UpdateEnvironmentProxyDTO } from "./environment-proxy/model/environment-proxy.dto";
+export type { EnvironmentProxy } from "./environment-proxy/model/environment-proxy.entity";

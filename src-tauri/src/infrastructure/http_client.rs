@@ -1,7 +1,10 @@
+use dashmap::DashMap;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::domain::environment::environment_proxy::entity::ProxyConfig;
 
 #[derive(Deserialize, Clone)]
 pub struct RequestPayload {
@@ -56,6 +59,96 @@ pub fn build_client() -> reqwest::Client {
         .cookie_store(false)
         .build()
         .expect("failed to build reqwest client")
+}
+
+/// Схемы, которые reqwest действительно умеет проксировать.
+const PROXY_SCHEMES: [&str; 4] = ["http", "https", "socks5", "socks5h"];
+
+/// Отсекает адрес со схемой, которой прокси-клиент не знает.
+///
+/// Проверка нужна своя: `Proxy::all` такой адрес принимает, а на запросе
+/// молча ходит напрямую — то есть трафик уходит мимо прокси, и по ответу это
+/// никак не видно. Адрес без схемы законен, reqwest считает его http.
+fn check_scheme(url: &str) -> Result<(), String> {
+    let Some((scheme, _)) = url.split_once("://") else {
+        return Ok(());
+    };
+    if PROXY_SCHEMES.contains(&scheme.to_ascii_lowercase().as_str()) {
+        return Ok(());
+    }
+    Err(format!(
+        "Прокси '{url}': схема {scheme} не поддерживается, нужна одна из {}",
+        PROXY_SCHEMES.join(", ")
+    ))
+}
+
+/// Тот же клиент, но с прокси окружения.
+///
+/// Возвращает ошибку сразу, а не молча ходит напрямую: прокси задают, когда без
+/// него до сервера не достучаться, и «не смогли — пошли мимо» здесь хуже
+/// внятного отказа.
+fn build_proxy_client(proxy: &ProxyConfig) -> Result<reqwest::Client, String> {
+    check_scheme(&proxy.url)?;
+
+    let mut scheme = reqwest::Proxy::all(&proxy.url)
+        .map_err(|e| format!("Некорректный адрес прокси '{}': {e}", proxy.url))?;
+
+    if !proxy.username.is_empty() || !proxy.password.is_empty() {
+        scheme = scheme.basic_auth(&proxy.username, &proxy.password);
+    }
+    if !proxy.bypass.is_empty() {
+        scheme = scheme.no_proxy(reqwest::NoProxy::from_string(&proxy.bypass));
+    }
+
+    reqwest::Client::builder()
+        .cookie_store(false)
+        .proxy(scheme)
+        .danger_accept_invalid_certs(proxy.insecure)
+        .build()
+        .map_err(|e| format!("Не удалось собрать клиент с прокси: {e}"))
+}
+
+/// Клиенты приложения: один прямой и по одному на каждую настройку прокси.
+///
+/// Прокси в reqwest задаётся на клиенте, а не на запросе, поэтому одним общим
+/// клиентом переключаться между окружениями нельзя. Клиенты кэшируются:
+/// сборка тянет за собой новый пул соединений и свой TLS-конфиг, а окружений
+/// с прокси на практике единицы.
+pub struct ClientPool {
+    direct: reqwest::Client,
+    by_proxy: DashMap<ProxyConfig, reqwest::Client>,
+}
+
+impl ClientPool {
+    pub fn new() -> Self {
+        Self {
+            direct: build_client(),
+            by_proxy: DashMap::new(),
+        }
+    }
+
+    /// Клиент для запроса окружения: `None` — напрямую.
+    ///
+    /// `reqwest::Client` — обёртка над `Arc`, так что клон здесь дешёвый и
+    /// пул соединений у него общий.
+    pub fn get(&self, proxy: Option<&ProxyConfig>) -> Result<reqwest::Client, String> {
+        let Some(proxy) = proxy else {
+            return Ok(self.direct.clone());
+        };
+        if let Some(client) = self.by_proxy.get(proxy) {
+            return Ok(client.clone());
+        }
+
+        let client = build_proxy_client(proxy)?;
+        self.by_proxy.insert(proxy.clone(), client.clone());
+        Ok(client)
+    }
+}
+
+impl Default for ClientPool {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 pub async fn send(client: &reqwest::Client, payload: RequestPayload) -> Result<ResponsePayload, String> {
@@ -171,6 +264,61 @@ mod tests {
         assert_eq!(response.set_cookies.len(), 2);
         assert!(response.set_cookies[0].starts_with("sid=abc"));
         assert!(response.set_cookies[1].starts_with("csrf=xyz"));
+    }
+
+    fn proxy_at(addr: &str) -> ProxyConfig {
+        ProxyConfig {
+            url: addr.to_string(),
+            ..Default::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn request_goes_out_through_the_proxy() {
+        let (proxy_url, mut rx) = spawn_server().await;
+        let pool = ClientPool::new();
+        let client = pool.get(Some(&proxy_at(&proxy_url))).unwrap();
+
+        // Хост заведомо несуществующий: если ответ пришёл, запрос ходил не
+        // напрямую, а до прокси, который у нас и отвечает.
+        send(&client, get("http://nowhere.invalid/ping")).await.unwrap();
+
+        let seen = rx.recv().await.unwrap();
+        assert!(
+            seen.starts_with("GET http://nowhere.invalid/ping"),
+            "прокси получил не абсолютный запрос: {seen}"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_client_is_built_once_per_proxy() {
+        let pool = ClientPool::new();
+        let one = proxy_at("http://127.0.0.1:9");
+        let two = proxy_at("http://127.0.0.1:10");
+
+        pool.get(Some(&one)).unwrap();
+        pool.get(Some(&one)).unwrap();
+        pool.get(Some(&two)).unwrap();
+        pool.get(None).unwrap();
+
+        // Клиент тянет за собой пул соединений и TLS-конфиг: пересобирать его
+        // на каждый запрос — значит каждый раз ходить по новому соединению.
+        assert_eq!(pool.by_proxy.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn a_broken_proxy_address_is_reported_not_bypassed() {
+        let pool = ClientPool::new();
+
+        // Адрес, который не разбирается вовсе.
+        assert!(pool.get(Some(&proxy_at("not a url"))).is_err());
+        // Схему вроде ftp:// reqwest принимает, а потом ходит мимо прокси. Для
+        // окружения за периметром это худший исход: запрос ушёл наружу, и по
+        // ответу этого не видно, — поэтому отказываем сами.
+        assert!(pool.get(Some(&proxy_at("ftp://127.0.0.1:1080"))).is_err());
+        // Без схемы — законный http-прокси.
+        assert!(pool.get(Some(&proxy_at("127.0.0.1:8888"))).is_ok());
+        assert!(pool.get(Some(&proxy_at("socks5://127.0.0.1:1080"))).is_ok());
     }
 
     #[tokio::test]
