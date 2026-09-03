@@ -65,7 +65,7 @@ export const OverviewPage = () => {
 				<span className={s.bcCurrent}>Overview</span>
 			</div>
 
-			<div className={s.endpointHeader}>
+			<div className={s.headerCard}>
 				<div className={s.endpointTitleRow}>
 					<h1 className={o.title}>{doc.name}</h1>
 					<button
@@ -75,6 +75,19 @@ export const OverviewPage = () => {
 					>
 						Редактировать
 					</button>
+				</div>
+
+				<div className={s.headerMeta}>
+					<div>
+						<div className={s.overviewCardLabel}>Base URL</div>
+						<div className={s.overviewCardValue}>
+							<code>{baseUrl}</code>
+						</div>
+					</div>
+					<div>
+						<div className={s.overviewCardLabel}>Endpoints</div>
+						<div className={s.overviewCardValue}>{endpointCount}</div>
+					</div>
 				</div>
 			</div>
 
@@ -88,29 +101,14 @@ export const OverviewPage = () => {
 				/>
 			)}
 
-			<div className={s.overviewGrid}>
-				<div className={s.overviewCard}>
-					<div className={s.overviewCardLabel}>Base URL</div>
-					<div className={s.overviewCardValue}>
-						<code>{baseUrl}</code>
-					</div>
-				</div>
-				<div className={s.overviewCard}>
-					<div className={s.overviewCardLabel}>Endpoints</div>
-					<div className={s.overviewCardValue}>{endpointCount}</div>
-				</div>
-			</div>
-
-			<div className={s.divider} />
-
 			{/* Навигация по документу: группа → её эндпоинты. Метод, путь и описание
 			    в одну строку — параметры и теги живут на странице самого эндпоинта. */}
 			<div className={s.sectionBlock}>
-				<div className={s.sectionLabel}>Endpoints</div>
+				<h2 className={s.sectionHead}>
+					Endpoints
+				</h2>
 				{endpointCount === 0 ? (
-					<div className={s.emptyState}>
-						<span>Пока нет ни одного эндпоинта</span>
-					</div>
+					<div className={o.empty}>Пока нет ни одного эндпоинта</div>
 				) : (
 					<div className={o.groups}>
 						{groups?.map((group) => {
@@ -135,10 +133,7 @@ export const OverviewPage = () => {
 													</span>
 													<span className={o.path}>{ep.path}</span>
 													{ep.description && (
-														<span
-															className={`${s.paramDesc} ${o.desc}`}
-															title={ep.description}
-														>
+														<span className={o.desc} title={ep.description}>
 															{ep.description}
 														</span>
 													)}

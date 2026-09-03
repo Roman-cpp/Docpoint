@@ -31,8 +31,17 @@
 	min-width: 0;
 	background: var(--surface);
 	border: 1px solid var(--border);
-	border-radius: 10px;
+	border-radius: var(--r-lg);
 	overflow: hidden;
+}
+
+.empty {
+	padding: 28px 16px;
+	border: 1px dashed var(--border-h);
+	border-radius: var(--r-lg);
+	font-size: 13px;
+	color: var(--ink-low);
+	text-align: center;
 }
 
 .endpoint {
@@ -59,7 +68,7 @@
 }
 
 .path {
-	flex: 1 1 auto;
+	flex: 0 1 auto;
 	min-width: 0;
 	font-family: var(--font-mono);
 	font-size: 13px;
@@ -68,18 +77,13 @@
 	white-space: nowrap;
 }
 
-/* Описание — отдельная плашка у правого края: на своём фоне и с обрезкой
-   по ширине оно не сливается ни с путём, ни с подложкой строки. */
+/* Описание — обычный текст после пути: путь берёт сколько нужно, описание
+   занимает остаток строки и обрезается многоточием. */
 .desc {
-	flex: 0 1 auto;
-	max-width: 45%;
+	flex: 1 1 0;
 	min-width: 0;
-	padding: 2px 9px;
-	border: 1px solid var(--border);
-	border-radius: 999px;
-	background: var(--bg);
-	font-size: 12px;
-	line-height: 1.5;
+	font-size: 12.5px;
+	color: var(--ink-low);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;

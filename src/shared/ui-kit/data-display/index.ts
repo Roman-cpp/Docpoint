@@ -6,6 +6,7 @@ export type {
 } from "./DataTable/DataTable";
 
 export { DataTable } from "./DataTable/DataTable";
+export { JsonCode, tokenizeJson } from "./JsonCode";
 export type { Json, JsonTreeHandle, JsonTreeProps } from "./JsonTree/JsonTree";
 export { JsonTree } from "./JsonTree/JsonTree";
 export {

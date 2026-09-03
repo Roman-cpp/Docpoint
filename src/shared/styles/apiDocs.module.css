@@ -287,10 +287,31 @@
 }
 
 /* ═══════════════ ENDPOINT PANEL ═══════════════ */
+/* Рабочее поле документа и эндпоинта — подложка как у проводника платформы:
+   карточка с рамкой на фоне страницы, внутри которой прокручивается
+   содержимое. Ставится на колонку DockLayout, чтобы карточка растянулась на
+   всю высоту. */
+.docMain {
+	display: flex;
+	flex-direction: column;
+}
+.docSurface {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	margin: 16px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	background: var(--surface);
+	overflow: hidden;
+}
 .endpointPanel {
 	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
-	padding: 32px 40px 60px;
+	padding: 24px 28px 48px;
 }
 .endpointPanel::-webkit-scrollbar {
 	width: 4px;
@@ -354,6 +375,47 @@
 	color: var(--green);
 }
 
+/* Шапка документа и эндпоинта на подложке — той же, что у карточек
+   каталога: заголовок, описание и метаданные не сливаются с фоном страницы. */
+.headerCard {
+	margin-bottom: 28px;
+	padding: 20px 24px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--surface);
+}
+.headerCard .endpointTitleRow {
+	margin-bottom: 0;
+}
+.headerCard .endpointTagsRow {
+	margin-top: 12px;
+}
+.headerCard .endpointDesc {
+	margin-top: 12px;
+}
+/* Кнопки шапки прижаты к правому краю строки заголовка. */
+.headerActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: auto;
+}
+/* Полоса метаданных в шапке: пара «подпись — значение» на блок. */
+.headerMeta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 36px;
+	margin-top: 18px;
+	padding-top: 16px;
+	border-top: 1px solid var(--border);
+}
+.headerMeta > * {
+	min-width: 0;
+}
+.headerMeta code {
+	overflow-wrap: anywhere;
+}
+
 /* ═══════════════ SECTION BLOCKS ═══════════════ */
 .sectionBlock {
 	margin-bottom: 32px;
@@ -366,11 +428,36 @@
 	color: var(--ink-low);
 	margin-bottom: 12px;
 }
+/* Заголовок секции документа: полновесный, в цвет текста, с числом строк в
+   таблетке — как заголовки групп в проводнике платформы, только не капсом.
+   Селектор с тегом: сброс `.wrapper h2` выше того же веса, и побеждает порядок. */
+h2.sectionHead {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 10px;
+	font-family: var(--font-sans);
+	font-size: var(--fs-14);
+	font-weight: var(--fw-semibold);
+	line-height: 1.3;
+	letter-spacing: -0.1px;
+	color: var(--ink);
+}
+.sectionCount {
+	font-family: var(--font-mono);
+	font-size: var(--fs-10);
+	font-weight: 400;
+	line-height: 1.4;
+	color: var(--ink-low);
+	padding: 1px 6px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-pill);
+}
 
 /* ═══════════════ PARAMS TABLE ═══════════════ */
 .paramsTable {
 	border: 1px solid var(--border);
-	border-radius: 10px;
+	border-radius: var(--r-lg);
 	overflow: hidden;
 	background: var(--surface);
 }
@@ -439,7 +526,7 @@
 .responseTabs {
 	display: flex;
 	border: 1px solid var(--border);
-	border-radius: 10px 10px 0 0;
+	border-radius: var(--r-lg) var(--r-lg) 0 0;
 	overflow: hidden;
 	background: var(--bg);
 }
@@ -483,9 +570,33 @@
 .responseBody {
 	border: 1px solid var(--border);
 	border-top: none;
-	border-radius: 0 0 10px 10px;
+	border-radius: 0 0 var(--r-lg) var(--r-lg);
 	overflow: hidden;
 	background: var(--surface);
+}
+/* Внутри тела ответа: схема сверху, под ней пример. Рамки у них общие с
+   телом, поэтому у вложенных блоков остаются только разделители. */
+.responseSchema {
+	border-bottom: 1px solid var(--border);
+}
+.responseSubhead {
+	padding: 12px 16px 8px;
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.responseCodeHeader {
+	border-top: 1px solid var(--border);
+}
+.responseCodeBody pre {
+	font-size: 12px;
+	line-height: 1.75;
+}
+.codeActions {
+	display: flex;
+	gap: 8px;
 }
 
 /* ═══════════════ CODE BLOCK ═══════════════ */
@@ -971,18 +1082,6 @@
 }
 
 /* ═══════════════ OVERVIEW ═══════════════ */
-.overviewGrid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 12px;
-	margin: 20px 0 28px;
-}
-.overviewCard {
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	padding: 16px 18px;
-}
 .overviewCardLabel {
 	font-size: 11px;
 	font-weight: 500;

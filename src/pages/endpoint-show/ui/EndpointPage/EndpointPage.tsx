@@ -1,5 +1,6 @@
-import type { FC } from "react";
+import type { FC, ReactNode } from "react";
 import { useState } from "react";
+import { Link } from "react-router";
 import {
 	type Endpoint,
 	extractPathParams,
@@ -8,6 +9,9 @@ import {
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 import s from "@/shared/styles/apiDocs.module.css";
+import { CheckIcon, CopyIcon, PencilIcon } from "@/shared/svg";
+import { JsonCode } from "@/shared/ui-kit/data-display";
+import { CatalogBackLink } from "@/widgets/catalog-explorer";
 import { EditJsonModal } from "../EditJsonModal";
 
 const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
@@ -19,20 +23,13 @@ const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
 	HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
 };
 
-const MethodBadge: FC<{ method: HttpMethod; size?: "sm" | "normal" }> = ({
-	method,
-	size = "normal",
-}) => {
+/* Цвет бейджа зависит от метода, поэтому он единственный остаётся инлайном. */
+const MethodBadge: FC<{ method: HttpMethod }> = ({ method }) => {
 	const ms = METHOD_STYLES[method];
 	return (
 		<span
 			className={s.methodBadge}
-			style={{
-				color: ms.color,
-				background: ms.bg,
-				fontSize: size === "sm" ? "10px" : "12px",
-				padding: size === "sm" ? "2px 6px" : "4px 10px",
-			}}
+			style={{ color: ms.color, background: ms.bg }}
 		>
 			{method}
 		</span>
@@ -50,39 +47,21 @@ export const CopyBtn: FC<{ text: string }> = ({ text }) => {
 		<button className={s.copyBtn} onClick={copy} type="button">
 			{copied ? (
 				<>
-					<svg
-						aria-hidden="true"
-						viewBox="0 0 12 12"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="1.5"
-						strokeLinecap="round"
-					>
-						<path d="M2 6l3 3 5-5" />
-					</svg>
-					Copied
+					<CheckIcon size={11} /> Copied
 				</>
 			) : (
 				<>
-					<svg
-						aria-hidden="true"
-						viewBox="0 0 12 12"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="1.5"
-					>
-						<rect x="4" y="4" width="7" height="7" rx="1.5" />
-						<path
-							d="M8 4V2.5a1 1 0 00-1-1H2.5a1 1 0 00-1 1V8a1 1 0 001 1H4"
-							strokeLinecap="round"
-						/>
-					</svg>
-					Copy
+					<CopyIcon size={11} /> Copy
 				</>
 			)}
 		</button>
 	);
 };
+
+/** Заголовок секции документа с числом её строк. */
+const SectionHead: FC<{ title: string; count?: number }> = ({ title }) => (
+	<h2 className={s.sectionHead}>{title}</h2>
+);
 
 /** Таблица параметров одного вида; пустая секция не рисуется. */
 const ParamsTable: FC<{ label: string; params: Param[] }> = ({
@@ -93,7 +72,7 @@ const ParamsTable: FC<{ label: string; params: Param[] }> = ({
 
 	return (
 		<div className={s.sectionBlock}>
-			<div className={s.sectionLabel}>{label}</div>
+			<SectionHead title={label} />
 			<div className={s.paramsTable}>
 				<div className={s.paramsTableHead}>
 					<span>Name</span>
@@ -117,7 +96,21 @@ const ParamsTable: FC<{ label: string; params: Param[] }> = ({
 	);
 };
 
-export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
+interface EndpointPageProps {
+	detail: Endpoint;
+	/** Документ, которому принадлежит эндпоинт, — для хлебных крошек. */
+	docId?: string;
+	docName?: string;
+	/** Кнопки правого края шапки: правка, удаление — что даст страница. */
+	actions?: ReactNode;
+}
+
+export const EndpointPage: FC<EndpointPageProps> = ({
+	detail,
+	docId,
+	docName,
+	actions,
+}) => {
 	const [activeResponse, setActiveResponse] = useState(
 		Object.keys(detail.responses)[0],
 	);
@@ -153,36 +146,41 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 	return (
 		<div>
 			<div className={s.breadcrumb}>
-				<span className={s.bcItem}>API Reference</span>
-				<span className={s.bcSep}>/</span>
-				<span className={s.bcItem}>{detail.path.split("/")[1]}</span>
-				<span className={s.bcSep}>/</span>
-				{/* <span className={s.bcCurrent}>{detail.summary}</span> */}
+				{docId && (
+					<>
+						<CatalogBackLink nodeId={docId} className={s.bcItem} />
+						<span className={s.bcSep}>/</span>
+						<Link to={`/doc-show/${docId}`} className={s.bcItem}>
+							{docName || "Документ"}
+						</Link>
+						<span className={s.bcSep}>/</span>
+					</>
+				)}
+				<span className={s.bcCurrent}>{detail.name || detail.path}</span>
 			</div>
 
-			<div className={s.endpointHeader}>
+			<div className={s.headerCard}>
 				<div className={s.endpointTitleRow}>
 					<MethodBadge method={detail.method} />
 					<span className={s.endpointPath}>{detail.path}</span>
+					{actions && <div className={s.headerActions}>{actions}</div>}
 				</div>
-				<div className={s.endpointTagsRow}>
-					{detail.auth && (
+				{detail.auth && (
+					<div className={s.endpointTagsRow}>
 						<span className={`${s.tag} ${s.tagAuth}`}>🔐 Auth required</span>
-					)}
-				</div>
-				<p className={s.endpointDesc} style={{ marginTop: "14px" }}>
-					{detail.description}
-				</p>
+					</div>
+				)}
+				{detail.description && (
+					<p className={s.endpointDesc}>{detail.description}</p>
+				)}
 			</div>
-
-			<div className={s.divider} />
 
 			<ParamsTable label="Path params" params={pathParams} />
 			<ParamsTable label="Query params" params={detail.queryParams ?? []} />
 			<ParamsTable label="Request body" params={detail.bodyParams ?? []} />
 
 			<div className={s.sectionBlock}>
-				<div className={s.sectionLabel}>Responses</div>
+				<SectionHead title="Responses" />
 				<div className={s.responseTabs}>
 					{responseKeys.map((key) => {
 						const r = detail.responses[key];
@@ -205,12 +203,8 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 				<div className={s.responseBody}>
 					{activeResp && (
 						<>
-							<div style={{ borderBottom: "1px solid var(--border)" }}>
-								<div style={{ padding: "12px 16px 0" }}>
-									<div className={s.sectionLabel} style={{ marginBottom: 0 }}>
-										Schema
-									</div>
-								</div>
+							<div className={s.responseSchema}>
+								<div className={s.responseSubhead}>Schema</div>
 								{activeResp.schema.map((field, i) => (
 									<div className={s.schemaRow} key={i}>
 										<span className={s.schemaKey}>{field.key}</span>
@@ -226,46 +220,22 @@ export const EndpointPage: FC<{ detail: Endpoint }> = ({ detail }) => {
 									</div>
 								))}
 							</div>
-							<div style={{ padding: "12px 16px 0" }}>
-								<div className={s.sectionLabel}>Example response</div>
-							</div>
-							<div
-								className={s.codeHeader}
-								style={{
-									borderRadius: 0,
-									borderTop: "1px solid var(--border)",
-									borderLeft: "none",
-									borderRight: "none",
-								}}
-							>
+							<div className={s.responseSubhead}>Example response</div>
+							<div className={`${s.codeHeader} ${s.responseCodeHeader}`}>
 								<span className={s.codeLang}>JSON</span>
-								<div style={{ display: "flex", gap: 8 }}>
+								<div className={s.codeActions}>
 									<button
 										type="button"
 										className={s.copyBtn}
 										onClick={() => setJsonModalOpen(true)}
 									>
-										<svg
-											viewBox="0 0 12 12"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="1.5"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-										>
-											<title>edit</title>
-											<path d="M8 1.5l2.5 2.5M2 10l6-6 2 2-6 6H2z" />
-										</svg>
-										Edit
+										<PencilIcon size={11} /> Edit
 									</button>
 									<CopyBtn text={activeExample} />
 								</div>
 							</div>
-							<div
-								className={s.codeBody}
-								style={{ borderRadius: "0 0 10px 10px" }}
-							>
-								<pre style={{ fontSize: "12px" }}>{activeExample}</pre>
+							<div className={`${s.codeBody} ${s.responseCodeBody}`}>
+								<JsonCode>{activeExample}</JsonCode>
 							</div>
 						</>
 					)}

@@ -70,27 +70,34 @@ export const EndpointShowPage: FC = () => {
 				</DockLayout.Left>
 
 				<DockLayout.Center>
-					<DockLayout.Main>
-						<div className={s.endpointPanel}>
-							<div
-								style={{
-									display: "flex",
-									justifyContent: "flex-end",
-									gap: 8,
-									marginBottom: 8,
-								}}
-							>
-								<Button variant="subtle" onClick={() => setEditOpen(true)}>
-									Редактировать
-								</Button>
-								<Button
-									variant="danger-ghost"
-									onClick={() => setDeleteOpen(true)}
-								>
-									Удалить
-								</Button>
+					<DockLayout.Main className={s.docMain}>
+						<div className={s.docSurface}>
+							<div className={s.endpointPanel}>
+								<EndpointPage
+									key={id}
+									detail={endpoint}
+									docId={doc?.id}
+									docName={doc?.name}
+									actions={
+										<>
+											<Button
+												variant="subtle"
+												size="sm"
+												onClick={() => setEditOpen(true)}
+											>
+												Редактировать
+											</Button>
+											<Button
+												variant="danger-ghost"
+												size="sm"
+												onClick={() => setDeleteOpen(true)}
+											>
+												Удалить
+											</Button>
+										</>
+									}
+								/>
 							</div>
-							<EndpointPage detail={endpoint} key={id} />
 						</div>
 					</DockLayout.Main>
 

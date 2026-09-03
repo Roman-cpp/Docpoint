@@ -21,8 +21,10 @@ export const DocApiShowPage: FC = () => {
 			<div className={s.shell}>
 				<div className={s.main}>
 					<div className={s.docColumn}>
-						<div className={s.endpointPanel}>
-							<OverviewPage />
+						<div className={s.docSurface}>
+							<div className={s.endpointPanel}>
+								<OverviewPage />
+							</div>
 						</div>
 					</div>
 				</div>
