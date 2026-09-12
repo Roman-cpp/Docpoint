@@ -1,0 +1,29 @@
+{
+	"version": 1,
+	"websocket": {
+		"name": "Kline Stream",
+		"url": "wss://example.com/ws"
+	},
+	"messages": [
+		{
+			"name": "Subscribe",
+			"desc": "Подписка на kline-стрим по символу и интервалу.",
+			"payload": "{ \"op\": \"subscribe\", \"id\": \"init\", \"streams\": \"kline.exchange.symbol.interval\" }"
+		},
+		{
+			"name": "Unsubscribe",
+			"desc": "Отписка от ранее оформленной подписки.",
+			"payload": "{ \"op\": \"unsubscribe\", \"id\": \"init\", \"streams\": \"kline.exchange.symbol.interval\" }"
+		},
+		{
+			"name": "Ping",
+			"desc": "Проверка соединения — сервер должен ответить pong.",
+			"payload": "{ \"op\": \"ping\" }"
+		},
+		{
+			"name": "Auth",
+			"desc": "Аутентификация сессии по API-ключу и подписи.",
+			"payload": "{ \"op\": \"auth\", \"apiKey\": \"YOUR_API_KEY\", \"signature\": \"YOUR_SIGNATURE\", \"timestamp\": 1700000000000 }"
+		}
+	]
+}

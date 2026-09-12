@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Docpoint</title>
+  <rect width="1024" height="1024" rx="230" fill="#1f1e1b"/>
+  <path d="M292 190 H622 L772 340 V794 A40 40 0 0 1 732 834 H292 A40 40 0 0 1 252 794 V230 A40 40 0 0 1 292 190 Z" fill="#faf7f2"/>
+  <path d="M622 190 L772 340 H622 Z" fill="#ded6c9"/>
+  <path d="M512 736 C464 656 384 572 384 492 A128 128 0 1 1 640 492 C640 572 560 656 512 736 Z" fill="#9b3b36"/>
+</svg>

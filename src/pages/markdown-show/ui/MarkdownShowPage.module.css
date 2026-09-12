@@ -1,0 +1,353 @@
+/* ═══════════════════════════════════════════════════════════════
+   MARKDOWN VIEWER — просмотр содержимого .md файлов
+   Editorial doc-reader: file-tree + rendered content + TOC.
+   ═══════════════════════════════════════════════════════════════ */
+
+.frame {
+	width: 100%;
+	height: 100vh;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.body {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+	min-height: 0;
+}
+
+/* ═══════════════ SIDEBAR (left) ═══════════════ */
+.sidebar {
+	width: 264px;
+	flex-shrink: 0;
+	border-right: 1px solid var(--border);
+	background: var(--surface);
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+}
+.sideBack {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 14px 16px 12px;
+	border-bottom: 1px solid var(--border);
+	font-family: var(--font-sans);
+	font-size: 12.5px;
+	color: var(--ink-low);
+	text-decoration: none;
+	transition: color var(--t-base, 0.15s);
+}
+.sideBack:hover {
+	color: var(--ink);
+}
+
+.sideList {
+	flex: 1;
+	overflow-y: auto;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-height: 0;
+}
+.sideEmpty {
+	padding: 20px 12px;
+	font-size: 12px;
+	color: var(--ink-low);
+	text-align: center;
+}
+.sideRow {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	border-radius: 8px;
+	background: none;
+	color: var(--ink-mid);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background var(--t-base, 0.15s),
+		color var(--t-base, 0.15s);
+}
+.sideRow svg {
+	flex-shrink: 0;
+	color: var(--ink-low);
+}
+.sideRow:hover {
+	background: var(--bg);
+	color: var(--ink);
+}
+.sideRowActive,
+.sideRowActive:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+	font-weight: 500;
+}
+.sideRowActive svg {
+	color: var(--cat-ink);
+}
+.sideRowName {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.sideRowMeta {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+
+/* ═══════════════ READER (center) ═══════════════ */
+.reader {
+	flex: 1;
+	overflow-y: auto;
+	min-width: 0;
+}
+
+/* Toolbar above the document */
+.toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 28px;
+	/* Фон непрозрачный: размытие под липкой панелью заставляет WebKitGTK
+	   перерисовывать документ на каждом кадре прокрутки. */
+	background: var(--bg);
+	border-bottom: 1px solid var(--border);
+}
+.bc {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+}
+.bcItem {
+	font-size: 12px;
+	color: var(--ink-low);
+	font-family: var(--font-mono);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.bcSep {
+	color: var(--border-h);
+}
+.bcCur {
+	font-size: 12px;
+	color: var(--ink);
+	font-family: var(--font-mono);
+	font-weight: 500;
+}
+.toolbarActions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+.toolBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 11px;
+	font-size: 12px;
+	font-weight: 500;
+	font-family: var(--font-sans);
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--border-h);
+	border-radius: 7px;
+	cursor: pointer;
+	transition:
+		border-color var(--t-base, 0.15s),
+		background var(--t-base, 0.15s);
+}
+.toolBtn:hover {
+	border-color: var(--ink);
+	background: var(--cat-bg);
+}
+.toolSeg {
+	display: inline-flex;
+	border: 1px solid var(--border-h);
+	border-radius: 7px;
+	overflow: hidden;
+}
+.toolSeg button {
+	padding: 6px 12px;
+	font-size: 12px;
+	font-family: var(--font-sans);
+	color: var(--ink-mid);
+	background: var(--surface);
+	border: none;
+	border-right: 1px solid var(--border);
+	cursor: pointer;
+}
+.toolSeg button:last-child {
+	border-right: none;
+}
+.toolSeg button.segActive {
+	background: var(--ink);
+	color: var(--surface);
+}
+
+/* Row: document + TOC side by side, below the toolbar.
+   Grows to the full document height so the sticky TOC stays pinned for the
+   entire scroll, not just the first viewport. */
+.readerRow {
+	display: flex;
+	align-items: flex-start;
+}
+
+/* The document column */
+.docWrap {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	justify-content: center;
+	padding: 24px 40px 30px;
+}
+.doc {
+	max-width: 980px;
+	width: 100%;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	padding: 36px 40px 40px;
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 8px 28px rgba(0, 0, 0, 0.05);
+}
+
+/* Document meta strip */
+.docMeta {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--ink-low);
+	margin-bottom: 30px;
+	padding-bottom: 18px;
+	border-bottom: 1px solid var(--border);
+}
+.docMeta .sep {
+	color: var(--border-h);
+}
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 2px 8px;
+	border-radius: 100px;
+	background: var(--cat-bg);
+	color: var(--cat-ink);
+	font-weight: 500;
+}
+
+/* ═══════════════ EDITOR ═══════════════ */
+.editorHost {
+	min-height: 60vh;
+	display: flex;
+	flex-direction: column;
+}
+.editorHost :global(.cm-editor) {
+	height: 100%;
+}
+
+.saveStatus {
+	font-size: 12px;
+	color: var(--ink-low);
+	white-space: nowrap;
+}
+
+/* ═══════════════ RAW VIEW ═══════════════ */
+.raw {
+	font-family: var(--font-mono);
+	font-size: 13px;
+	line-height: 1.7;
+	color: var(--code-ink);
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 22px 24px;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/* ═══════════════ TABLE OF CONTENTS (right) ═══════════════ */
+.toc {
+	width: 232px;
+	flex-shrink: 0;
+	border-left: 1px solid var(--border);
+	padding: 44px 24px 40px;
+	background: var(--bg);
+	position: sticky;
+	top: 53px;
+	align-self: flex-start;
+	max-height: calc(100vh - 53px);
+	overflow-y: auto;
+}
+.tocH {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin: 0 0 14px;
+}
+.tocList {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.tocItem {
+	font-size: 12.5px;
+	line-height: 1.45;
+	color: var(--ink-low);
+	text-decoration: none;
+	padding: 5px 10px;
+	border: none;
+	border-left: 2px solid transparent;
+	cursor: pointer;
+	transition:
+		color var(--t-base, 0.15s),
+		border-color var(--t-base, 0.15s);
+	display: block;
+	background: none;
+	text-align: left;
+	font-family: var(--font-sans);
+	width: 100%;
+}
+.tocItem:hover {
+	color: var(--ink);
+}
+.tocItem.lvl3 {
+	padding-left: 22px;
+	font-size: 12px;
+}
+.tocItem.lvl4 {
+	padding-left: 32px;
+	font-size: 11.5px;
+}
+.tocItem.tocItemActive {
+	color: var(--ink);
+	font-weight: 500;
+	border-left-color: var(--ink);
+}

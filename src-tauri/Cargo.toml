@@ -1,0 +1,64 @@
+[package]
+name = "docpoint"
+version = "0.1.0"
+description = "Настольное приложение для документирования и отладки API"
+authors = ["Roman Arlamov <roman.arlamov2002@yandex.ru>"]
+edition = "2021"
+rust-version = "1.88"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/Roman-cpp/Docpoint"
+homepage = "https://github.com/Roman-cpp/Docpoint"
+readme = "../README.md"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "docpoint_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+rfd = "0.15"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json", "cookies"] }
+tokio = { version = "1", features = ["full"] }
+# Драйверы внешних БД нужны импорту ERD: он читает системный каталог чужой
+# базы. `tls-rustls-ring` — тот же провайдер, что уже стоит в дереве; вариант
+# на aws-lc-rs притащил бы второй и сломал бы wss:// (см. run() в lib.rs).
+sqlx = { version = "0.8", features = [
+    "sqlite",
+    "postgres",
+    "mysql",
+    "runtime-tokio",
+    "tls-rustls-ring",
+] }
+uuid = { version = "1", features = ["v4"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+# Pulled in transitively by tokio-tungstenite; declared directly so we can
+# install the `ring` crypto provider as the process default (rustls 0.23
+# otherwise panics on the first wss:// handshake — see run() in lib.rs).
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+futures-util = "0.3"
+dashmap = "6"
+tauri-plugin-log = "2"
+log = "0.4.34"
+zip = "2"
+
+[dev-dependencies]
+# Нужен только тестам переезда каталога данных: они раскладывают пару
+# каталогов-соседей на диске. Уже есть в дереве транзитивно; MIT/Apache-2.0.
+tempfile = "3"
+
+[lints.clippy]
+# `doc_api/doc_api`, `environment/environment`: слайс и его главный модуль
+# намеренно называются одинаково, по образцу фронтовых слайсов.
+module_inception = "allow"

@@ -1,0 +1,240 @@
+/* Tokens live in /src/shared/styles/tokens.css */
+.wrapper {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	font-size: var(--fs-14);
+}
+
+.wrapper :global(h1),
+.wrapper :global(h2),
+.wrapper :global(h3) {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	color: var(--ink);
+	line-height: 1.2;
+	font-size: unset;
+	margin: 0;
+	letter-spacing: unset;
+}
+
+.shell {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+}
+
+/* ═══════════════ OVERVIEW ═══════════════ */
+.overview {
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	padding: 44px 44px 60px;
+}
+@media (max-width: 900px) {
+	.overview {
+		padding: 28px 20px 48px;
+	}
+}
+@media (max-width: 480px) {
+	.overview {
+		padding: 20px 14px 40px;
+	}
+}
+
+/* Centered content column within the free space */
+.content {
+	width: 100%;
+	max-width: 900px;
+	margin: auto;
+}
+.overview::-webkit-scrollbar {
+	width: 4px;
+}
+.overview::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 2px;
+}
+/* ─── Hero ─── */
+.hero {
+	position: relative;
+	margin-bottom: 34px;
+}
+.ovEyebrow {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 1.5px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin-bottom: 10px;
+}
+.ovTitle {
+	font-family: var(--font-serif);
+	font-size: 30px;
+	color: var(--ink);
+	line-height: 1.15;
+	margin-bottom: 11px;
+	letter-spacing: -0.01em;
+}
+.ovSub {
+	font-size: 14px;
+	color: var(--ink-mid);
+	line-height: 1.75;
+	max-width: 500px;
+}
+
+/* ─── Section label ─── */
+.sectionLabel {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin-bottom: 16px;
+	max-width: 900px;
+}
+.sectionLabel::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--border);
+}
+
+.toolsGrid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+	max-width: 900px;
+}
+@media (max-width: 960px) {
+	.toolsGrid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+@media (max-width: 640px) {
+	.toolsGrid {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+}
+
+.toolCard {
+	text-decoration: none;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	padding: 20px 22px;
+	cursor: pointer;
+	transition:
+		border-color var(--t-slow),
+		box-shadow var(--t-slow),
+		transform var(--t-base);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	overflow: hidden;
+}
+.toolCard::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(160deg, var(--accent), transparent 45%);
+	opacity: 0;
+	transition: opacity var(--t-slow);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	pointer-events: none;
+}
+.toolCard::after {
+	content: "";
+	position: absolute;
+	top: -40%;
+	right: -30%;
+	width: 160px;
+	height: 160px;
+	border-radius: var(--r-circle);
+	background: radial-gradient(circle, var(--accent), transparent 70%);
+	opacity: 0;
+	transition: opacity var(--t-slow);
+	pointer-events: none;
+}
+.toolCard:hover {
+	border-color: var(--border-h);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-3px);
+}
+.toolCard:hover::before {
+	opacity: 0.5;
+}
+.toolCard:hover::after {
+	opacity: 0.06;
+}
+@media (max-width: 480px) {
+	.toolCard {
+		padding: 16px 16px;
+		border-radius: var(--r-lg);
+	}
+}
+
+.tcIcon {
+	width: 42px;
+	height: 42px;
+	border-radius: var(--r-lg);
+	background: var(--cat-bg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 19px;
+	flex-shrink: 0;
+	transition: transform var(--t-slow) var(--ease-out);
+}
+.toolCard:hover .tcIcon {
+	transform: scale(1.06) rotate(-3deg);
+}
+.tcName {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	color: var(--ink);
+	line-height: 1.2;
+}
+.tcDesc {
+	font-size: 13px;
+	color: var(--ink-mid);
+	line-height: 1.65;
+	flex: 1;
+}
+.tcFooter {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding-top: 12px;
+	border-top: 1px solid var(--border);
+}
+.tcOpen {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--ink-mid);
+	transition: color var(--t-base);
+}
+.tcArrow {
+	font-size: 13px;
+	color: var(--accent);
+	transition: transform var(--t-slow) var(--ease-out);
+}
+.toolCard:hover .tcOpen {
+	color: var(--accent);
+}
+.toolCard:hover .tcArrow {
+	transform: translateX(4px);
+}

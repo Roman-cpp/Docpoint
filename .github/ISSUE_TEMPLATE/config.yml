@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Уязвимость в безопасности
+    url: https://github.com/Roman-cpp/Docpoint/security/advisories/new
+    about: Не заводите публичный issue. Порядок описан в SECURITY.md.
+  - name: Вопрос по разработке
+    url: https://github.com/Roman-cpp/Docpoint/blob/main/CONTRIBUTING.md
+    about: Сборка, ветки, коммиты и проверки перед pull request.

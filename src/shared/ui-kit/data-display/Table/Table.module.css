@@ -1,0 +1,87 @@
+/* ─── Container ─────────────────────────────────────────────── */
+
+.table {
+	--table-cols: 1fr;
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	overflow: hidden;
+}
+
+/* ─── Rows ──────────────────────────────────────────────────── */
+
+.row {
+	display: grid;
+	grid-template-columns: var(--table-cols);
+	align-items: center;
+	gap: 12px;
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	font-size: var(--fs-13);
+}
+
+.row:last-child {
+	border-bottom: none;
+}
+
+.head {
+	background: var(--cat-bg);
+	font-size: 10.5px;
+	font-weight: 500;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	padding: 8px 14px;
+}
+
+/* ─── Grip handle ───────────────────────────────────────────── */
+
+.grip {
+	color: var(--ink-low);
+	display: inline-flex;
+	align-items: center;
+	cursor: grab;
+}
+
+.grip:hover {
+	color: var(--ink-mid);
+}
+
+/* ─── Actions cell ──────────────────────────────────────────── */
+
+.actions {
+	display: inline-flex;
+	gap: 4px;
+	justify-content: flex-end;
+}
+
+/* ─── Status dot badge ──────────────────────────────────────── */
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	color: var(--ink-mid);
+}
+
+.badgeDot {
+	width: 7px;
+	height: 7px;
+	border-radius: var(--r-circle);
+	background: var(--ink-low);
+	flex-shrink: 0;
+}
+
+/* ─── Empty state ───────────────────────────────────────────── */
+
+.empty {
+	font-size: var(--fs-13);
+	color: var(--ink-low);
+	border: 1px dashed var(--border);
+	border-radius: var(--r-lg);
+	padding: 18px 16px;
+	text-align: center;
+}

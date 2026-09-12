@@ -1,0 +1,195 @@
+.tabs {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 0 -18px 12px;
+	padding: 0 18px;
+	border-bottom: 1px solid var(--border);
+}
+
+.tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 4px;
+	margin: 0 12px -1px 0;
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--ink-low);
+	font-family: var(--font-mono);
+	font-size: var(--fs-13);
+	cursor: pointer;
+	transition: color var(--t-fast);
+}
+.tab:hover {
+	color: var(--ink-mid);
+}
+.tabActive {
+	color: var(--ink);
+	border-bottom-color: var(--ink);
+}
+.tabError {
+	color: var(--red);
+}
+
+.dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.addTab {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	margin-left: auto;
+	padding: 5px 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	color: var(--ink-mid);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+}
+.addTab:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.editor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Код, подпись и кнопка удаления в одну строку, подпись растягивается. */
+.identity {
+	display: flex;
+	align-items: flex-end;
+	gap: 10px;
+}
+.identity > :nth-child(2) {
+	flex: 1;
+	min-width: 0;
+}
+.removeResponse {
+	margin-bottom: 2px;
+	white-space: nowrap;
+}
+
+.problem {
+	margin-top: -8px;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--red);
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.title {
+	font-family: var(--font-sans);
+	font-size: var(--fs-13);
+	font-weight: var(--fw-medium);
+	color: var(--ink);
+}
+
+.addBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	color: var(--ink-mid);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+	transition:
+		color var(--t-fast),
+		border-color var(--t-fast);
+}
+.addBtn:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.empty {
+	padding: 14px;
+	text-align: center;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--ink-low);
+	border: 1px dashed var(--border);
+	border-radius: var(--r-md);
+}
+
+.row {
+	display: grid;
+	grid-template-columns: 1.2fr 0.9fr 1.6fr 1fr 28px;
+	align-items: center;
+	gap: 6px;
+}
+.rowHead {
+	padding: 0 2px;
+	font-family: var(--font-sans);
+	font-size: 10px;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+
+.removeBtn {
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	color: var(--ink-low);
+	cursor: pointer;
+	transition:
+		color var(--t-fast),
+		background var(--t-fast),
+		border-color var(--t-fast);
+}
+.removeBtn:hover {
+	color: var(--red);
+	background: var(--cat-bg);
+	border-color: var(--border);
+}
+
+.status {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--green);
+}
+.statusError {
+	color: var(--red);
+}
+
+.exampleEditor {
+	width: 100%;
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	line-height: 1.6;
+	resize: vertical;
+}

@@ -1,0 +1,40 @@
+.root {
+	display: flex;
+	flex: 1;
+	overflow: hidden;
+}
+
+.main {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+}
+
+.handle {
+	width: 5px;
+	flex-shrink: 0;
+	cursor: col-resize;
+	position: relative;
+	background: transparent;
+	z-index: 10;
+}
+
+.handle::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 2px;
+	width: 1px;
+	background: var(--border);
+	transition:
+		background 0.15s,
+		width 0.15s,
+		left 0.15s;
+}
+
+.handle:hover::after {
+	left: 1px;
+	width: 3px;
+	background: var(--border-h);
+}

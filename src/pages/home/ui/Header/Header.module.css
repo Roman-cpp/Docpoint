@@ -1,0 +1,35 @@
+/* ─── Top nav ────────────────────────────────────────────────── */
+.pfNav {
+	display: flex;
+	align-items: center;
+	gap: 32px;
+	padding: 14px 28px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+}
+.pfNavBrand {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	letter-spacing: -0.2px;
+	color: var(--ink);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.pfNavBrandLink {
+	text-decoration: none;
+	color: inherit;
+}
+.pfNavSep {
+	width: 1px;
+	height: 16px;
+	background: var(--border);
+}
+.pfNavSection {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}

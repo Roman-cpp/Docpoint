@@ -1,0 +1,1 @@
+ALTER TABLE doc_erds ADD COLUMN service_id TEXT REFERENCES services(id) ON DELETE CASCADE;

@@ -1,0 +1,230 @@
+/* ═══════════════════════════════════════════════════════════════
+   ГЕНЕРАТОР — пароли и идентификаторы UUID
+   ═══════════════════════════════════════════════════════════════ */
+
+.frame {
+	width: 100%;
+	height: 100vh;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+.page {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 28px 24px 48px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* ─── Карточка секции ─── */
+.card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 18px 20px 20px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	box-shadow: var(--shadow-xs);
+}
+.cardHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.cardTitle {
+	margin: 0;
+	font-family: var(--font-serif);
+	font-size: var(--fs-17);
+	font-weight: var(--fw-regular);
+	color: var(--ink);
+}
+.cardActions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* ─── Длина пароля ─── */
+.lengthRow {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.optionLabel {
+	flex-shrink: 0;
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+}
+.range {
+	flex: 1;
+	min-width: 0;
+	height: 4px;
+	accent-color: var(--ink);
+	cursor: pointer;
+}
+.number {
+	flex-shrink: 0;
+	width: 64px;
+	font-family: var(--font-mono);
+	font-size: var(--fs-13);
+	color: var(--ink);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	padding: 5px 8px;
+	outline: none;
+	font-variant-numeric: tabular-nums;
+	transition: border-color var(--t-base);
+}
+.number:focus {
+	border-color: var(--border-h);
+}
+
+/* ─── Галочки настроек ─── */
+.checks {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+/* Отделяет наборы символов от фильтров — они про разное. */
+.checksSep {
+	width: 1px;
+	height: 16px;
+	background: var(--border);
+}
+
+/* Переключатель версии: две кнопки в одной рамке. */
+.toggle {
+	display: inline-flex;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	padding: 2px;
+	gap: 2px;
+}
+.toggleBtn {
+	font-family: inherit;
+	font-size: var(--fs-12);
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	padding: 4px 10px;
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		color var(--t-base);
+}
+.toggleBtn:hover {
+	color: var(--ink);
+}
+.toggleActive {
+	background: var(--surface);
+	color: var(--ink);
+	box-shadow: var(--shadow-xs);
+}
+
+/* ─── Подпись под настройками ─── */
+.hint {
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+	color: var(--ink-low);
+}
+.hint b {
+	font-weight: var(--fw-medium);
+	color: var(--ink-mid);
+	font-variant-numeric: tabular-nums;
+}
+.hintError {
+	color: var(--red);
+}
+.toneRed {
+	color: var(--red);
+	font-weight: var(--fw-medium);
+}
+.toneAmber {
+	color: var(--amber);
+	font-weight: var(--fw-medium);
+}
+.toneGreen {
+	color: var(--green);
+	font-weight: var(--fw-medium);
+}
+
+/* ─── Строки результата ─── */
+.rows {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	overflow: hidden;
+}
+.row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 10px 8px 12px;
+	border-bottom: 1px solid var(--border);
+}
+.row:last-child {
+	border-bottom: none;
+}
+.row:hover {
+	background: var(--cat-bg);
+}
+.rowValue {
+	flex: 1;
+	min-width: 0;
+	font-family: var(--font-mono);
+	font-size: var(--fs-14);
+	color: var(--ink);
+	word-break: break-all;
+	/* Пароль читают глазами по одному знаку — небольшой разбег помогает. */
+	letter-spacing: 0.02em;
+}
+
+/* Копирование — смысл этой страницы, поэтому кнопка видна всегда, а не
+   проявляется по наведению, как в списках других инструментов. */
+.copyBtn {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 5px;
+	color: var(--ink-low);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		background var(--t-base);
+}
+.copyBtn:hover {
+	color: var(--ink);
+	background: var(--surface);
+}
+.copyBtnDone {
+	color: var(--green);
+}
+.copyBtnDone:hover {
+	color: var(--green);
+}
+
+.copyAll {
+	align-self: flex-start;
+}

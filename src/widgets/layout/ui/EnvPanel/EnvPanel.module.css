@@ -1,0 +1,238 @@
+/* ═══════════════ TOGGLE BUTTON ═══════════════ */
+.toggleBtn {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: var(--z-panel-toggle);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 12px 7px 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: var(--fs-12);
+	font-family: var(--font-sans);
+	color: var(--ink-mid);
+	box-shadow: var(--shadow-sm);
+	transition:
+		background var(--t-fast),
+		color var(--t-fast),
+		border-color var(--t-fast),
+		box-shadow var(--t-fast);
+	user-select: none;
+}
+.toggleBtn:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+.toggleBtn.open {
+	background: var(--ink);
+	color: var(--surface);
+	border-color: var(--ink);
+	box-shadow: var(--shadow-popover);
+}
+.toggleBtn svg {
+	width: 13px;
+	height: 13px;
+	flex-shrink: 0;
+}
+.toggleDot {
+	width: 7px;
+	height: 7px;
+	border-radius: var(--r-circle);
+	flex-shrink: 0;
+}
+
+/* ═══════════════ PANEL ═══════════════ */
+.panel {
+	position: fixed;
+	bottom: 58px;
+	right: 20px;
+	width: 300px;
+	max-height: 420px;
+	z-index: var(--z-panel);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	box-shadow: var(--shadow-lg);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: slideUp var(--t-base) ease;
+}
+
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* ═══════════════ HEADER ═══════════════ */
+.panelHdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 11px 14px;
+	border-bottom: 1px solid var(--border);
+	background: var(--bg);
+	flex-shrink: 0;
+}
+.panelTitle {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	font-size: var(--fs-12);
+	font-weight: var(--fw-semibold);
+	color: var(--ink);
+	letter-spacing: -0.1px;
+}
+.panelDot {
+	width: 8px;
+	height: 8px;
+	border-radius: var(--r-circle);
+	flex-shrink: 0;
+}
+.panelClose {
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: var(--ink-low);
+	border-radius: var(--r-xs);
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
+}
+.panelClose:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+.panelClose svg {
+	width: 11px;
+	height: 11px;
+}
+
+/* ═══════════════ META ROW ═══════════════ */
+.metaBlock {
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	flex-shrink: 0;
+	background: var(--surface);
+}
+.metaRow {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+}
+.metaKey {
+	font-size: var(--fs-10);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	width: 50px;
+	flex-shrink: 0;
+}
+.metaVal {
+	font-size: var(--fs-12);
+	font-family: var(--font-mono);
+	color: var(--code-ink);
+	word-break: break-all;
+}
+
+/* ═══════════════ VARIABLES ═══════════════ */
+.varSection {
+	flex: 1;
+	overflow-y: auto;
+}
+.varSection::-webkit-scrollbar {
+	width: 3px;
+}
+.varSection::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 2px;
+}
+.varSectionLabel {
+	padding: 9px 14px 5px;
+	font-size: var(--fs-10);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.varRow {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 5px 14px;
+	border-bottom: 1px solid var(--border);
+	transition: background var(--t-fast);
+}
+.varRow:last-child {
+	border-bottom: none;
+}
+.varRow:hover {
+	background: var(--bg);
+}
+.varName {
+	font-size: var(--fs-12);
+	font-family: var(--font-mono);
+	color: var(--code-ink);
+	min-width: 90px;
+	flex-shrink: 0;
+	word-break: break-all;
+}
+.varEq {
+	font-size: var(--fs-12);
+	color: var(--border-h);
+	flex-shrink: 0;
+}
+.varVal {
+	font-size: var(--fs-12);
+	font-family: var(--font-mono);
+	color: var(--ink-mid);
+	word-break: break-all;
+}
+
+/* ═══════════════ COPYABLE FIELD ═══════════════ */
+.copyField {
+	border: none;
+	background: none;
+	padding: 1px 4px;
+	margin: -1px -4px;
+	border-radius: var(--r-xs);
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
+}
+.copyField:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+.copyField.copied {
+	background: var(--ink);
+	color: var(--surface);
+}
+.empty {
+	padding: 16px 14px;
+	font-size: var(--fs-13);
+	color: var(--ink-low);
+	text-align: center;
+}

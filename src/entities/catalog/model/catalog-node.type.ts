@@ -1,0 +1,24 @@
+/** Вид узла дерева. `catalog` — папка, остальные виды — документы. */
+export type NodeKind =
+	| "catalog"
+	| "docApi"
+	| "docWs"
+	| "docErd"
+	| "markdown"
+	| "file";
+
+/**
+ * Узел дерева платформы. У документа id узла — это и есть id документа, так что
+ * ссылка на страницу собирается прямо отсюда.
+ */
+export interface CatalogNode {
+	id: string;
+	platformId: string;
+	/** `null` — узел лежит в корне платформы. */
+	parentId: string | null;
+	kind: NodeKind;
+	name: string;
+	/** Время создания и изменения, `YYYY-MM-DD HH:MM:SS` в UTC. */
+	createdAt: string;
+	updatedAt: string;
+}
