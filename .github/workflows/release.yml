@@ -21,8 +21,9 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Нужна история main, иначе не проверить, что тег стоит на ней.
           fetch-depth: 0
@@ -39,10 +40,22 @@ jobs:
 
           # Tauri берёт версию из tauri.conf.json; тег обязан ей соответствовать,
           # иначе релиз v1.2.0 будет содержать пакеты 1.1.0.
+          #
+          # Предрелизный суффикс в версию Tauri не переносится: MSI требует
+          # числовую версию, а pacman вообще запрещает дефис в pkgver. Поэтому
+          # тег v1.2.0-preview.1 сверяется по части до дефиса, а сам релиз
+          # помечается предварительным.
           tag="${GITHUB_REF_NAME#v}"
-          if [ "$version" != "$tag" ]; then
+          release="${tag%%-*}"
+          if [ "$version" != "$release" ]; then
             echo "::error::tauri.conf.json: $version, тег: $tag"
             exit 1
+          fi
+
+          if [ "$release" != "$tag" ]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
           git fetch --no-tags origin main
@@ -60,7 +73,7 @@ jobs:
     env:
       VERSION: ${{ needs.check.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Системные зависимости
         run: |
@@ -132,7 +145,7 @@ jobs:
             bun rust rust-wasm wasm-pack \
             webkit2gtk-4.1 gtk3 libayatana-appindicator librsvg
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - run: bun install --frozen-lockfile
 
@@ -180,7 +193,7 @@ jobs:
     env:
       VERSION: ${{ needs.check.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -232,6 +245,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       VERSION: ${{ needs.check.outputs.version }}
       TAG: ${{ github.ref_name }}
+      PRERELEASE: ${{ needs.check.outputs.prerelease }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -275,9 +289,13 @@ jobs:
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" assets/* --clobber
-            gh release edit "$TAG" --title "Docpoint $TAG" --notes-file notes.md
+            gh release edit "$TAG" \
+              --title "Docpoint $TAG" \
+              --notes-file notes.md \
+              --prerelease="$PRERELEASE"
           else
             gh release create "$TAG" assets/* \
               --title "Docpoint $TAG" \
-              --notes-file notes.md
+              --notes-file notes.md \
+              --prerelease="$PRERELEASE"
           fi
