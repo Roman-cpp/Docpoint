@@ -1,6 +1,6 @@
 [package]
 name = "docpoint"
-version = "0.1.0"
+version = "1.2.0"
 description = "Настольное приложение для документирования и отладки API"
 authors = ["Roman Arlamov <roman.arlamov2002@yandex.ru>"]
 edition = "2021"
