@@ -1,0 +1,74 @@
+.sidebar {
+	width: 260px;
+	flex-shrink: 0;
+	background: var(--surface);
+	border-right: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	padding: 20px 16px;
+	gap: 24px;
+	overflow-y: auto;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.sectionLabel {
+	font-size: var(--fs-11);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.7px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	padding: 0 10px;
+	margin-bottom: 4px;
+}
+
+.group {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.item {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 8px 10px;
+	border: 1px solid transparent;
+	border-radius: var(--r-md);
+	background: transparent;
+	color: var(--ink-mid);
+	font-size: var(--fs-13);
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+}
+
+.item:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+
+.itemActive {
+	background: var(--cat-bg);
+	border-color: var(--border);
+	color: var(--ink);
+}
+
+.icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ink-low);
+	flex-shrink: 0;
+}
+
+.itemActive .icon {
+	color: var(--ink-mid);
+}

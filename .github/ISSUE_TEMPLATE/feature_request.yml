@@ -1,0 +1,25 @@
+name: Новая возможность
+description: Предложение изменить или дополнить поведение
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Задача
+      description: Что не получается сделать сейчас. Не решение, а ситуация.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предложение
+      description: Как это могло бы работать. Если есть наброски интерфейса — приложите.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Чем обходитесь сейчас
+      description: Обходной путь, другой инструмент или ничего.

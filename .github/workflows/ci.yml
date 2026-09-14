@@ -1,0 +1,87 @@
+# Проверки на каждый push и pull request. Бандлы здесь не собираются: сборка
+# Tauri под три ОС идёт по тегу отдельным workflow.
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # wasm-крейт собирается до Vite: фронт импортирует его выхлоп по алиасу,
+      # а папка wasm/pkg не хранится в git.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: wasm
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - run: bun install --frozen-lockfile
+
+      - name: Biome
+        run: bunx biome ci src
+
+      - name: Build wasm
+        run: bun run wasm
+
+      - name: Typecheck and build
+        run: bun run build
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@v5
+
+      # Tauri линкуется с WebKitGTK даже ради тестов репозиториев.
+      - name: System dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libxdo-dev \
+            build-essential \
+            patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test

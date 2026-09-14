@@ -1,0 +1,117 @@
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.count {
+	font-family: var(--font-sans);
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+}
+
+.addBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	color: var(--ink-mid);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+	transition:
+		color var(--t-fast),
+		border-color var(--t-fast);
+}
+.addBtn:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.empty {
+	padding: 14px;
+	text-align: center;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--ink-low);
+	border: 1px dashed var(--border);
+	border-radius: var(--r-md);
+}
+
+.row {
+	display: grid;
+	grid-template-columns: 1.2fr 0.9fr 1.6fr 0.8fr auto;
+	align-items: center;
+	gap: 6px;
+}
+.rowHead {
+	padding: 0 2px;
+	font-family: var(--font-sans);
+	font-size: 10px;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+
+/* Имя сегмента приходит из пути: показываем его, а не поле ввода. */
+.nameFixed {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--code-ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.rowTail {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	/* Ширина хвоста одинакова с кнопкой и без неё, чтобы колонки не плясали. */
+	min-width: 68px;
+	justify-content: flex-end;
+}
+
+.reqToggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-family: var(--font-sans);
+	font-size: 11px;
+	color: var(--ink-mid);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.removeBtn {
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	color: var(--ink-low);
+	cursor: pointer;
+	flex-shrink: 0;
+	transition:
+		color var(--t-fast),
+		background var(--t-fast),
+		border-color var(--t-fast);
+}
+.removeBtn:hover {
+	color: var(--red);
+	background: var(--cat-bg);
+	border-color: var(--border);
+}

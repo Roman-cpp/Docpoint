@@ -1,0 +1,136 @@
+/* ═══════════════════════════════════════════════════════════════
+   СОДЕРЖИМОЕ КАТАЛОГА — карточки узлов.
+   Цвет плитки различает виды документов: каталог, doc-api, doc-ws,
+   ERD и markdown.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════ GROUPS ═══════════════ */
+/* Узлы разбиты по видам, каждая группа — со своим заголовком. */
+.groups {
+	display: flex;
+	flex-direction: column;
+	gap: 26px;
+}
+
+.sectionTitle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 10px;
+	font-family: var(--font-sans);
+	font-size: 11px;
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.7px;
+	line-height: 1.2;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+
+.sectionCount {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 400;
+	letter-spacing: 0;
+	color: var(--ink-low);
+	padding: 1px 6px;
+	border: 1px solid var(--border);
+	/* Не `--r-circle`: у него 50%, а нужна «таблетка» под число любой длины. */
+	border-radius: 999px;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 10px;
+}
+
+/* ═══════════════ CARD ═══════════════ */
+.card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	text-align: left;
+	gap: 3px;
+	min-height: 96px;
+	padding: 12px 13px 10px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--surface);
+	cursor: pointer;
+	font-family: var(--font-sans);
+	transition:
+		border-color var(--t-base),
+		box-shadow var(--t-base),
+		transform var(--t-base);
+}
+.card:hover {
+	border-color: var(--border-h);
+	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.06);
+	transform: translateY(-1px);
+}
+
+.cardDragging {
+	opacity: 0.45;
+}
+
+/* Карточка-приёмник, пока над ней висит перетаскиваемый узел. */
+.cardDrop {
+	border-color: var(--ink);
+	box-shadow: 0 4px 18px rgba(40, 34, 26, 0.08);
+}
+
+.name {
+	margin-top: auto;
+	font-size: 12.5px;
+	color: var(--ink);
+	font-weight: var(--fw-medium);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.meta {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	color: var(--ink-low);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+/* ═══════════════ ICON TILE ═══════════════ */
+.tile {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border-radius: var(--r-md);
+	margin-bottom: 10px;
+	color: var(--cat-ink);
+	background: var(--cat-bg);
+	border: 1px solid var(--border);
+}
+.tile-catalog {
+	color: var(--amber);
+	background: var(--amber-bg);
+	border-color: var(--amber-border);
+}
+.tile-docApi {
+	color: var(--blue);
+	background: var(--blue-bg);
+	border-color: var(--blue-border);
+}
+.tile-docWs {
+	color: var(--purple);
+	background: var(--purple-bg);
+	border-color: var(--purple-border);
+}
+.tile-docErd {
+	color: var(--green);
+	background: var(--green-bg);
+	border-color: var(--green-border);
+}

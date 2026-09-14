@@ -1,0 +1,29 @@
+# Пакет собирается в CI из уже готового бинарника: workflow кладёт рядом
+# tarball с шага сборки и подставляет pkgver. Отсюда `!debug` — отдельный
+# пакет с отладочными символами из чужого бинарника смысла не имеет.
+pkgname=docpoint-bin
+pkgver=0.0.0
+pkgrel=1
+pkgdesc="Настольное приложение для документирования и отладки API"
+arch=('x86_64')
+url="https://github.com/Roman-cpp/Docpoint"
+license=('AGPL-3.0-or-later')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'librsvg' 'hicolor-icon-theme')
+provides=("docpoint=$pkgver")
+conflicts=('docpoint')
+options=('!debug')
+source=("docpoint-$pkgver-x86_64.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+	cd "$srcdir/docpoint-$pkgver-x86_64"
+
+	install -Dm755 docpoint "$pkgdir/usr/bin/docpoint"
+	install -Dm644 docpoint.desktop "$pkgdir/usr/share/applications/docpoint.desktop"
+	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+	for size in 32x32 128x128; do
+		install -Dm644 "icons/$size.png" \
+			"$pkgdir/usr/share/icons/hicolor/$size/apps/docpoint.png"
+	done
+}

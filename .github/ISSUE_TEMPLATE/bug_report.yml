@@ -1,0 +1,53 @@
+name: Баг
+description: Что-то работает не так, как описано
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Уязвимости сюда не заводятся — порядок в `SECURITY.md`.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      description: По пунктам, от чистого запуска, если это возможно.
+      placeholder: |
+        1. Создать платформу, в ней doc-api
+        2. Импортировать пример из docs/import/doc-api
+        3. Открыть «Try it»
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидали и что получили
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Версия Docpoint
+      description: Из имени установочного пакета либо `src-tauri/tauri.conf.json`, если собирали сами.
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: ОС
+      placeholder: Arch Linux, GNOME 48 (Wayland) / Windows 11 / macOS 15
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Лог
+      description: >
+        Хвост `logs/docpoint.log` из каталога данных приложения, путь указан в
+        README. Уберите оттуда токены и пароли окружений — они пишутся в базу
+        открытым текстом и могут попасть в лог.
+      render: text

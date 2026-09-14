@@ -1,0 +1,27 @@
+/* Палитра один в один с JsonTree.module.css: то, что пользователь видит в
+   теле ответа, так же выглядит и в примере ответа. */
+.code {
+	margin: 0;
+	font-family: var(--font-mono);
+	white-space: pre;
+	color: var(--ink);
+}
+.key {
+	color: var(--purple);
+}
+.string {
+	color: var(--green);
+}
+.number {
+	color: var(--blue);
+}
+.bool {
+	color: var(--amber);
+}
+.null {
+	color: var(--ink-low);
+	font-style: italic;
+}
+.punct {
+	color: var(--ink-low);
+}

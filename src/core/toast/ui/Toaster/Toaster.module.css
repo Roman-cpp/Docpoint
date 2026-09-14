@@ -1,0 +1,213 @@
+.viewport {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 320px;
+	max-width: calc(100vw - 40px);
+	z-index: var(--z-toast);
+	outline: none;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.root {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 9px;
+	box-shadow: var(--shadow-md);
+	padding: 11px 12px 11px 16px;
+	font-family: var(--font-sans);
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+/* left accent bar */
+.root::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: var(--border-h);
+	border-radius: 9px 0 0 9px;
+}
+
+.root[data-state="open"] {
+	animation: toastIn 0.22s var(--ease-out);
+}
+
+.root[data-state="closed"] {
+	animation: toastOut 0.16s ease-in forwards;
+}
+
+.root[data-swipe="move"] {
+	transform: translateX(var(--radix-toast-swipe-move-x));
+}
+
+.root[data-swipe="cancel"] {
+	transform: translateX(0);
+	transition: transform var(--t-slow) ease-out;
+}
+
+.root[data-swipe="end"] {
+	animation: toastSwipeOut var(--t-fast) ease-out forwards;
+}
+
+/* variants — accent bar color */
+.success::before {
+	background: var(--green);
+}
+.error::before {
+	background: var(--red);
+}
+.info::before {
+	background: var(--blue);
+}
+
+.icon {
+	flex-shrink: 0;
+	width: 15px;
+	height: 15px;
+	color: var(--ink-low);
+	margin-top: 1px;
+}
+
+/* variant icon colors */
+.success .icon {
+	color: var(--green);
+}
+.error .icon {
+	color: var(--red);
+}
+.info .icon {
+	color: var(--blue);
+}
+
+.icon svg {
+	width: 100%;
+	height: 100%;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.texts {
+	flex: 1;
+	min-width: 0;
+}
+
+.title {
+	font-size: var(--fs-13);
+	font-weight: var(--fw-medium);
+	color: var(--ink);
+	line-height: var(--lh-snug);
+}
+
+.description {
+	font-size: var(--fs-12);
+	color: var(--ink-mid);
+	line-height: var(--lh-normal);
+	margin-top: 2px;
+}
+
+.right {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.actionBtn {
+	height: 24px;
+	padding: 0 9px;
+	border-radius: var(--r-sm);
+	font-family: var(--font-sans);
+	font-size: var(--fs-11);
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+	border: 1px solid var(--border);
+	background: var(--cat-bg);
+	color: var(--ink);
+	white-space: nowrap;
+	transition:
+		background var(--t-fast),
+		border-color var(--t-fast);
+}
+
+.actionBtn:hover {
+	background: var(--border);
+	border-color: var(--border-h);
+}
+
+.closeBtn {
+	width: 22px;
+	height: 22px;
+	border-radius: var(--r-sm);
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	color: var(--ink-low);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
+}
+
+.closeBtn:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+
+.closeBtn svg {
+	width: 10px;
+	height: 10px;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 2;
+	stroke-linecap: round;
+}
+
+@keyframes toastIn {
+	from {
+		transform: translateX(calc(100% + 20px));
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes toastOut {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(6px);
+	}
+}
+
+@keyframes toastSwipeOut {
+	from {
+		transform: translateX(var(--radix-toast-swipe-end-x));
+	}
+	to {
+		transform: translateX(calc(100% + 20px));
+	}
+}

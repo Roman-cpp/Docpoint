@@ -1,0 +1,198 @@
+/* ─── Wrapper ────────────────────────────────────────────────── */
+
+.wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* ─── Multi-sort hint ────────────────────────────────────────── */
+
+.sortHint {
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+	padding: 6px 12px;
+	background: var(--cat-bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+}
+
+/* ─── Container ──────────────────────────────────────────────── */
+
+.table {
+	--dt-cols: 1fr;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	overflow: hidden;
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+
+.tableHead {
+	display: grid;
+	grid-template-columns: var(--dt-cols);
+	padding: 0 16px;
+	background: var(--cat-bg);
+	border-bottom: 1px solid var(--border);
+	gap: 12px;
+	align-items: stretch;
+}
+
+.thBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 11px 0;
+	background: transparent;
+	border: none;
+	font-size: var(--fs-11);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: color var(--t-base);
+}
+
+.thBtn:hover {
+	color: var(--ink-mid);
+}
+.thBtnActive {
+	color: var(--ink);
+	font-weight: var(--fw-semibold);
+}
+
+.thStatic {
+	display: inline-flex;
+	align-items: center;
+	padding: 11px 0;
+	font-size: var(--fs-11);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	white-space: nowrap;
+}
+
+/* ─── Sort icons ─────────────────────────────────────────────── */
+
+.sortIconWrap {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	opacity: 0;
+	transition: opacity var(--t-base);
+}
+
+.thBtn:hover .sortIconWrap {
+	opacity: 0.6;
+}
+.thBtnActive .sortIconWrap {
+	opacity: 1;
+}
+
+.sortArrow {
+	opacity: 0.3;
+}
+.sortArrowActive {
+	opacity: 1;
+}
+
+.sortPriority {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	border-radius: var(--r-circle);
+	background: var(--ink);
+	color: var(--surface);
+	font-size: 9px;
+	font-weight: var(--fw-semibold);
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+/* ─── Rows ───────────────────────────────────────────────────── */
+
+.tableBody {
+	display: flex;
+	flex-direction: column;
+}
+
+.tableRow {
+	display: grid;
+	grid-template-columns: var(--dt-cols);
+	padding: 11px 16px;
+	gap: 12px;
+	align-items: center;
+	border-bottom: 1px solid var(--border);
+	transition: background var(--t-base);
+}
+
+.tableRow:last-child {
+	border-bottom: none;
+}
+.tableRow:hover {
+	background: var(--cat-bg);
+}
+
+/* ─── Pagination ─────────────────────────────────────────────── */
+
+.pagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	border-top: 1px solid var(--border);
+}
+
+.paginationInfo {
+	font-size: var(--fs-12);
+	color: var(--ink-low);
+}
+
+.paginationControls {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.pageBtn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 30px;
+	height: 30px;
+	padding: 0 6px;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	color: var(--ink-mid);
+	font-size: var(--fs-12);
+	font-family: var(--font-sans);
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+}
+
+.pageBtn:hover:not(:disabled) {
+	background: var(--cat-bg);
+	border-color: var(--border);
+	color: var(--ink);
+}
+
+.pageBtn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.pageBtnActive {
+	background: var(--ink);
+	color: var(--surface);
+	border-color: var(--ink);
+}

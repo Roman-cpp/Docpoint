@@ -1,0 +1,148 @@
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sectionHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.sectionTitle {
+	font-family: var(--font-sans);
+	font-size: var(--fs-13);
+	font-weight: var(--fw-medium);
+	color: var(--ink);
+}
+
+.addBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	color: var(--ink-mid);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+	transition:
+		color var(--t-fast),
+		border-color var(--t-fast);
+}
+
+.addBtn:hover {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+
+.empty {
+	padding: 14px;
+	text-align: center;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	color: var(--ink-low);
+	border: 1px dashed var(--border);
+	border-radius: var(--r-md);
+}
+
+.paramRow {
+	display: grid;
+	grid-template-columns: 1.2fr 0.9fr 1.6fr auto auto;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Имя сегмента приходит из пути, поэтому показываем его, а не поле ввода. */
+.paramNameFixed {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--code-ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.paramRowFixed {
+	grid-template-columns: 1.2fr 0.9fr 1.6fr auto;
+}
+
+.reqToggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-family: var(--font-sans);
+	font-size: 11px;
+	color: var(--ink-mid);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.removeBtn {
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	color: var(--ink-low);
+	cursor: pointer;
+	flex-shrink: 0;
+	transition:
+		color var(--t-fast),
+		background var(--t-fast),
+		border-color var(--t-fast);
+}
+
+.removeBtn:hover {
+	color: var(--red);
+	background: var(--cat-bg);
+	border-color: var(--border);
+}
+
+.tabs {
+	display: flex;
+	gap: 4px;
+	border-bottom: 1px solid var(--border);
+	margin: 0 -18px 4px;
+	padding: 0 18px;
+}
+
+.tab {
+	padding: 8px 2px;
+	margin-bottom: -1px;
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--ink-low);
+	font-family: var(--font-sans);
+	font-size: var(--fs-13);
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+	margin-right: 14px;
+	transition: color var(--t-fast);
+}
+
+.tab:hover {
+	color: var(--ink-mid);
+}
+
+.tabActive {
+	color: var(--ink);
+	border-bottom-color: var(--ink);
+}
+
+/* Отказ бэкенда — в футере, слева от кнопок: окно после него не закрывается. */
+.saveError {
+	margin-right: auto;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	line-height: var(--lh-snug);
+	color: var(--red);
+}

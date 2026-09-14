@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Docpoint
+Comment=Настольное приложение для документирования и отладки API
+Exec=docpoint
+Icon=docpoint
+Terminal=false
+Categories=Development;
+StartupWMClass=docpoint

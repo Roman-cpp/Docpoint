@@ -1,0 +1,15 @@
+/* Tokens live in /src/shared/styles/tokens.css */
+.wrapper {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	font-size: var(--fs-14);
+}
+
+.body {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+	min-height: 0;
+}

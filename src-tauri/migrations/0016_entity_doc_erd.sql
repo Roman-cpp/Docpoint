@@ -1,0 +1,1 @@
+ALTER TABLE entities ADD COLUMN doc_erd_id TEXT REFERENCES doc_erds(id) ON DELETE SET NULL;

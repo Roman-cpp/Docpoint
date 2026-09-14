@@ -1,0 +1,312 @@
+/* ═══════════════ RENDERED MARKDOWN ═══════════════
+   Typography of a rendered markdown document. Moved here from the markdown
+   viewer so every place showing a document reads the same. */
+.rendered {
+	color: var(--ink);
+	/* Long URLs, ids and inline code must wrap rather than widen the document. */
+	overflow-wrap: break-word;
+}
+
+.rendered h1 {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 40px;
+	letter-spacing: -0.8px;
+	line-height: 1.1;
+	color: var(--ink);
+	margin: 0 0 18px;
+	scroll-margin-top: 80px;
+}
+.rendered h2 {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 27px;
+	letter-spacing: -0.4px;
+	line-height: 1.2;
+	color: var(--ink);
+	margin: 44px 0 14px;
+	padding-bottom: 9px;
+	border-bottom: 1px solid var(--border);
+	scroll-margin-top: 80px;
+}
+.rendered h3 {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 20px;
+	letter-spacing: -0.2px;
+	line-height: 1.25;
+	color: var(--ink);
+	margin: 30px 0 10px;
+	scroll-margin-top: 80px;
+}
+.rendered h4 {
+	font-family: var(--font-sans);
+	font-weight: 600;
+	font-size: 13px;
+	letter-spacing: 0.3px;
+	color: var(--ink);
+	margin: 24px 0 8px;
+	scroll-margin-top: 80px;
+}
+.rendered p {
+	font-family: var(--font-sans);
+	font-size: 15px;
+	line-height: 1.75;
+	color: var(--ink-mid);
+	margin: 0 0 16px;
+}
+.rendered a {
+	color: var(--ink);
+	text-decoration: none;
+	border-bottom: 1px solid var(--border-h);
+	transition: border-color var(--t-base, 0.15s);
+}
+.rendered a:hover {
+	border-bottom-color: var(--ink);
+}
+.rendered strong {
+	font-weight: 600;
+	color: var(--ink);
+}
+.rendered em {
+	font-style: italic;
+}
+.rendered del {
+	color: var(--ink-low);
+}
+
+.rendered ul,
+.rendered ol {
+	margin: 0 0 16px;
+	padding-left: 24px;
+	color: var(--ink-mid);
+}
+.rendered li {
+	font-size: 15px;
+	line-height: 1.7;
+	margin-bottom: 6px;
+}
+.rendered li::marker {
+	color: var(--ink-low);
+}
+.rendered ul ul,
+.rendered ol ol,
+.rendered ul ol,
+.rendered ol ul {
+	margin: 6px 0 6px;
+}
+
+/* Task list (remark-gfm output) */
+.rendered li.task-list-item {
+	list-style: none;
+	margin-left: -20px;
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+}
+.rendered li.task-list-item input[type="checkbox"] {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 15px;
+	height: 15px;
+	border: 1.5px solid var(--border-h);
+	border-radius: 4px;
+	flex-shrink: 0;
+	margin: 3px 0 0;
+	position: relative;
+	cursor: default;
+}
+.rendered li.task-list-item input[type="checkbox"]:checked {
+	background: var(--green, #3f6b4a);
+	border-color: var(--green, #3f6b4a);
+}
+.rendered li.task-list-item input[type="checkbox"]:checked::after {
+	content: "";
+	position: absolute;
+	left: 4px;
+	top: 1px;
+	width: 4px;
+	height: 8px;
+	border: solid var(--surface);
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.rendered blockquote {
+	margin: 0 0 18px;
+	padding: 2px 18px;
+	border-left: 3px solid var(--border-h);
+	color: var(--ink-mid);
+	font-family: var(--font-serif);
+	font-size: 16px;
+	font-style: italic;
+	line-height: 1.6;
+}
+.rendered blockquote p {
+	font-family: var(--font-serif);
+	font-style: italic;
+	color: var(--ink-mid);
+}
+
+/* Inline code */
+.inlineCode {
+	font-family: var(--font-mono);
+	font-size: 13px;
+	background: var(--code-bg);
+	color: var(--code-ink);
+	padding: 1px 6px;
+	border-radius: 4px;
+	border: 1px solid var(--border);
+}
+
+/* Code block */
+.pre {
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+	margin: 0 0 18px;
+}
+.preHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 14px;
+	background: var(--cat-bg);
+	border-bottom: 1px solid var(--border);
+}
+.preLang {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.preCopy {
+	font-size: 11px;
+	color: var(--ink-low);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-family: var(--font-sans);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 7px;
+	border-radius: 5px;
+}
+.preCopy:hover {
+	background: var(--border);
+	color: var(--ink);
+}
+.pre pre {
+	margin: 0;
+	padding: 14px 16px;
+	overflow-x: auto;
+}
+.pre code {
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	line-height: 1.75;
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--code-ink);
+	white-space: pre;
+}
+
+/* Shiki highlighting
+   `defaultColor: false` makes Shiki write only `--shiki-light` / `--shiki-dark`
+   custom properties into its inline styles instead of a fixed colour, so the
+   theme is picked here — switching it costs no re-render and no second
+   highlighting pass. `:global` is required: `.shiki` is Shiki's class, not this
+   module's. The block's background stays on the `.pre` frame above so the
+   document keeps the project's own surface; only token colours come from the
+   theme. These rules must follow `.pre code` — same specificity, order wins. */
+.rendered :global(.shiki),
+.rendered :global(.shiki) span {
+	color: var(--shiki-light);
+	background: none;
+}
+
+/* Dark tokens are opt-in the same way as the rest of the palette: `.dark` on
+   any ancestor (see shared/styles/tokens.css). */
+:global(.dark) .rendered :global(.shiki),
+:global(.dark) .rendered :global(.shiki) span {
+	color: var(--shiki-dark);
+}
+
+/* Placeholder while the renderer's chunk loads — holds the column open so the
+   surrounding layout does not jump when the document arrives. */
+.loading {
+	min-height: 240px;
+}
+
+/* Tables
+   The frame (border, radius) lives on the wrapper so a table too wide for the
+   document scrolls horizontally inside it instead of spilling over the edge. */
+.tableWrap {
+	max-width: 100%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	margin: 0 0 18px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+}
+.tableWrap::-webkit-scrollbar {
+	height: 6px;
+}
+.tableWrap::-webkit-scrollbar-thumb {
+	background: var(--border-h);
+	border-radius: 3px;
+}
+.tableWrap::-webkit-scrollbar-track {
+	background: transparent;
+}
+.rendered table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0;
+	font-size: 13.5px;
+}
+.rendered thead {
+	background: var(--cat-bg);
+}
+.rendered th {
+	text-align: left;
+	padding: 9px 14px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	border-bottom: 1px solid var(--border);
+}
+.rendered td {
+	padding: 9px 14px;
+	border-bottom: 1px solid var(--border);
+	color: var(--ink-mid);
+	line-height: 1.55;
+}
+.rendered tr:last-child td {
+	border-bottom: none;
+}
+.rendered tbody tr:hover {
+	background: var(--bg);
+}
+
+/* Horizontal rule */
+.rendered hr {
+	border: none;
+	height: 1px;
+	background: var(--border);
+	margin: 32px 0;
+}
+
+/* Images */
+.rendered img {
+	max-width: 100%;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	margin: 0 0 18px;
+}

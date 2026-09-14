@@ -1,0 +1,68 @@
+{
+	"version": 1,
+	"erd": {
+		"name": "Биллинг",
+		"desc": "Аккаунты, их подписки и платежи по ним."
+	},
+	"tables": [
+		{
+			"name": "accounts",
+			"desc": "Аккаунт клиента.",
+			"columns": [
+				{ "name": "id", "type": "uuid", "pk": true },
+				{
+					"name": "email",
+					"type": "string",
+					"req": true,
+					"example": "billing@example.com"
+				},
+				{
+					"name": "status",
+					"type": "string",
+					"req": true,
+					"enum": ["active", "suspended", "closed"]
+				},
+				{
+					"name": "archived_at",
+					"type": "datetime",
+					"nullable": true,
+					"note": "Заполняется при закрытии аккаунта."
+				}
+			]
+		},
+		{
+			"name": "subscriptions",
+			"desc": "Подписка аккаунта на тариф.",
+			"columns": [
+				{ "name": "id", "type": "uuid", "pk": true },
+				{ "name": "account_id", "type": "uuid", "req": true },
+				{
+					"name": "plan",
+					"type": "string",
+					"req": true,
+					"enum": [
+						{ "val": "free", "desc": "Бесплатный тариф, без счетов." },
+						{ "val": "pro", "desc": "Ежемесячная оплата." },
+						{ "val": "enterprise", "desc": "Договорная цена." }
+					]
+				},
+				{ "name": "renews_at", "type": "datetime", "nullable": true }
+			]
+		},
+		{
+			"name": "payments",
+			"desc": "Списание по подписке.",
+			"columns": [
+				{ "name": "id", "type": "uuid", "pk": true },
+				{ "name": "subscription_id", "type": "uuid", "req": true },
+				{ "name": "amount", "type": "numeric(12,2)", "req": true },
+				{ "name": "currency", "type": "string", "req": true, "example": "EUR" },
+				{ "name": "paid_at", "type": "datetime", "nullable": true }
+			]
+		}
+	],
+	"relations": [
+		{ "from": "accounts.id", "to": "subscriptions.account_id" },
+		{ "from": "subscriptions.id", "to": "payments.subscription_id" }
+	]
+}

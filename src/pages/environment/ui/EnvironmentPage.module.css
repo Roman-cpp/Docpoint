@@ -1,0 +1,665 @@
+/* ═══════════════════════════════════════════════════════════════
+   ENVIRONMENT — конфигурация окружения (refined native mockup)
+   ═══════════════════════════════════════════════════════════════ */
+
+.envFrame {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	font-size: var(--fs-15);
+}
+
+/* ─── Shell layout ───────────────────────────────────────────── */
+.shell {
+	flex: 1;
+	display: grid;
+	grid-template-columns: 260px 1fr;
+	min-height: 0;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────── */
+.envSb {
+	background: var(--surface);
+	border-right: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	padding: 18px 14px 16px;
+	gap: 14px;
+}
+.envSbH {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.envSbHTitle {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.7px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.envSbHAdd {
+	width: 22px;
+	height: 22px;
+	background: transparent;
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	color: var(--ink-mid);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition:
+		border-color var(--t-base),
+		color var(--t-base);
+}
+.envSbHAdd:hover {
+	border-color: var(--border-h);
+	color: var(--ink);
+}
+.envSbList {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.envSbItem {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border: 1px solid transparent;
+	border-radius: var(--r-md);
+	background: transparent;
+	color: var(--ink-mid);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+}
+.envSbItem:hover {
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+.envSbItem.active {
+	background: var(--cat-bg);
+	border-color: var(--border);
+	color: var(--ink);
+}
+.envSbItemDot {
+	width: 8px;
+	height: 8px;
+	border-radius: var(--r-circle);
+	background: var(--ink-low);
+}
+.envSbItemTag {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--ink-low);
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xs);
+	padding: 1px 6px;
+	letter-spacing: 0.3px;
+}
+.envSbFoot {
+	margin-top: auto;
+	font-size: 11px;
+	color: var(--ink-low);
+	line-height: var(--lh-snug);
+}
+.envSbEmpty {
+	font-size: 12px;
+	color: var(--ink-low);
+	padding: 10px 10px;
+	line-height: var(--lh-snug);
+}
+.envSbEmptyLink {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	color: var(--ink);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+/* ─── Page ───────────────────────────────────────────────────── */
+.envPage {
+	min-width: 0;
+	padding: 32px 40px 48px;
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+	overflow: auto;
+}
+
+/* ─── Hero ───────────────────────────────────────────────────── */
+.envHero {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 18px;
+	padding: 22px 24px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+}
+.envHeroMark {
+	width: 38px;
+	height: 38px;
+	border-radius: var(--r-circle);
+	background: var(--ink-low);
+	box-shadow: inset 0 0 0 4px var(--surface);
+	border: 1px solid var(--border);
+}
+.envHeroText {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+.envHeroName {
+	font-family: var(--font-serif);
+	font-size: 30px;
+	font-weight: 400;
+	letter-spacing: -0.5px;
+	line-height: 1;
+	color: var(--ink);
+	margin: 0;
+	display: inline-flex;
+	align-items: baseline;
+	gap: 12px;
+}
+.envHeroNameTag {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	font-weight: 400;
+	letter-spacing: 0.3px;
+	color: var(--ink-low);
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xs);
+	padding: 2px 7px;
+}
+.envHeroMeta {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--ink-low);
+}
+.envHeroMeta .sep {
+	color: var(--border-h);
+}
+.envHeroActions {
+	display: inline-flex;
+	gap: 8px;
+	align-items: center;
+}
+
+/* ─── Token pill ─────────────────────────────────────────────── */
+.envTokenPill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--font-sans);
+	font-size: 11px;
+	font-weight: 500;
+	padding: 3px 9px 3px 7px;
+	border-radius: var(--r-pill);
+	border: 1px solid transparent;
+	color: var(--ink-mid);
+	background: var(--cat-bg);
+	border-color: var(--border);
+}
+.envTokenPill .dot {
+	width: 6px;
+	height: 6px;
+	border-radius: var(--r-circle);
+	background: currentColor;
+}
+.envTokenPill.warn {
+	color: var(--amber);
+	background: var(--amber-bg);
+	border-color: var(--amber-border);
+}
+
+/* ─── Session cookies ────────────────────────────────────────── */
+.envCookieList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	min-height: 30px;
+}
+.envCookieChip {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	padding: 3px 8px;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--border);
+	background: var(--cat-bg);
+	color: var(--ink-mid);
+}
+.envCookieEmpty {
+	font-family: var(--font-sans);
+	font-size: 11px;
+	color: var(--ink-low);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.envBtn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1;
+	padding: 10px 14px;
+	border-radius: var(--r-md);
+	border: 1px solid transparent;
+	background: var(--surface);
+	color: var(--ink);
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+}
+.envBtn:hover {
+	background: var(--cat-bg);
+}
+.envBtn svg {
+	flex-shrink: 0;
+	display: block;
+}
+.envBtnPrimary {
+	background: var(--ink);
+	color: var(--surface);
+	border-color: var(--ink);
+}
+.envBtnPrimary:hover {
+	background: #000;
+	border-color: #000;
+}
+.envBtnGhost {
+	background: var(--surface);
+	border-color: var(--border);
+	color: var(--ink);
+}
+.envBtnGhost:hover {
+	border-color: var(--border-h);
+	background: var(--surface);
+}
+.envBtnDanger {
+	background: var(--surface);
+	border-color: var(--red-border);
+	color: var(--red);
+}
+.envBtnDanger:hover {
+	background: var(--red-bg);
+}
+
+.envIconbtn {
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	color: var(--ink-mid);
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+}
+.envIconbtn:hover {
+	background: var(--cat-bg);
+	border-color: var(--border);
+	color: var(--ink);
+}
+
+/* ─── Page body / sections ───────────────────────────────────── */
+.envPageBody {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+.envSection {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	padding: 20px 24px 22px;
+}
+.envSectionHdr {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--border);
+	margin-bottom: 16px;
+}
+.envSectionHdrLeft {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.envSectionH {
+	font-family: var(--font-serif);
+	font-size: 19px;
+	font-weight: 400;
+	letter-spacing: -0.2px;
+	color: var(--ink);
+	margin: 0;
+	line-height: 1.15;
+}
+.envSectionSub {
+	font-size: 12px;
+	color: var(--ink-low);
+}
+.envSectionSub code {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	background: var(--code-bg);
+	padding: 1px 5px;
+	border-radius: var(--r-xs);
+	border: 1px solid var(--border);
+	color: var(--code-ink);
+}
+.envSectionBody {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* ─── Fields ─────────────────────────────────────────────────── */
+.envField {
+	display: grid;
+	grid-template-columns: 220px 1fr;
+	gap: 24px;
+	align-items: center;
+	padding: 6px 0;
+}
+.envFieldLbl {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--ink);
+}
+.envFieldLbl .req {
+	color: var(--red);
+	margin-left: 2px;
+}
+.envFieldHelp {
+	font-size: 11.5px;
+	color: var(--ink-low);
+	margin-top: 2px;
+	line-height: var(--lh-snug);
+}
+
+.envInput,
+.envTextarea {
+	width: 100%;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	padding: 8px 12px;
+	transition:
+		border-color var(--t-base),
+		box-shadow var(--t-base);
+}
+.envInput.sans {
+	font-family: var(--font-sans);
+}
+.envInput:focus,
+.envTextarea:focus {
+	outline: none;
+	border-color: var(--ink-mid);
+	box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.06);
+}
+.envTextarea {
+	min-height: 80px;
+	resize: vertical;
+	line-height: var(--lh-snug);
+}
+
+/* ─── Select with method colour ──────────────────────────────── */
+.envSelect {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.3px;
+	border-radius: var(--r-md);
+	border: 1px solid var(--border);
+	background: var(--surface);
+	padding-right: 8px;
+}
+.envSelect select {
+	font: inherit;
+	color: inherit;
+	background: transparent;
+	border: none;
+	padding: 7px 10px;
+	appearance: none;
+	cursor: pointer;
+	min-width: 80px;
+}
+.envSelect select:focus {
+	outline: none;
+}
+.envSelect.method.get {
+	color: var(--get);
+	background: var(--get-bg);
+	border-color: var(--get-bg);
+}
+.envSelect.method.post {
+	color: var(--post);
+	background: var(--post-bg);
+	border-color: var(--post-bg);
+}
+.envSelect.method.put {
+	color: var(--put);
+	background: var(--put-bg);
+	border-color: var(--put-bg);
+}
+.envSelect.method.patch {
+	color: var(--patch);
+	background: var(--patch-bg);
+	border-color: var(--patch-bg);
+}
+.envSelect.method.delete {
+	color: var(--delete);
+	background: var(--delete-bg);
+	border-color: var(--delete-bg);
+}
+
+/* ─── Final URL preview ──────────────────────────────────────── */
+.envField code {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--code-ink);
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	padding: 7px 12px;
+	display: inline-block;
+}
+
+/* ─── Auth actions footer ────────────────────────────────────── */
+.envAuthFoot {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding-top: 6px;
+}
+.envAuthFootMeta {
+	margin-left: auto;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--ink-low);
+}
+
+/* ─── Variables table ────────────────────────────────────────── */
+.envVars {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	overflow: hidden;
+}
+.envVarsRow {
+	display: grid;
+	grid-template-columns: 24px 1fr 1.4fr 110px 72px;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	font-size: 13px;
+}
+.envVarsRow:last-child {
+	border-bottom: none;
+}
+.envVarsRow.head {
+	background: var(--cat-bg);
+	font-size: 10.5px;
+	font-weight: 500;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	padding: 8px 14px;
+}
+.envVarsGrip {
+	color: var(--ink-low);
+	display: inline-flex;
+	align-items: center;
+	cursor: grab;
+}
+.envVarsGrip:hover {
+	color: var(--ink-mid);
+}
+.envVarsName {
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	color: var(--ink);
+}
+.envVarsName .pre {
+	color: var(--ink-low);
+}
+.envVarsVal {
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	color: var(--ink-mid);
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.envVarsVal.secret {
+	color: var(--ink-low);
+}
+.envVarsVal .masked {
+	letter-spacing: 2px;
+}
+.envVarsType {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	color: var(--ink-mid);
+}
+.envVarsTypeDot {
+	width: 7px;
+	height: 7px;
+	border-radius: var(--r-circle);
+	background: var(--ink-low);
+}
+.envVarsType.string .envVarsTypeDot {
+	background: var(--green);
+}
+.envVarsType.number .envVarsTypeDot {
+	background: var(--blue);
+}
+.envVarsType.secret .envVarsTypeDot {
+	background: var(--red);
+}
+.envVarsActions {
+	display: inline-flex;
+	gap: 4px;
+	justify-content: flex-end;
+}
+.envVarsEmpty {
+	font-size: 13px;
+	color: var(--ink-low);
+	border: 1px dashed var(--border);
+	border-radius: var(--r-lg);
+	padding: 18px 16px;
+	text-align: center;
+}
+.envVarsEmptyLink {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	color: var(--ink);
+	text-decoration: underline;
+	cursor: pointer;
+}
+.varEmpty {
+	color: var(--ink-low);
+	font-style: italic;
+}
+
+.envPlaceholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	flex: 1;
+	padding: 80px 20px;
+	color: var(--ink-low);
+	text-align: center;
+}
+.envPlaceholderTitle {
+	font-family: var(--font-serif);
+	font-size: 22px;
+	color: var(--ink);
+}
+.envPlaceholderSub {
+	font-size: 13px;
+	color: var(--ink-low);
+}
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+.envFoot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-low);
+	padding-top: 12px;
+}

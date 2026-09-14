@@ -1,0 +1,7 @@
+/* Строка валидации под редактором полей. */
+.problem {
+	margin: 10px 0 0;
+	font-size: var(--fs-12);
+	line-height: var(--lh-normal);
+	color: var(--red);
+}

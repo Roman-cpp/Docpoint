@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════
+   СТРАНИЦА ПЛАТФОРМЫ — шапка, сайдбар платформ и проводник.
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrapper {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	font-size: var(--fs-14);
+}
+
+.shell {
+	flex: 1;
+	display: flex;
+	overflow: hidden;
+}
+
+.main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 16px 16px 28px;
+	gap: 22px;
+	overflow: hidden;
+}
+@media (max-width: 900px) {
+	.main {
+		padding: 20px 14px;
+	}
+}
+
+/* ═══════════════ HERO ═══════════════ */
+.hero {
+	flex-shrink: 0;
+}
+.eyebrow {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 1.5px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+	margin-bottom: 8px;
+}
+.title {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	font-size: 28px;
+	line-height: 1.15;
+	color: var(--ink);
+	margin: 0;
+}
+.sub {
+	margin: 8px 0 0;
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--ink-mid);
+	max-width: 70ch;
+}
+
+/* ═══════════════ EXPLORER ═══════════════ */
+/* Проводник занимает всё оставшееся место: прокручивается его содержимое, а не
+   страница целиком. */
+.explorer {
+	flex: 1;
+	min-height: 0;
+}

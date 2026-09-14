@@ -1,0 +1,229 @@
+/* ─── Top nav ────────────────────────────────────────────────── */
+.pfNav {
+	display: flex;
+	align-items: center;
+	gap: 32px;
+	padding: 14px 28px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+}
+.pfNavBrand {
+	font-family: var(--font-serif);
+	font-size: 18px;
+	letter-spacing: -0.2px;
+	color: var(--ink);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.pfNavBrandLink {
+	text-decoration: none;
+	color: inherit;
+}
+.pfNavSep {
+	width: 1px;
+	height: 16px;
+	background: var(--border);
+}
+.pfNavSection {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: var(--ink-low);
+}
+.pfNavEnv {
+	display: inline-flex;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	padding: 3px;
+	gap: 2px;
+}
+.pfNavEnvEmpty {
+	padding: 5px 10px;
+	font-size: 12px;
+	color: var(--ink-low);
+}
+.pfEnvBtn {
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	padding: 5px 10px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		color var(--t-base);
+}
+.pfEnvBtn:hover {
+	background: var(--cat-bg);
+}
+.pfEnvBtn.active {
+	background: var(--surface);
+	color: var(--ink);
+	box-shadow: var(--shadow-xs);
+}
+.pfEnvDot {
+	width: 7px;
+	height: 7px;
+	border-radius: var(--r-circle);
+	background: var(--ink-low);
+}
+.pfNavLinks {
+	display: flex;
+	align-items: center;
+	gap: 22px;
+	margin-left: auto;
+}
+.pfNavLink {
+	font-family: inherit;
+	font-size: 13px;
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	padding: 0;
+	text-decoration: none;
+	cursor: pointer;
+	transition: color var(--t-base);
+}
+.pfNavLink:hover {
+	color: var(--ink);
+}
+.pfNavLink.active {
+	color: var(--ink);
+	font-weight: 500;
+}
+.pfNavMenu {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+.pfNavDropdown {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	margin-top: 8px;
+	min-width: 180px;
+	padding: 4px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	box-shadow: var(--shadow-popover);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(-4px);
+	transition:
+		opacity var(--t-base),
+		transform var(--t-base),
+		visibility var(--t-base);
+	z-index: 20;
+}
+.pfNavDropdown.open {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+}
+/* Для крайнего правого пункта: иначе список уходит за край окна. */
+.pfNavDropdownEnd {
+	left: auto;
+	right: 0;
+}
+.pfNavDropdownItem {
+	display: block;
+	width: 100%;
+	padding: 7px 10px;
+	font-family: inherit;
+	font-size: 13px;
+	text-align: left;
+	color: var(--ink-mid);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		color var(--t-base),
+		background var(--t-base);
+}
+.pfNavDropdownItem:hover {
+	color: var(--ink);
+	background: var(--cat-bg);
+}
+/* Кнопка-триггер выпадающего списка: та же ссылка плюс шеврон. */
+.pfNavTrigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+.pfNavTriggerIcon {
+	transition: transform var(--t-base);
+}
+.pfNavTrigger.open .pfNavTriggerIcon {
+	transform: rotate(180deg);
+}
+/* Строка списка: ссылка занимает всю ширину, кнопка окна прижата справа. */
+.pfNavDropdownRow {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+.pfNavDropdownRow .pfNavDropdownItem {
+	flex: 1;
+	min-width: 0;
+}
+.pfNavDropdownWindowBtn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	padding: 6px;
+	color: var(--ink-low);
+	background: transparent;
+	border: none;
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		background var(--t-base);
+}
+.pfNavDropdownWindowBtn:hover {
+	color: var(--ink);
+	background: var(--cat-bg);
+}
+.pfNavUser {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 10px 5px 5px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-pill);
+	cursor: pointer;
+	transition: border-color var(--t-base);
+}
+.pfNavUser:hover {
+	border-color: var(--border-h);
+}
+.pfNavUserAvatar {
+	width: 22px;
+	height: 22px;
+	border-radius: var(--r-circle);
+	background: var(--ink);
+	color: var(--surface);
+	font-size: 10px;
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.pfNavUserName {
+	font-size: 12.5px;
+	color: var(--ink);
+}
