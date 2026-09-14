@@ -27,4 +27,4 @@ wasm/pkg
 *.sln
 *.sw?
 
-docs/architecture/.
+docs/architecture
