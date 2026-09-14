@@ -68,12 +68,19 @@ bun run tauri dev
 `wasm/`. Tauri поднимает Vite на `http://localhost:1420`, собирает Rust-часть и
 открывает окно приложения. Миграции базы применяются при старте.
 
-На Linux с WebKitGTK окно может открыться пустым или с артефактами. Тогда
-отключите DMA-BUF рендерер:
+На Linux с WebKitGTK окно может открыться пустым или с артефактами: DMABUF-путь
+рендерера не работает с проприетарным драйвером NVIDIA. Приложение определяет
+такой драйвер само и выставляет `WEBKIT_DISABLE_DMABUF_RENDERER=1` до старта
+webview — см. `src-tauri/src/webkit.rs`, в логе это строка «драйвер NVIDIA».
+
+Если окно всё равно пустое на другой видеокарте, отключите рендерер вручную:
 
 ```bash
 WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev
 ```
+
+Заданная снаружи переменная имеет приоритет, поэтому обратно DMABUF включается
+пустым значением: `WEBKIT_DISABLE_DMABUF_RENDERER= bun run tauri dev`.
 
 ### Где лежат данные
 

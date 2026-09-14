@@ -5,6 +5,7 @@ mod logging;
 mod repository;
 mod service;
 mod state;
+mod webkit;
 
 use commands::{
     authenticate_environment, clear_environment_session, create_endpoint, create_endpoint_request,
@@ -36,10 +37,14 @@ pub fn run() {
     // one up front keeps TLS deterministic regardless of the dependency graph.
     let _ = rustls::crypto::ring::default_provider().install_default();
 
+    // Строго до Tauri: WebKit читает переменные окружения, когда поднимает
+    // webview, и позже переключить рендерер уже нельзя.
+    let dmabuf_disabled = webkit::disable_dmabuf_renderer_if_needed();
+
     tauri::Builder::default()
         .plugin(logging::plugin())
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
+        .setup(move |app| {
             logging::install_panic_hook();
 
             // Первая запись сессии — то, с чего начинается разбор любого
@@ -54,6 +59,9 @@ pub fn run() {
             );
             if let Ok(log_dir) = app.path().app_log_dir() {
                 log::info!("логи: {}", log_dir.display());
+            }
+            if dmabuf_disabled {
+                log::info!("драйвер NVIDIA: DMABUF-рендерер WebKit отключён");
             }
 
             let app_dir = app.path().app_data_dir()?;
