@@ -43,6 +43,15 @@ impl NodePayload {
         }
     }
 
+    /// Адрес doc-ws, если нагрузка — WebSocket-документ. Нужен импорту на
+    /// ветке обновления, где узел не создаётся.
+    pub fn doc_ws_url(&self) -> Option<&str> {
+        match self {
+            Self::DocWs { url } => Some(url),
+            _ => None,
+        }
+    }
+
     pub fn kind(&self) -> NodeKind {
         match self {
             Self::Catalog => NodeKind::Catalog,

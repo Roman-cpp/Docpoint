@@ -1,6 +1,7 @@
 {
 	"version": 1,
 	"websocket": {
+		"id": "c1d0a7e4-58b3-4a2f-9d61-7b0c3e5a2f18",
 		"name": "Kline Stream",
 		"url": "wss://example.com/ws"
 	},

@@ -83,17 +83,11 @@ pub async fn import_doc(
 mod tests {
     use super::*;
     use crate::domain::catalog::dto::{NewNode, NodePayload};
-    use crate::infrastructure::http_client::ClientPool;
     use crate::repository::sqlite::test_db;
-    use dashmap::DashMap;
     use serde_json::json;
     use sqlx::{Executor, SqlitePool};
-    use std::sync::Mutex;
 
-    /// Состояние приложения поверх тестовой базы. Импорту нужна только база, но
-    /// узел он заводит общим путём создания, а тому нужен весь `AppState`.
-    /// Каталоги отдаются временные: doc-api в них не пишет, но существовать
-    /// они обязаны.
+    /// Платформа, в каталоге которой идёт импорт.
     async fn app() -> (AppState, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
         let db = test_db::migrated().await;
@@ -101,16 +95,7 @@ mod tests {
             .await
             .unwrap();
 
-        let state = AppState {
-            db,
-            selected_environment_id: Mutex::new(None),
-            content_dir: dir.path().join("content"),
-            files_dir: dir.path().join("files"),
-            ws_conns: DashMap::new(),
-            http_clients: ClientPool::new(),
-        };
-
-        (state, dir)
+        (AppState::for_tests(db, dir.path()), dir)
     }
 
     /// Заголовок файла глазами бэкенда: id из файла плюс имя и префикс.

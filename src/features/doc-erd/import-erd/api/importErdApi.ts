@@ -19,17 +19,29 @@ export interface ImportErdRelationDTO {
 	toColumn: string;
 }
 
+/** Итог импорта: диаграмму выбрал сам файл, поэтому в отчёте есть и она. */
+export interface ImportErdReport {
+	docId: string;
+	docName: string;
+	/** `true` — диаграммы с таким id не было, и она заведена этим импортом. */
+	created: boolean;
+	tablesAdded: number;
+	tablesUpdated: number;
+	relationsAdded: number;
+}
+
 /**
- * Создаёт узел-диаграмму из файла и заливает в него таблицы со связями.
+ * Заводит или дописывает диаграмму из файла вместе с таблицами и связями.
  *
  * Одной командой, а не циклом создания сущностей: id таблиц выдаёт база, и
  * сопоставлять их с именами, на которые ссылаются связи, должна та же сторона,
- * что их выдала. Возвращает id созданного узла.
+ * что их выдала. Что делать — создавать диаграмму или дописывать, — решает
+ * `node.id`, приехавший из файла.
  */
 export function importErdApi(
 	node: CreateNodeDTO,
 	tables: ImportErdTableDTO[],
 	relations: ImportErdRelationDTO[],
-): Promise<string> {
+): Promise<ImportErdReport> {
 	return invoke("import_erd", { node, tables, relations });
 }

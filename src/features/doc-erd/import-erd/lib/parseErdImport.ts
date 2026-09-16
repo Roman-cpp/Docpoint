@@ -200,6 +200,7 @@ export function parseErdImport(raw: string): ImportErdPayload {
 	if (!isRecord(erd))
 		throw new Error("Нет блока erd — из него берётся имя диаграммы");
 
+	const id = text(erd.id);
 	const name = text(erd.name);
 	if (!name) throw new Error("erd.name пуст — диаграмме нужно имя");
 
@@ -221,7 +222,7 @@ export function parseErdImport(raw: string): ImportErdPayload {
 
 	return {
 		version: 1,
-		erd: { name },
+		erd: id ? { id, name } : { name },
 		tables,
 		relations: parseRelations(json.relations, tables),
 	};

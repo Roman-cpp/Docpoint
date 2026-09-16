@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/core/toast";
-import { catalogKeys, createNodeApi } from "@/entities/catalog";
+import { type CreateNodeDTO, catalogKeys } from "@/entities/catalog";
+import { docWebsocketKeys, websocketMessageKeys } from "@/entities/websocket";
 import {
-	createWebsocketMessageApi,
-	docWebsocketKeys,
-} from "@/entities/websocket";
+	type ImportWebsocketReport,
+	importWebsocketApi,
+} from "../api/importWebsocketApi";
 import type { ImportWebsocketPayload } from "../lib/parseWebsocketImport";
 
 /** Куда положить импортируемый сокет. */
@@ -13,44 +14,56 @@ export interface ImportWebsocketTarget {
 	parentId: string | null;
 }
 
+/** Отчёт словами: сокет выбирает файл, а не пользователь, поэтому в тосте он
+ *  назван по имени — так сразу видно, если файл прилетел не туда. */
+const describe = (report: ImportWebsocketReport): string => {
+	const changes = [
+		report.messagesAdded && `добавлено сообщений: ${report.messagesAdded}`,
+		report.messagesUpdated && `обновлено: ${report.messagesUpdated}`,
+	].filter(Boolean);
+
+	const what =
+		changes.length > 0 ? changes.join(", ") : "сообщений в файле нет";
+
+	return `«${report.docName}» — ${what}`;
+};
+
 /**
- * Импорт WebSocket-документа в открытый каталог: заводит узел дерева и заливает
- * в него примеры сообщений из файла.
+ * Импорт WebSocket-документа в открытый каталог.
+ *
+ * Сокет выбирает сам файл — по своему `id`: нет такого сокета, он создаётся в
+ * открытом каталоге; есть — файл дописывается в него.
  */
 export const useImportWebsocket = (target: ImportWebsocketTarget) => {
 	const queryClient = useQueryClient();
 
 	const importWebsocket = useMutation({
-		mutationFn: async (payload: ImportWebsocketPayload) => {
-			const node = await createNodeApi({
+		mutationFn: (payload: ImportWebsocketPayload) => {
+			const node: CreateNodeDTO = {
+				id: payload.websocket.id ?? null,
 				platformId: target.platformId,
 				parentId: target.parentId,
 				name: payload.websocket.name,
 				payload: { kind: "docWs", url: payload.websocket.url },
-			});
+			};
 
-			// Массовой команды у бэкенда нет — сообщения создаются по одному.
-			// Порядок вставки не важен: список читается `ORDER BY name`.
-			await Promise.all(
-				payload.messages.map((message) =>
-					createWebsocketMessageApi({
-						websocket_id: node.id,
-						name: message.name,
-						payload: message.payload,
-						desc: message.desc ?? "",
-					}),
-				),
+			return importWebsocketApi(
+				node,
+				payload.messages.map((message) => ({
+					name: message.name,
+					payload: message.payload,
+					desc: message.desc ?? "",
+				})),
 			);
-
-			return { websocketId: node.id, imported: payload.messages.length };
 		},
-		onSuccess: ({ imported }) => {
+		onSuccess: (report) => {
 			toast({
-				title: "OK",
-				description: `WebSocket импортирован, сообщений: ${imported}`,
+				title: report.created ? "Сокет создан" : "Сокет обновлён",
+				description: describe(report),
 			});
-			queryClient.invalidateQueries({ queryKey: docWebsocketKeys.all });
 			queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+			queryClient.invalidateQueries({ queryKey: docWebsocketKeys.all });
+			queryClient.invalidateQueries({ queryKey: websocketMessageKeys.all });
 		},
 		onError: (error: Error) => {
 			toast({ title: "Ошибка", description: error.message, variant: "error" });

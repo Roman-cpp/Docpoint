@@ -161,10 +161,10 @@ export const ImportErdFromDbModal: FC<ImportErdFromDbModalProps> = ({
 		});
 
 		try {
-			const { erdId } = await importErdAsync(payload);
+			const { docId } = await importErdAsync(payload);
 			reset();
 			onOpenChange(false);
-			onImported?.(erdId);
+			onImported?.(docId);
 		} catch {
 			// Мутация объясняет свои ошибки сама — модалка остаётся открытой,
 			// чтобы выбор таблиц не пришлось делать заново.
