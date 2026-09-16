@@ -47,13 +47,7 @@ export interface DbRelation {
  * то, чего холст не рисует, и предпросмотр обязан это показать.
  */
 export interface DbNotice {
-	kind:
-		| "selfRef"
-		| "composite"
-		| "duplicate"
-		| "externalRef"
-		| "empty"
-		| "large";
+	kind: "composite" | "duplicate" | "externalRef" | "empty" | "large";
 	message: string;
 }
 

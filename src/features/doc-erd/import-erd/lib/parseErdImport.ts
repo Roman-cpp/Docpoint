@@ -150,9 +150,12 @@ const parseRelations = (
 		resolve(fromTable, fromColumn, `${where}, from`);
 		resolve(toTable, toColumn, `${where}, to`);
 
-		if (fromTable === toTable)
+		// Таблица, ссылающаяся на саму себя (`parent_id → id`), — законная
+		// связь, холст рисует её петлёй. Бессмысленна только связь колонки с
+		// самой собой: она ничего не описывает и ничего не нарисует.
+		if (fromTable === toTable && fromColumn === toColumn)
 			throw new Error(
-				`${where}: «${fromTable}» ссылается сама на себя — холст пока не умеет рисовать такие связи`,
+				`${where}: «${fromTable}.${fromColumn}» связана сама с собой — у связи должны быть разные колонки`,
 			);
 
 		// Ключ ненаправленный: та же пара колонок в обратную сторону — не вторая

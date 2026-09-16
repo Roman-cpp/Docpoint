@@ -55,18 +55,6 @@ pub fn to_erd(schema: &DbSchema) -> DbIntrospectDTO {
                 continue;
             }
 
-            if fk.ref_table == table.name {
-                notices.push(DbNoticeDTO {
-                    kind: "selfRef".into(),
-                    message: format!(
-                        "«{}» ссылается сама на себя ({}) — холст пока не рисует такие связи",
-                        table.name,
-                        fk.columns.join(", ")
-                    ),
-                });
-                continue;
-            }
-
             if fk.columns.len() > 1 {
                 notices.push(DbNoticeDTO {
                     kind: "composite".into(),
@@ -220,18 +208,27 @@ mod tests {
     }
 
     #[test]
-    fn a_self_reference_is_dropped_and_explained() {
-        // parent_id → id встречается едва ли не в каждой схеме, а холст такую
-        // связь не рисует — импорт обязан пережить её, а не упасть.
+    fn a_self_reference_becomes_a_relation_like_any_other() {
+        // parent_id → id встречается едва ли не в каждой схеме. Холст рисует
+        // такую связь петлёй, так что прятать её из импорта незачем.
         let erd = to_erd(&schema(vec![table(
             "employees",
             &["id", "manager_id"],
             vec![fk(&["manager_id"], "employees", &["id"])],
         )]));
 
-        assert!(erd.relations.is_empty());
-        assert_eq!(erd.notices.len(), 1);
-        assert_eq!(erd.notices[0].kind, "selfRef");
+        assert_eq!(erd.relations.len(), 1);
+        let rel = &erd.relations[0];
+        assert_eq!(
+            (
+                rel.from_table.as_str(),
+                rel.from_column.as_str(),
+                rel.to_table.as_str(),
+                rel.to_column.as_str()
+            ),
+            ("employees", "id", "employees", "manager_id")
+        );
+        assert!(erd.notices.is_empty(), "предупреждать не о чем");
     }
 
     #[test]

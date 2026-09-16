@@ -611,8 +611,10 @@ impl Scene {
             let (wx, wy) = self.screen_to_world(x, y);
             if let Some((ti, ci)) = self.hit_row(wx, wy) {
                 let to: Endpoint = (ti, ci);
+                // Внутри одной таблицы связь тоже имеет смысл (`parent_id →
+                // id`), бессмысленна только петля колонки на саму себя.
                 let valid =
-                    ti != link.from.0 && !self.relations.iter().any(|r| r.connects(link.from, to));
+                    to != link.from && !self.relations.iter().any(|r| r.connects(link.from, to));
                 if valid {
                     self.relations.push(Relation::new(link.from, to));
                     let ri = self.relations.len() - 1;
@@ -801,6 +803,32 @@ impl Scene {
         let dst = self.tables.get(rel.to.0)?;
         if rel.from.1 >= src.columns.len() || rel.to.1 >= dst.columns.len() {
             return None;
+        }
+
+        // Ссылка таблицы на саму себя (`parent_id → id` есть едва ли не в
+        // каждой схеме) рисуется петлёй у правой грани: обе опоры на одной
+        // стороне, кривая выгибается наружу. Общая ветка ниже тут не годится —
+        // она выбирает стороны по центрам таблиц, а у одной таблицы центр один,
+        // и линия прошла бы сквозь неё саму.
+        if rel.from.0 == rel.to.0 {
+            let x = src.x + src.w;
+            let ay = src.row_y(rel.from.1);
+            let by = src.row_y(rel.to.1);
+            // Вынос растёт с расстоянием между строками: у соседних петля иначе
+            // вырождается в плоский штрих. Потолок держит её в пределах
+            // просвета, который раскладка оставляет между слоями.
+            let dx = ((ay - by).abs() * 0.8).clamp(56.0, 130.0);
+
+            return Some(Curve {
+                ax: x,
+                ay,
+                c1x: x + dx,
+                c2x: x + dx,
+                bx: x,
+                by,
+                src_right: true,
+                dst_right: true,
+            });
         }
 
         let src_right = src.center_x() <= dst.center_x();
@@ -1402,5 +1430,87 @@ impl Scene {
                 to: (5, 0),
             }, // oauth_applications.id -> access_tokens.id
         ];
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Сцена с одной таблицей в трёх колонках — ровно то, что нужно связи
+    /// таблицы с самой собой.
+    fn scene_with_one_table() -> Scene {
+        let mut scene = Scene::new();
+        scene.tables = vec![Table::new(
+            "t1",
+            "catalog_node",
+            vec![
+                Column::new("id".to_string(), true, false),
+                Column::new("name".to_string(), false, false),
+                Column::new("parent_id".to_string(), false, true),
+            ],
+            100.0,
+            200.0,
+        )];
+        scene.tables[0].w = 180.0;
+        scene.relations = vec![Relation::new((0, 0), (0, 2))];
+        scene
+    }
+
+    /// `parent_id → id` есть едва ли не в каждой схеме. Петля рисуется у правой
+    /// грани и выгибается наружу — иначе она прошла бы сквозь саму таблицу.
+    #[test]
+    fn a_self_relation_loops_out_of_the_right_edge() {
+        let scene = scene_with_one_table();
+        let table = &scene.tables[0];
+
+        let curve = scene.rel_curve(&scene.relations[0]).expect("петля не построилась");
+
+        assert_eq!(curve.ax, table.x + table.w, "опора на правой грани");
+        assert_eq!(curve.bx, curve.ax, "обе опоры на одной грани");
+        assert!(curve.c1x > curve.ax && curve.c2x > curve.ax);
+        assert!(curve.src_right && curve.dst_right, "оба конца смотрят вправо");
+        assert_ne!(curve.ay, curve.by, "опоры на разных строках");
+
+        let (mx, _) = curve.point(0.5);
+        assert!(
+            mx > table.x + table.w,
+            "середина петли должна лежать снаружи таблицы: {mx}"
+        );
+    }
+
+    /// Соседние строки не должны схлопывать петлю в плоский штрих.
+    #[test]
+    fn a_loop_between_neighbouring_rows_still_bulges() {
+        let mut scene = scene_with_one_table();
+        scene.relations = vec![Relation::new((0, 0), (0, 1))];
+
+        let curve = scene.rel_curve(&scene.relations[0]).unwrap();
+
+        assert!(
+            curve.c1x - curve.ax >= 56.0,
+            "вынос петли слишком мал: {}",
+            curve.c1x - curve.ax
+        );
+    }
+
+    /// Связь колонки с самой собой ничего не описывает: такую сцена не заводит.
+    #[test]
+    fn a_column_cannot_be_linked_to_itself() {
+        let mut scene = scene_with_one_table();
+        scene.relations.clear();
+        scene.link = Some(LinkState {
+            from: (0, 2),
+            from_right: true,
+            cursor: (0.0, 0.0),
+        });
+
+        // Отпускаем ровно на той же строке, из которой тянули.
+        let table = &scene.tables[0];
+        let (x, y) = (table.x + 10.0, table.row_y(2));
+        scene.on_mouse_up(x * scene.scale + scene.cam_x, y * scene.scale + scene.cam_y);
+
+        assert!(scene.relations.is_empty(), "петля колонки на себя не заводится");
+        assert!(scene.pending_links.is_empty());
     }
 }
