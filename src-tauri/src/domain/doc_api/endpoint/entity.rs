@@ -16,6 +16,34 @@ pub fn path_segments(path: &str) -> Vec<&str> {
     names
 }
 
+/// Проверяет, что каждое описание сегмента ссылается на сегмент из пути.
+///
+/// Описание сегмента, которого в пути нет, — почти всегда опечатка: и панель,
+/// и документация ищут описания по именам из самого пути, так что лишняя
+/// запись просто пропала бы из виду. Проверка вынесена из репозитория, потому
+/// что повторный импорт сверяет весь файл до первой записи в базу.
+pub fn check_path_params(method: &str, path: &str, params: &[ParamDef]) -> Result<(), String> {
+    let segments = path_segments(path);
+    for param in params {
+        if !segments.contains(&param.name.as_str()) {
+            return Err(format!(
+                "эндпоинт {method} {path}: в пути нет сегмента {:?}",
+                param.name
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Найденный в документе эндпоинт: id для записи и группа, в которой он
+/// сейчас лежит. Группу возвращаем вместе с id, чтобы повторный импорт
+/// увидел переезд эндпоинта в другую группу, не ходя за ним второй раз.
+#[derive(Debug)]
+pub struct EndpointRef {
+    pub id: String,
+    pub group_id: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Endpoint {
     pub id: String,

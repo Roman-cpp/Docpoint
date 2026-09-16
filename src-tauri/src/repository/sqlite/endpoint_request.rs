@@ -5,10 +5,9 @@ use crate::domain::doc_api::endpoint_request::entity::{
     BodyMode, EndpointRequest, ParamValue, RequestHeader,
 };
 use crate::domain::doc_api::endpoint_request::repository::{
-    EndpointRequestRepository, RequestTarget,
+    resolve_values, EndpointRequestRepository, RequestTarget,
 };
 use sqlx::{Row, SqlitePool};
-use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct EndpointRequestRepo<'a> {
@@ -102,61 +101,7 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
         sort_ord: i64,
         request: &ImportEndpointRequestDTO,
     ) -> Result<(), String> {
-        // Кривой `kind` уронил бы вставку на CHECK-констрейнте таблицы с
-        // невнятным текстом от SQLite — проверяем заранее, до записи.
-        for value in &request.values {
-            if value.kind == "body" {
-                return Err(format!(
-                    "набор {:?}: тело задаётся полем \"body\", а не значением с kind: \"body\"",
-                    request.name
-                ));
-            }
-            if !matches!(value.kind.as_str(), "path" | "query") {
-                return Err(format!(
-                    "неизвестный вид параметра {:?} в наборе {:?}",
-                    value.kind, request.name
-                ));
-            }
-        }
-
-        // Пустые значения не храним — как и `save`, иначе состояние после
-        // импорта разъезжалось бы с тем, что видно в панели. Дубликаты по
-        // (kind, name) запрещены первичным ключом; на импорте побеждает
-        // последний, вместо того чтобы ронять весь файл. Устаревший
-        // `values[]` кладём первым, чтобы явные карты его перекрывали.
-        let mut values: HashMap<(&str, &str), &str> = HashMap::new();
-        for value in request.values.iter().filter(|v| !v.value.is_empty()) {
-            values.insert((&value.kind, &value.name), &value.value);
-        }
-        for (name, value) in request.path.iter().filter(|(_, v)| !v.is_empty()) {
-            values.insert(("path", name), value);
-        }
-        for (name, value) in request.query.iter().filter(|(_, v)| !v.is_empty()) {
-            values.insert(("query", name), value);
-        }
-
-        // Значение с чужим именем никуда не подставится: сегменты берутся из
-        // пути, а query — из схемы эндпоинта. Молча сохранить его — значит
-        // спрятать опечатку до первой отправки запроса.
-        let path_params = target.path_params();
-        for (kind, name) in values.keys() {
-            let known = match *kind {
-                "path" => path_params.contains(name),
-                _ => target.query_names.contains(name),
-            };
-            if !known {
-                return Err(match *kind {
-                    "path" => format!(
-                        "набор {:?}: в пути {} нет сегмента {name:?}",
-                        request.name, target.path
-                    ),
-                    _ => format!(
-                        "набор {:?}: параметр {name:?} не описан в queryParams эндпоинта {}",
-                        request.name, target.path
-                    ),
-                });
-            }
-        }
+        let values = resolve_values(target, request)?;
 
         let id = Uuid::new_v4().to_string();
         let mut tx = self.db.begin().await.map_err(|e| e.to_string())?;
@@ -207,6 +152,44 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
 
         tx.commit().await.map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    async fn upsert(
+        &self,
+        target: &RequestTarget<'_>,
+        request: &ImportEndpointRequestDTO,
+    ) -> Result<(), String> {
+        // Разбор до удаления: иначе набор с опечаткой в файле сначала снёс бы
+        // сохранённый, а уже потом отказался записываться на его место.
+        resolve_values(target, request)?;
+
+        let existing: Option<(String, i64)> = sqlx::query_as(
+            "SELECT id, sort_ord FROM endpoint_requests WHERE endpoint_id = ? AND name = ? \
+             ORDER BY sort_ord, created_at",
+        )
+        .bind(target.endpoint_id)
+        .bind(&request.name)
+        .fetch_optional(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        // Место в списке у одноимённого набора сохраняется: файл описывает его
+        // содержимое, а не порядок, в котором пользователь их разложил.
+        let sort_ord = match existing {
+            Some((id, sort_ord)) => {
+                self.delete(&id).await?;
+                sort_ord
+            }
+            None => {
+                sqlx::query_scalar("SELECT COUNT(*) FROM endpoint_requests WHERE endpoint_id = ?")
+                    .bind(target.endpoint_id)
+                    .fetch_one(self.db)
+                    .await
+                    .map_err(|e| e.to_string())?
+            }
+        };
+
+        self.insert(target, sort_ord, request).await
     }
 
     async fn create(&self, endpoint_id: &str, name: &str) -> Result<EndpointRequest, String> {

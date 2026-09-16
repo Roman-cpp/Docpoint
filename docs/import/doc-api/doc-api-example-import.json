@@ -1,7 +1,8 @@
 {
 	"doc": {
+		"id": "3f6c1b2a-9a1e-4f7c-8f21-6f1a2b9d5c40",
 		"name": "Task Manager API",
-		"desc": "REST API для управления задачами, проектами и пользователями."
+		"prefix": "/api/v1"
 	},
 	"groups": [
 		{
