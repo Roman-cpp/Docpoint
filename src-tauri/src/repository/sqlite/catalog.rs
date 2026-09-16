@@ -94,6 +94,10 @@ impl CatalogRepository for CatalogRepo<'_> {
     }
 
     async fn create(&self, node: &NewNode<'_>) -> Result<CatalogNode, String> {
+        self.create_with_id(&Uuid::new_v4().to_string(), node).await
+    }
+
+    async fn create_with_id(&self, id: &str, node: &NewNode<'_>) -> Result<CatalogNode, String> {
         let name = node.name.trim();
         if name.is_empty() {
             return Err("имя не может быть пустым".to_string());
@@ -101,13 +105,11 @@ impl CatalogRepository for CatalogRepo<'_> {
 
         self.ensure_parent(node.platform_id, node.parent_id).await?;
 
-        let id = Uuid::new_v4().to_string();
-
         sqlx::query(
             "INSERT INTO catalog_node (id, platform_id, parent_id, kind, name) \
              VALUES (?, ?, ?, ?, ?)",
         )
-        .bind(&id)
+        .bind(id)
         .bind(node.platform_id)
         .bind(node.parent_id)
         .bind(node.kind.as_db())
@@ -116,7 +118,7 @@ impl CatalogRepository for CatalogRepo<'_> {
         .await
         .map_err(|e| write_error(e, name))?;
 
-        self.find(&id)
+        self.find(id)
             .await?
             .ok_or_else(|| "не удалось прочитать созданный узел".to_string())
     }

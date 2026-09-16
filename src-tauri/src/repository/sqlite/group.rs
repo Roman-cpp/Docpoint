@@ -192,9 +192,42 @@ impl GroupRepository for GroupRepo<'_> {
         Ok(groups)
     }
 
+    async fn find_by_label(&self, doc_id: &str, label: &str) -> Result<Option<String>, String> {
+        let ids: Vec<String> =
+            sqlx::query_scalar(r#"SELECT id FROM "group" WHERE doc_id = ? AND label = ?"#)
+                .bind(doc_id)
+                .bind(label)
+                .fetch_all(self.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        // Названия групп ничем не ограничены, и две одинаковые в документе
+        // завести можно. Для повторного импорта это тупик: угадывать, в какую
+        // из них писать, хуже, чем сказать об этом вслух.
+        if ids.len() > 1 {
+            return Err(format!(
+                "в документе несколько групп с названием {label:?} — \
+                 переименуйте одну из них, иначе непонятно, в какую дописывать файл"
+            ));
+        }
+
+        Ok(ids.into_iter().next())
+    }
+
     async fn create(&self, doc_id: &str, groups: &[CreateGroupDTO]) -> Result<(), String> {
+        // Позиция отсчитывается от конца списка, а не от нуля: в пустой
+        // документ группы лягут как лежали в файле, а в непустой — допишутся
+        // в конец, вместо того чтобы перемешаться с уже лежащими там.
+        let first: i64 = sqlx::query_scalar(r#"SELECT COUNT(*) FROM "group" WHERE doc_id = ?"#)
+            .bind(doc_id)
+            .fetch_one(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
         for (gi, group) in groups.iter().enumerate() {
-            let group_id = self.insert_group(doc_id, group, gi).await?;
+            let group_id = self
+                .insert_group(doc_id, group, first as usize + gi)
+                .await?;
             let endpoint_repo = EndpointRepo::new(self.db);
             let request_repo = EndpointRequestRepo::new(self.db);
             for endpoint in &group.endpoints {

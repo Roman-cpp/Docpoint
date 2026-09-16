@@ -16,6 +16,7 @@ export { EditDocApiModal } from "./edit-doc-api";
 export type {
 	ImportDocMeta,
 	ImportDocPayload,
+	ImportDocReport,
 	ImportTarget,
 } from "./import-export-doc";
 export { exportDoc, useImportExportDoc } from "./import-export-doc";

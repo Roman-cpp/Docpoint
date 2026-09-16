@@ -249,6 +249,7 @@ async fn import_node(
             let created = create_tree_node(
                 state,
                 &CreateNodeDTO {
+                    id: None,
                     platform_id: platform_id.to_string(),
                     parent_id,
                     name: node.name.clone(),
@@ -262,6 +263,7 @@ async fn import_node(
             let created = create_tree_node(
                 state,
                 &CreateNodeDTO {
+                    id: None,
                     platform_id: platform_id.to_string(),
                     parent_id,
                     name: node.name.clone(),
@@ -294,6 +296,7 @@ async fn import_doc_api_node(
     let created = create_tree_node(
         state,
         &CreateNodeDTO {
+            id: None,
             platform_id: platform_id.to_string(),
             parent_id,
             name: node.name.clone(),
@@ -361,6 +364,7 @@ async fn import_doc_ws_node(
     let created = create_tree_node(
         state,
         &CreateNodeDTO {
+            id: None,
             platform_id: platform_id.to_string(),
             parent_id,
             name: node.name.clone(),
@@ -400,6 +404,7 @@ async fn import_doc_erd_node(
     let created = create_tree_node(
         state,
         &CreateNodeDTO {
+            id: None,
             platform_id: platform_id.to_string(),
             parent_id,
             name: node.name.clone(),

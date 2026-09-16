@@ -1,5 +1,7 @@
 use crate::domain::doc_api::endpoint::dto::{CreateEndpointDTO, UpdateEndpointDTO};
-use crate::domain::doc_api::endpoint::entity::{path_segments, ParamDef, ResponseDef};
+use crate::domain::doc_api::endpoint::entity::{
+    check_path_params, EndpointRef, ParamDef, ResponseDef,
+};
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
@@ -87,18 +89,7 @@ impl EndpointRepository for EndpointRepo<'_> {
     async fn create(&self, group_id: &str, endpoint: &CreateEndpointDTO) -> Result<String, String> {
         let db = self.db;
 
-        // Описание сегмента, которого нет в пути, — почти всегда опечатка:
-        // и панель, и документация ищут описания по именам из самого пути,
-        // так что лишняя запись просто пропала бы из виду.
-        let segments = path_segments(&endpoint.path);
-        for param in &endpoint.path_params {
-            if !segments.contains(&param.name.as_str()) {
-                return Err(format!(
-                    "эндпоинт {} {}: в пути нет сегмента {:?}",
-                    endpoint.method, endpoint.path, param.name
-                ));
-            }
-        }
+        check_path_params(&endpoint.method, &endpoint.path, &endpoint.path_params)?;
 
         let endpoint_id = Uuid::new_v4().to_string();
 
@@ -150,6 +141,19 @@ impl EndpointRepository for EndpointRepo<'_> {
         .await
         .map_err(|e| e.to_string())?;
 
+        // Значение параметра — не часть его описания: его выставляет
+        // пользователь в «Try it», а правка эндпоинта (и тем более повторная
+        // повторный импорт файла, где значений нет вовсе) описание меняет, а выбор
+        // пользователя трогать не должна. Параметры пересоздаются целиком,
+        // поэтому значения снимаются заранее и возвращаются по (kind, name).
+        let kept: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT kind, name, value FROM param WHERE endpoint_id = ? AND value <> ''",
+        )
+        .bind(&endpoint.id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
         // Параметры всех видов правятся целиком, поэтому пересоздаём их.
         sqlx::query("DELETE FROM param WHERE endpoint_id = ?")
             .bind(&endpoint.id)
@@ -160,6 +164,21 @@ impl EndpointRepository for EndpointRepo<'_> {
         insert_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
         insert_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
         insert_params(&mut tx, &endpoint.id, "body", &endpoint.body_params).await?;
+
+        // Параметр, которого в новом описании нет, значение не получает —
+        // UPDATE просто не находит строку.
+        for (kind, name, value) in &kept {
+            sqlx::query(
+                "UPDATE param SET value = ? WHERE endpoint_id = ? AND kind = ? AND name = ?",
+            )
+            .bind(value)
+            .bind(&endpoint.id)
+            .bind(kind)
+            .bind(name)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
 
         // Ответы — так же целиком. Поля схем удаляются явно: каскад по внешнему
         // ключу срабатывает только при включённом `foreign_keys`, а на это
@@ -180,6 +199,61 @@ impl EndpointRepository for EndpointRepo<'_> {
         insert_responses(&mut tx, &endpoint.id, &endpoint.responses).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    async fn find_by_signature(
+        &self,
+        doc_id: &str,
+        method: &str,
+        path: &str,
+    ) -> Result<Option<EndpointRef>, String> {
+        // Сырая строка: имя таблицы `group` — ключевое слово SQL и живёт
+        // в кавычках. Переносы здесь настоящие, а не через `\`, — в сырой
+        // строке обратный слэш остался бы в самом запросе.
+        let found: Vec<(String, String)> = sqlx::query_as(
+            r#"SELECT e.id, e.group_id FROM endpoint e
+               JOIN "group" g ON g.id = e.group_id
+               WHERE g.doc_id = ? AND e.method = ? AND e.path = ?"#,
+        )
+        .bind(doc_id)
+        .bind(method)
+        .bind(path)
+        .fetch_all(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        // Сигнатуру никто не обещал уникальной: один и тот же метод с тем же
+        // путём можно завести в двух группах руками. Обновить наугад один из
+        // них — значит тихо разойтись с файлом.
+        if found.len() > 1 {
+            return Err(format!(
+                "в документе несколько эндпоинтов {method} {path} — \
+                 оставьте один, иначе непонятно, какой из них обновлять"
+            ));
+        }
+
+        Ok(found
+            .into_iter()
+            .next()
+            .map(|(id, group_id)| EndpointRef { id, group_id }))
+    }
+
+    async fn move_to_group(&self, endpoint_id: &str, group_id: &str) -> Result<(), String> {
+        let sort_ord: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint WHERE group_id = ?")
+            .bind(group_id)
+            .fetch_one(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("UPDATE endpoint SET group_id = ?, sort_ord = ? WHERE id = ?")
+            .bind(group_id)
+            .bind(sort_ord)
+            .bind(endpoint_id)
+            .execute(self.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Ok(())
     }

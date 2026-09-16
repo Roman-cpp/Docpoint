@@ -12,6 +12,9 @@ export type NodePayload =
 	| { kind: "file"; sourcePath: string };
 
 export interface CreateNodeDTO {
+	/** Id создаваемого узла. `null` — сгенерировать; задаёт его только импорт,
+	 *  которому id приезжает из файла. */
+	id?: string | null;
 	platformId: string;
 	/** `null` — создать в корне платформы. */
 	parentId: string | null;
