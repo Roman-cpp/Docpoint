@@ -2,22 +2,19 @@ use crate::domain::catalog::dto::CreateNodeDTO;
 use crate::domain::catalog::entity::NodeKind;
 use crate::domain::catalog::repository::CatalogRepository;
 use crate::domain::doc_erd::entity::dto::{EntityPositionDTO, UpdateEntityDTO};
+use crate::domain::doc_erd::entity::entity::Entity;
 use crate::domain::doc_erd::entity::repository::EntityRepository;
 use crate::domain::doc_erd::entity_relation::dto::RelationEndpointsDTO;
 use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
 use crate::domain::doc_erd::import::dto::{ImportRelationDTO, ImportTableDTO};
 use crate::domain::doc_erd::import::entity::ImportErdReport;
+use crate::domain::doc_erd::import::layout::{self, Edge, FixedTable, FreeTable};
 use crate::repository::sqlite::catalog::CatalogRepo;
 use crate::repository::sqlite::entity::EntityRepo;
 use crate::repository::sqlite::entity_relation::RelationRepo;
 use crate::service::catalog::create_tree_node;
 use crate::state::AppState;
 use std::collections::{HashMap, HashSet};
-
-/// Насколько ниже уже разложенных таблиц ложатся новые. Раскладку файла
-/// считает фронтенд, и на непустой диаграмме её координаты легли бы поверх
-/// того, что там уже расставлено руками.
-const BELOW_EXISTING: f64 = 320.0;
 
 /// Импорт ERD из файла.
 ///
@@ -30,9 +27,10 @@ const BELOW_EXISTING: f64 = 320.0;
 /// живёт здесь же — вызывающей стороне не приходится вести его самой и
 /// ходить за каждой таблицей отдельно.
 ///
-/// Того, чего в файле нет, импорт не трогает: ни таблицу, ни связь он не
-/// удаляет, а уже расставленные на холсте таблицы остаются на своих местах —
-/// раскладка это работа пользователя, а не файла.
+/// Здесь же считается и раскладка: расставить таблицы так, чтобы связи
+/// читались, можно только зная разом и файл, и то, что уже лежит на холсте, —
+/// а это видно только отсюда. Того, чего в файле нет, импорт не трогает: ни
+/// таблицу, ни связь он не удаляет, и уже расставленные таблицы не двигает.
 pub async fn import_erd(
     state: &AppState,
     node: CreateNodeDTO,
@@ -51,20 +49,12 @@ pub async fn import_erd(
         }
     };
 
-    // Уже лежащие на диаграмме таблицы: по ним импорт и узнаёт свои.
+    // Уже лежащие на диаграмме таблицы: по ним импорт узнаёт свои и по ним же
+    // потом ищет место для новых.
     let existing = entities.all_by_erd(&erd_id).await?;
-    let offset = existing
-        .iter()
-        .filter_map(|table| table.pos_y)
-        .fold(0.0_f64, f64::max)
-        + if existing.is_empty() {
-            0.0
-        } else {
-            BELOW_EXISTING
-        };
 
     let mut id_of: HashMap<&str, String> = HashMap::new();
-    let mut positions: Vec<EntityPositionDTO> = Vec::new();
+    let mut fresh: Vec<&ImportTableDTO> = Vec::new();
     let mut report = ImportErdReport {
         doc_id: erd_id.clone(),
         doc_name,
@@ -90,11 +80,7 @@ pub async fn import_erd(
             }
             None => {
                 let id = entities.create_for_erd(&erd_id, &table.schema).await?;
-                positions.push(EntityPositionDTO {
-                    id: id.clone(),
-                    x: table.x,
-                    y: table.y + offset,
-                });
+                fresh.push(table);
                 report.tables_added += 1;
                 id
             }
@@ -103,15 +89,12 @@ pub async fn import_erd(
         id_of.insert(table.schema.name.as_str(), id);
     }
 
-    entities.update_positions(&positions).await?;
-
     let relation_repo = RelationRepo::new(&state.db);
 
     // Связь, которая уже есть, второй раз не заводится: на пару концов стоит
     // UNIQUE, и повторный импорт того же файла упал бы на нём.
-    let mut drawn: HashSet<(String, String)> = relation_repo
-        .by_erd(&erd_id)
-        .await?
+    let drawn_before = relation_repo.by_erd(&erd_id).await?;
+    let mut drawn: HashSet<(String, String)> = drawn_before
         .iter()
         .map(|relation| {
             ends(
@@ -147,7 +130,102 @@ pub async fn import_erd(
         report.relations_added += 1;
     }
 
+    let positions = arrange(&existing, &fresh, &relations, &drawn_before, &id_of);
+    entities.update_positions(&positions).await?;
+
     Ok(report)
+}
+
+/// Место для таблиц, которые его ещё не имеют: новых из файла и тех давних,
+/// что лежат в базе без координат (их раскладывала сцена при каждом открытии).
+///
+/// Связи берутся и из файла, и из диаграммы: новая таблица должна встать рядом
+/// со своей соседкой независимо от того, в этом ли файле описана связь между
+/// ними.
+fn arrange(
+    existing: &[Entity],
+    fresh: &[&ImportTableDTO],
+    relations: &[ImportRelationDTO],
+    drawn_before: &[crate::domain::doc_erd::entity_relation::entity::EntityRelation],
+    id_of: &HashMap<&str, String>,
+) -> Vec<EntityPositionDTO> {
+    let size_of_entity = |entity: &Entity| {
+        let columns: Vec<&str> = entity.fields.iter().map(|f| f.name.as_str()).collect();
+        layout::size_of(&entity.name, &columns)
+    };
+
+    let mut fixed: Vec<FixedTable> = Vec::new();
+    let mut free: Vec<FreeTable> = Vec::new();
+    let mut free_ids: Vec<String> = Vec::new();
+
+    for entity in existing {
+        let (w, h) = size_of_entity(entity);
+        match (entity.pos_x, entity.pos_y) {
+            (Some(x), Some(y)) => fixed.push(FixedTable {
+                name: entity.name.clone(),
+                x,
+                y,
+                w,
+                h,
+            }),
+            _ => {
+                free.push(FreeTable {
+                    name: entity.name.clone(),
+                    w,
+                    h,
+                });
+                free_ids.push(entity.id.clone());
+            }
+        }
+    }
+
+    for table in fresh {
+        let columns: Vec<&str> = table
+            .schema
+            .fields
+            .iter()
+            .map(|field| field.name.as_str())
+            .collect();
+        let (w, h) = layout::size_of(&table.schema.name, &columns);
+        free.push(FreeTable {
+            name: table.schema.name.clone(),
+            w,
+            h,
+        });
+        free_ids.push(id_of[table.schema.name.as_str()].clone());
+    }
+
+    // Связи диаграммы адресованы id сущностей, раскладка — именами.
+    let name_of: HashMap<&str, &str> = existing
+        .iter()
+        .map(|entity| (entity.id.as_str(), entity.name.as_str()))
+        .collect();
+
+    let mut edges: Vec<Edge> = relations
+        .iter()
+        .map(|relation| Edge {
+            from: relation.from_table.clone(),
+            to: relation.to_table.clone(),
+        })
+        .collect();
+
+    for relation in drawn_before {
+        if let (Some(from), Some(to)) = (
+            name_of.get(relation.from_entity.as_str()),
+            name_of.get(relation.to_entity.as_str()),
+        ) {
+            edges.push(Edge {
+                from: (*from).to_string(),
+                to: (*to).to_string(),
+            });
+        }
+    }
+
+    layout::place(&fixed, &free, &edges)
+        .into_iter()
+        .zip(free_ids)
+        .map(|((x, y), id)| EntityPositionDTO { id, x, y })
+        .collect()
 }
 
 /// Диаграмма, на которую указывает id из файла: её id и имя. `None` — такой
@@ -187,7 +265,7 @@ fn ends(from_entity: &str, from_field: &str, to_entity: &str, to_field: &str) ->
 }
 
 /// Таблицы опознаются по имени, поэтому два одинаковых имени в файле — это
-/// вопрос без ответа: какое из двух описаний автор считал настоящим. На имена
+/// вопрос без ответа: какое из описаний автор считал настоящим. На имена
 /// ссылаются ещё и связи.
 fn check_file(tables: &[ImportTableDTO]) -> Result<(), String> {
     let mut names: HashSet<&str> = HashSet::new();
@@ -256,16 +334,13 @@ mod tests {
         }
     }
 
-    /// Таблица из файла: раскладку считает фронтенд, здесь она задаётся явно.
-    fn table(name: &str, columns: &[&str], y: f64) -> ImportTableDTO {
+    fn table(name: &str, columns: &[&str]) -> ImportTableDTO {
         ImportTableDTO {
             schema: CreateEntityDTO {
                 name: name.to_string(),
                 desc: String::new(),
                 fields: columns.iter().map(|c| field(c)).collect(),
             },
-            x: 0.0,
-            y,
         }
     }
 
@@ -294,7 +369,7 @@ mod tests {
         let report = import_erd(
             &state,
             header(Some("erd-1"), "Биллинг"),
-            vec![table("accounts", &["id"], 0.0)],
+            vec![table("accounts", &["id"])],
             vec![],
         )
         .await
@@ -313,8 +388,8 @@ mod tests {
         let file = || {
             (
                 vec![
-                    table("accounts", &["id"], 0.0),
-                    table("payments", &["id", "account_id"], 100.0),
+                    table("accounts", &["id"]),
+                    table("payments", &["id", "account_id"]),
                 ],
                 vec![relation(("accounts", "id"), ("payments", "account_id"))],
             )
@@ -338,15 +413,16 @@ mod tests {
         assert_eq!(count(&state.db, "entity_relation").await, 1);
     }
 
-    /// Дописанная в файл таблица добавляется, а разложенные на холсте остаются
-    /// там, где их поставил пользователь: раскладка — его работа, не файла.
+    /// Дописанная таблица встаёт рядом со своей соседкой: связь между ними
+    /// должна читаться, а не тянуться через полдиаграммы. Расставленное руками
+    /// при этом не двигается.
     #[tokio::test]
-    async fn a_new_table_is_added_below_and_the_arranged_ones_stay_put() {
+    async fn a_new_table_lands_next_to_the_one_it_is_linked_to() {
         let (state, _dir) = app().await;
         import_erd(
             &state,
             header(Some("erd-1"), "Биллинг"),
-            vec![table("accounts", &["id"], 0.0)],
+            vec![table("accounts", &["id"])],
             vec![],
         )
         .await
@@ -360,10 +436,10 @@ mod tests {
             &state,
             header(Some("erd-1"), "Биллинг"),
             vec![
-                table("accounts", &["id"], 0.0),
-                table("payments", &["id"], 0.0),
+                table("accounts", &["id"]),
+                table("payments", &["id", "account_id"]),
             ],
-            vec![],
+            vec![relation(("accounts", "id"), ("payments", "account_id"))],
         )
         .await
         .unwrap();
@@ -382,13 +458,18 @@ mod tests {
             "расставленную таблицу импорт не двигает"
         );
 
-        let added: f64 = sqlx::query_scalar("SELECT pos_y FROM entities WHERE name = 'payments'")
-            .fetch_one(&state.db)
-            .await
-            .unwrap();
+        let added: (f64, f64) =
+            sqlx::query_as("SELECT pos_x, pos_y FROM entities WHERE name = 'payments'")
+                .fetch_one(&state.db)
+                .await
+                .unwrap();
         assert!(
-            added > 700.0,
-            "новая таблица должна лечь ниже разложенных, а не поверх них: {added}"
+            added.0 > 500.0 + 170.0,
+            "потомок должен встать справа от родителя: {added:?}"
+        );
+        assert_eq!(
+            added.1, 700.0,
+            "и на его высоте — тогда связь идёт по горизонтали"
         );
     }
 
@@ -399,7 +480,7 @@ mod tests {
         import_erd(
             &state,
             header(Some("erd-1"), "Биллинг"),
-            vec![table("accounts", &["id"], 0.0)],
+            vec![table("accounts", &["id"])],
             vec![],
         )
         .await
@@ -408,7 +489,7 @@ mod tests {
         import_erd(
             &state,
             header(Some("erd-1"), "Биллинг"),
-            vec![table("accounts", &["id", "email"], 0.0)],
+            vec![table("accounts", &["id", "email"])],
             vec![],
         )
         .await
@@ -434,10 +515,7 @@ mod tests {
         let err = import_erd(
             &state,
             header(Some("erd-1"), "Биллинг"),
-            vec![
-                table("accounts", &["id"], 0.0),
-                table("accounts", &["id"], 0.0),
-            ],
+            vec![table("accounts", &["id"]), table("accounts", &["id"])],
             vec![],
         )
         .await
@@ -467,7 +545,7 @@ mod tests {
         let err = import_erd(
             &state,
             header(Some("erd-1"), "Биллинг"),
-            vec![table("accounts", &["id"], 0.0)],
+            vec![table("accounts", &["id"])],
             vec![],
         )
         .await

@@ -2,13 +2,15 @@ import { invoke } from "@tauri-apps/api/core";
 import type { CreateNodeDTO } from "@/entities/catalog";
 import type { SchemaField } from "@/entities/doc-erd";
 
-/** Таблица в том виде, в каком её принимает команда импорта: id ещё нет. */
+/** Таблица в том виде, в каком её принимает команда импорта: id ещё нет.
+ *
+ *  Координат здесь тоже нет — место на холсте назначает импорт: расставить
+ *  таблицы так, чтобы связи читались, можно только зная разом и файл, и то,
+ *  что уже лежит на диаграмме, а это видно только ему. */
 export interface ImportErdTableDTO {
 	name: string;
 	desc: string;
 	fields: SchemaField[];
-	x: number;
-	y: number;
 }
 
 /** Связь импорта: концы адресованы именами — id сущностей заводит бэкенд. */

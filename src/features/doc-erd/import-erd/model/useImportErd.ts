@@ -3,7 +3,6 @@ import { toast } from "@/core/toast";
 import { type CreateNodeDTO, catalogKeys } from "@/entities/catalog";
 import type { ImportErdPayload } from "@/entities/doc-erd";
 import { type ImportErdReport, importErdApi } from "../api/importErdApi";
-import { layoutErdTables } from "../lib/layoutErdTables";
 
 /** Куда положить импортируемую диаграмму. */
 export interface ImportErdTarget {
@@ -32,9 +31,8 @@ const describe = (report: ImportErdReport): string => {
  *
  * Всё делается на бэкенде, потому что id таблиц выдаёт база, а связи в файле
  * адресуют таблицы именами: сопоставление «имя → id» должна вести та же
- * сторона, что раздаёт id. Форму файла проверяет `parseErdImport` до вызова,
- * здесь остаётся раскладка — координат в файле нет, их считает
- * `layoutErdTables`.
+ * сторона, что раздаёт id. Там же считается и раскладка — она зависит от того,
+ * что уже лежит на диаграмме. Форму файла проверяет `parseErdImport` до вызова.
  */
 export const useImportErd = (target: ImportErdTarget) => {
 	const queryClient = useQueryClient();
@@ -49,13 +47,7 @@ export const useImportErd = (target: ImportErdTarget) => {
 				payload: { kind: "docErd" },
 			};
 
-			const layout = layoutErdTables(payload.tables);
-			const tables = payload.tables.map((table, index) => ({
-				...table,
-				...layout[index],
-			}));
-
-			return importErdApi(node, tables, payload.relations);
+			return importErdApi(node, payload.tables, payload.relations);
 		},
 		onSuccess: (report) => {
 			toast({
