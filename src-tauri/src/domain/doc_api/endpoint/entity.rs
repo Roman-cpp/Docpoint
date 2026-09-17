@@ -213,7 +213,9 @@ pub struct ParamDef {
     pub desc: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default: Option<String>,
-    #[serde(default)]
+    /// Имя переменной окружения, закреплённой за параметром в «Try it». Пустая
+    /// строка — привязки нет, и в файл экспорта такое поле не пишется.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub value: String,
 }
 

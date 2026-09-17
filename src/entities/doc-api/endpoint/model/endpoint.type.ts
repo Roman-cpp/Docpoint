@@ -12,7 +12,8 @@ export interface Param {
 	required: boolean;
 	desc: string;
 	default?: string;
-	value: string | null;
+	/** Имя переменной окружения, закреплённой за параметром в «Try it». */
+	value?: string | null;
 }
 
 /**

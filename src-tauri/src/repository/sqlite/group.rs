@@ -461,6 +461,27 @@ mod tests {
         assert_eq!(nested["meta"]["labels"][0], "release");
         assert_eq!(nested["meta"]["estimate"]["value"], 8);
         assert_eq!(tasks[0].headers[0].name, "Idempotency-Key");
+        assert_eq!(
+            tasks[0].cookies[0].name, "session",
+            "куки набора доезжают вместе с заголовками"
+        );
+
+        // Заголовки и куки описаны как параметры эндпоинта.
+        let described: Vec<(String, String, i64)> = sqlx::query_as(
+            "SELECT kind, name, required FROM endpoint_param \
+             WHERE endpoint_id = ? AND kind IN ('header', 'cookie') ORDER BY kind",
+        )
+        .bind(&create_task_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            described,
+            vec![
+                ("cookie".into(), "session".into(), 1),
+                ("header".into(), "Idempotency-Key".into(), 0),
+            ]
+        );
 
         // Тело-строка остаётся дословно, без попытки разобрать его как JSON.
         assert_eq!(tasks[2].body, "title=Подготовить релиз&priority=high");
@@ -576,6 +597,152 @@ mod tests {
 
     /// Описание сегмента, которого нет в пути, — опечатка: такой эндпоинт
     /// не импортируется молча, иначе описание просто пропало бы из виду.
+    /// Файл, который пишет экспорт, читается импортом целиком: описание всех
+    /// четырёх видов параметров с их привязками к переменным, документ тела с
+    /// примечаниями, ответы и наборы «Try it» вместе с заголовками и куками.
+    #[tokio::test]
+    async fn everything_the_export_writes_comes_back_on_import() {
+        let pool = db().await;
+        let doc_id = imported_doc(
+            &pool,
+            ImportDoc {
+                name: "Task API".into(),
+                prefix: "/api/v1".into(),
+            },
+        )
+        .await;
+
+        let group: CreateGroupDTO = serde_json::from_value(serde_json::json!({
+            "label": "Tasks",
+            "endpoints": [{
+                "method": "POST",
+                "path": "/tasks/{taskId}",
+                "name": "Create task",
+                "description": "Заводит задачу",
+                "auth": true,
+                "pathParams": [
+                    { "name": "taskId", "type": "uuid", "required": true, "desc": "UUID",
+                      "value": "" }
+                ],
+                "queryParams": [
+                    { "name": "dry", "type": "boolean", "required": false, "desc": "",
+                      "value": "DRY_RUN" }
+                ],
+                "headerParams": [
+                    { "name": "X-Request-Id", "type": "string", "required": false,
+                      "desc": "id", "value": "" }
+                ],
+                "cookieParams": [
+                    { "name": "sid", "type": "string", "required": true, "desc": "Сессия",
+                      "value": "" }
+                ],
+                "body": { "title": "", "meta": { "labels": [] } },
+                "bodyFields": [
+                    { "path": "title", "desc": "Заголовок", "required": true, "format": "" }
+                ],
+                "responses": {
+                    "201": {
+                        "label": "201 Created",
+                        "body": { "id": "" },
+                        "fields": [
+                            { "path": "id", "desc": "UUID", "required": true, "format": "uuid" }
+                        ]
+                    }
+                },
+                "requests": [{
+                    "name": "Боевой",
+                    "bodyMode": "fields",
+                    "body": { "title": "Релиз" },
+                    "headers": [
+                        { "name": "Idempotency-Key", "value": "abc-1", "enabled": true }
+                    ],
+                    "cookies": [
+                        { "name": "sid", "value": "{{SESSION}}", "enabled": true },
+                        { "name": "debug", "value": "1", "enabled": false }
+                    ],
+                    "path": { "taskId": "42" },
+                    "query": { "dry": "true" }
+                }]
+            }]
+        }))
+        .unwrap();
+
+        GroupRepo::new(&pool)
+            .create(&doc_id, &[group])
+            .await
+            .unwrap();
+
+        let endpoint_id: String = sqlx::query_scalar(
+            "SELECT e.id FROM endpoint e JOIN \"group\" g ON g.id = e.group_id WHERE g.doc_id = ?",
+        )
+        .bind(&doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        // Параметры всех четырёх видов — вместе с привязкой к переменной.
+        let params: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT kind, name, value FROM endpoint_param WHERE endpoint_id = ? \
+             ORDER BY kind, name",
+        )
+        .bind(&endpoint_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            params,
+            vec![
+                ("cookie".into(), "sid".into(), String::new()),
+                ("header".into(), "X-Request-Id".into(), String::new()),
+                ("path".into(), "taskId".into(), String::new()),
+                ("query".into(), "dry".into(), "DRY_RUN".into()),
+            ]
+        );
+
+        // Тело документом и примечание к его полю.
+        let body: String = sqlx::query_scalar("SELECT body FROM endpoint WHERE id = ?")
+            .bind(&endpoint_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&body).unwrap(),
+            serde_json::json!({ "title": "", "meta": { "labels": [] } })
+        );
+        let note: String = sqlx::query_scalar(
+            "SELECT desc FROM endpoint_body_field WHERE endpoint_id = ? AND path = 'title'",
+        )
+        .bind(&endpoint_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(note, "Заголовок");
+
+        // Набор «Try it»: заголовки, куки и значения частей запроса.
+        let stored = EndpointRequestRepo::new(&pool)
+            .list(&endpoint_id)
+            .await
+            .unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].headers[0].name, "Idempotency-Key");
+        assert_eq!(stored[0].cookies.len(), 2);
+        assert_eq!(stored[0].cookies[0].value, "{{SESSION}}");
+        assert!(
+            !stored[0].cookies[1].enabled,
+            "выключенная кука переживает круговой рейс"
+        );
+
+        let value = |kind: &str, name: &str| {
+            stored[0]
+                .values
+                .iter()
+                .find(|v| v.kind == kind && v.name == name)
+                .map(|v| v.value.as_str())
+        };
+        assert_eq!(value("path", "taskId"), Some("42"));
+        assert_eq!(value("query", "dry"), Some("true"));
+    }
+
     #[tokio::test]
     async fn a_path_param_that_is_not_in_the_path_stops_the_import() {
         let raw = r#"{

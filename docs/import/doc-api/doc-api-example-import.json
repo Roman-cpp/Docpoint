@@ -571,6 +571,22 @@
           "description": "Создаёт новую задачу в указанном проекте.",
           "auth": true,
           "queryParams": [],
+          "headerParams": [
+            {
+              "name": "Idempotency-Key",
+              "type": "uuid",
+              "required": false,
+              "desc": "Ключ повторной отправки: тот же ключ — та же задача"
+            }
+          ],
+          "cookieParams": [
+            {
+              "name": "session",
+              "type": "string",
+              "required": true,
+              "desc": "Сессия пользователя"
+            }
+          ],
           "body": {
             "title": "<title>",
             "description": "<description>",
@@ -639,6 +655,9 @@
               "name": "Задача с вложенными полями",
               "headers": {
                 "Idempotency-Key": "release-task-001"
+              },
+              "cookies": {
+                "session": "{{SESSION}}"
               },
               "body": {
                 "title": "Подготовить релиз",

@@ -18,8 +18,8 @@ async fn insert_params(
     for (pi, param) in params.iter().enumerate() {
         sqlx::query(
             "INSERT INTO endpoint_param \
-             (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+             (endpoint_id, kind, name, type, required, desc, default_val, value, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(endpoint_id)
         .bind(kind)
@@ -28,6 +28,10 @@ async fn insert_params(
         .bind(if param.required { 1i64 } else { 0i64 })
         .bind(&param.desc)
         .bind(&param.default)
+        // Привязка к переменной окружения — часть описания параметра, и файл
+        // её несёт. У уже заведённого параметра выбор пользователя всё равно
+        // побеждает: `update` возвращает сохранённые значения следом.
+        .bind(&param.value)
         .bind(pi as i64)
         .execute(&mut *conn)
         .await
@@ -338,6 +342,45 @@ mod tests {
     use super::*;
     use crate::repository::sqlite::test_db;
     use sqlx::Executor;
+
+    /// Файл несёт и привязку параметра к переменной окружения: экспорт её
+    /// пишет, значит импорт обязан её прочитать.
+    #[tokio::test]
+    async fn a_variable_binding_survives_the_import() {
+        let pool = test_db::migrated().await;
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO platforms (id, name) VALUES ('p1', 'P');
+            INSERT INTO catalog_node (id, platform_id, kind, name) VALUES ('d1','p1','doc_api','D');
+            INSERT INTO doc_api (id, prefix) VALUES ('d1', '');
+            INSERT INTO "group" (id, doc_id, label, sort_ord) VALUES ('g1', 'd1', 'G', 0);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        let dto: CreateEndpointDTO = serde_json::from_value(serde_json::json!({
+            "method": "GET",
+            "path": "/tasks",
+            "name": "List",
+            "queryParams": [{
+                "name": "token", "type": "string", "required": false,
+                "desc": "", "value": "API_TOKEN"
+            }],
+        }))
+        .unwrap();
+
+        let id = EndpointRepo::new(&pool).create("g1", &dto).await.unwrap();
+
+        let value: String = sqlx::query_scalar(
+            "SELECT value FROM endpoint_param WHERE endpoint_id = ? AND name = 'token'",
+        )
+        .bind(&id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(value, "API_TOKEN");
+    }
 
     /// Заголовки и куки становятся такими же параметрами, как путь и строка
     /// запроса: таблица одна, видов четыре.
