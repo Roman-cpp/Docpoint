@@ -37,7 +37,6 @@ import { EditParamsModal } from "../EditParamsModal";
 import { EditResponsesModal } from "../EditResponsesModal";
 import { FieldTree } from "../FieldTree";
 import { ParamsBlock } from "../ParamsBlock";
-import { PlannedNote } from "../PlannedNote";
 import { ResponsesBlock } from "../ResponsesBlock";
 import { SectionHead } from "../SectionHead";
 import { SnippetBlock } from "../SnippetBlock";
@@ -151,6 +150,18 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 		() => buildDocumentTree(detail.body ?? "", detail.bodyFields ?? []),
 		[detail.body, detail.bodyFields],
 	);
+
+	// Раздел выводится, только если в нём что-то есть: у простого GET-эндпоинта
+	// страница иначе превращается в перечень пустых таблиц.
+	const has = {
+		path: pathParams.length > 0,
+		query: (detail.queryParams ?? []).length > 0,
+		header: (detail.headerParams ?? []).length > 0,
+		cookie: (detail.cookieParams ?? []).length > 0,
+		body:
+			(detail.body ?? "").trim() !== "" || (detail.bodyFields ?? []).length > 0,
+		responses: responseKeys.length > 0,
+	};
 
 	const group = groups?.find((candidate) =>
 		candidate.endpoints.some((endpoint) => endpoint.id === detail.id),
@@ -268,7 +279,9 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 
 			{/* ─── Навигация по разделам ─── */}
 			<nav className={s.rail} aria-label="Разделы эндпоинта">
-				{SECTIONS.map((section) => (
+				{SECTIONS.filter(
+					(section) => section.id !== "responses" || has.responses,
+				).map((section) => (
 					<button
 						type="button"
 						key={section.id}
@@ -287,67 +300,67 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 			<section className={s.section} id="request">
 				<SectionHead title="Запрос" level="section" />
 
-				<ParamsBlock
-					title="Сегменты пути"
-					hint="Перечень задаёт сам путь — здесь у сегментов появляется описание"
-					params={pathParams}
-					segments
-					empty="В пути нет параметров"
-					onEdit={
-						pathParams.length > 0 ? () => setEditingParams("path") : undefined
-					}
-				/>
-
-				<ParamsBlock
-					title="Параметры строки запроса"
-					params={detail.queryParams ?? []}
-					empty="Параметров нет — добавьте через «Изменить»"
-					onEdit={() => setEditingParams("query")}
-				/>
-
-				<div className={s.plannedRow}>
-					<PlannedNote title="Заголовки и куки запроса">
-						Idempotency-Key, X-Request-Id, Accept-Language описываются наравне с
-						query-параметрами. Сейчас заголовок можно только задать значением в
-						«Try it» — документации о нём не остаётся.
-					</PlannedNote>
-				</div>
-
-				<div className={s.bodyBlock}>
-					<SectionHead
-						title="Тело запроса"
-						count={countDocumentNodes(bodyTree.nodes)}
-						hint="Форму и типы задаёт сам документ — примечания добавляют остальное"
-						onEdit={() => setEditingBody(true)}
+				{has.path && (
+					<ParamsBlock
+						title="Сегменты пути"
+						hint="Перечень задаёт сам путь — здесь у сегментов появляется описание"
+						params={pathParams}
+						segments
+						onEdit={() => setEditingParams("path")}
 					/>
-					<FieldTree
-						tree={bodyTree}
-						document={detail.body ?? ""}
-						empty="Тела у запроса нет"
-					/>
-				</div>
+				)}
 
-				<div className={s.plannedRow}>
-					<PlannedNote title="Форматы тела">
-						Тело у эндпоинта одно и подразумевается JSON. Описать
-						multipart/form-data для загрузки файлов или несколько форматов на
-						выбор пока нечем.
-					</PlannedNote>
-					<PlannedNote title="Схемы авторизации и скоупы">
-						Документация знает только «нужна авторизация» — какая именно схема и
-						с каким скоупом, сказать нельзя: схема живёт в окружении.
-					</PlannedNote>
-				</div>
+				{has.query && (
+					<ParamsBlock
+						title="Параметры строки запроса"
+						params={detail.queryParams}
+						onEdit={() => setEditingParams("query")}
+					/>
+				)}
+
+				{has.header && (
+					<ParamsBlock
+						title="Заголовки запроса"
+						params={detail.headerParams}
+						onEdit={() => setEditingParams("header")}
+					/>
+				)}
+
+				{has.cookie && (
+					<ParamsBlock
+						title="Куки запроса"
+						params={detail.cookieParams}
+						onEdit={() => setEditingParams("cookie")}
+					/>
+				)}
+
+				{has.body && (
+					<div className={s.bodyBlock}>
+						<SectionHead
+							title="Тело запроса"
+							count={countDocumentNodes(bodyTree.nodes)}
+							hint="Форму и типы задаёт сам документ — примечания добавляют остальное"
+							onEdit={() => setEditingBody(true)}
+						/>
+						<FieldTree
+							tree={bodyTree}
+							document={detail.body}
+							empty="Структура тела не описана"
+						/>
+					</div>
+				)}
 			</section>
 
 			{/* ─── Ответы ─── */}
-			<ResponsesBlock
-				responses={detail.responses}
-				active={activeResponse}
-				onSelect={setSelectedResponse}
-				onEdit={() => setEditingResponses(true)}
-				onEditExample={() => setJsonModalOpen(true)}
-			/>
+			{has.responses && (
+				<ResponsesBlock
+					responses={detail.responses}
+					active={activeResponse}
+					onSelect={setSelectedResponse}
+					onEdit={() => setEditingResponses(true)}
+					onEditExample={() => setJsonModalOpen(true)}
+				/>
+			)}
 
 			{/* ─── Пример вызова ─── */}
 			<SnippetBlock snippets={snippets} />

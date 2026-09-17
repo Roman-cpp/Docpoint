@@ -9,8 +9,6 @@ interface ParamsBlockProps {
 	title: string;
 	hint?: string;
 	params: DocParam[];
-	/** Что написать, когда параметров нет: у пути и у тела это разные вещи. */
-	empty: string;
 	/**
 	 * Сегменты пути. У них не показываются ни тип, ни обязательность: сегмент
 	 * стоит в самом адресе, и как его подставить, видно по `/orders/{order_id}`
@@ -112,7 +110,6 @@ export const ParamsBlock: FC<ParamsBlockProps> = ({
 	title,
 	hint,
 	params,
-	empty,
 	segments = false,
 	onEdit,
 }) => (
@@ -123,14 +120,10 @@ export const ParamsBlock: FC<ParamsBlockProps> = ({
 			hint={hint}
 			onEdit={onEdit}
 		/>
-		{params.length === 0 ? (
-			<div className={s.empty}>{empty}</div>
-		) : (
-			<div className={s.table}>
-				{params.map((param) => (
-					<ParamRow key={param.name} param={param} segments={segments} />
-				))}
-			</div>
-		)}
+		<div className={s.table}>
+			{params.map((param) => (
+				<ParamRow key={param.name} param={param} segments={segments} />
+			))}
+		</div>
 	</div>
 );

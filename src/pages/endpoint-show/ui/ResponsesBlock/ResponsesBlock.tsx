@@ -10,7 +10,6 @@ import { PencilIcon } from "@/shared/svg";
 import { JsonCode } from "@/shared/ui-kit/data-display";
 import { CopyButton } from "../CopyButton";
 import { FieldTree } from "../FieldTree";
-import { PlannedNote } from "../PlannedNote";
 import { SectionHead } from "../SectionHead";
 import s from "./ResponsesBlock.module.css";
 
@@ -92,15 +91,6 @@ export const ResponsesBlock: FC<ResponsesBlockProps> = ({
 									document={document}
 									empty="Структура ответа не описана"
 								/>
-							</div>
-
-							<div className={s.pane}>
-								<SectionHead title="Заголовки ответа" />
-								<PlannedNote title="Location, X-RateLimit-*, Set-Cookie">
-									Модель ответа хранит только тело, поэтому заголовки, по
-									которым клиент строит пагинацию и ретраи, приходится держать в
-									описании текстом.
-								</PlannedNote>
 							</div>
 
 							<div className={s.pane}>

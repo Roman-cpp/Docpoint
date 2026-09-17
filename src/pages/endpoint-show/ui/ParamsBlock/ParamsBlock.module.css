@@ -92,11 +92,3 @@
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
 }
-
-.empty {
-	padding: 12px 14px;
-	border: 1px dashed var(--border);
-	border-radius: var(--r-lg);
-	color: var(--ink-low);
-	font-size: var(--fs-12);
-}
