@@ -1,4 +1,5 @@
 import type { FC, SelectHTMLAttributes } from "react";
+import { cx } from "@/shared/lib/cx";
 import { ChevronDownIcon } from "@/shared/svg";
 import s from "./Select.module.css";
 
@@ -13,28 +14,33 @@ type Props = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
 	placeholder?: string;
 };
 
+/**
+ * Выпадающий список со своей стрелкой вместо системной.
+ *
+ * `className` и `style` описывают контрол целиком и достаются обёртке, а не
+ * самому `<select>`: стрелка стоит абсолютно по правому краю обёртки, и заданная
+ * полю ширина оставила бы её висеть в стороне.
+ */
 export const Select: FC<Props> = ({
 	options,
 	size = "default",
 	error,
 	placeholder,
 	className,
+	style,
 	children,
 	...rest
 }) => (
 	<div
-		className={[
+		className={cx(
 			s.wrap,
 			size === "sm" ? s.sm : size === "md" ? s.md : "",
-			error ? s.error : "",
-		]
-			.filter(Boolean)
-			.join(" ")}
+			error && s.error,
+			className,
+		)}
+		style={style}
 	>
-		<select
-			{...rest}
-			className={[s.select, className ?? ""].filter(Boolean).join(" ")}
-		>
+		<select {...rest} className={s.select}>
 			{placeholder && (
 				<option value="" disabled>
 					{placeholder}

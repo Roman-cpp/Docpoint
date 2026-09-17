@@ -2,6 +2,8 @@
 	position: relative;
 	display: flex;
 	align-items: center;
+	/* По умолчанию контрол занимает всю ширину места; узкий задаётся снаружи
+	   через style или className — вместе со стрелкой, а не мимо неё. */
 	width: 100%;
 }
 
