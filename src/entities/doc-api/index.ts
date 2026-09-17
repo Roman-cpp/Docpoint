@@ -40,7 +40,6 @@ export type {
 	EndpointResponse,
 	FieldNote,
 	Param,
-	ResponseField,
 	UrlParamKind,
 } from "./endpoint/model/endpoint.type";
 export {

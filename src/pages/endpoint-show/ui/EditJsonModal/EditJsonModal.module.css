@@ -36,8 +36,10 @@
 .statusOk {
 	color: var(--ink-low);
 }
+/* Не-JSON документ — не ошибка, а другой вид описания: предупреждаем, но не
+   красим в цвет отказа. */
 .statusError {
-	color: var(--delete);
+	color: var(--amber);
 }
 
 .editor {

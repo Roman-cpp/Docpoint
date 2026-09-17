@@ -5,6 +5,7 @@ import {
 	buildDocumentTree,
 	countDocumentNodes,
 	extractPathParams,
+	formatDocument,
 	type Param,
 	type UrlParamKind,
 } from "@/entities/doc-api";
@@ -129,7 +130,7 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 			? selectedResponse
 			: (responseKeys[0] ?? "");
 	const activeResp = detail.responses[activeResponse];
-	const activeExample = activeResp?.example ?? "";
+	const activeDocument = formatDocument(activeResp?.body ?? "");
 
 	const envBase = joinUrl(env?.baseUrl, env?.prefix);
 	const preview = useMemo(
@@ -154,21 +155,21 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 	);
 	const method = getMethodStyle(detail.method);
 
-	/** Пример ответа из окна JSON уходит на бэкенд вместе с остальным эндпоинтом. */
-	const saveExample = async (json: string) => {
+	/** Структура ответа из окна JSON уходит вместе с остальным эндпоинтом. */
+	const saveDocument = async (json: string) => {
 		if (!activeResp) return;
 		try {
 			await updateEndpoint({
 				...detail,
 				responses: {
 					...detail.responses,
-					[activeResponse]: { ...activeResp, example: json },
+					[activeResponse]: { ...activeResp, body: json },
 				},
 			});
 		} catch (err) {
 			toast({
 				variant: "error",
-				title: "Не удалось сохранить пример ответа",
+				title: "Не удалось сохранить структуру ответа",
 				description: err instanceof Error ? err.message : String(err),
 			});
 		}
@@ -352,13 +353,13 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 			<EditJsonModal
 				open={jsonModalOpen}
 				onOpenChange={setJsonModalOpen}
-				value={activeExample}
+				value={activeDocument}
 				subtitle={
 					activeResp
-						? `Пример ответа «${activeResp.label}»`
-						: "Пример ответа в формате JSON"
+						? `Структура ответа «${activeResp.label}»`
+						: "Структура ответа в формате JSON"
 				}
-				onSave={(json) => void saveExample(json)}
+				onSave={(json) => void saveDocument(json)}
 			/>
 
 			{editingParams && (

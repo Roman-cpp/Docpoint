@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use crate::domain::doc_api::json_doc;
+
 /// Имена сегментов пути: `/posts/{postId}/comments/{commentId}` → `postId`,
 /// `commentId`. Именно путь задаёт перечень сегментов — `pathParams` только
 /// описывает их.
@@ -135,7 +137,7 @@ fn sample_value(param: &ParamDef) -> serde_json::Value {
 }
 
 /// Уточнение типа для примечания: то, чего в самом документе не видно.
-fn type_format(type_: &str) -> &'static str {
+pub fn type_format(type_: &str) -> &'static str {
     match type_.to_lowercase().as_str() {
         "uuid" => "uuid",
         "datetime" | "date-time" => "datetime",
@@ -210,19 +212,73 @@ pub struct ParamDef {
     pub value: String,
 }
 
+/// Ответ под одним кодом статуса: подпись, структура и примечания к её полям.
+///
+/// Структура описывается так же, как тело запроса, — целым JSON-документом.
+/// Он же служит примером: другого «как это выглядит» у ответа не бывает.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResponseDef {
     pub label: String,
-    pub schema: Vec<ResponseSchemaField>,
-    pub example: String,
+    /// В файле пишется объектом; `example` — имя этого поля в старых файлах.
+    #[serde(alias = "example", default, deserialize_with = "json_doc::from_json")]
+    pub body: String,
+    #[serde(default)]
+    pub fields: Vec<FieldDef>,
+    /// Прежняя форма описания схемы: плоский список ключей. Читается ради
+    /// старых файлов — см. [`Self::document`].
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub schema: Vec<LegacyResponseField>,
 }
 
+/// Поле схемы ответа, как его описывали до перехода на документ.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ResponseSchemaField {
+pub struct LegacyResponseField {
     pub key: String,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default)]
     pub type_: String,
+    #[serde(default)]
     pub desc: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub example: Option<String>,
+}
+
+impl ResponseDef {
+    /// Структура ответа и примечания к ней, как их описал файл.
+    ///
+    /// Старый файл описывал схему списком ключей рядом с примером: ключи
+    /// становятся примечаниями, а значение поля дописывается в документ, если
+    /// такого пути в нём ещё нет, — ровно то же делает миграция 0049, поэтому
+    /// старый и новый файл импортируются в одно и то же состояние.
+    pub fn document(&self) -> (String, Vec<FieldDef>) {
+        if !self.fields.is_empty() || self.schema.is_empty() {
+            return (self.body.clone(), self.fields.clone());
+        }
+
+        let mut document = serde_json::from_str::<serde_json::Value>(&self.body).ok();
+        let mut fields = Vec::with_capacity(self.schema.len());
+
+        for field in &self.schema {
+            fields.push(FieldDef {
+                path: field.key.clone(),
+                format: type_format(&field.type_).to_string(),
+                required: false,
+                desc: field.desc.clone(),
+            });
+
+            let (Some(root), Some(example)) = (document.as_mut(), field.example.as_deref()) else {
+                continue;
+            };
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(example) {
+                json_doc::graft(root, &field.key, value);
+            }
+        }
+
+        let body = match document {
+            Some(value) => {
+                serde_json::to_string_pretty(&value).unwrap_or_else(|_| self.body.clone())
+            }
+            None => self.body.clone(),
+        };
+        (body, fields)
+    }
 }

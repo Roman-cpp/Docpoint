@@ -34,33 +34,33 @@
           "responses": {
             "200": {
               "label": "200 OK",
-              "schema": [
+              "body": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "expires_in": 3600
+              },
+              "fields": [
                 {
-                  "key": "token",
-                  "type": "string",
-                  "desc": "JWT Bearer-токен",
-                  "example": "\"eyJhbGci...\""
+                  "path": "token",
+                  "desc": "JWT Bearer-токен"
                 },
                 {
-                  "key": "expires_in",
-                  "type": "integer",
+                  "path": "expires_in",
                   "desc": "Срок жизни токена в секундах",
-                  "example": "3600"
+                  "format": "integer"
                 }
-              ],
-              "example": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"expires_in\": 3600\n}"
+              ]
             },
             "401": {
               "label": "401 Unauthorized",
-              "schema": [
+              "body": {
+                "message": "Invalid credentials"
+              },
+              "fields": [
                 {
-                  "key": "message",
-                  "type": "string",
-                  "desc": "Описание ошибки",
-                  "example": "\"Invalid credentials\""
+                  "path": "message",
+                  "desc": "Описание ошибки"
                 }
-              ],
-              "example": "{\n  \"message\": \"Invalid credentials\"\n}"
+              ]
             }
           },
           "requests": [
@@ -89,9 +89,7 @@
           "queryParams": [],
           "responses": {
             "204": {
-              "label": "204 No Content",
-              "schema": [],
-              "example": ""
+              "label": "204 No Content"
             }
           }
         }
@@ -132,45 +130,49 @@
           "responses": {
             "200": {
               "label": "200 OK",
-              "schema": [
-                {
-                  "key": "data[].id",
-                  "type": "uuid",
-                  "desc": "UUID пользователя",
-                  "example": "\"3fa85f64-5717-4562-b3fc-2c963f66afa6\""
-                },
-                {
-                  "key": "data[].name",
-                  "type": "string",
-                  "desc": "Полное имя",
-                  "example": "\"Alice Smith\""
-                },
-                {
-                  "key": "data[].email",
-                  "type": "string",
-                  "desc": "Email",
-                  "example": "\"alice@example.com\""
-                },
-                {
-                  "key": "data[].role",
-                  "type": "string",
-                  "desc": "Роль пользователя",
-                  "example": "\"member\""
-                },
-                {
-                  "key": "meta.total",
-                  "type": "integer",
-                  "desc": "Всего записей",
-                  "example": "142"
-                },
-                {
-                  "key": "meta.page",
-                  "type": "integer",
-                  "desc": "Текущая страница",
-                  "example": "1"
+              "body": {
+                "data": [
+                  {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "name": "Alice Smith",
+                    "email": "alice@example.com",
+                    "role": "member"
+                  }
+                ],
+                "meta": {
+                  "total": 142,
+                  "page": 1
                 }
-              ],
-              "example": "{\n  \"data\": [\n    { \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"name\": \"Alice Smith\", \"email\": \"alice@example.com\", \"role\": \"member\" }\n  ],\n  \"meta\": { \"total\": 142, \"page\": 1 }\n}"
+              },
+              "fields": [
+                {
+                  "path": "data[].id",
+                  "desc": "UUID пользователя",
+                  "format": "uuid"
+                },
+                {
+                  "path": "data[].name",
+                  "desc": "Полное имя"
+                },
+                {
+                  "path": "data[].email",
+                  "desc": "Email"
+                },
+                {
+                  "path": "data[].role",
+                  "desc": "Роль пользователя"
+                },
+                {
+                  "path": "meta.total",
+                  "desc": "Всего записей",
+                  "format": "integer"
+                },
+                {
+                  "path": "meta.page",
+                  "desc": "Текущая страница",
+                  "format": "integer"
+                }
+              ]
             }
           },
           "requests": [
@@ -212,45 +214,49 @@
           "responses": {
             "200": {
               "label": "200 OK",
-              "schema": [
+              "body": {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "name": "Alice Smith",
+                "email": "alice@example.com",
+                "role": "member",
+                "created_at": "2025-01-15T08:30:00Z"
+              },
+              "fields": [
                 {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID пользователя"
+                  "path": "id",
+                  "desc": "UUID пользователя",
+                  "format": "uuid"
                 },
                 {
-                  "key": "name",
-                  "type": "string",
+                  "path": "name",
                   "desc": "Полное имя"
                 },
                 {
-                  "key": "email",
-                  "type": "string",
+                  "path": "email",
                   "desc": "Email"
                 },
                 {
-                  "key": "role",
-                  "type": "string",
+                  "path": "role",
                   "desc": "Роль: admin / member"
                 },
                 {
-                  "key": "created_at",
-                  "type": "datetime",
-                  "desc": "Дата регистрации"
+                  "path": "created_at",
+                  "desc": "Дата регистрации",
+                  "format": "datetime"
                 }
-              ],
-              "example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"role\": \"member\",\n  \"created_at\": \"2025-01-15T08:30:00Z\"\n}"
+              ]
             },
             "404": {
               "label": "404 Not Found",
-              "schema": [
+              "body": {
+                "message": "User not found"
+              },
+              "fields": [
                 {
-                  "key": "message",
-                  "type": "string",
+                  "path": "message",
                   "desc": "Описание ошибки"
                 }
-              ],
-              "example": "{\n  \"message\": \"User not found\"\n}"
+              ]
             }
           },
           "requests": [
@@ -305,30 +311,37 @@
           "responses": {
             "201": {
               "label": "201 Created",
-              "schema": [
+              "body": {
+                "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+              },
+              "fields": [
                 {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID нового пользователя"
+                  "path": "id",
+                  "desc": "UUID нового пользователя",
+                  "format": "uuid"
                 }
-              ],
-              "example": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
+              ]
             },
             "422": {
               "label": "422 Validation Error",
-              "schema": [
+              "body": {
+                "errors": [
+                  {
+                    "field": "email",
+                    "message": "Email already taken"
+                  }
+                ]
+              },
+              "fields": [
                 {
-                  "key": "errors[].field",
-                  "type": "string",
+                  "path": "errors[].field",
                   "desc": "Имя поля с ошибкой"
                 },
                 {
-                  "key": "errors[].message",
-                  "type": "string",
+                  "path": "errors[].message",
                   "desc": "Описание ошибки"
                 }
-              ],
-              "example": "{\n  \"errors\": [\n    { \"field\": \"email\", \"message\": \"Email already taken\" }\n  ]\n}"
+              ]
             }
           },
           "requests": [
@@ -376,24 +389,26 @@
           "responses": {
             "200": {
               "label": "200 OK",
-              "schema": [
+              "body": {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "name": "Alice Johnson",
+                "role": "admin"
+              },
+              "fields": [
                 {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID пользователя"
+                  "path": "id",
+                  "desc": "UUID пользователя",
+                  "format": "uuid"
                 },
                 {
-                  "key": "name",
-                  "type": "string",
+                  "path": "name",
                   "desc": "Обновлённое имя"
                 },
                 {
-                  "key": "role",
-                  "type": "string",
+                  "path": "role",
                   "desc": "Роль"
                 }
-              ],
-              "example": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"name\": \"Alice Johnson\",\n  \"role\": \"admin\"\n}"
+              ]
             }
           }
         },
@@ -415,20 +430,19 @@
           "queryParams": [],
           "responses": {
             "204": {
-              "label": "204 No Content",
-              "schema": [],
-              "example": ""
+              "label": "204 No Content"
             },
             "404": {
               "label": "404 Not Found",
-              "schema": [
+              "body": {
+                "message": "User not found"
+              },
+              "fields": [
                 {
-                  "key": "message",
-                  "type": "string",
+                  "path": "message",
                   "desc": "Описание ошибки"
                 }
-              ],
-              "example": "{\n  \"message\": \"User not found\"\n}"
+              ]
             }
           },
           "requests": [
@@ -491,49 +505,62 @@
           "responses": {
             "200": {
               "label": "200 OK",
-              "schema": [
+              "body": {
+                "data": [
+                  {
+                    "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+                    "title": "Implement login page",
+                    "status": "in_progress",
+                    "priority": "high",
+                    "due_date": "2025-06-01T00:00:00Z",
+                    "assignee": {
+                      "id": "3fa85f64-...",
+                      "name": "Alice Smith"
+                    }
+                  }
+                ],
+                "meta": {
+                  "total": 37
+                }
+              },
+              "fields": [
                 {
-                  "key": "data[].id",
-                  "type": "uuid",
-                  "desc": "UUID задачи"
+                  "path": "data[].id",
+                  "desc": "UUID задачи",
+                  "format": "uuid"
                 },
                 {
-                  "key": "data[].title",
-                  "type": "string",
+                  "path": "data[].title",
                   "desc": "Заголовок задачи"
                 },
                 {
-                  "key": "data[].status",
-                  "type": "string",
+                  "path": "data[].status",
                   "desc": "Статус: todo / in_progress / done"
                 },
                 {
-                  "key": "data[].priority",
-                  "type": "string",
+                  "path": "data[].priority",
                   "desc": "Приоритет: low / medium / high"
                 },
                 {
-                  "key": "data[].due_date",
-                  "type": "datetime",
-                  "desc": "Срок выполнения"
+                  "path": "data[].due_date",
+                  "desc": "Срок выполнения",
+                  "format": "datetime"
                 },
                 {
-                  "key": "data[].assignee.id",
-                  "type": "uuid",
-                  "desc": "UUID исполнителя"
+                  "path": "data[].assignee.id",
+                  "desc": "UUID исполнителя",
+                  "format": "uuid"
                 },
                 {
-                  "key": "data[].assignee.name",
-                  "type": "string",
+                  "path": "data[].assignee.name",
                   "desc": "Имя исполнителя"
                 },
                 {
-                  "key": "meta.total",
-                  "type": "integer",
-                  "desc": "Всего задач"
+                  "path": "meta.total",
+                  "desc": "Всего задач",
+                  "format": "integer"
                 }
-              ],
-              "example": "{\n  \"data\": [\n    {\n      \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n      \"title\": \"Implement login page\",\n      \"status\": \"in_progress\",\n      \"priority\": \"high\",\n      \"due_date\": \"2025-06-01T00:00:00Z\",\n      \"assignee\": { \"id\": \"3fa85f64-...\", \"name\": \"Alice Smith\" }\n    }\n  ],\n  \"meta\": { \"total\": 37 }\n}"
+              ]
             }
           }
         },
@@ -585,24 +612,26 @@
           "responses": {
             "201": {
               "label": "201 Created",
-              "schema": [
+              "body": {
+                "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+                "title": "Implement login page",
+                "status": "todo"
+              },
+              "fields": [
                 {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID созданной задачи"
+                  "path": "id",
+                  "desc": "UUID созданной задачи",
+                  "format": "uuid"
                 },
                 {
-                  "key": "title",
-                  "type": "string",
+                  "path": "title",
                   "desc": "Заголовок"
                 },
                 {
-                  "key": "status",
-                  "type": "string",
+                  "path": "status",
                   "desc": "Начальный статус (всегда todo)"
                 }
-              ],
-              "example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"todo\"\n}"
+              ]
             }
           },
           "requests": [
@@ -696,29 +725,32 @@
           "responses": {
             "200": {
               "label": "200 OK",
-              "schema": [
+              "body": {
+                "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+                "title": "Implement login page",
+                "status": "done",
+                "updated_at": "2025-05-20T14:00:00Z"
+              },
+              "fields": [
                 {
-                  "key": "id",
-                  "type": "uuid",
-                  "desc": "UUID задачи"
+                  "path": "id",
+                  "desc": "UUID задачи",
+                  "format": "uuid"
                 },
                 {
-                  "key": "title",
-                  "type": "string",
+                  "path": "title",
                   "desc": "Заголовок"
                 },
                 {
-                  "key": "status",
-                  "type": "string",
+                  "path": "status",
                   "desc": "Статус"
                 },
                 {
-                  "key": "updated_at",
-                  "type": "datetime",
-                  "desc": "Время обновления"
+                  "path": "updated_at",
+                  "desc": "Время обновления",
+                  "format": "datetime"
                 }
-              ],
-              "example": "{\n  \"id\": \"1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed\",\n  \"title\": \"Implement login page\",\n  \"status\": \"done\",\n  \"updated_at\": \"2025-05-20T14:00:00Z\"\n}"
+              ]
             }
           },
           "requests": [
@@ -758,9 +790,7 @@
           "queryParams": [],
           "responses": {
             "204": {
-              "label": "204 No Content",
-              "schema": [],
-              "example": ""
+              "label": "204 No Content"
             }
           }
         }

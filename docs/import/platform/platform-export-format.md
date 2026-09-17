@@ -114,7 +114,8 @@ platform.zip
       "endpoints": [
         {
           "method": "POST", "path": "/auth/login", "name": "Login", "description": "…", "auth": false,
-          "pathParams": [], "queryParams": [], "bodyParams": [], "responses": { ... },
+          "pathParams": [], "queryParams": [], "body": { ... }, "bodyFields": [ ... ],
+          "responses": { ... },
           "requests": [ { "name": "…", "bodyMode": "fields", "body": "…", "headers": [...], "values": [...] } ]
         }
       ]

@@ -62,37 +62,42 @@ async fn insert_body_fields(
     Ok(())
 }
 
-/// Пишет ответы эндпоинта вместе с полями их схем. Ключ карты — код статуса.
+/// Пишет ответы эндпоинта: документ структуры и примечания к его полям.
+/// Ключ карты — код статуса.
 async fn insert_responses(
     conn: &mut sqlx::SqliteConnection,
     endpoint_id: &str,
     responses: &HashMap<String, ResponseDef>,
 ) -> Result<(), String> {
     for (status_code, resp) in responses {
+        // Файл мог описать ответ и документом, и прежним списком ключей.
+        let (body, fields) = resp.document();
+
         let result = sqlx::query(
-            "INSERT INTO response (endpoint_id, status_code, label, example) \
+            "INSERT INTO response (endpoint_id, status_code, label, body) \
              VALUES (?, ?, ?, ?)",
         )
         .bind(endpoint_id)
         .bind(status_code)
         .bind(&resp.label)
-        .bind(&resp.example)
+        .bind(&body)
         .execute(&mut *conn)
         .await
         .map_err(|e| e.to_string())?;
 
         let resp_id = result.last_insert_rowid();
 
-        for (fi, field) in resp.schema.iter().enumerate() {
+        for (fi, field) in fields.iter().enumerate() {
             sqlx::query(
-                "INSERT INTO response_field (response_id, key, type, desc, example, sort_ord) \
+                "INSERT INTO response_field \
+                 (response_id, path, format, required, desc, sort_ord) \
                  VALUES (?, ?, ?, ?, ?, ?)",
             )
             .bind(resp_id)
-            .bind(&field.key)
-            .bind(&field.type_)
+            .bind(&field.path)
+            .bind(&field.format)
+            .bind(if field.required { 1i64 } else { 0i64 })
             .bind(&field.desc)
-            .bind(&field.example)
             .bind(fi as i64)
             .execute(&mut *conn)
             .await
@@ -415,6 +420,112 @@ mod tests {
         );
     }
 
+    /// Схема ответа переезжает на документ: значение поля, которого в примере
+    /// не было, вживляется на своё место, а то, что уже описано документом, не
+    /// задваивается.
+    #[tokio::test]
+    async fn migration_0049_moves_response_schemas_onto_the_document() {
+        let pool = test_db::through("0048").await;
+
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO platforms (id,name) VALUES ('p1','P');
+            INSERT INTO catalog_node (id,platform_id,kind,name) VALUES ('d1','p1','doc_api','D');
+            INSERT INTO doc_api (id) VALUES ('d1');
+            INSERT INTO "group" (id,doc_id,label,sort_ord) VALUES ('g1','d1','G',0);
+            INSERT INTO endpoint (id,group_id,method,path,name,description,auth,sort_ord)
+              VALUES ('e1','g1','GET','/orders','O','',0,0);
+
+            INSERT INTO response (id,endpoint_id,status_code,label,example)
+              VALUES (1,'e1','200','200 OK','{"data":{"id":"o-1"},"meta":{"total":3}}'),
+                     (2,'e1','500','500','# HELP metrics not json');
+
+            INSERT INTO response_field (response_id,key,type,desc,example,sort_ord)
+              VALUES (1,'data.id','uuid','UUID заказа','"o-1"',0),
+                     (1,'data.price','number','Цена','42.5',1),
+                     (1,'meta.total','integer','Всего',NULL,2),
+                     (1,'data.missing.deep','string','Без ветки','"x"',3),
+                     (2,'whatever','string','Поле не-JSON ответа',NULL,0);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        test_db::apply(&pool, "0049_response_body_document.sql").await;
+
+        let body: String = sqlx::query_scalar("SELECT body FROM response WHERE id = 1")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let document: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(
+            document["data"]["price"],
+            serde_json::json!(42.5),
+            "значение поля, которого не было в примере, вживилось в документ"
+        );
+        assert_eq!(
+            document["data"]["id"],
+            serde_json::json!("o-1"),
+            "то, что уже было в документе, осталось как есть"
+        );
+        assert!(
+            document["data"]["missing"].is_null(),
+            "под путь без ветки структура не выдумывается"
+        );
+
+        let raw: String = sqlx::query_scalar("SELECT body FROM response WHERE id = 2")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(
+            raw, "# HELP metrics not json",
+            "ответ, который не JSON, миграция не трогает"
+        );
+
+        let notes: Vec<(String, String, i64)> = sqlx::query_as(
+            "SELECT path, format, required FROM response_field \
+             WHERE response_id = 1 ORDER BY sort_ord",
+        )
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            notes,
+            vec![
+                ("data.id".into(), "uuid".into(), 0),
+                ("data.price".into(), "".into(), 0),
+                ("meta.total".into(), "integer".into(), 0),
+                ("data.missing.deep".into(), "".into(), 0),
+            ],
+            "ключ стал путём, тип — уточнением там, где документ его не показывает"
+        );
+    }
+
+    /// Старый файл описывал ответ списком ключей рядом с примером. Он читается
+    /// и сворачивается так же, как это сделала миграция.
+    #[test]
+    fn a_legacy_response_schema_becomes_a_document() {
+        let response: ResponseDef = serde_json::from_value(serde_json::json!({
+            "label": "200 OK",
+            "schema": [
+                { "key": "token", "type": "string", "desc": "JWT" },
+                { "key": "expires_in", "type": "integer", "desc": "Секунд", "example": "3600" }
+            ],
+            "example": "{\n  \"token\": \"eyJ\"\n}"
+        }))
+        .unwrap();
+
+        let (body, fields) = response.document();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&body).unwrap(),
+            serde_json::json!({ "token": "eyJ", "expires_in": 3600 }),
+            "пример стал структурой, а значение поля дописалось в неё"
+        );
+        assert_eq!(fields.len(), 2);
+        assert_eq!(fields[1].path, "expires_in");
+        assert_eq!(fields[1].format, "integer");
+    }
+
     /// Файл прежнего формата описывал тело плоским списком. Он читается и
     /// сворачивается теми же правилами, что и миграция.
     #[test]
@@ -587,8 +698,6 @@ mod tests {
     /// уходит вместе с полями схемы, новый появляется с ними.
     #[tokio::test]
     async fn update_replaces_responses_with_their_fields() {
-        use crate::domain::doc_api::endpoint::entity::ResponseSchemaField;
-
         let pool = test_db::migrated().await;
         pool.execute(sqlx::raw_sql(
             r#"
@@ -602,15 +711,16 @@ mod tests {
         .unwrap();
 
         let repo = EndpointRepo::new(&pool);
-        let response = |label: &str, key: &str| ResponseDef {
+        let response = |label: &str, path: &str| ResponseDef {
             label: label.to_string(),
-            schema: vec![ResponseSchemaField {
-                key: key.to_string(),
-                type_: "string".to_string(),
+            body: format!("{{\"{path}\": \"\"}}"),
+            fields: vec![FieldDef {
+                path: path.to_string(),
+                format: String::new(),
+                required: false,
                 desc: String::new(),
-                example: None,
             }],
-            example: "{}".to_string(),
+            schema: vec![],
         };
 
         let id = repo
@@ -659,17 +769,23 @@ mod tests {
                 .unwrap();
         assert_eq!(codes, ["404"]);
 
-        let keys: Vec<String> = sqlx::query_scalar(
-            "SELECT key FROM response_field \
+        let paths: Vec<String> = sqlx::query_scalar(
+            "SELECT path FROM response_field \
              WHERE response_id IN (SELECT id FROM response WHERE endpoint_id = ?)",
         )
         .bind(&id)
         .fetch_all(&pool)
         .await
         .unwrap();
-        assert_eq!(keys, ["error"], "поля старого ответа не должны остаться");
+        assert_eq!(
+            paths,
+            ["error"],
+            "примечания старого ответа не должны остаться"
+        );
     }
 
+    /// Вставка сегмента пути в `param` — на схеме до 0031, где такого вида
+    /// параметров ещё не было. Таблицы `param` в нынешней схеме нет.
     async fn insert_path_param(pool: &SqlitePool) -> Result<(), sqlx::Error> {
         sqlx::query(
             "INSERT INTO param (endpoint_id, kind, name, type, required, desc, sort_ord) \

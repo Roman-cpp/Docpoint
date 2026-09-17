@@ -1,12 +1,16 @@
 import type { FC } from "react";
-import type { EndpointResponse } from "@/entities/doc-api";
+import {
+	buildDocumentTree,
+	countDocumentNodes,
+	type EndpointResponse,
+	formatDocument,
+} from "@/entities/doc-api";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 import { PencilIcon } from "@/shared/svg";
 import { JsonCode } from "@/shared/ui-kit/data-display";
-import { buildSchemaTree, countSchemaNodes } from "../../lib/schema-tree";
 import { CopyButton } from "../CopyButton";
+import { FieldTree } from "../FieldTree";
 import { PlannedNote } from "../PlannedNote";
-import { SchemaTree } from "../SchemaTree";
 import { SectionHead } from "../SectionHead";
 import s from "./ResponsesBlock.module.css";
 
@@ -34,8 +38,9 @@ export const ResponsesBlock: FC<ResponsesBlockProps> = ({
 }) => {
 	const codes = Object.keys(responses).sort();
 	const response = responses[active];
-	const example = response?.example ?? "";
-	const tree = response ? buildSchemaTree(response.schema) : [];
+	// Структура ответа — она же его пример: показываем один документ, а не два.
+	const document = formatDocument(response?.body ?? "");
+	const tree = buildDocumentTree(response?.body ?? "", response?.fields ?? []);
 
 	return (
 		<section className={s.block} id="responses">
@@ -79,10 +84,14 @@ export const ResponsesBlock: FC<ResponsesBlockProps> = ({
 							<div className={s.pane}>
 								<SectionHead
 									title="Схема тела"
-									count={countSchemaNodes(tree)}
-									hint="Вложенность собрана из ключей: meta.total, data[].id"
+									count={countDocumentNodes(tree.nodes)}
+									hint="Форму и типы задаёт сам документ — примечания добавляют остальное"
 								/>
-								<SchemaTree nodes={tree} />
+								<FieldTree
+									tree={tree}
+									document={document}
+									empty="Структура ответа не описана"
+								/>
 							</div>
 
 							<div className={s.pane}>
@@ -106,17 +115,17 @@ export const ResponsesBlock: FC<ResponsesBlockProps> = ({
 											>
 												<PencilIcon size={11} /> Править JSON
 											</button>
-											<CopyButton text={example} />
+											<CopyButton text={document} />
 										</>
 									}
 								/>
-								{example.trim() === "" ? (
+								{document.trim() === "" ? (
 									<div className={s.empty}>
 										Примера нет — для пустого ответа так и должно быть
 									</div>
 								) : (
 									<div className={s.example}>
-										<JsonCode>{example}</JsonCode>
+										<JsonCode>{document}</JsonCode>
 									</div>
 								)}
 							</div>

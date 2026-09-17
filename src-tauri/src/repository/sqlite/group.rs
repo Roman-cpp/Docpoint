@@ -1,6 +1,4 @@
-use crate::domain::doc_api::endpoint::entity::{
-    Endpoint, FieldDef, ParamDef, ResponseDef, ResponseSchemaField,
-};
+use crate::domain::doc_api::endpoint::entity::{Endpoint, FieldDef, ParamDef, ResponseDef};
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
 use crate::domain::doc_api::endpoint_request::repository::{
     EndpointRequestRepository, RequestTarget,
@@ -159,14 +157,14 @@ impl GroupRepository for GroupRepo<'_> {
                     .filter(|r| r.get::<String, _>("endpoint_id") == eid)
                 {
                     let rid: i64 = resp.get("id");
-                    let fields: Vec<ResponseSchemaField> = response_field_rows
+                    let fields: Vec<FieldDef> = response_field_rows
                         .iter()
                         .filter(|f| f.get::<i64, _>("response_id") == rid)
-                        .map(|f| ResponseSchemaField {
-                            key: f.get("key"),
-                            type_: f.get("type"),
+                        .map(|f| FieldDef {
+                            path: f.get("path"),
+                            format: f.get("format"),
+                            required: f.get::<i64, _>("required") != 0,
                             desc: f.get("desc"),
-                            example: f.get("example"),
                         })
                         .collect();
 
@@ -174,8 +172,10 @@ impl GroupRepository for GroupRepo<'_> {
                         resp.get("status_code"),
                         ResponseDef {
                             label: resp.get("label"),
-                            schema: fields,
-                            example: resp.get("example"),
+                            body: resp.get("body"),
+                            fields,
+                            // Прежняя форма схемы живёт только в файлах.
+                            schema: Vec::new(),
                         },
                     );
                 }

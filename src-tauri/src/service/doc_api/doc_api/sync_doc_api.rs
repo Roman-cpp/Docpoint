@@ -178,6 +178,11 @@ fn check_file(groups: &[CreateGroupDTO]) -> Result<(), String> {
             check_path_params(&endpoint.method, &endpoint.path, &endpoint.path_params)?;
             let (_, body_fields) = endpoint.body_document();
             check_field_paths(&endpoint.method, &endpoint.path, "тела", &body_fields)?;
+            for (code, response) in &endpoint.responses {
+                let (_, fields) = response.document();
+                let what = format!("ответа {code}");
+                check_field_paths(&endpoint.method, &endpoint.path, &what, &fields)?;
+            }
 
             let target = target("", endpoint);
             let mut names: HashSet<&str> = HashSet::new();

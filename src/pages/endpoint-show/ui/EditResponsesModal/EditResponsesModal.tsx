@@ -1,94 +1,38 @@
-import { type FC, useEffect, useMemo, useState } from "react";
-import {
-	type Control,
-	Controller,
-	useFieldArray,
-	useForm,
-} from "react-hook-form";
+import { type FC, useEffect, useState } from "react";
 import { toast } from "@/core/toast";
-import type { Endpoint, EndpointResponse } from "@/entities/doc-api";
+import {
+	type Endpoint,
+	type EndpointResponse,
+	type FieldNote,
+	formatDocument,
+} from "@/entities/doc-api";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
+import { cx } from "@/shared/lib/cx";
 import { getStatusDotColor } from "@/shared/lib/status-color";
 import { PlusIcon, TrashIcon } from "@/shared/svg";
-import {
-	Button,
-	Field,
-	Input,
-	Select,
-	Textarea,
-} from "@/shared/ui-kit/controls";
+import { Field, Input } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
+import { DocumentEditor } from "../DocumentEditor";
 import s from "./EditResponsesModal.module.css";
 
-const TYPE_OPTIONS = [
-	{ value: "string", label: "string" },
-	{ value: "number", label: "number" },
-	{ value: "boolean", label: "boolean" },
-	{ value: "object", label: "object" },
-	{ value: "array", label: "array" },
-	{ value: "null", label: "null" },
-];
-
-interface FieldDraft {
-	key: string;
-	type: string;
-	desc: string;
-	example: string;
-}
-
-interface ResponseDraft {
+/** Один ответ в форме: код статуса и его описание. */
+interface Draft {
 	code: string;
 	label: string;
-	schema: FieldDraft[];
-	example: string;
+	body: string;
+	fields: FieldNote[];
 }
 
-interface FormValues {
-	responses: ResponseDraft[];
-}
-
-const emptyField = (): FieldDraft => ({
-	key: "",
-	type: "string",
-	desc: "",
-	example: "",
-});
-
-const emptyResponse = (code = ""): ResponseDraft => ({
-	code,
-	label: "",
-	schema: [],
-	example: "",
-});
-
-/** Ответы в форму — в порядке кодов, чтобы 200 шёл раньше 404. */
-const toDrafts = (
-	responses: Record<string, EndpointResponse>,
-): ResponseDraft[] =>
+/** Ответы в форму — по возрастанию кода, чтобы 200 шёл раньше 404. */
+const toDrafts = (responses: Record<string, EndpointResponse>): Draft[] =>
 	Object.entries(responses)
 		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([code, r]) => ({
+		.map(([code, response]) => ({
 			code,
-			label: r.label,
-			schema: r.schema.map((f) => ({
-				key: f.key,
-				type: f.type,
-				desc: f.desc,
-				example: f.example ?? "",
-			})),
-			example: r.example,
+			label: response.label,
+			body: formatDocument(response.body ?? ""),
+			fields: response.fields ?? [],
 		}));
-
-/** Текст ошибки разбора или null. Пустой пример допустим: тела может не быть. */
-const jsonError = (raw: string): string | null => {
-	if (!raw.trim()) return null;
-	try {
-		JSON.parse(raw);
-		return null;
-	} catch (e) {
-		return e instanceof Error ? e.message : "Некорректный JSON";
-	}
-};
 
 interface EditResponsesModalProps {
 	open: boolean;
@@ -97,8 +41,9 @@ interface EditResponsesModalProps {
 }
 
 /**
- * Правка ответов эндпоинта: код статуса, подпись, схема тела и пример. Все
- * ответы уезжают одним сохранением — бэкенд переписывает их целиком.
+ * Правка ответов эндпоинта: код статуса, подпись и структура тела с
+ * примечаниями к её полям. Все ответы уезжают одним сохранением — бэкенд
+ * переписывает их целиком.
  */
 export const EditResponsesModal: FC<EditResponsesModalProps> = ({
 	open,
@@ -106,76 +51,62 @@ export const EditResponsesModal: FC<EditResponsesModalProps> = ({
 	endpoint,
 }) => {
 	const updateEndpoint = useDocApiStore(actionUpdateEndpoint);
-	const [isSaving, setIsSaving] = useState(false);
+	const [drafts, setDrafts] = useState<Draft[]>([]);
 	const [active, setActive] = useState(0);
-
-	const { control, handleSubmit, reset, watch } = useForm<FormValues>({
-		defaultValues: { responses: toDrafts(endpoint.responses) },
-	});
+	const [isSaving, setIsSaving] = useState(false);
 
 	useEffect(() => {
-		if (open) {
-			reset({ responses: toDrafts(endpoint.responses) });
-			setActive(0);
-		}
-	}, [open, endpoint, reset]);
+		if (!open) return;
+		setDrafts(toDrafts(endpoint.responses));
+		setActive(0);
+	}, [open, endpoint]);
 
-	const list = useFieldArray({ control, name: "responses" });
-	const responses = watch("responses");
-	const current = Math.min(active, Math.max(0, list.fields.length - 1));
+	const current = drafts[active];
 
-	// Коды — ключи карты на бэкенде: пустой код или дубль потерял бы ответ.
-	const problems = useMemo(() => {
-		const seen = new Set<string>();
-		const errors = new Map<number, string>();
-		responses.forEach((r, i) => {
-			const code = r.code.trim();
-			if (!code) errors.set(i, "Укажите код статуса");
-			else if (seen.has(code)) errors.set(i, `Код ${code} уже есть`);
-			else if (jsonError(r.example)) errors.set(i, "Пример — не JSON");
-			seen.add(code);
-		});
-		return errors;
-	}, [responses]);
+	const patch = (change: Partial<Draft>) =>
+		setDrafts((prev) =>
+			prev.map((draft, i) => (i === active ? { ...draft, ...change } : draft)),
+		);
 
-	const addResponse = () => {
-		list.append(emptyResponse());
-		setActive(list.fields.length);
+	const add = () => {
+		setDrafts((prev) => [
+			...prev,
+			{ code: "", label: "", body: "", fields: [] },
+		]);
+		setActive(drafts.length);
 	};
 
-	const removeResponse = (index: number) => {
-		list.remove(index);
-		setActive(Math.max(0, index - 1));
+	const remove = (index: number) => {
+		setDrafts((prev) => prev.filter((_, i) => i !== index));
+		setActive((prev) => (prev >= index && prev > 0 ? prev - 1 : prev));
 	};
 
-	const close = () => {
-		if (isSaving) return;
-		onOpenChange(false);
-	};
+	// Код — ключ ответа, поэтому пустой и повторяющийся не сохранить: непонятно,
+	// какой из двух описывает статус.
+	const codes = drafts.map((draft) => draft.code.trim());
+	const problem = codes.some((code) => code === "")
+		? "У каждого ответа должен быть код статуса"
+		: new Set(codes).size !== codes.length
+			? "Коды статусов повторяются"
+			: null;
 
-	const submit = handleSubmit(async (values) => {
-		const next: Record<string, EndpointResponse> = {};
-		for (const r of values.responses) {
-			const code = r.code.trim();
-			next[code] = {
-				label: r.label.trim() || code,
-				schema: r.schema
-					.filter((f) => f.key.trim())
-					.map((f) => ({
-						key: f.key.trim(),
-						type: f.type,
-						desc: f.desc.trim(),
-						example: f.example.trim() || undefined,
-					})),
-				example: r.example.trim()
-					? JSON.stringify(JSON.parse(r.example), null, 2)
-					: "",
-			};
-		}
+	const save = async () => {
+		if (problem) return;
+
+		const responses = Object.fromEntries(
+			drafts.map((draft) => [
+				draft.code.trim(),
+				{
+					label: draft.label.trim() || draft.code.trim(),
+					body: draft.body.trim(),
+					fields: draft.fields,
+				},
+			]),
+		);
 
 		try {
 			setIsSaving(true);
-			await updateEndpoint({ ...endpoint, responses: next });
+			await updateEndpoint({ ...endpoint, responses });
 			onOpenChange(false);
 		} catch (err) {
 			toast({
@@ -186,236 +117,104 @@ export const EditResponsesModal: FC<EditResponsesModalProps> = ({
 		} finally {
 			setIsSaving(false);
 		}
-	});
-
-	const canSave = !isSaving && problems.size === 0;
+	};
 
 	return (
-		<Dialog.Root open={open} onOpenChange={onOpenChange} width={720}>
+		<Dialog.Root open={open} onOpenChange={onOpenChange} width={760}>
 			<Dialog.Header>
-				<Dialog.Title>Responses</Dialog.Title>
+				<Dialog.Title>Ответы</Dialog.Title>
 				<Dialog.Subtitle>
-					Код статуса, подпись, схема тела и пример для каждого ответа
+					Структура ответа — она же пример: другого «как это выглядит» у ответа
+					не бывает
 				</Dialog.Subtitle>
 				<Dialog.Close />
 			</Dialog.Header>
 
 			<Dialog.Body>
-				<div className={s.tabs}>
-					{list.fields.map((f, i) => {
-						const code = responses[i]?.code.trim() || "…";
-						return (
-							<button
-								type="button"
-								key={f.id}
-								className={`${s.tab} ${i === current ? s.tabActive : ""} ${
-									problems.has(i) ? s.tabError : ""
-								}`}
-								onClick={() => setActive(i)}
-							>
-								<span
-									className={s.dot}
-									style={{ background: getStatusDotColor(code) }}
-								/>
-								{code}
-							</button>
-						);
-					})}
-					<button type="button" className={s.addTab} onClick={addResponse}>
+				<div className={s.codes} role="tablist" aria-label="Коды ответов">
+					{drafts.map((draft, index) => (
+						<button
+							type="button"
+							role="tab"
+							aria-selected={index === active}
+							key={draft.code || `новый-${index}`}
+							className={cx(s.code, index === active && s.codeActive)}
+							onClick={() => setActive(index)}
+						>
+							<span
+								className={s.dot}
+								style={{ background: getStatusDotColor(draft.code) }}
+							/>
+							{draft.code || "код?"}
+						</button>
+					))}
+					<button type="button" className={s.add} onClick={add}>
 						<PlusIcon size={11} /> Ответ
 					</button>
 				</div>
 
-				{list.fields.length === 0 ? (
-					<div className={s.empty}>
-						Ответов пока нет — добавьте первый, обычно это 200
-					</div>
+				{current ? (
+					<>
+						<div className={s.head}>
+							<Field label="Код статуса" required>
+								<Input
+									size="sm"
+									value={current.code}
+									placeholder="200"
+									onChange={(e) => patch({ code: e.target.value })}
+									style={{ fontFamily: "var(--font-mono)" }}
+								/>
+							</Field>
+							<Field label="Подпись">
+								<Input
+									size="sm"
+									value={current.label}
+									placeholder="200 OK"
+									onChange={(e) => patch({ label: e.target.value })}
+								/>
+							</Field>
+							<button
+								type="button"
+								className={s.remove}
+								onClick={() => remove(active)}
+								aria-label="Удалить ответ"
+							>
+								<TrashIcon size={13} />
+							</button>
+						</div>
+
+						<DocumentEditor
+							body={current.body}
+							fields={current.fields}
+							onChange={patch}
+							hint="Вставьте настоящий ответ: структура и типы возьмутся из него"
+							empty="Полей нет — опишите структуру на соседней вкладке"
+							placeholder={'{\n  "data": [],\n  "meta": { "total": 0 }\n}'}
+						/>
+					</>
 				) : (
-					<ResponseEditor
-						key={list.fields[current].id}
-						index={current}
-						control={control}
-						example={responses[current]?.example ?? ""}
-						problem={problems.get(current)}
-						onRemove={() => removeResponse(current)}
-					/>
+					<div className={s.empty}>
+						Ни один ответ не описан. Пока их нет, документация молчит о самом
+						важном — что вернётся на успех и как выглядит ошибка.
+					</div>
 				)}
 			</Dialog.Body>
 
 			<Dialog.Footer>
-				<Dialog.BtnCancel onClick={close} disabled={isSaving}>
+				{problem && <span className={s.problem}>{problem}</span>}
+				<Dialog.BtnCancel
+					onClick={() => onOpenChange(false)}
+					disabled={isSaving}
+				>
 					Отмена
 				</Dialog.BtnCancel>
-				<Dialog.BtnPrimary onClick={submit} disabled={!canSave}>
+				<Dialog.BtnPrimary
+					onClick={save}
+					disabled={isSaving || problem !== null}
+				>
 					{isSaving ? "Сохраняем…" : "Сохранить"}
 				</Dialog.BtnPrimary>
 			</Dialog.Footer>
 		</Dialog.Root>
-	);
-};
-
-/* ─── Один ответ: код, подпись, схема, пример ─────────────────────── */
-
-interface ResponseEditorProps {
-	index: number;
-	control: Control<FormValues>;
-	example: string;
-	problem?: string;
-	onRemove: () => void;
-}
-
-/** Схема — вложенный массив формы, поэтому у неё свой `useFieldArray`. */
-const ResponseEditor: FC<ResponseEditorProps> = ({
-	index,
-	control,
-	example,
-	problem,
-	onRemove,
-}) => {
-	const fields = useFieldArray({ control, name: `responses.${index}.schema` });
-	const error = jsonError(example);
-
-	return (
-		<div className={s.editor}>
-			<div className={s.identity}>
-				<Field label="Код" required>
-					<Controller
-						control={control}
-						name={`responses.${index}.code`}
-						render={({ field }) => (
-							<Input
-								{...field}
-								placeholder="200"
-								error={!!problem && problem !== "Пример — не JSON"}
-								style={{ width: 90, fontFamily: "var(--font-mono)" }}
-							/>
-						)}
-					/>
-				</Field>
-				<Field label="Подпись">
-					<Controller
-						control={control}
-						name={`responses.${index}.label`}
-						render={({ field }) => (
-							<Input {...field} placeholder="OK" style={{ width: "100%" }} />
-						)}
-					/>
-				</Field>
-				<Button
-					variant="danger-ghost"
-					size="sm"
-					icon={<TrashIcon size={12} />}
-					onClick={onRemove}
-					className={s.removeResponse}
-				>
-					Удалить ответ
-				</Button>
-			</div>
-			{problem && <div className={s.problem}>{problem}</div>}
-
-			<div className={s.section}>
-				<div className={s.head}>
-					<span className={s.title}>Схема</span>
-					<button
-						type="button"
-						className={s.addBtn}
-						onClick={() => fields.append(emptyField())}
-					>
-						<PlusIcon size={11} /> Поле
-					</button>
-				</div>
-
-				{fields.fields.length === 0 ? (
-					<div className={s.empty}>Поля не описаны</div>
-				) : (
-					<>
-						<div className={`${s.row} ${s.rowHead}`}>
-							<span>key</span>
-							<span>type</span>
-							<span>описание</span>
-							<span>пример</span>
-							<span />
-						</div>
-						{fields.fields.map((f, i) => (
-							<div className={s.row} key={f.id}>
-								<Controller
-									control={control}
-									name={`responses.${index}.schema.${i}.key`}
-									render={({ field }) => (
-										<Input
-											size="sm"
-											{...field}
-											placeholder="key"
-											style={{ fontFamily: "var(--font-mono)" }}
-										/>
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`responses.${index}.schema.${i}.type`}
-									render={({ field }) => (
-										<Select size="sm" options={TYPE_OPTIONS} {...field} />
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`responses.${index}.schema.${i}.desc`}
-									render={({ field }) => (
-										<Input size="sm" {...field} placeholder="описание" />
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`responses.${index}.schema.${i}.example`}
-									render={({ field }) => (
-										<Input
-											size="sm"
-											{...field}
-											placeholder="—"
-											style={{ fontFamily: "var(--font-mono)" }}
-										/>
-									)}
-								/>
-								<button
-									type="button"
-									className={s.removeBtn}
-									onClick={() => fields.remove(i)}
-									aria-label="Удалить поле"
-								>
-									<TrashIcon size={13} />
-								</button>
-							</div>
-						))}
-					</>
-				)}
-			</div>
-
-			<div className={s.section}>
-				<div className={s.head}>
-					<span className={s.title}>Пример тела</span>
-					<span className={`${s.status} ${error ? s.statusError : ""}`}>
-						{error
-							? `Ошибка: ${error}`
-							: example.trim()
-								? "Валидный JSON"
-								: "Без тела"}
-					</span>
-				</div>
-				<Controller
-					control={control}
-					name={`responses.${index}.example`}
-					render={({ field }) => (
-						<Textarea
-							{...field}
-							error={!!error}
-							rows={10}
-							spellCheck={false}
-							placeholder={'{\n  "id": "…"\n}'}
-							className={s.exampleEditor}
-						/>
-					)}
-				/>
-			</div>
-		</div>
 	);
 };

@@ -27,19 +27,17 @@ export interface FieldNote {
 	desc: string;
 }
 
-/** Поле схемы ответа: как документируется один ключ тела. */
-export interface ResponseField {
-	key: string;
-	type: string;
-	desc: string;
-	example?: string;
-}
-
-/** Ответ эндпоинта под одним кодом статуса: подпись, схема и пример тела. */
+/**
+ * Ответ эндпоинта под одним кодом статуса: подпись, структура и примечания к
+ * её полям.
+ *
+ * Структура описывается так же, как тело запроса, — целым JSON-документом. Он
+ * же служит примером: другого «как это выглядит» у ответа не бывает.
+ */
 export interface EndpointResponse {
 	label: string;
-	schema: ResponseField[];
-	example: string;
+	body: string;
+	fields: FieldNote[];
 }
 
 export interface Endpoint {
