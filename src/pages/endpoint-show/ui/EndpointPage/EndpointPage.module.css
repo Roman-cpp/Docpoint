@@ -1,0 +1,221 @@
+/* Страница эндпоинта — один поток: шапка, запрос, ответы, пример вызова.
+   Контейнер именованный: блоки внутри перестраиваются по ширине колонки
+   документа, а не окна — справа от неё живёт панель «Try it». */
+.doc {
+	container-name: endpoint;
+	container-type: inline-size;
+}
+
+/* ═══════════════ Хлебные крошки ═══════════════ */
+.breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+.bcItem {
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+	transition: color var(--t-fast);
+}
+a.bcItem:hover {
+	color: var(--ink);
+}
+.bcSep {
+	color: var(--border-h);
+	font-size: var(--fs-11);
+}
+.bcCurrent {
+	color: var(--ink-mid);
+	font-size: var(--fs-12);
+}
+
+/* ═══════════════ Шапка ═══════════════ */
+.hero {
+	padding: 20px 22px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-xl);
+	background: var(--surface);
+	scroll-margin-top: 58px;
+}
+
+.heroTop {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.method {
+	padding: 3px 9px;
+	border-radius: var(--r-xs);
+	font-size: var(--fs-11);
+	font-weight: var(--fw-semibold);
+	letter-spacing: 0.6px;
+}
+
+.path {
+	font-family: var(--font-mono);
+	font-size: var(--fs-15);
+	color: var(--ink);
+	word-break: break-all;
+}
+/* Сегмент пути подсвечен: видно, что подставляется, ещё до чтения таблицы. */
+.pathSegment {
+	padding: 1px 3px;
+	border-radius: var(--r-xs);
+	background: var(--cat-bg);
+	color: var(--cat-ink);
+}
+
+.heroActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.title {
+	margin-top: 12px;
+	font-family: var(--font-serif);
+	font-size: var(--fs-24);
+	line-height: var(--lh-tight);
+	color: var(--ink);
+}
+
+.chips {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 12px;
+	flex-wrap: wrap;
+}
+
+.description {
+	margin-top: 14px;
+	max-width: 70ch;
+	color: var(--ink-mid);
+	font-size: var(--fs-14);
+	line-height: var(--lh-body);
+}
+
+/* Описание — markdown, как `description` в OpenAPI. Документная типографика
+   MarkdownView здесь слишком крупная: в шапке эндпоинта это абзац, а не
+   отдельный документ, поэтому заголовки и текст ужимаются до размера карточки. */
+.hero .description p,
+.hero .description li {
+	font-size: var(--fs-14);
+	line-height: var(--lh-body);
+}
+.hero .description p {
+	margin: 0 0 8px;
+}
+.hero .description h1,
+.hero .description h2,
+.hero .description h3,
+.hero .description h4 {
+	margin: 14px 0 6px;
+	padding: 0;
+	border: none;
+	font-size: var(--fs-15);
+	letter-spacing: 0;
+}
+.hero .description > :last-child {
+	margin-bottom: 0;
+}
+
+/* Полоса адреса: подпись окружения, полный URL, копирование. */
+.urlBar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 16px;
+	padding: 8px 10px 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	background: var(--bg);
+	overflow: hidden;
+}
+
+.urlLabel {
+	flex-shrink: 0;
+	padding-right: 10px;
+	border-right: 1px solid var(--border);
+	color: var(--ink-low);
+	font-size: var(--fs-10);
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.url {
+	flex: 1;
+	min-width: 0;
+	overflow-x: auto;
+	color: var(--ink-mid);
+	font-family: var(--font-mono);
+	font-size: var(--fs-12);
+	white-space: nowrap;
+	scrollbar-width: none;
+}
+
+/* ═══════════════ Навигация по разделам ═══════════════ */
+.rail {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 18px -28px 0;
+	padding: 8px 28px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.railLink {
+	padding: 4px 10px;
+	border: 1px solid transparent;
+	border-radius: var(--r-pill);
+	background: none;
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		background var(--t-base),
+		border-color var(--t-base);
+}
+.railLink:hover {
+	color: var(--ink);
+}
+.railActive {
+	border-color: var(--border);
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+
+/* ═══════════════ Разделы ═══════════════ */
+.section {
+	margin-top: 26px;
+	margin-bottom: 34px;
+	scroll-margin-top: 58px;
+}
+
+/* Заглушки будущих блоков стоят парами: на узкой колонке — друг под другом. */
+.plannedRow {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 10px;
+	margin-bottom: 26px;
+}
+
+@container endpoint (min-width: 680px) {
+	.plannedRow {
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	}
+}

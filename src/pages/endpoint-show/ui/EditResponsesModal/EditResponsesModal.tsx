@@ -354,7 +354,7 @@ const ResponseEditor: FC<ResponseEditorProps> = ({
 									control={control}
 									name={`responses.${index}.schema.${i}.type`}
 									render={({ field }) => (
-										<Select options={TYPE_OPTIONS} {...field} />
+										<Select size="sm" options={TYPE_OPTIONS} {...field} />
 									)}
 								/>
 								<Controller

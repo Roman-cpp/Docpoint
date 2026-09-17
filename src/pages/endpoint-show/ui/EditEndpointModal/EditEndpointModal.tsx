@@ -11,6 +11,7 @@ import {
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { PlusIcon, TrashIcon } from "@/shared/svg";
 import {
+	Checkbox,
 	Field,
 	Input,
 	Select,
@@ -91,13 +92,32 @@ const fromDraft = (d: ParamDraft): Endpoint["queryParams"][number] => ({
 	value: "",
 });
 
+/**
+ * Строки сегментов пути: перечень задаёт сам путь, а описания подтягиваются к
+ * ним по имени.
+ *
+ * Считается на каждый сброс формы, а не берётся из `endpoint.pathParams`:
+ * неописанного сегмента в документе нет, и форма, открытая по сохранённым
+ * значениям, показывала бы пустой раздел у эндпоинта, у которого сегмент в
+ * пути есть — достроить строки успевал только эффект синхронизации при
+ * монтировании, а он не повторяется, пока не меняется сам путь.
+ */
+const pathDrafts = (endpoint: Endpoint): ParamDraft[] => {
+	const described = new Map(
+		(endpoint.pathParams ?? []).map((param) => [param.name, toDraft(param)]),
+	);
+	return extractPathParams(endpoint.path).map(
+		(name) => described.get(name) ?? { ...emptyParam(), name },
+	);
+};
+
 const toFormValues = (endpoint: Endpoint): FormValues => ({
 	method: endpoint.method,
 	path: endpoint.path,
 	name: endpoint.name,
 	description: endpoint.description,
 	auth: endpoint.auth,
-	pathParams: (endpoint.pathParams ?? []).map(toDraft),
+	pathParams: pathDrafts(endpoint),
 	queryParams: (endpoint.queryParams ?? []).map(toDraft),
 	bodyParams: (endpoint.bodyParams ?? []).map(toDraft),
 });
@@ -319,59 +339,70 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 								key={f.id}
 							>
 								{tab === "path" ? (
-									<span className={s.paramNameFixed}>{`{${f.name}}`}</span>
+									<>
+										<span className={s.paramNameFixed}>{`{${f.name}}`}</span>
+										<Controller
+											control={control}
+											name={`${arrayName}.${i}.desc`}
+											render={({ field }) => (
+												<Input
+													size="sm"
+													{...field}
+													placeholder="что это за сегмент"
+												/>
+											)}
+										/>
+									</>
 								) : (
-									<Controller
-										control={control}
-										name={`${arrayName}.${i}.name`}
-										render={({ field }) => (
-											<Input
-												size="sm"
-												{...field}
-												placeholder="name"
-												style={{ fontFamily: "var(--font-mono)" }}
-											/>
-										)}
-									/>
-								)}
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.type`}
-									render={({ field }) => (
-										<Select options={TYPE_OPTIONS} {...field} />
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.desc`}
-									render={({ field }) => (
-										<Input size="sm" {...field} placeholder="описание" />
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.required`}
-									render={({ field: { value, onChange, ...field } }) => (
-										<label className={s.reqToggle}>
-											<input
-												type="checkbox"
-												checked={value}
-												onChange={(e) => onChange(e.target.checked)}
-												{...field}
-											/>
-											req
-										</label>
-									)}
-								/>
-								{tab !== "path" && (
-									<button
-										type="button"
-										className={s.removeBtn}
-										onClick={() => activeArray.remove(i)}
-										aria-label="Удалить параметр"
-									>
-										<TrashIcon size={13} />
-									</button>
+									<>
+										<Controller
+											control={control}
+											name={`${arrayName}.${i}.name`}
+											render={({ field }) => (
+												<Input
+													size="sm"
+													{...field}
+													placeholder="name"
+													style={{ fontFamily: "var(--font-mono)" }}
+												/>
+											)}
+										/>
+										<Controller
+											control={control}
+											name={`${arrayName}.${i}.type`}
+											render={({ field }) => (
+												<Select size="sm" options={TYPE_OPTIONS} {...field} />
+											)}
+										/>
+										<Controller
+											control={control}
+											name={`${arrayName}.${i}.desc`}
+											render={({ field }) => (
+												<Input size="sm" {...field} placeholder="описание" />
+											)}
+										/>
+										<Controller
+											control={control}
+											name={`${arrayName}.${i}.required`}
+											render={({ field: { value, onChange, ...field } }) => (
+												<Checkbox
+													size="sm"
+													label="req"
+													checked={value}
+													onChange={(e) => onChange(e.target.checked)}
+													{...field}
+												/>
+											)}
+										/>
+										<button
+											type="button"
+											className={s.removeBtn}
+											onClick={() => activeArray.remove(i)}
+											aria-label="Удалить параметр"
+										>
+											<TrashIcon size={13} />
+										</button>
+									</>
 								)}
 							</div>
 						))

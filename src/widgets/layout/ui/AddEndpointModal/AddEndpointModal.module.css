@@ -71,17 +71,6 @@
 	grid-template-columns: 1.2fr 0.9fr 1.6fr auto;
 }
 
-.reqToggle {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	font-family: var(--font-sans);
-	font-size: 11px;
-	color: var(--ink-mid);
-	cursor: pointer;
-	white-space: nowrap;
-}
-
 .removeBtn {
 	width: 28px;
 	height: 28px;

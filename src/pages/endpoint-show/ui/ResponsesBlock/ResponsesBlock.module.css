@@ -1,0 +1,113 @@
+.block {
+	margin-bottom: 34px;
+	scroll-margin-top: 58px;
+}
+
+/* ─── Переключатель кодов ─── */
+.tabs {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--bg);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 5px 12px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base);
+}
+.tab:hover {
+	background: var(--surface);
+}
+.active {
+	border-color: var(--border);
+	background: var(--surface);
+	box-shadow: var(--shadow-xs);
+}
+
+.dot {
+	width: 7px;
+	height: 7px;
+	border-radius: var(--r-circle);
+	flex-shrink: 0;
+}
+
+.status {
+	font-family: var(--font-mono);
+	font-size: var(--fs-13);
+	color: var(--ink-mid);
+	font-variant-numeric: tabular-nums;
+}
+.active .status {
+	color: var(--ink);
+}
+
+/* ─── Тело выбранного ответа ─── */
+.body {
+	margin-top: 16px;
+}
+
+.label {
+	margin-bottom: 14px;
+	color: var(--ink-mid);
+	font-size: var(--fs-13);
+}
+
+.pane {
+	margin-bottom: 20px;
+}
+
+.editExample {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 8px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink-low);
+	font-size: var(--fs-11);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		border-color var(--t-base);
+}
+.editExample:hover {
+	border-color: var(--border);
+	color: var(--ink);
+}
+
+.example {
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--code-bg);
+	overflow: auto;
+	max-height: 420px;
+}
+.example pre {
+	padding: 14px 16px;
+	margin: 0;
+}
+
+.empty {
+	padding: 12px 14px;
+	border: 1px dashed var(--border);
+	border-radius: var(--r-lg);
+	max-width: 68ch;
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+}

@@ -12,6 +12,7 @@ import {
 } from "react";
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { cx } from "@/shared/lib/cx";
+import { Checkbox } from "@/shared/ui-kit/controls";
 import { Header } from "@/widgets/layout";
 import { METHOD_CFG } from "../../data/httpClientData";
 import type {
@@ -104,9 +105,8 @@ const KVEditor: FC<KVEditorProps> = ({ rows, onChange }) => {
 			</div>
 			{rows.map((row) => (
 				<div className={s.kvRow} key={row.id}>
-					<input
-						type="checkbox"
-						className={s.kvCheck}
+					<Checkbox
+						size="sm"
 						checked={row.enabled}
 						onChange={(e) => upd(row.id, "enabled", e.target.checked)}
 					/>

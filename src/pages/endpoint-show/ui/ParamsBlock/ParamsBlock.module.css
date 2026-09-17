@@ -1,0 +1,102 @@
+.block {
+	margin-bottom: 26px;
+}
+
+.table {
+	border-top: 1px solid var(--border);
+}
+
+.row {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 6px;
+	padding: 12px 2px;
+	border-bottom: 1px solid var(--border);
+}
+
+/* Хватило ширины — имя параметра уходит в свою колонку, и вся страница
+   читается одним взглядом сверху вниз по левому краю. */
+@container endpoint (min-width: 680px) {
+	.row {
+		grid-template-columns: minmax(150px, 30%) 1fr;
+		column-gap: 28px;
+	}
+}
+
+.head {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.name {
+	font-family: var(--font-mono);
+	font-size: var(--fs-13);
+	color: var(--ink);
+	word-break: break-word;
+}
+.deprecated {
+	text-decoration: line-through;
+	text-decoration-color: var(--border-h);
+	color: var(--ink-mid);
+}
+
+.required {
+	color: var(--red);
+	font-size: var(--fs-13);
+	line-height: 1;
+}
+
+.optional {
+	color: var(--ink-low);
+	font-size: var(--fs-10);
+	letter-spacing: 0.3px;
+}
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.types {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.desc {
+	max-width: 68ch;
+	color: var(--ink-mid);
+	font-size: var(--fs-13);
+	line-height: var(--lh-normal);
+}
+.descEmpty {
+	color: var(--ink-low);
+	font-style: italic;
+}
+
+.meta {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.metaLabel {
+	color: var(--ink-low);
+	font-size: var(--fs-10);
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+}
+
+.empty {
+	padding: 12px 14px;
+	border: 1px dashed var(--border);
+	border-radius: var(--r-lg);
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+}

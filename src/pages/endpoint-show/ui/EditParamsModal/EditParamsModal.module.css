@@ -63,6 +63,12 @@
 	color: var(--ink-low);
 }
 
+/* Сегмент пути только описывается: имя приходит из пути, а тип и
+   обязательность видны по самому адресу — колонок остаётся две. */
+.rowPath {
+	grid-template-columns: minmax(110px, 0.9fr) 2.4fr;
+}
+
 /* Имя сегмента приходит из пути: показываем его, а не поле ввода. */
 .nameFixed {
 	font-family: var(--font-mono);
@@ -80,17 +86,6 @@
 	/* Ширина хвоста одинакова с кнопкой и без неё, чтобы колонки не плясали. */
 	min-width: 68px;
 	justify-content: flex-end;
-}
-
-.reqToggle {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	font-family: var(--font-sans);
-	font-size: 11px;
-	color: var(--ink-mid);
-	cursor: pointer;
-	white-space: nowrap;
 }
 
 .removeBtn {

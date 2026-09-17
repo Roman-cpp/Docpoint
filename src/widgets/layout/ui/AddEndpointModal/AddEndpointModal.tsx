@@ -8,6 +8,7 @@ import {
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { PlusIcon, TrashIcon } from "@/shared/svg";
 import {
+	Checkbox,
 	Field,
 	Input,
 	Select,
@@ -395,7 +396,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 									control={control}
 									name={`${arrayName}.${i}.type`}
 									render={({ field }) => (
-										<Select options={TYPE_OPTIONS} {...field} />
+										<Select size="sm" options={TYPE_OPTIONS} {...field} />
 									)}
 								/>
 								<Controller
@@ -409,15 +410,13 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 									control={control}
 									name={`${arrayName}.${i}.required`}
 									render={({ field: { value, onChange, ...field } }) => (
-										<label className={s.reqToggle}>
-											<input
-												type="checkbox"
-												checked={value}
-												onChange={(e) => onChange(e.target.checked)}
-												{...field}
-											/>
-											req
-										</label>
+										<Checkbox
+											size="sm"
+											label="req"
+											checked={value}
+											onChange={(e) => onChange(e.target.checked)}
+											{...field}
+										/>
 									)}
 								/>
 								{tab !== "path" && (

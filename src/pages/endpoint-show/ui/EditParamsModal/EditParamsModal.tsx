@@ -7,8 +7,9 @@ import {
 	type Param,
 } from "@/entities/doc-api";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
+import { cx } from "@/shared/lib/cx";
 import { PlusIcon, TrashIcon } from "@/shared/svg";
-import { Input, Select } from "@/shared/ui-kit/controls";
+import { Checkbox, Input, Select } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./EditParamsModal.module.css";
 
@@ -22,7 +23,7 @@ const TITLE: Record<ParamKind, string> = {
 };
 
 const SUBTITLE: Record<ParamKind, string> = {
-	path: "Перечень сегментов задаёт сам путь — здесь их тип, описание и обязательность",
+	path: "Перечень сегментов задаёт сам путь — здесь у них появляется описание",
 	query: "Параметры строки запроса",
 	body: "Поля тела запроса",
 };
@@ -94,7 +95,10 @@ export const EditParamsModal: FC<EditParamsModalProps> = ({
 }) => {
 	const updateEndpoint = useDocApiStore(actionUpdateEndpoint);
 	const [isSaving, setIsSaving] = useState(false);
-	const fixedNames = kind === "path";
+	/** Сегмент пути описывается, а не заводится: имя приходит из пути, а тип и
+	 *  обязательность разработчику видны по самому адресу — спрашивать их значит
+	 *  просить подтвердить очевидное и разрешать ответить неправдой. */
+	const describeOnly = kind === "path";
 
 	const { control, handleSubmit, reset, watch } = useForm<FormValues>({
 		defaultValues: { params: initialParams(endpoint, kind) },
@@ -107,7 +111,7 @@ export const EditParamsModal: FC<EditParamsModalProps> = ({
 	const rows = useFieldArray({ control, name: "params" });
 	const params = watch("params");
 	const hasBlankName =
-		!fixedNames && params.some((p) => p.name.trim().length === 0);
+		!describeOnly && params.some((p) => p.name.trim().length === 0);
 
 	const close = () => {
 		if (isSaving) return;
@@ -124,7 +128,8 @@ export const EditParamsModal: FC<EditParamsModalProps> = ({
 			return {
 				name,
 				type: d.type,
-				required: d.required,
+				// Сегмент пути обязателен по определению: без него адреса нет.
+				required: describeOnly ? true : d.required,
 				desc: d.desc.trim(),
 				default: d.default.trim() || undefined,
 				value: previous.get(name) ?? null,
@@ -159,10 +164,14 @@ export const EditParamsModal: FC<EditParamsModalProps> = ({
 					<div className={s.head}>
 						<span className={s.count}>
 							{rows.fields.length === 0
-								? "Параметров нет"
-								: `Параметров: ${rows.fields.length}`}
+								? describeOnly
+									? "Сегментов нет"
+									: "Параметров нет"
+								: describeOnly
+									? `Сегментов: ${rows.fields.length}`
+									: `Параметров: ${rows.fields.length}`}
 						</span>
-						{!fixedNames && (
+						{!describeOnly && (
 							<button
 								type="button"
 								className={s.addBtn}
@@ -175,91 +184,116 @@ export const EditParamsModal: FC<EditParamsModalProps> = ({
 
 					{rows.fields.length === 0 ? (
 						<div className={s.empty}>
-							{fixedNames
+							{describeOnly
 								? "В пути нет сегментов в фигурных скобках"
 								: "Параметров пока нет"}
 						</div>
 					) : (
 						<>
-							<div className={`${s.row} ${s.rowHead}`}>
-								<span>name</span>
-								<span>type</span>
-								<span>описание</span>
-								<span>default</span>
-								<span />
+							<div className={cx(s.row, s.rowHead, describeOnly && s.rowPath)}>
+								{describeOnly ? (
+									<>
+										<span>сегмент</span>
+										<span>описание</span>
+									</>
+								) : (
+									<>
+										<span>name</span>
+										<span>type</span>
+										<span>описание</span>
+										<span>default</span>
+										<span />
+									</>
+								)}
 							</div>
 							{rows.fields.map((f, i) => (
-								<div className={s.row} key={f.id}>
-									{fixedNames ? (
-										<span className={s.nameFixed}>{`{${f.name}}`}</span>
-									) : (
-										<Controller
-											control={control}
-											name={`params.${i}.name`}
-											render={({ field }) => (
-												<Input
-													size="sm"
-													{...field}
-													placeholder="name"
-													error={field.value.trim().length === 0}
-													style={{ fontFamily: "var(--font-mono)" }}
-												/>
-											)}
-										/>
-									)}
-									<Controller
-										control={control}
-										name={`params.${i}.type`}
-										render={({ field }) => (
-											<Select options={TYPE_OPTIONS} {...field} />
-										)}
-									/>
-									<Controller
-										control={control}
-										name={`params.${i}.desc`}
-										render={({ field }) => (
-											<Input size="sm" {...field} placeholder="описание" />
-										)}
-									/>
-									<Controller
-										control={control}
-										name={`params.${i}.default`}
-										render={({ field }) => (
-											<Input
-												size="sm"
-												{...field}
-												placeholder="—"
-												style={{ fontFamily: "var(--font-mono)" }}
-											/>
-										)}
-									/>
-									<div className={s.rowTail}>
-										<Controller
-											control={control}
-											name={`params.${i}.required`}
-											render={({ field: { value, onChange, ...field } }) => (
-												<label className={s.reqToggle}>
-													<input
-														type="checkbox"
-														checked={value}
-														onChange={(e) => onChange(e.target.checked)}
+								<div
+									className={cx(s.row, describeOnly && s.rowPath)}
+									key={f.id}
+								>
+									{describeOnly ? (
+										<>
+											<span className={s.nameFixed}>{`{${f.name}}`}</span>
+											<Controller
+												control={control}
+												name={`params.${i}.desc`}
+												render={({ field }) => (
+													<Input
+														size="sm"
 														{...field}
+														placeholder="что это за сегмент"
 													/>
-													req
-												</label>
-											)}
-										/>
-										{!fixedNames && (
-											<button
-												type="button"
-												className={s.removeBtn}
-												onClick={() => rows.remove(i)}
-												aria-label="Удалить параметр"
-											>
-												<TrashIcon size={13} />
-											</button>
-										)}
-									</div>
+												)}
+											/>
+										</>
+									) : (
+										<>
+											<Controller
+												control={control}
+												name={`params.${i}.name`}
+												render={({ field }) => (
+													<Input
+														size="sm"
+														{...field}
+														placeholder="name"
+														error={field.value.trim().length === 0}
+														style={{ fontFamily: "var(--font-mono)" }}
+													/>
+												)}
+											/>
+											<Controller
+												control={control}
+												name={`params.${i}.type`}
+												render={({ field }) => (
+													<Select size="sm" options={TYPE_OPTIONS} {...field} />
+												)}
+											/>
+											<Controller
+												control={control}
+												name={`params.${i}.desc`}
+												render={({ field }) => (
+													<Input size="sm" {...field} placeholder="описание" />
+												)}
+											/>
+											<Controller
+												control={control}
+												name={`params.${i}.default`}
+												render={({ field }) => (
+													<Input
+														size="sm"
+														{...field}
+														placeholder="—"
+														style={{ fontFamily: "var(--font-mono)" }}
+													/>
+												)}
+											/>
+											<div className={s.rowTail}>
+												<Controller
+													control={control}
+													name={`params.${i}.required`}
+													render={({
+														field: { value, onChange, ...field },
+													}) => (
+														<Checkbox
+															size="sm"
+															label="req"
+															checked={value}
+															onChange={(e) => onChange(e.target.checked)}
+															{...field}
+														/>
+													)}
+												/>
+												<button
+													type="button"
+													className={s.removeBtn}
+													onClick={() => rows.remove(i)}
+													aria-label="Удалить параметр"
+												>
+													<TrashIcon size={13} />
+												</button>
+											</div>
+										</>
+									)}
 								</div>
 							))}
 						</>

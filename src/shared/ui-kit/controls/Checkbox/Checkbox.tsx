@@ -1,42 +1,54 @@
-import type { FC, InputHTMLAttributes } from "react";
+import type { FC, InputHTMLAttributes, Ref } from "react";
+import { cx } from "@/shared/lib/cx";
+import { CheckIcon } from "@/shared/svg";
 import s from "./Checkbox.module.css";
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size"> & {
 	label?: string;
 	hint?: string;
+	/** `sm` — для плотных строк таблиц, где рядом стоят мелкие поля. */
+	size?: "sm" | "default";
+	/** React 19 передаёт ref обычным пропом — его ждут формы. */
+	ref?: Ref<HTMLInputElement>;
 };
 
+/**
+ * Флажок: тихая рамка, пока не отмечен, и мягкая заливка с галочкой, когда
+ * отмечен. Отметку держит сама галочка, а не контрастный квадрат, — в списке
+ * из десятка строк такой флажок не перетягивает взгляд с текста, но состояние
+ * видно с одного взгляда.
+ */
 export const Checkbox: FC<Props> = ({
 	label,
 	hint,
+	size = "default",
 	disabled,
 	className,
+	ref,
 	...rest
 }) => (
 	<label
-		className={[s.label, disabled ? s.disabled : ""].filter(Boolean).join(" ")}
+		className={cx(
+			s.label,
+			size === "sm" && s.sm,
+			disabled && s.disabled,
+			className,
+		)}
 	>
-		<input {...rest} type="checkbox" disabled={disabled} className={s.input} />
+		<input
+			{...rest}
+			ref={ref}
+			type="checkbox"
+			disabled={disabled}
+			className={s.input}
+		/>
 		<span className={s.box}>
-			<svg
-				className={s.check}
-				viewBox="0 0 10 10"
-				width={9}
-				height={9}
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			>
-				<title>check</title>
-				<path d="M1.5 5.5l2.5 2.5 4.5-5" />
-			</svg>
+			<CheckIcon className={s.check} size={size === "sm" ? 8 : 9} />
 		</span>
 		{(label || hint) && (
 			<span>
-				{label && <div className={s.text}>{label}</div>}
-				{hint && <div className={s.hint}>{hint}</div>}
+				{label && <span className={s.text}>{label}</span>}
+				{hint && <span className={s.hint}>{hint}</span>}
 			</span>
 		)}
 	</label>

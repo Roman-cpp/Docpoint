@@ -13,6 +13,8 @@
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--r-md);
+	/* Высота считается по той же формуле, что у Input: строка, отступы, рамка. */
+	line-height: var(--lh-tight);
 	padding: 8px 34px 8px 12px;
 	transition:
 		border-color var(--t-fast),
@@ -37,6 +39,17 @@
 	background: var(--cat-bg);
 }
 
+/* size modifiers — те же значения, что у Input */
+.sm .select {
+	font-size: var(--fs-12);
+	padding: 5px 28px 5px 10px;
+}
+
+.md .select {
+	font-size: var(--fs-14);
+	padding: 9px 34px 9px 13px;
+}
+
 .chevron {
 	position: absolute;
 	right: 11px;
@@ -44,6 +57,11 @@
 	color: var(--ink-low);
 	display: flex;
 	align-items: center;
+}
+
+/* Поле уже — стрелка ближе к краю. */
+.sm .chevron {
+	right: 9px;
 }
 
 .error .select {

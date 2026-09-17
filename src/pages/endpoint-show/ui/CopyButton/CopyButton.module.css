@@ -1,0 +1,25 @@
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 8px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink-low);
+	font-size: var(--fs-11);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		border-color var(--t-base),
+		background var(--t-base);
+}
+.btn:hover {
+	border-color: var(--border);
+	color: var(--ink);
+	background: var(--surface);
+}
+
+.compact {
+	padding: 4px;
+}
