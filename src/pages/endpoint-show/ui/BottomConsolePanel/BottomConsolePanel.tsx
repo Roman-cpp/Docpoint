@@ -4,6 +4,7 @@ import {
 	selectResponse,
 	useResponseStore,
 } from "@/features/request";
+import { collectSetCookies } from "@/shared/lib/set-cookie";
 import { JsonTree, type JsonTreeHandle } from "@/shared/ui-kit/data-display";
 import s from "./BottomConsolePanel.module.css";
 
@@ -40,7 +41,7 @@ function findHeader(headers: ResponseHeader[] | undefined, name: string) {
 
 /* ── Компонент ────────────────────────────────────────────────────── */
 
-type Tab = "body" | "headers";
+type Tab = "body" | "headers" | "cookies";
 
 export const BottomConsolePanel: FC = () => {
 	const response = useResponseStore(selectResponse);
@@ -76,8 +77,21 @@ export const BottomConsolePanel: FC = () => {
 		[headers],
 	);
 
+	// Куки, выставленные этим ответом: они же лежат среди заголовков, но
+	// разобранные читаются иначе — видно, что за сессия только что пришла.
+	const cookies = useMemo(() => collectSetCookies(headers), [headers]);
+	const cookiesText = useMemo(
+		() =>
+			(headers ?? [])
+				.filter((h) => h.key.toLowerCase() === "set-cookie")
+				.map((h) => h.value)
+				.join("\n"),
+		[headers],
+	);
+
 	// Копируем то, что на экране: с вкладки заголовков тело копировать незачем.
-	const copyText = tab === "body" ? body : headersText;
+	const copyText =
+		tab === "body" ? body : tab === "headers" ? headersText : cookiesText;
 
 	const toggleMaximize = () => {
 		// родитель нашего корня — это div блока DockLayout.Bottom с inline-высотой
@@ -140,6 +154,13 @@ export const BottomConsolePanel: FC = () => {
 					onClick={() => selectTab("headers")}
 				>
 					Заголовки
+				</button>
+				<button
+					type="button"
+					className={`${s.tab} ${tab === "cookies" ? s.tabActive : ""}`}
+					onClick={() => selectTab("cookies")}
+				>
+					Куки{cookies.length > 0 && ` (${cookies.length})`}
 				</button>
 
 				{response && (
@@ -262,17 +283,45 @@ export const BottomConsolePanel: FC = () => {
 							<pre className={s.raw}>{body}</pre>
 						</div>
 					)
-				) : headers?.length ? (
+				) : tab === "headers" ? (
+					headers?.length ? (
+						<div className={s.headers}>
+							{headers.map(({ key, value }) => (
+								<div key={`${key}: ${value}`} className={s.headerRow}>
+									<span className={s.headerKey}>{key}:</span>
+									<span className={s.headerVal}>{value}</span>
+								</div>
+							))}
+						</div>
+					) : (
+						<div className={s.empty}>Заголовки ответа недоступны</div>
+					)
+				) : cookies.length ? (
 					<div className={s.headers}>
-						{headers.map(({ key, value }) => (
-							<div key={`${key}: ${value}`} className={s.headerRow}>
-								<span className={s.headerKey}>{key}:</span>
-								<span className={s.headerVal}>{value}</span>
+						{cookies.map((cookie) => (
+							<div
+								key={`${cookie.name}=${cookie.value}`}
+								className={s.cookieRow}
+							>
+								<span className={s.headerKey}>{cookie.name}</span>
+								<span className={s.headerVal}>{cookie.value}</span>
+								{cookie.attrs.length > 0 && (
+									<span className={s.cookieAttrs}>
+										{cookie.attrs.join(" · ")}
+									</span>
+								)}
 							</div>
 						))}
 					</div>
 				) : (
-					<div className={s.empty}>Заголовки ответа недоступны</div>
+					<div className={s.empty}>
+						<div>
+							<div>Этот ответ не выставил ни одной куки</div>
+							<div className={s.emptyMeta}>
+								Здесь появляется всё, что сервер прислал в Set-Cookie
+							</div>
+						</div>
+					</div>
 				)}
 			</div>
 		</div>

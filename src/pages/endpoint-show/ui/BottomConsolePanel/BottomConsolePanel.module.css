@@ -203,3 +203,24 @@
 	color: var(--code-ink);
 	word-break: break-all;
 }
+
+/* Кука ответа: имя, значение и атрибуты, которыми сервер её ограничил. */
+.cookieRow {
+	display: grid;
+	grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.4fr) auto;
+	align-items: baseline;
+	gap: 10px;
+	padding: 3px 0;
+	font-family: var(--font-mono);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+}
+
+.cookieAttrs {
+	color: var(--ink-low);
+	font-family: var(--font-sans);
+	font-size: var(--fs-11);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
