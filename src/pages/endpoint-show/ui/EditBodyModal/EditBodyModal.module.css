@@ -1,0 +1,165 @@
+/* ─── Переключатель «Структура | Поля» ─── */
+.tabs {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	margin-bottom: 14px;
+	padding: 4px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--bg);
+}
+
+.tab {
+	padding: 5px 12px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink-low);
+	font: inherit;
+	font-size: var(--fs-12);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		background var(--t-base),
+		border-color var(--t-base);
+}
+.tab:hover {
+	color: var(--ink);
+}
+.active {
+	border-color: var(--border);
+	background: var(--surface);
+	color: var(--ink);
+	box-shadow: var(--shadow-xs);
+}
+
+.pane {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.paneFoot {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.hint {
+	color: var(--ink-low);
+	font-size: var(--fs-11);
+	line-height: var(--lh-snug);
+}
+
+/* Не-JSON телу можно жить: форма, XML, текст. Это предупреждение, не ошибка. */
+.warn {
+	color: var(--amber);
+	font-size: var(--fs-11);
+	line-height: var(--lh-snug);
+}
+
+.format {
+	margin-left: auto;
+	padding: 4px 10px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	background: var(--surface);
+	color: var(--ink-mid);
+	font: inherit;
+	font-size: var(--fs-11);
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		color var(--t-fast),
+		border-color var(--t-fast);
+}
+.format:hover:not(:disabled) {
+	color: var(--ink);
+	border-color: var(--border-h);
+}
+.format:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ─── Список полей ─── */
+.row {
+	display: grid;
+	grid-template-columns: minmax(140px, 1.2fr) 1.8fr 0.8fr auto;
+	align-items: center;
+	gap: 6px;
+}
+
+.rowHead {
+	padding: 0 2px;
+	color: var(--ink-low);
+	font-size: var(--fs-10);
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+}
+
+.path {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+.path code {
+	overflow: hidden;
+	color: var(--code-ink);
+	font-family: var(--font-mono);
+	font-size: var(--fs-12);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.type {
+	color: var(--ink-low);
+	font-size: var(--fs-10);
+}
+
+/* Примечание, которому в документе места не нашлось, читается тише. */
+.orphan .path code {
+	color: var(--ink-mid);
+}
+
+.rowTail {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 72px;
+	justify-content: flex-end;
+}
+
+.removeBtn {
+	width: 26px;
+	height: 26px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink-low);
+	cursor: pointer;
+	flex-shrink: 0;
+	transition:
+		color var(--t-fast),
+		background var(--t-fast),
+		border-color var(--t-fast);
+}
+.removeBtn:hover {
+	border-color: var(--border);
+	background: var(--cat-bg);
+	color: var(--red);
+}
+
+.empty {
+	padding: 14px;
+	border: 1px dashed var(--border);
+	border-radius: var(--r-md);
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+	text-align: center;
+}

@@ -7,6 +7,7 @@ import type {
 	Endpoint,
 	Group,
 	UpdateEndpointDTO,
+	UrlParamKind,
 } from "@/entities/doc-api";
 import {
 	createEndpointApi,
@@ -15,7 +16,7 @@ import {
 	getDocApi,
 	getGroupsApi,
 	updateEndpointApi,
-	updateParamValueApi,
+	updateUrlParamValueApi,
 } from "@/entities/doc-api";
 
 type DocApiState = {
@@ -35,7 +36,7 @@ type DocApiActions = {
 
 	updateEndpointParamValue: (
 		endpointId: string,
-		kind: "path" | "query" | "body",
+		kind: UrlParamKind,
 		name: string,
 		value: string,
 	) => Promise<void>;
@@ -87,7 +88,7 @@ const createDocApiSlice: StateCreator<DocApiStore> = (set, get) => ({
 		});
 	},
 	updateEndpointParamValue: async (endpointId, kind, name, value) => {
-		await updateParamValueApi({ endpointId, kind, name, value });
+		await updateUrlParamValueApi({ endpointId, kind, name, value });
 		set((state) => {
 			const patchEndpoint = (ep: Endpoint): Endpoint => {
 				if (ep.id !== endpointId) return ep;

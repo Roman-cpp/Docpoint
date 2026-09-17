@@ -323,7 +323,9 @@ async fn import_doc_api_node(
                     auth: endpoint.auth,
                     path_params: endpoint.path_params.clone(),
                     query_params: endpoint.query_params.clone(),
-                    body_params: endpoint.body_params.clone(),
+                    body: endpoint.body.clone(),
+                    body_fields: endpoint.body_fields.clone(),
+                    body_params: Vec::new(),
                     responses: endpoint.responses.clone(),
                     requests: endpoint
                         .requests

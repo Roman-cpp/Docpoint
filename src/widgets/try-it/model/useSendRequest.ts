@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Doc, Endpoint } from "@/entities/doc-api";
+import type { Doc, Endpoint, UrlParamKind } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
 import { type SendRequestResult, sendRequestApi } from "@/entities/request";
 import {
@@ -14,7 +14,6 @@ import {
 import {
 	buildHeaders,
 	buildUrl,
-	parseBodyObject,
 	readValue,
 	resolveRequestBody,
 } from "../lib/buildRequest";
@@ -70,15 +69,14 @@ export function useSendRequest() {
 	/**
 	 * Если в поле введена голая ссылка `{{VAR}}`, запоминаем её в схеме
 	 * эндпоинта — тогда параметр будет подставляться сам в новых наборах.
+	 *
+	 * Только URL-параметры: тело набора хранится JSON-документом, и ссылка на
+	 * переменную живёт прямо в нём — запоминать её отдельно незачем.
 	 */
 	const persistVarRefs = async ({ endpoint, request }: SendArgs) => {
 		const tasks: Promise<void>[] = [];
 
-		const remember = (
-			kind: "path" | "query" | "body",
-			name: string,
-			text: string,
-		) => {
+		const remember = (kind: UrlParamKind, name: string, text: string) => {
 			const match = text.trim().match(VAR_REF_RE);
 			if (match) {
 				tasks.push(updateEndpointParamValue(endpoint.id, kind, name, match[1]));
@@ -103,14 +101,6 @@ export function useSendRequest() {
 				param.name,
 				readValue(request.values, "query", param.name),
 			);
-		}
-
-		// Поля тела лежат в JSON-документе, а не среди плоских значений.
-		const doc = parseBodyObject(request.body);
-		for (const param of endpoint.bodyParams ?? []) {
-			if (param.value || !doc) continue;
-			const value = doc[param.name];
-			if (typeof value === "string") remember("body", param.name, value);
 		}
 
 		await Promise.all(tasks);

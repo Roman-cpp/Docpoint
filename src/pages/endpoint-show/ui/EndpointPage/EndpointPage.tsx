@@ -1,7 +1,13 @@
 import { type FC, type ReactNode, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "@/core/toast";
-import { extractPathParams, type Param } from "@/entities/doc-api";
+import {
+	buildDocumentTree,
+	countDocumentNodes,
+	extractPathParams,
+	type Param,
+	type UrlParamKind,
+} from "@/entities/doc-api";
 import {
 	actionUpdateEndpoint,
 	selectDocApi,
@@ -24,9 +30,11 @@ import { buildSnippets } from "../../lib/snippets";
 import { useActiveSection } from "../../model/useActiveSection";
 import { CopyButton } from "../CopyButton";
 import { DocChip } from "../DocChip";
+import { EditBodyModal } from "../EditBodyModal";
 import { EditJsonModal } from "../EditJsonModal";
-import { EditParamsModal, type ParamKind } from "../EditParamsModal";
+import { EditParamsModal } from "../EditParamsModal";
 import { EditResponsesModal } from "../EditResponsesModal";
+import { FieldTree } from "../FieldTree";
 import { ParamsBlock } from "../ParamsBlock";
 import { PlannedNote } from "../PlannedNote";
 import { ResponsesBlock } from "../ResponsesBlock";
@@ -91,7 +99,8 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 
 	const [selectedResponse, setSelectedResponse] = useState<string | null>(null);
 	const [jsonModalOpen, setJsonModalOpen] = useState(false);
-	const [editingParams, setEditingParams] = useState<ParamKind | null>(null);
+	const [editingParams, setEditingParams] = useState<UrlParamKind | null>(null);
+	const [editingBody, setEditingBody] = useState(false);
 	const [editingResponses, setEditingResponses] = useState(false);
 
 	// Перечень сегментов задаёт сам путь: неописанный сегмент всё равно едет в
@@ -133,6 +142,12 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 		[detail, envBase, doc?.prefix],
 	);
 	const snippets = useMemo(() => buildSnippets(preview), [preview]);
+
+	// Форму тела задаёт документ, примечания цепляются к его полям по пути.
+	const bodyTree = useMemo(
+		() => buildDocumentTree(detail.body ?? "", detail.bodyFields ?? []),
+		[detail.body, detail.bodyFields],
+	);
 
 	const group = groups?.find((candidate) =>
 		candidate.endpoints.some((endpoint) => endpoint.id === detail.id),
@@ -295,18 +310,25 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 					</PlannedNote>
 				</div>
 
-				<ParamsBlock
-					title="Тело запроса"
-					params={detail.bodyParams ?? []}
-					empty="Тела у запроса нет"
-					onEdit={() => setEditingParams("body")}
-				/>
+				<div className={s.bodyBlock}>
+					<SectionHead
+						title="Тело запроса"
+						count={countDocumentNodes(bodyTree.nodes)}
+						hint="Форму и типы задаёт сам документ — примечания добавляют остальное"
+						onEdit={() => setEditingBody(true)}
+					/>
+					<FieldTree
+						tree={bodyTree}
+						document={detail.body ?? ""}
+						empty="Тела у запроса нет"
+					/>
+				</div>
 
 				<div className={s.plannedRow}>
-					<PlannedNote title="Форматы тела и вложенные схемы">
-						Тело всегда одно и подразумевается JSON. Ни multipart/form-data для
-						загрузки файлов, ни вложенные объекты глубже одного уровня описать
-						нечем.
+					<PlannedNote title="Форматы тела">
+						Тело у эндпоинта одно и подразумевается JSON. Описать
+						multipart/form-data для загрузки файлов или несколько форматов на
+						выбор пока нечем.
 					</PlannedNote>
 					<PlannedNote title="Схемы авторизации и скоупы">
 						Документация знает только «нужна авторизация» — какая именно схема и
@@ -347,6 +369,12 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 					kind={editingParams}
 				/>
 			)}
+
+			<EditBodyModal
+				open={editingBody}
+				onOpenChange={setEditingBody}
+				endpoint={detail}
+			/>
 
 			<EditResponsesModal
 				open={editingResponses}

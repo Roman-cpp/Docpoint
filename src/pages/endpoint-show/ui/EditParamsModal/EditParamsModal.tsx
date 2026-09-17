@@ -5,6 +5,7 @@ import {
 	type Endpoint,
 	extractPathParams,
 	type Param,
+	type UrlParamKind,
 } from "@/entities/doc-api";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
 import { cx } from "@/shared/lib/cx";
@@ -13,19 +14,14 @@ import { Checkbox, Input, Select } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./EditParamsModal.module.css";
 
-/** Какой набор параметров правится: сегменты пути, строка запроса или тело. */
-export type ParamKind = "path" | "query" | "body";
-
-const TITLE: Record<ParamKind, string> = {
+const TITLE: Record<UrlParamKind, string> = {
 	path: "Path params",
 	query: "Query params",
-	body: "Request body",
 };
 
-const SUBTITLE: Record<ParamKind, string> = {
+const SUBTITLE: Record<UrlParamKind, string> = {
 	path: "Перечень сегментов задаёт сам путь — здесь у них появляется описание",
 	query: "Параметры строки запроса",
-	body: "Поля тела запроса",
 };
 
 const TYPE_OPTIONS = [
@@ -66,7 +62,10 @@ const toDraft = (p: Param): ParamDraft => ({
 });
 
 /** Начальные строки: для пути — по его сегментам, описания подтягиваются по имени. */
-const initialParams = (endpoint: Endpoint, kind: ParamKind): ParamDraft[] => {
+const initialParams = (
+	endpoint: Endpoint,
+	kind: UrlParamKind,
+): ParamDraft[] => {
 	const current = endpoint[`${kind}Params`] ?? [];
 	if (kind !== "path") return current.map(toDraft);
 
@@ -80,7 +79,7 @@ interface EditParamsModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	endpoint: Endpoint;
-	kind: ParamKind;
+	kind: UrlParamKind;
 }
 
 /**

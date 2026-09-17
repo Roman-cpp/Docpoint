@@ -45,7 +45,8 @@ const TYPE_OPTIONS = [
 ];
 
 /** Какие параметры правим: сегменты пути, строка запроса или тело. */
-type ParamTab = "path" | "query" | "body";
+/** Тело описывается отдельно, своим редактором: там документ, а не список. */
+type ParamTab = "path" | "query";
 
 /** Локальная форма одного параметра (без runtime-поля value) */
 interface ParamDraft {
@@ -64,7 +65,6 @@ interface FormValues {
 	auth: boolean;
 	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
-	bodyParams: ParamDraft[];
 }
 
 const emptyParam = (): ParamDraft => ({
@@ -119,7 +119,6 @@ const toFormValues = (endpoint: Endpoint): FormValues => ({
 	auth: endpoint.auth,
 	pathParams: pathDrafts(endpoint),
 	queryParams: (endpoint.queryParams ?? []).map(toDraft),
-	bodyParams: (endpoint.bodyParams ?? []).map(toDraft),
 });
 
 export const EditEndpointModal: FC<EditEndpointModalProps> = ({
@@ -143,11 +142,9 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 
 	const pathArray = useFieldArray({ control, name: "pathParams" });
 	const queryArray = useFieldArray({ control, name: "queryParams" });
-	const bodyArray = useFieldArray({ control, name: "bodyParams" });
 
 	const [tab, setTab] = useState<ParamTab>("query");
-	const activeArray =
-		tab === "path" ? pathArray : tab === "query" ? queryArray : bodyArray;
+	const activeArray = tab === "path" ? pathArray : queryArray;
 	const arrayName = `${tab}Params` as const;
 
 	const close = () => {
@@ -167,7 +164,6 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				auth: values.auth,
 				pathParams: values.pathParams.map(fromDraft),
 				queryParams: values.queryParams.map(fromDraft),
-				bodyParams: values.bodyParams.map(fromDraft),
 			});
 			onOpenChange(false);
 		} catch (e) {
@@ -297,23 +293,12 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 					>
 						Query ({queryArray.fields.length})
 					</button>
-					<button
-						type="button"
-						className={`${s.tab} ${tab === "body" ? s.tabActive : ""}`}
-						onClick={() => setTab("body")}
-					>
-						Body ({bodyArray.fields.length})
-					</button>
 				</div>
 
 				<div className={s.section}>
 					<div className={s.sectionHead}>
 						<span className={s.sectionTitle}>
-							{tab === "path"
-								? "Сегменты пути"
-								: tab === "query"
-									? "Query-параметры"
-									: "Body-параметры"}
+							{tab === "path" ? "Сегменты пути" : "Query-параметры"}
 						</span>
 						{tab !== "path" && (
 							<button

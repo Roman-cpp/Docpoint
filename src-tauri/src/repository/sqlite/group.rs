@@ -1,5 +1,5 @@
 use crate::domain::doc_api::endpoint::entity::{
-    Endpoint, ParamDef, ResponseDef, ResponseSchemaField,
+    Endpoint, FieldDef, ParamDef, ResponseDef, ResponseSchemaField,
 };
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
 use crate::domain::doc_api::endpoint_request::repository::{
@@ -61,12 +61,21 @@ impl GroupRepository for GroupRepo<'_> {
 
         let endpoint_ids: Vec<String> = endpoint_rows.iter().map(|r| r.get("id")).collect();
 
-        let mut pq = sqlx::QueryBuilder::new("SELECT * FROM param WHERE endpoint_id IN (");
-        let mut sep = pq.separated(",");
+        let mut uq =
+            sqlx::QueryBuilder::new("SELECT * FROM endpoint_url_param WHERE endpoint_id IN (");
+        let mut sep = uq.separated(",");
         for id in &endpoint_ids {
             sep.push_bind(id);
         }
-        pq.push(") ORDER BY sort_ord");
+        uq.push(") ORDER BY sort_ord");
+
+        let mut bq =
+            sqlx::QueryBuilder::new("SELECT * FROM endpoint_body_field WHERE endpoint_id IN (");
+        let mut sep = bq.separated(",");
+        for id in &endpoint_ids {
+            sep.push_bind(id);
+        }
+        bq.push(") ORDER BY sort_ord");
 
         let mut rq = sqlx::QueryBuilder::new("SELECT * FROM response WHERE endpoint_id IN (");
         let mut sep = rq.separated(",");
@@ -75,9 +84,12 @@ impl GroupRepository for GroupRepo<'_> {
         }
         rq.push(")");
 
-        let (param_rows, response_rows) =
-            tokio::try_join!(pq.build().fetch_all(db), rq.build().fetch_all(db),)
-                .map_err(|e| e.to_string())?;
+        let (url_param_rows, body_field_rows, response_rows) = tokio::try_join!(
+            uq.build().fetch_all(db),
+            bq.build().fetch_all(db),
+            rq.build().fetch_all(db),
+        )
+        .map_err(|e| e.to_string())?;
 
         let response_ids: Vec<i64> = response_rows.iter().map(|r| r.get("id")).collect();
 
@@ -105,27 +117,41 @@ impl GroupRepository for GroupRepo<'_> {
             .map(|e| {
                 let eid: String = e.get("id");
 
-                let params_of = |kind: &str| -> Vec<ParamDef> {
-                    param_rows
+                let to_param = |p: &sqlx::sqlite::SqliteRow| ParamDef {
+                    name: p.get("name"),
+                    type_: p.get("type"),
+                    required: p.get::<i64, _>("required") != 0,
+                    desc: p.get("desc"),
+                    default: p.get("default_val"),
+                    value: p.get("value"),
+                };
+
+                let url_params_of = |kind: &str| -> Vec<ParamDef> {
+                    url_param_rows
                         .iter()
                         .filter(|p| {
                             p.get::<String, _>("endpoint_id") == eid
                                 && p.get::<String, _>("kind") == kind
                         })
-                        .map(|p| ParamDef {
-                            name: p.get("name"),
-                            type_: p.get("type"),
-                            required: p.get::<i64, _>("required") != 0,
-                            desc: p.get("desc"),
-                            default: p.get("default_val"),
-                            value: p.get("value"),
-                        })
+                        .map(&to_param)
                         .collect()
                 };
 
-                let path_params = params_of("path");
-                let query_params = params_of("query");
-                let body_params = params_of("body");
+                let path_params = url_params_of("path");
+                let query_params = url_params_of("query");
+
+                // Форму тела задаёт документ; здесь — только примечания к его
+                // полям, по одному на путь.
+                let body_fields: Vec<FieldDef> = body_field_rows
+                    .iter()
+                    .filter(|f| f.get::<String, _>("endpoint_id") == eid)
+                    .map(|f| FieldDef {
+                        path: f.get("path"),
+                        format: f.get("format"),
+                        required: f.get::<i64, _>("required") != 0,
+                        desc: f.get("desc"),
+                    })
+                    .collect();
 
                 let mut responses: HashMap<String, ResponseDef> = HashMap::new();
                 for resp in response_rows
@@ -163,7 +189,8 @@ impl GroupRepository for GroupRepo<'_> {
                     auth: e.get::<i64, _>("auth") != 0,
                     path_params,
                     query_params,
-                    body_params,
+                    body: e.get("body"),
+                    body_fields,
                     responses,
                 }
             })
@@ -487,7 +514,7 @@ mod tests {
 
         // Описания сегментов пути доезжают вместе со схемой эндпоинта.
         let described: Vec<(String, String, String)> = sqlx::query_as(
-            "SELECT name, type, desc FROM param \
+            "SELECT name, type, desc FROM endpoint_url_param \
              WHERE endpoint_id = ? AND kind = 'path' ORDER BY sort_ord",
         )
         .bind(&patch_task_id)
@@ -497,6 +524,43 @@ mod tests {
         assert_eq!(
             described,
             vec![("id".into(), "uuid".into(), "UUID задачи".into())]
+        );
+
+        // Тело описано документом, а примечания цепляются к его путям.
+        let login_id: String = sqlx::query_scalar(
+            "SELECT e.id FROM endpoint e JOIN \"group\" g ON g.id = e.group_id \
+             WHERE g.doc_id = ? AND e.method = 'POST' AND e.path = '/auth/login'",
+        )
+        .bind(&doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        let body: String = sqlx::query_scalar("SELECT body FROM endpoint WHERE id = ?")
+            .bind(&login_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&body).unwrap(),
+            serde_json::json!({ "email": "<email>", "password": "<password>" }),
+            "структура тела приезжает документом, как написана в файле"
+        );
+
+        let notes: Vec<(String, String, i64)> = sqlx::query_as(
+            "SELECT path, desc, required FROM endpoint_body_field \
+             WHERE endpoint_id = ? ORDER BY sort_ord",
+        )
+        .bind(&login_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            notes,
+            vec![
+                ("email".into(), "Email пользователя".into(), 1),
+                ("password".into(), "Пароль (мин. 8 символов)".into(), 1),
+            ]
         );
 
         // Эндпоинты без секции `requests` остаются без наборов.

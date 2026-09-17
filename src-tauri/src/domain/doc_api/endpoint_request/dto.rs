@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 
 use super::entity::{BodyMode, ParamValue, RequestHeader};
+use crate::domain::doc_api::json_doc;
 
 /// Полное состояние набора: фронт правит его локально и присылает целиком.
 #[derive(Debug, Deserialize)]
@@ -32,7 +33,7 @@ pub struct ImportEndpointRequestDTO {
     pub name: String,
     #[serde(rename = "bodyMode", default)]
     pub body_mode: BodyMode,
-    #[serde(default, deserialize_with = "body_from_json")]
+    #[serde(default, deserialize_with = "json_doc::from_json")]
     pub body: String,
     #[serde(default, deserialize_with = "headers_from_json")]
     pub headers: Vec<RequestHeader>,
@@ -46,22 +47,6 @@ pub struct ImportEndpointRequestDTO {
     /// Карты `path`/`query` перекрывают её при совпадении имён.
     #[serde(default)]
     pub values: Vec<ParamValue>,
-}
-
-/// Тело набора в файле импорта можно писать двумя способами: объектом —
-/// так его читают и правят руками, — или строкой, если тело не JSON
-/// (форма, XML, произвольный текст). Хранится оно всегда текстом, поэтому
-/// объект здесь же сериализуется.
-fn body_from_json<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let value = serde_json::Value::deserialize(deserializer)?;
-    Ok(match value {
-        serde_json::Value::Null => String::new(),
-        serde_json::Value::String(text) => text,
-        other => serde_json::to_string_pretty(&other).map_err(serde::de::Error::custom)?,
-    })
 }
 
 /// Значения path- и query-параметров. В URL всё равно уезжает текст, поэтому

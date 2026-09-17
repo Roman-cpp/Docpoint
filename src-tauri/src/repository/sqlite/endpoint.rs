@@ -1,15 +1,15 @@
 use crate::domain::doc_api::endpoint::dto::{CreateEndpointDTO, UpdateEndpointDTO};
 use crate::domain::doc_api::endpoint::entity::{
-    check_path_params, EndpointRef, ParamDef, ResponseDef,
+    check_field_paths, check_path_params, EndpointRef, FieldDef, ParamDef, ResponseDef,
 };
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-/// Пишет параметры одного вида (`path`, `query`, `body`). Позиция в массиве
+/// Пишет URL-параметры одного вида (`path` или `query`). Позиция в массиве
 /// становится `sort_ord` — по нему они потом и читаются.
-async fn insert_params(
+async fn insert_url_params(
     conn: &mut sqlx::SqliteConnection,
     endpoint_id: &str,
     kind: &str,
@@ -17,7 +17,8 @@ async fn insert_params(
 ) -> Result<(), String> {
     for (pi, param) in params.iter().enumerate() {
         sqlx::query(
-            "INSERT INTO param (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
+            "INSERT INTO endpoint_url_param \
+             (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(endpoint_id)
@@ -28,6 +29,32 @@ async fn insert_params(
         .bind(&param.desc)
         .bind(&param.default)
         .bind(pi as i64)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Пишет примечания к полям тела. Форму тела задаёт сам документ, здесь —
+/// только то, чего он о себе не рассказывает.
+async fn insert_body_fields(
+    conn: &mut sqlx::SqliteConnection,
+    endpoint_id: &str,
+    fields: &[FieldDef],
+) -> Result<(), String> {
+    for (fi, field) in fields.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO endpoint_body_field \
+             (endpoint_id, path, format, required, desc, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(endpoint_id)
+        .bind(&field.path)
+        .bind(&field.format)
+        .bind(if field.required { 1i64 } else { 0i64 })
+        .bind(&field.desc)
+        .bind(fi as i64)
         .execute(&mut *conn)
         .await
         .map_err(|e| e.to_string())?;
@@ -91,6 +118,11 @@ impl EndpointRepository for EndpointRepo<'_> {
 
         check_path_params(&endpoint.method, &endpoint.path, &endpoint.path_params)?;
 
+        // Файл мог описать тело и документом, и прежним плоским списком —
+        // дальше по коду разницы быть не должно.
+        let (body, body_fields) = endpoint.body_document();
+        check_field_paths(&endpoint.method, &endpoint.path, "тела", &body_fields)?;
+
         let endpoint_id = Uuid::new_v4().to_string();
 
         let sort_ord: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM endpoint WHERE group_id = ?")
@@ -100,8 +132,9 @@ impl EndpointRepository for EndpointRepo<'_> {
             .map_err(|e| e.to_string())?;
 
         sqlx::query(
-            "INSERT INTO endpoint (id, group_id, method, path, name, description, auth, sort_ord) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO endpoint \
+             (id, group_id, method, path, name, description, auth, body, sort_ord) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&endpoint_id)
         .bind(group_id)
@@ -110,25 +143,30 @@ impl EndpointRepository for EndpointRepo<'_> {
         .bind(&endpoint.name)
         .bind(&endpoint.description)
         .bind(if endpoint.auth { 1i64 } else { 0i64 })
+        .bind(&body)
         .bind(sort_ord as i64)
         .execute(db)
         .await
         .map_err(|e| e.to_string())?;
 
         let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
-        insert_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
-        insert_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
-        insert_params(&mut conn, &endpoint_id, "body", &endpoint.body_params).await?;
+        insert_url_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
+        insert_url_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
+        insert_body_fields(&mut conn, &endpoint_id, &body_fields).await?;
         insert_responses(&mut conn, &endpoint_id, &endpoint.responses).await?;
 
         Ok(endpoint_id)
     }
 
     async fn update(&self, endpoint: &UpdateEndpointDTO) -> Result<(), String> {
+        let (body, body_fields) = endpoint.body_document();
+        check_field_paths(&endpoint.method, &endpoint.path, "тела", &body_fields)?;
+
         let mut tx = self.db.begin().await.map_err(|e| e.to_string())?;
 
         sqlx::query(
-            "UPDATE endpoint SET method = ?, path = ?, name = ?, description = ?, auth = ? \
+            "UPDATE endpoint \
+             SET method = ?, path = ?, name = ?, description = ?, auth = ?, body = ? \
              WHERE id = ?",
         )
         .bind(&endpoint.method)
@@ -136,40 +174,49 @@ impl EndpointRepository for EndpointRepo<'_> {
         .bind(&endpoint.name)
         .bind(&endpoint.description)
         .bind(if endpoint.auth { 1i64 } else { 0i64 })
+        .bind(&body)
         .bind(&endpoint.id)
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
 
         // Значение параметра — не часть его описания: его выставляет
-        // пользователь в «Try it», а правка эндпоинта (и тем более повторная
-        // повторный импорт файла, где значений нет вовсе) описание меняет, а выбор
+        // пользователь в «Try it», а правка эндпоинта (и тем более повторный
+        // импорт файла, где значений нет вовсе) описание меняет, а выбор
         // пользователя трогать не должна. Параметры пересоздаются целиком,
-        // поэтому значения снимаются заранее и возвращаются по (kind, name).
-        let kept: Vec<(String, String, String)> = sqlx::query_as(
-            "SELECT kind, name, value FROM param WHERE endpoint_id = ? AND value <> ''",
+        // поэтому значения снимаются заранее и возвращаются по имени.
+        let kept_url: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT kind, name, value FROM endpoint_url_param \
+             WHERE endpoint_id = ? AND value <> ''",
         )
         .bind(&endpoint.id)
         .fetch_all(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
 
-        // Параметры всех видов правятся целиком, поэтому пересоздаём их.
-        sqlx::query("DELETE FROM param WHERE endpoint_id = ?")
+        // Описание правится целиком, поэтому параметры и примечания
+        // пересоздаются.
+        sqlx::query("DELETE FROM endpoint_url_param WHERE endpoint_id = ?")
+            .bind(&endpoint.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        sqlx::query("DELETE FROM endpoint_body_field WHERE endpoint_id = ?")
             .bind(&endpoint.id)
             .execute(&mut *tx)
             .await
             .map_err(|e| e.to_string())?;
 
-        insert_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
-        insert_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
-        insert_params(&mut tx, &endpoint.id, "body", &endpoint.body_params).await?;
+        insert_url_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
+        insert_url_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
+        insert_body_fields(&mut tx, &endpoint.id, &body_fields).await?;
 
         // Параметр, которого в новом описании нет, значение не получает —
         // UPDATE просто не находит строку.
-        for (kind, name, value) in &kept {
+        for (kind, name, value) in &kept_url {
             sqlx::query(
-                "UPDATE param SET value = ? WHERE endpoint_id = ? AND kind = ? AND name = ?",
+                "UPDATE endpoint_url_param SET value = ? \
+                 WHERE endpoint_id = ? AND kind = ? AND name = ?",
             )
             .bind(value)
             .bind(&endpoint.id)
@@ -179,7 +226,6 @@ impl EndpointRepository for EndpointRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
         }
-
         // Ответы — так же целиком. Поля схем удаляются явно: каскад по внешнему
         // ключу срабатывает только при включённом `foreign_keys`, а на это
         // соединение полагаться нельзя.
@@ -284,6 +330,206 @@ mod tests {
     use crate::repository::sqlite::test_db;
     use sqlx::Executor;
 
+    /// Плоские поля тела сворачиваются в документ: порядок берётся из
+    /// `sort_ord`, умолчание становится значением, а то, чего JSON не
+    /// различает, уходит в уточнение типа.
+    #[tokio::test]
+    async fn migration_0048_folds_body_params_into_a_document() {
+        let pool = test_db::through("0047").await;
+
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO platforms (id,name) VALUES ('p1','P');
+            INSERT INTO catalog_node (id,platform_id,kind,name) VALUES ('d1','p1','doc_api','D');
+            INSERT INTO doc_api (id) VALUES ('d1');
+            INSERT INTO "group" (id,doc_id,label,sort_ord) VALUES ('g1','d1','G',0);
+            INSERT INTO endpoint (id,group_id,method,path,name,description,auth,sort_ord)
+              VALUES ('e1','g1','POST','/tasks','T','',0,0),
+                     ('e2','g1','GET','/tasks','L','',0,1);
+            INSERT INTO param (endpoint_id,kind,name,type,required,desc,default_val,value,sort_ord)
+              VALUES ('e1','body','title','string',1,'Заголовок',NULL,'',0),
+                     ('e1','body','limit','integer',0,'Сколько','20','',1),
+                     ('e1','body','done','boolean',0,'Готово',NULL,'',2),
+                     ('e1','body','owner','uuid',1,'Владелец',NULL,'',3),
+                     ('e1','body','meta','object',0,'Мета',NULL,'',4);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        test_db::apply(&pool, "0048_endpoint_body_document.sql").await;
+
+        let body: String = sqlx::query_scalar("SELECT body FROM endpoint WHERE id = 'e1'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let document: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(
+            document,
+            serde_json::json!({
+                "title": "<title>",
+                "limit": 20,
+                "done": true,
+                "owner": "00000000-0000-0000-0000-000000000000",
+                "meta": {}
+            }),
+            "умолчание едет значением, остальное — образцом по типу"
+        );
+        assert_eq!(
+            document.as_object().unwrap().keys().collect::<Vec<_>>(),
+            vec!["title", "limit", "done", "owner", "meta"],
+            "порядок полей в документе взят из sort_ord, а не по алфавиту"
+        );
+
+        let empty: String = sqlx::query_scalar("SELECT body FROM endpoint WHERE id = 'e2'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(empty, "", "эндпоинт без полей тела остаётся без документа");
+
+        let notes: Vec<(String, String, i64, String)> = sqlx::query_as(
+            "SELECT path, format, required, desc FROM endpoint_body_field \
+             WHERE endpoint_id = 'e1' ORDER BY sort_ord",
+        )
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            notes,
+            vec![
+                ("title".into(), "".into(), 1, "Заголовок".into()),
+                ("limit".into(), "integer".into(), 0, "Сколько".into()),
+                ("done".into(), "".into(), 0, "Готово".into()),
+                ("owner".into(), "uuid".into(), 1, "Владелец".into()),
+                ("meta".into(), "".into(), 0, "Мета".into()),
+            ],
+            "уточняется только то, чего не видно в документе"
+        );
+
+        assert!(
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM param")
+                .fetch_one(&pool)
+                .await
+                .is_err(),
+            "плоских параметров больше нет ни одного вида"
+        );
+    }
+
+    /// Файл прежнего формата описывал тело плоским списком. Он читается и
+    /// сворачивается теми же правилами, что и миграция.
+    #[test]
+    fn a_legacy_body_params_list_becomes_a_document() {
+        let dto: CreateEndpointDTO = serde_json::from_value(serde_json::json!({
+            "method": "POST",
+            "path": "/tasks",
+            "name": "Create",
+            "bodyParams": [
+                { "name": "title", "type": "string", "required": true, "desc": "Заголовок" },
+                { "name": "limit", "type": "integer", "required": false, "desc": "Сколько",
+                  "default": "20" }
+            ]
+        }))
+        .unwrap();
+
+        let (body, fields) = dto.body_document();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&body).unwrap(),
+            serde_json::json!({ "title": "<title>", "limit": 20 })
+        );
+        assert_eq!(fields.len(), 2);
+        assert_eq!(fields[1].format, "integer");
+        assert!(fields[0].required);
+    }
+
+    /// Новый формат описывает тело объектом, и он побеждает прежнюю секцию.
+    #[test]
+    fn a_document_in_the_file_wins_over_the_legacy_list() {
+        let dto: CreateEndpointDTO = serde_json::from_value(serde_json::json!({
+            "method": "POST",
+            "path": "/tasks",
+            "name": "Create",
+            "body": { "title": "", "meta": { "labels": [] } },
+            "bodyFields": [{ "path": "meta.labels[]", "desc": "Метки" }],
+            "bodyParams": [{ "name": "title", "type": "string", "required": true, "desc": "X" }]
+        }))
+        .unwrap();
+
+        let (body, fields) = dto.body_document();
+        assert!(body.contains("labels"), "тело взято из документа");
+        assert_eq!(fields.len(), 1);
+        assert_eq!(fields[0].path, "meta.labels[]");
+    }
+
+    /// URL-параметры уезжают в свою таблицу вместе со значениями, а поля тела
+    /// остаются в `param` — на них переезд не распространяется.
+    #[tokio::test]
+    async fn migration_0047_moves_url_params_and_leaves_the_body_alone() {
+        let pool = test_db::through("0046").await;
+
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO platforms (id,name) VALUES ('p1','P');
+            INSERT INTO catalog_node (id,platform_id,kind,name) VALUES ('d1','p1','doc_api','D');
+            INSERT INTO doc_api (id) VALUES ('d1');
+            INSERT INTO "group" (id,doc_id,label,sort_ord) VALUES ('g1','d1','G',0);
+            INSERT INTO endpoint (id,group_id,method,path,name,description,auth,sort_ord)
+              VALUES ('e1','g1','GET','/posts/{postId}','P','',0,0);
+            INSERT INTO param (endpoint_id,kind,name,type,required,desc,default_val,value,sort_ord)
+              VALUES ('e1','path','postId','uuid',1,'UUID поста',NULL,'',0),
+                     ('e1','query','page','integer',0,'Страница','1','PAGE_VAR',1),
+                     ('e1','body','title','string',1,'Заголовок',NULL,'',0);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        test_db::apply(&pool, "0047_endpoint_url_param.sql").await;
+
+        let moved: Vec<(String, String, String, String, i64)> = sqlx::query_as(
+            "SELECT kind, name, type, value, required FROM endpoint_url_param \
+             WHERE endpoint_id = 'e1' ORDER BY sort_ord",
+        )
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            moved,
+            vec![
+                ("path".into(), "postId".into(), "uuid".into(), "".into(), 1),
+                (
+                    "query".into(),
+                    "page".into(),
+                    "integer".into(),
+                    "PAGE_VAR".into(),
+                    0
+                ),
+            ],
+            "описание и привязка к переменной переезжают как есть"
+        );
+
+        let left: Vec<(String, String)> =
+            sqlx::query_as("SELECT kind, name FROM param WHERE endpoint_id = 'e1'")
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        assert_eq!(
+            left,
+            vec![("body".into(), "title".into())],
+            "в param остаются только поля тела"
+        );
+
+        // Вид, которого у URL-параметра быть не может, отбивается CHECK-ом.
+        assert!(
+            pool.execute(sqlx::raw_sql(
+                "INSERT INTO endpoint_url_param (endpoint_id,kind,name,type) \
+                 VALUES ('e1','body','x','string')",
+            ))
+            .await
+            .is_err(),
+            "kind='body' в таблице URL-параметров недопустим"
+        );
+    }
+
     /// Пересборка таблицы не теряет уже описанные параметры и открывает
     /// дорогу третьему виду — сегментам пути.
     #[tokio::test]
@@ -378,6 +624,8 @@ mod tests {
                     auth: false,
                     path_params: vec![],
                     query_params: vec![],
+                    body: String::new(),
+                    body_fields: vec![],
                     body_params: vec![],
                     responses: HashMap::from([("200".to_string(), response("OK", "id"))]),
                     requests: vec![],
@@ -395,6 +643,8 @@ mod tests {
             auth: false,
             path_params: vec![],
             query_params: vec![],
+            body: String::new(),
+            body_fields: vec![],
             body_params: vec![],
             responses: HashMap::from([("404".to_string(), response("Not found", "error"))]),
         })

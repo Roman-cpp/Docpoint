@@ -1,5 +1,5 @@
 import type { Endpoint, Param } from "@/entities/doc-api";
-import { extractPathParams } from "@/entities/doc-api";
+import { extractPathParams, formatDocument } from "@/entities/doc-api";
 import { joinUrl } from "@/shared/lib/url";
 
 /**
@@ -91,14 +91,6 @@ function buildQuery(params: Param[]): string {
 	return query === "" ? "" : `?${decodeURIComponent(query)}`;
 }
 
-/** Тело примера: объект по описанным полям схемы. */
-function buildBody(params: Param[]): string | null {
-	if (params.length === 0) return null;
-	const body: Record<string, unknown> = {};
-	for (const param of params) body[param.name] = sampleValue(param);
-	return JSON.stringify(body, null, 2);
-}
-
 interface PreviewInput {
 	endpoint: Endpoint;
 	/** База выбранного окружения вместе с его префиксом. */
@@ -113,9 +105,11 @@ export function buildRequestPreview({
 	docPrefix,
 }: PreviewInput): RequestPreview {
 	const path = fillPath(endpoint) + buildQuery(endpoint.queryParams ?? []);
+	// Тело примера — сам документ схемы: он и есть описание того, что
+	// отправляют. Собирать его по полям больше не из чего.
 	const body = BODYLESS.has(endpoint.method)
 		? null
-		: buildBody(endpoint.bodyParams ?? []);
+		: formatDocument(endpoint.body ?? "") || null;
 
 	const headers: [string, string][] = [];
 	if (body !== null) headers.push(["Content-Type", "application/json"]);

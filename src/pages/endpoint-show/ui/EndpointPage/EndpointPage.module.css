@@ -206,6 +206,10 @@ a.bcItem:hover {
 	scroll-margin-top: 58px;
 }
 
+.bodyBlock {
+	margin-bottom: 26px;
+}
+
 /* Заглушки будущих блоков стоят парами: на узкой колонке — друг под другом. */
 .plannedRow {
 	display: grid;

@@ -198,7 +198,9 @@ async fn export_doc_api(state: &AppState, node_id: &str) -> Result<ManifestDocAp
                 auth: endpoint.auth,
                 path_params: endpoint.path_params,
                 query_params: endpoint.query_params,
-                body_params: endpoint.body_params,
+                body: endpoint.body,
+                body_fields: endpoint.body_fields,
+                body_params: Vec::new(),
                 responses: endpoint.responses,
                 requests,
             });

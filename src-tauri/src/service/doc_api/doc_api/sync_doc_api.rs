@@ -4,7 +4,7 @@ use crate::domain::doc_api::doc_api::dto::{DocApiPayload, SyncDocApiDTO};
 use crate::domain::doc_api::doc_api::entity::SyncReport;
 use crate::domain::doc_api::doc_api::repository::DocApiRepository;
 use crate::domain::doc_api::endpoint::dto::{CreateEndpointDTO, UpdateEndpointDTO};
-use crate::domain::doc_api::endpoint::entity::check_path_params;
+use crate::domain::doc_api::endpoint::entity::{check_field_paths, check_path_params};
 use crate::domain::doc_api::endpoint::repository::EndpointRepository;
 use crate::domain::doc_api::endpoint_request::repository::{
     resolve_values, EndpointRequestRepository, RequestTarget,
@@ -126,6 +126,10 @@ fn target<'a>(endpoint_id: &'a str, endpoint: &'a CreateEndpointDTO) -> RequestT
 /// кроме id. Наборы «Try it» сюда не входят — они пишутся отдельно, своим
 /// репозиторием.
 fn update_dto(id: &str, endpoint: &CreateEndpointDTO) -> UpdateEndpointDTO {
+    // Тело берём уже свёрнутым: файл мог описать его и документом, и прежним
+    // плоским списком, а дальше по коду разницы быть не должно.
+    let (body, body_fields) = endpoint.body_document();
+
     UpdateEndpointDTO {
         id: id.to_string(),
         method: endpoint.method.clone(),
@@ -135,7 +139,9 @@ fn update_dto(id: &str, endpoint: &CreateEndpointDTO) -> UpdateEndpointDTO {
         auth: endpoint.auth,
         path_params: endpoint.path_params.clone(),
         query_params: endpoint.query_params.clone(),
-        body_params: endpoint.body_params.clone(),
+        body,
+        body_fields,
+        body_params: Vec::new(),
         responses: endpoint.responses.clone(),
     }
 }
@@ -170,6 +176,8 @@ fn check_file(groups: &[CreateGroupDTO]) -> Result<(), String> {
             }
 
             check_path_params(&endpoint.method, &endpoint.path, &endpoint.path_params)?;
+            let (_, body_fields) = endpoint.body_document();
+            check_field_paths(&endpoint.method, &endpoint.path, "тела", &body_fields)?;
 
             let target = target("", endpoint);
             let mut names: HashSet<&str> = HashSet::new();
@@ -323,7 +331,8 @@ mod tests {
                 .unwrap();
 
         sqlx::query(
-            "UPDATE param SET value = '{{VERBOSE}}' WHERE endpoint_id = ? AND name = 'verbose'",
+            "UPDATE endpoint_url_param SET value = '{{VERBOSE}}' \
+             WHERE endpoint_id = ? AND name = 'verbose'",
         )
         .bind(&endpoint_id)
         .execute(&pool)
@@ -337,7 +346,7 @@ mod tests {
         sync(&pool, file(ping())).await.unwrap();
 
         let value: String = sqlx::query_scalar(
-            "SELECT value FROM param WHERE endpoint_id = ? AND name = 'verbose'",
+            "SELECT value FROM endpoint_url_param WHERE endpoint_id = ? AND name = 'verbose'",
         )
         .bind(&endpoint_id)
         .fetch_one(&pool)
