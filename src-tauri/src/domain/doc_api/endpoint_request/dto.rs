@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
-use super::entity::{BodyMode, ParamValue, RequestHeader};
+use super::entity::{BodyMode, ParamValue, RequestCookie, RequestHeader};
 use crate::domain::doc_api::json_doc;
 
 /// Полное состояние набора: фронт правит его локально и присылает целиком.
@@ -13,6 +13,7 @@ pub struct SaveEndpointRequestDTO {
     pub body_mode: BodyMode,
     pub body: String,
     pub headers: Vec<RequestHeader>,
+    pub cookies: Vec<RequestCookie>,
     pub values: Vec<ParamValue>,
 }
 
@@ -37,6 +38,10 @@ pub struct ImportEndpointRequestDTO {
     pub body: String,
     #[serde(default, deserialize_with = "headers_from_json")]
     pub headers: Vec<RequestHeader>,
+    /// Куки набора: объектом «имя → значение» или списком, если нужна
+    /// выключенная, — ровно как заголовки.
+    #[serde(default, deserialize_with = "cookies_from_json")]
+    pub cookies: Vec<RequestCookie>,
     /// Значения для сегментов пути: имя из фигурных скобок → значение.
     #[serde(default, deserialize_with = "scalar_map")]
     pub path: BTreeMap<String, String>,
@@ -107,6 +112,36 @@ where
                 });
             }
             headers
+        }
+    })
+}
+
+/// Куки набора читаются так же, как заголовки: объектом «имя → значение» или
+/// списком, когда нужна выключенная.
+fn cookies_from_json<'de, D>(deserializer: D) -> Result<Vec<RequestCookie>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Shape {
+        List(Vec<RequestCookie>),
+        Map(BTreeMap<String, serde_json::Value>),
+    }
+
+    Ok(match Shape::deserialize(deserializer)? {
+        Shape::List(cookies) => cookies,
+        Shape::Map(map) => {
+            let mut cookies = Vec::with_capacity(map.len());
+            for (name, value) in map {
+                let value = scalar_to_string(&name, value)?;
+                cookies.push(RequestCookie {
+                    name,
+                    value,
+                    enabled: true,
+                });
+            }
+            cookies
         }
     })
 }

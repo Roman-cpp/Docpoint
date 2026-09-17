@@ -12,12 +12,13 @@ export type {
 } from "./DropMenu/DropMenu";
 export { DropMenu } from "./DropMenu/DropMenu";
 export { Field } from "./Field/Field";
-export type { HeaderDraft } from "./HeadersEditor/HeadersEditor";
-export {
-	createHeaderDraft,
-	HeadersEditor,
-} from "./HeadersEditor/HeadersEditor";
 export { Input } from "./Input/Input";
+export type { NameValueDraft } from "./NameValueEditor/NameValueEditor";
+export {
+	COMMON_HEADER_NAMES,
+	createNameValueDraft,
+	NameValueEditor,
+} from "./NameValueEditor/NameValueEditor";
 export { RadioGroup } from "./RadioGroup/RadioGroup";
 export { Select } from "./Select/Select";
 export { Textarea } from "./Textarea/Textarea";

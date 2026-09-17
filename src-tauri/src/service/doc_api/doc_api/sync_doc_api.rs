@@ -139,6 +139,8 @@ fn update_dto(id: &str, endpoint: &CreateEndpointDTO) -> UpdateEndpointDTO {
         auth: endpoint.auth,
         path_params: endpoint.path_params.clone(),
         query_params: endpoint.query_params.clone(),
+        header_params: endpoint.header_params.clone(),
+        cookie_params: endpoint.cookie_params.clone(),
         body,
         body_fields,
         body_params: Vec::new(),
@@ -336,7 +338,7 @@ mod tests {
                 .unwrap();
 
         sqlx::query(
-            "UPDATE endpoint_url_param SET value = '{{VERBOSE}}' \
+            "UPDATE endpoint_param SET value = '{{VERBOSE}}' \
              WHERE endpoint_id = ? AND name = 'verbose'",
         )
         .bind(&endpoint_id)
@@ -351,7 +353,7 @@ mod tests {
         sync(&pool, file(ping())).await.unwrap();
 
         let value: String = sqlx::query_scalar(
-            "SELECT value FROM endpoint_url_param WHERE endpoint_id = ? AND name = 'verbose'",
+            "SELECT value FROM endpoint_param WHERE endpoint_id = ? AND name = 'verbose'",
         )
         .bind(&endpoint_id)
         .fetch_one(&pool)

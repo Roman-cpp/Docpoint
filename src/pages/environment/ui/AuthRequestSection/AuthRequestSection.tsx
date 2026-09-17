@@ -7,7 +7,11 @@ import type {
 	WsTokenPlacement,
 } from "@/entities/environment";
 import { BoltIcon, RefreshIcon, TrashIcon } from "@/shared/svg";
-import { type HeaderDraft, HeadersEditor } from "@/shared/ui-kit/controls";
+import {
+	COMMON_HEADER_NAMES,
+	type NameValueDraft,
+	NameValueEditor,
+} from "@/shared/ui-kit/controls";
 import s from "../EnvironmentPage.module.css";
 import {
 	AUTH_TYPE_LABEL,
@@ -61,8 +65,8 @@ type Props = {
 	onBodyBlur: () => void;
 	bodyContentType: BodyContentType;
 	onBodyContentTypeChange: (value: BodyContentType) => void;
-	extraHeaders: HeaderDraft[];
-	onExtraHeadersChange: (headers: HeaderDraft[]) => void;
+	extraHeaders: NameValueDraft[];
+	onExtraHeadersChange: (headers: NameValueDraft[]) => void;
 	tokenPath: string;
 	onTokenPathChange: (value: string) => void;
 	onTokenPathBlur: () => void;
@@ -389,8 +393,12 @@ export const AuthRequestSection: FC<Props> = ({
 								</Field>
 							)}
 							<Field label="Доп. заголовки запроса">
-								<HeadersEditor
-									headers={extraHeaders}
+								<NameValueEditor
+									title="Headers"
+									addLabel="+ Add header"
+									suggestions={COMMON_HEADER_NAMES}
+									duplicateHint="Заголовок повторяется"
+									rows={extraHeaders}
 									onChange={onExtraHeadersChange}
 								/>
 							</Field>

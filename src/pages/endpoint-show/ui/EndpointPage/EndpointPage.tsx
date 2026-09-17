@@ -4,10 +4,10 @@ import { toast } from "@/core/toast";
 import {
 	buildDocumentTree,
 	countDocumentNodes,
+	type EndpointParamKind,
 	extractPathParams,
 	formatDocument,
 	type Param,
-	type UrlParamKind,
 } from "@/entities/doc-api";
 import {
 	actionUpdateEndpoint,
@@ -100,7 +100,9 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 
 	const [selectedResponse, setSelectedResponse] = useState<string | null>(null);
 	const [jsonModalOpen, setJsonModalOpen] = useState(false);
-	const [editingParams, setEditingParams] = useState<UrlParamKind | null>(null);
+	const [editingParams, setEditingParams] = useState<EndpointParamKind | null>(
+		null,
+	);
 	const [editingBody, setEditingBody] = useState(false);
 	const [editingResponses, setEditingResponses] = useState(false);
 

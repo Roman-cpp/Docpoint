@@ -2,7 +2,7 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
-pub async fn update_url_param_value(
+pub async fn update_param_value(
     state: State<'_, AppState>,
     endpoint_id: String,
     kind: String,
@@ -10,7 +10,7 @@ pub async fn update_url_param_value(
     value: String,
 ) -> Result<(), String> {
     crate::logging::logged(
-        "update_url_param_value",
-        crate::service::update_url_param_value(&state, endpoint_id, kind, name, value).await,
+        "update_param_value",
+        crate::service::update_param_value(&state, endpoint_id, kind, name, value).await,
     )
 }

@@ -11,7 +11,9 @@ use std::collections::HashMap;
 
 use crate::domain::catalog::entity::NodeKind;
 use crate::domain::doc_api::endpoint::entity::{FieldDef, ParamDef, ResponseDef};
-use crate::domain::doc_api::endpoint_request::entity::{BodyMode, ParamValue, RequestHeader};
+use crate::domain::doc_api::endpoint_request::entity::{
+    BodyMode, ParamValue, RequestCookie, RequestHeader,
+};
 use crate::domain::doc_api::json_doc;
 use crate::domain::doc_erd::entity::entity::Entity;
 use crate::domain::doc_erd::entity_relation::entity::EntityRelation;
@@ -103,6 +105,10 @@ pub struct ManifestEndpoint {
     pub path_params: Vec<ParamDef>,
     #[serde(rename = "queryParams")]
     pub query_params: Vec<ParamDef>,
+    #[serde(rename = "headerParams", default)]
+    pub header_params: Vec<ParamDef>,
+    #[serde(rename = "cookieParams", default)]
+    pub cookie_params: Vec<ParamDef>,
     /// Структура тела запроса документом; читается и объектом, и строкой —
     /// архивы, выгруженные до перехода, несут прежний `bodyParams`.
     #[serde(default, deserialize_with = "json_doc::from_json")]
@@ -128,6 +134,8 @@ pub struct ManifestEndpointRequest {
     pub body: String,
     #[serde(default)]
     pub headers: Vec<RequestHeader>,
+    #[serde(default)]
+    pub cookies: Vec<RequestCookie>,
     #[serde(default)]
     pub values: Vec<ParamValue>,
 }

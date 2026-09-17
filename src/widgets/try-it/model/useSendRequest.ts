@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Doc, Endpoint, UrlParamKind } from "@/entities/doc-api";
+import type { Doc, Endpoint, EndpointParamKind } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
 import { type SendRequestResult, sendRequestApi } from "@/entities/request";
 import {
@@ -76,7 +76,7 @@ export function useSendRequest() {
 	const persistVarRefs = async ({ endpoint, request }: SendArgs) => {
 		const tasks: Promise<void>[] = [];
 
-		const remember = (kind: UrlParamKind, name: string, text: string) => {
+		const remember = (kind: EndpointParamKind, name: string, text: string) => {
 			const match = text.trim().match(VAR_REF_RE);
 			if (match) {
 				tasks.push(updateEndpointParamValue(endpoint.id, kind, name, match[1]));
@@ -122,7 +122,7 @@ export function useSendRequest() {
 			const result = await sendRequestApi({
 				method: endpoint.method,
 				url: buildUrl(endpoint, env, doc, request.values),
-				headers: buildHeaders(request.headers, env, body),
+				headers: buildHeaders(request.headers, request.cookies, env, body),
 				body,
 			});
 

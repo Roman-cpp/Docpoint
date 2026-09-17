@@ -186,6 +186,7 @@ async fn export_doc_api(state: &AppState, node_id: &str) -> Result<ManifestDocAp
                     body_mode: r.body_mode,
                     body: r.body,
                     headers: r.headers,
+                    cookies: r.cookies,
                     values: r.values,
                 })
                 .collect();
@@ -198,6 +199,8 @@ async fn export_doc_api(state: &AppState, node_id: &str) -> Result<ManifestDocAp
                 auth: endpoint.auth,
                 path_params: endpoint.path_params,
                 query_params: endpoint.query_params,
+                header_params: endpoint.header_params,
+                cookie_params: endpoint.cookie_params,
                 body: endpoint.body,
                 body_fields: endpoint.body_fields,
                 body_params: Vec::new(),

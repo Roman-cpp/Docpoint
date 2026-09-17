@@ -19,6 +19,10 @@ pub struct CreateEndpointDTO {
     pub path_params: Vec<ParamDef>,
     #[serde(rename = "queryParams", default)]
     pub query_params: Vec<ParamDef>,
+    #[serde(rename = "headerParams", default)]
+    pub header_params: Vec<ParamDef>,
+    #[serde(rename = "cookieParams", default)]
+    pub cookie_params: Vec<ParamDef>,
     /// Структура тела запроса. В файле пишется объектом, читается и строкой —
     /// тело не обязано быть JSON.
     #[serde(default, deserialize_with = "json_doc::from_json")]
@@ -52,6 +56,10 @@ pub struct UpdateEndpointDTO {
     pub path_params: Vec<ParamDef>,
     #[serde(rename = "queryParams", default)]
     pub query_params: Vec<ParamDef>,
+    #[serde(rename = "headerParams", default)]
+    pub header_params: Vec<ParamDef>,
+    #[serde(rename = "cookieParams", default)]
+    pub cookie_params: Vec<ParamDef>,
     /// Структура тела запроса. В файле пишется объектом, читается и строкой —
     /// тело не обязано быть JSON.
     #[serde(default, deserialize_with = "json_doc::from_json")]

@@ -27,6 +27,10 @@ function toDraft(request: EndpointRequest): RequestDraft {
 			...header,
 			id: crypto.randomUUID(),
 		})),
+		cookies: (request.cookies ?? []).map((cookie) => ({
+			...cookie,
+			id: crypto.randomUUID(),
+		})),
 		values,
 	};
 }
@@ -38,6 +42,11 @@ function toDto(draft: RequestDraft): UpdateEndpointRequestDTO {
 		bodyMode: draft.bodyMode,
 		body: draft.body,
 		headers: draft.headers.map(({ name, value, enabled }) => ({
+			name,
+			value,
+			enabled,
+		})),
+		cookies: draft.cookies.map(({ name, value, enabled }) => ({
 			name,
 			value,
 			enabled,
@@ -154,6 +163,10 @@ export function useEndpointRequests(endpointId: string) {
 						id: created.id,
 						name,
 						values: { ...source.values },
+						cookies: source.cookies.map((cookie) => ({
+							...cookie,
+							id: crypto.randomUUID(),
+						})),
 						headers: source.headers.map((header) => ({
 							...header,
 							id: crypto.randomUUID(),

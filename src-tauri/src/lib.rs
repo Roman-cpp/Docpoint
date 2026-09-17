@@ -21,9 +21,9 @@ use commands::{
     read_websocket_messages, read_websockets, rename_node, save_endpoint_request, save_json_file,
     send_request, set_environment_access_token, set_selected_environment, update_doc,
     update_endpoint, update_environment, update_environment_auth, update_environment_proxy,
-    update_markdown, update_platform, update_schema, update_schema_positions,
-    update_url_param_value, update_variable, update_websocket, update_websocket_message,
-    ws_connect, ws_disconnect, ws_send,
+    update_markdown, update_param_value, update_platform, update_schema, update_schema_positions,
+    update_variable, update_websocket, update_websocket_message, ws_connect, ws_disconnect,
+    ws_send,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use state::AppState;
@@ -133,7 +133,7 @@ pub fn run() {
             update_endpoint,
             delete_endpoint,
             delete_group,
-            update_url_param_value,
+            update_param_value,
             list_endpoint_requests,
             create_endpoint_request,
             delete_endpoint_request,

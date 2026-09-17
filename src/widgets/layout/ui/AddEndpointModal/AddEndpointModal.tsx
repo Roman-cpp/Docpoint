@@ -153,6 +153,10 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 			auth: values.auth,
 			pathParams: values.pathParams.map(fromDraft),
 			queryParams: values.queryParams.map(fromDraft),
+			// Заголовки и куки описываются на странице, когда уже понятно, что
+			// эндпоинт ожидает.
+			headerParams: [],
+			cookieParams: [],
 			// Тело у нового эндпоинта пустое: его описывают документом на
 			// странице, когда уже понятно, что он принимает.
 			body: "",

@@ -2,7 +2,7 @@ use crate::domain::doc_api::endpoint_request::dto::{
     ImportEndpointRequestDTO, SaveEndpointRequestDTO,
 };
 use crate::domain::doc_api::endpoint_request::entity::{
-    BodyMode, EndpointRequest, ParamValue, RequestHeader,
+    BodyMode, EndpointRequest, ParamValue, RequestCookie, RequestHeader,
 };
 use crate::domain::doc_api::endpoint_request::repository::{
     resolve_values, EndpointRequestRepository, RequestTarget,
@@ -52,6 +52,14 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
         )
         .await?;
 
+        let cookie_rows = fetch_in(
+            self.db,
+            "SELECT request_id, name, value, enabled FROM request_cookie WHERE request_id IN (",
+            &request_ids,
+            " ORDER BY sort_ord",
+        )
+        .await?;
+
         let requests = req_rows
             .iter()
             .map(|r| {
@@ -63,6 +71,16 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
                     .iter()
                     .filter(is_mine)
                     .map(|row| RequestHeader {
+                        name: row.get("name"),
+                        value: row.get("value"),
+                        enabled: row.get::<i64, _>("enabled") != 0,
+                    })
+                    .collect();
+
+                let cookies = cookie_rows
+                    .iter()
+                    .filter(is_mine)
+                    .map(|row| RequestCookie {
                         name: row.get("name"),
                         value: row.get("value"),
                         enabled: row.get::<i64, _>("enabled") != 0,
@@ -87,6 +105,7 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
                     body_mode: BodyMode::parse(r.get::<String, _>("body_mode").as_str()),
                     body: r.get("body"),
                     headers,
+                    cookies,
                     values,
                 }
             })
@@ -129,6 +148,22 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             .bind(kind)
             .bind(name)
             .bind(value)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        for (ord, cookie) in request.cookies.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO request_cookie (id, request_id, name, value, enabled, sort_ord) \
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(Uuid::new_v4().to_string())
+            .bind(&id)
+            .bind(&cookie.name)
+            .bind(&cookie.value)
+            .bind(if cookie.enabled { 1i64 } else { 0i64 })
+            .bind(ord as i64)
             .execute(&mut *tx)
             .await
             .map_err(|e| e.to_string())?;
@@ -220,6 +255,7 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             body_mode: BodyMode::Fields,
             body: String::new(),
             headers: Vec::new(),
+            cookies: Vec::new(),
             values: Vec::new(),
         })
     }
@@ -289,6 +325,28 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             .bind(&header.name)
             .bind(&header.value)
             .bind(if header.enabled { 1i64 } else { 0i64 })
+            .bind(ord as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        sqlx::query("DELETE FROM request_cookie WHERE request_id = ?")
+            .bind(&request.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for (ord, cookie) in request.cookies.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO request_cookie (id, request_id, name, value, enabled, sort_ord) \
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(Uuid::new_v4().to_string())
+            .bind(&request.id)
+            .bind(&cookie.name)
+            .bind(&cookie.value)
+            .bind(if cookie.enabled { 1i64 } else { 0i64 })
             .bind(ord as i64)
             .execute(&mut *tx)
             .await
@@ -428,6 +486,36 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(kinds, ["path", "query"]);
+    }
+
+    /// Куки набора читаются объектом и списком — как заголовки, — и ложатся
+    /// в свою таблицу со своим порядком и флагом отправки.
+    #[tokio::test]
+    async fn cookies_of_a_request_are_stored_like_headers() {
+        let pool = seeded().await;
+        let request: ImportEndpointRequestDTO = serde_json::from_value(serde_json::json!({
+            "name": "С сессией",
+            "path": { "postId": 1, "commentId": "c-1" },
+            "cookies": [
+                { "name": "session", "value": "abc" },
+                { "name": "debug", "value": "1", "enabled": false }
+            ],
+        }))
+        .unwrap();
+
+        EndpointRequestRepo::new(&pool)
+            .insert(&target(), 0, &request)
+            .await
+            .unwrap();
+
+        let stored = EndpointRequestRepo::new(&pool).list("e1").await.unwrap();
+        assert_eq!(stored[0].cookies.len(), 2);
+        assert_eq!(stored[0].cookies[0].name, "session");
+        assert!(stored[0].cookies[0].enabled);
+        assert!(
+            !stored[0].cookies[1].enabled,
+            "выключенная кука хранится, но не отправляется"
+        );
     }
 
     /// Эндпоинт `e1` из [`seeded`] глазами импорта.

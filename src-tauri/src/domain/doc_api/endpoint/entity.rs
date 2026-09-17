@@ -172,6 +172,11 @@ pub struct Endpoint {
     pub path_params: Vec<ParamDef>,
     #[serde(rename = "queryParams")]
     pub query_params: Vec<ParamDef>,
+    /// Заголовки запроса, описанные наравне с остальными параметрами.
+    #[serde(rename = "headerParams", default)]
+    pub header_params: Vec<ParamDef>,
+    #[serde(rename = "cookieParams", default)]
+    pub cookie_params: Vec<ParamDef>,
     /// Структура тела запроса: JSON-документ целиком. Пустая строка — тела
     /// нет. Документ задаёт и форму, и типы значений, поэтому плоского списка
     /// полей рядом с ним не нужно.

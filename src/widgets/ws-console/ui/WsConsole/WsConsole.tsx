@@ -12,9 +12,10 @@ import {
 import { cx } from "@/shared/lib/cx";
 import { ArrowDownIcon, ArrowUpIcon } from "@/shared/svg";
 import {
-	createHeaderDraft,
-	type HeaderDraft,
-	HeadersEditor,
+	COMMON_HEADER_NAMES,
+	createNameValueDraft,
+	type NameValueDraft,
+	NameValueEditor,
 } from "@/shared/ui-kit/controls";
 import s from "./WsConsole.module.css";
 
@@ -47,7 +48,7 @@ type Tab = (typeof TABS)[number];
  * Заголовки рукопожатия для бэкенда: включённые строки с непустым именем,
  * последняя одноимённая побеждает.
  */
-function collectHeaders(headers: HeaderDraft[]): Record<string, string> {
+function collectHeaders(headers: NameValueDraft[]): Record<string, string> {
 	const result: Record<string, string> = {};
 	for (const header of headers) {
 		const name = header.name.trim();
@@ -211,7 +212,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 	/* Заголовки рукопожатия. Живут только на время сессии страницы; токен
 	   окружения бэкенд подставляет сам, если своего `Authorization`/`Cookie`
 	   здесь нет. */
-	const [headers, setHeaders] = useState<HeaderDraft[]>([]);
+	const [headers, setHeaders] = useState<NameValueDraft[]>([]);
 	const [messages, setMessages] = useState<WsMessage[]>([]);
 	const [search, setSearch] = useState("");
 	const [filter, setFilter] = useState<"all" | "in" | "out">("all");
@@ -366,7 +367,7 @@ export const WsConsole: FC<WsConsoleProps> = ({
 		setHeaders((list) =>
 			list.some((h) => h.name.trim().toLowerCase() === "cookie")
 				? list
-				: [...list, { ...createHeaderDraft(), name: "Cookie" }],
+				: [...list, { ...createNameValueDraft(), name: "Cookie" }],
 		);
 	};
 
@@ -429,7 +430,14 @@ export const WsConsole: FC<WsConsoleProps> = ({
 
 				{tab === "Headers" ? (
 					<div className={s.headersPane}>
-						<HeadersEditor headers={headers} onChange={setHeaders} />
+						<NameValueEditor
+							title="Headers"
+							addLabel="+ Add header"
+							suggestions={COMMON_HEADER_NAMES}
+							duplicateHint="Заголовок повторяется"
+							rows={headers}
+							onChange={setHeaders}
+						/>
 						<p className={s.headersHint}>
 							Отправляются при подключении. Если не задать Authorization/Cookie,
 							токен выбранного окружения подставится сам — способ настраивается

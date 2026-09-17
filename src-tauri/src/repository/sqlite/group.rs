@@ -59,8 +59,7 @@ impl GroupRepository for GroupRepo<'_> {
 
         let endpoint_ids: Vec<String> = endpoint_rows.iter().map(|r| r.get("id")).collect();
 
-        let mut uq =
-            sqlx::QueryBuilder::new("SELECT * FROM endpoint_url_param WHERE endpoint_id IN (");
+        let mut uq = sqlx::QueryBuilder::new("SELECT * FROM endpoint_param WHERE endpoint_id IN (");
         let mut sep = uq.separated(",");
         for id in &endpoint_ids {
             sep.push_bind(id);
@@ -82,7 +81,7 @@ impl GroupRepository for GroupRepo<'_> {
         }
         rq.push(")");
 
-        let (url_param_rows, body_field_rows, response_rows) = tokio::try_join!(
+        let (param_rows, body_field_rows, response_rows) = tokio::try_join!(
             uq.build().fetch_all(db),
             bq.build().fetch_all(db),
             rq.build().fetch_all(db),
@@ -124,8 +123,8 @@ impl GroupRepository for GroupRepo<'_> {
                     value: p.get("value"),
                 };
 
-                let url_params_of = |kind: &str| -> Vec<ParamDef> {
-                    url_param_rows
+                let params_of = |kind: &str| -> Vec<ParamDef> {
+                    param_rows
                         .iter()
                         .filter(|p| {
                             p.get::<String, _>("endpoint_id") == eid
@@ -135,8 +134,10 @@ impl GroupRepository for GroupRepo<'_> {
                         .collect()
                 };
 
-                let path_params = url_params_of("path");
-                let query_params = url_params_of("query");
+                let path_params = params_of("path");
+                let query_params = params_of("query");
+                let header_params = params_of("header");
+                let cookie_params = params_of("cookie");
 
                 // Форму тела задаёт документ; здесь — только примечания к его
                 // полям, по одному на путь.
@@ -189,6 +190,8 @@ impl GroupRepository for GroupRepo<'_> {
                     auth: e.get::<i64, _>("auth") != 0,
                     path_params,
                     query_params,
+                    header_params,
+                    cookie_params,
                     body: e.get("body"),
                     body_fields,
                     responses,
@@ -514,7 +517,7 @@ mod tests {
 
         // Описания сегментов пути доезжают вместе со схемой эндпоинта.
         let described: Vec<(String, String, String)> = sqlx::query_as(
-            "SELECT name, type, desc FROM endpoint_url_param \
+            "SELECT name, type, desc FROM endpoint_param \
              WHERE endpoint_id = ? AND kind = 'path' ORDER BY sort_ord",
         )
         .bind(&patch_task_id)

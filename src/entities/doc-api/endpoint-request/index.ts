@@ -8,6 +8,7 @@ export type {
 	BodyMode,
 	EndpointRequest,
 	ParamKind,
+	RequestCookie,
 	RequestHeader,
 	RequestParamValue,
 	UpdateEndpointRequestDTO,

@@ -3,9 +3,9 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "@/core/toast";
 import {
 	type Endpoint,
+	type EndpointParamKind,
 	extractPathParams,
 	type Param,
-	type UrlParamKind,
 } from "@/entities/doc-api";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
 import { cx } from "@/shared/lib/cx";
@@ -14,14 +14,18 @@ import { Checkbox, Input, Select } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 import s from "./EditParamsModal.module.css";
 
-const TITLE: Record<UrlParamKind, string> = {
+const TITLE: Record<EndpointParamKind, string> = {
 	path: "Path params",
 	query: "Query params",
+	header: "Заголовки запроса",
+	cookie: "Куки запроса",
 };
 
-const SUBTITLE: Record<UrlParamKind, string> = {
+const SUBTITLE: Record<EndpointParamKind, string> = {
 	path: "Перечень сегментов задаёт сам путь — здесь у них появляется описание",
 	query: "Параметры строки запроса",
+	header: "Заголовки, которые ожидает эндпоинт: Idempotency-Key, X-Request-Id",
+	cookie: "Куки, которые ожидает эндпоинт",
 };
 
 const TYPE_OPTIONS = [
@@ -64,7 +68,7 @@ const toDraft = (p: Param): ParamDraft => ({
 /** Начальные строки: для пути — по его сегментам, описания подтягиваются по имени. */
 const initialParams = (
 	endpoint: Endpoint,
-	kind: UrlParamKind,
+	kind: EndpointParamKind,
 ): ParamDraft[] => {
 	const current = endpoint[`${kind}Params`] ?? [];
 	if (kind !== "path") return current.map(toDraft);
@@ -79,7 +83,7 @@ interface EditParamsModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	endpoint: Endpoint;
-	kind: UrlParamKind;
+	kind: EndpointParamKind;
 }
 
 /**

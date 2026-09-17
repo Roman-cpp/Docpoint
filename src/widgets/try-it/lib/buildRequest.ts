@@ -7,7 +7,7 @@ import type {
 import { buildDocumentTree, childPath, itemPath } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
 import { joinUrl } from "@/shared/lib/url";
-import type { HeaderDraft, ParamValues } from "../model/tryIt.types";
+import type { NameValueDraft, ParamValues } from "../model/tryIt.types";
 
 /** Ключ значения параметра внутри набора: `${kind}:${name}`. */
 export function valueKey(kind: ParamKind, name: string): string {
@@ -224,7 +224,8 @@ export function resolveRequestBody(
  * только если пользователь не задал `Authorization` сам.
  */
 export function buildHeaders(
-	headers: HeaderDraft[],
+	headers: NameValueDraft[],
+	cookies: NameValueDraft[],
 	env: Environment,
 	body: string | null,
 ): Record<string, string> {
@@ -235,6 +236,16 @@ export function buildHeaders(
 		Accept: "application/json, */*;q=0.8",
 	};
 	if (body !== null) result["Content-Type"] = "application/json";
+
+	// Куки набора идут раньше заголовков: свой `Cookie`, вписанный руками,
+	// должен побеждать собранный из списка.
+	const jar = cookies
+		.filter((cookie) => cookie.enabled && cookie.name.trim() !== "")
+		.map(
+			(cookie) =>
+				`${cookie.name.trim()}=${sanitizeCookie(resolveEnvVars(cookie.value, env))}`,
+		);
+	if (jar.length > 0) result.Cookie = jar.join("; ");
 
 	for (const header of headers) {
 		const name = header.name.trim();
@@ -248,4 +259,14 @@ export function buildHeaders(
 	}
 
 	return result;
+}
+
+/**
+ * Вырезает из значения куки то, что расщепило бы её на две пары или уронило
+ * заголовок: точку с запятой, запятую и управляющие символы. Бэкенд чистит
+ * так же свои куки окружения.
+ */
+function sanitizeCookie(value: string): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: управляющие символы здесь и вырезаются
+	return value.replace(/[;,\u0000-\u001f\u007f]/g, "");
 }

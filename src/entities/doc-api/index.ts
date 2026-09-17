@@ -8,7 +8,7 @@ export { docKeys, useDocsStore } from "./doc-api/store/useDocApisStore";
 export { createEndpointApi } from "./endpoint/api/create-endpoint-api";
 export { deleteEndpointApi } from "./endpoint/api/delete-endpoint-api";
 export { updateEndpointApi } from "./endpoint/api/update-endpoint-api";
-export { updateUrlParamValueApi } from "./endpoint/api/update-url-param-value-api";
+export { updateParamValueApi } from "./endpoint/api/update-param-value-api";
 export type {
 	DocumentNode,
 	DocumentTree,
@@ -37,10 +37,10 @@ export type {
 } from "./endpoint/model/endpoint.dto";
 export type {
 	Endpoint,
+	EndpointParamKind,
 	EndpointResponse,
 	FieldNote,
 	Param,
-	UrlParamKind,
 } from "./endpoint/model/endpoint.type";
 export {
 	createEndpointRequestApi,
@@ -52,6 +52,7 @@ export type {
 	BodyMode,
 	EndpointRequest,
 	ParamKind,
+	RequestCookie,
 	RequestHeader,
 	RequestParamValue,
 	UpdateEndpointRequestDTO,

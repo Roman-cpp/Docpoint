@@ -7,9 +7,9 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-/// Пишет URL-параметры одного вида (`path` или `query`). Позиция в массиве
-/// становится `sort_ord` — по нему они потом и читаются.
-async fn insert_url_params(
+/// Пишет плоские параметры одного вида. Позиция в массиве становится
+/// `sort_ord` — по нему они потом и читаются.
+async fn insert_params(
     conn: &mut sqlx::SqliteConnection,
     endpoint_id: &str,
     kind: &str,
@@ -17,7 +17,7 @@ async fn insert_url_params(
 ) -> Result<(), String> {
     for (pi, param) in params.iter().enumerate() {
         sqlx::query(
-            "INSERT INTO endpoint_url_param \
+            "INSERT INTO endpoint_param \
              (endpoint_id, kind, name, type, required, desc, default_val, sort_ord) \
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         )
@@ -155,8 +155,10 @@ impl EndpointRepository for EndpointRepo<'_> {
         .map_err(|e| e.to_string())?;
 
         let mut conn = db.acquire().await.map_err(|e| e.to_string())?;
-        insert_url_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
-        insert_url_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
+        insert_params(&mut conn, &endpoint_id, "path", &endpoint.path_params).await?;
+        insert_params(&mut conn, &endpoint_id, "query", &endpoint.query_params).await?;
+        insert_params(&mut conn, &endpoint_id, "header", &endpoint.header_params).await?;
+        insert_params(&mut conn, &endpoint_id, "cookie", &endpoint.cookie_params).await?;
         insert_body_fields(&mut conn, &endpoint_id, &body_fields).await?;
         insert_responses(&mut conn, &endpoint_id, &endpoint.responses).await?;
 
@@ -190,8 +192,8 @@ impl EndpointRepository for EndpointRepo<'_> {
         // импорт файла, где значений нет вовсе) описание меняет, а выбор
         // пользователя трогать не должна. Параметры пересоздаются целиком,
         // поэтому значения снимаются заранее и возвращаются по имени.
-        let kept_url: Vec<(String, String, String)> = sqlx::query_as(
-            "SELECT kind, name, value FROM endpoint_url_param \
+        let kept: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT kind, name, value FROM endpoint_param \
              WHERE endpoint_id = ? AND value <> ''",
         )
         .bind(&endpoint.id)
@@ -201,7 +203,7 @@ impl EndpointRepository for EndpointRepo<'_> {
 
         // Описание правится целиком, поэтому параметры и примечания
         // пересоздаются.
-        sqlx::query("DELETE FROM endpoint_url_param WHERE endpoint_id = ?")
+        sqlx::query("DELETE FROM endpoint_param WHERE endpoint_id = ?")
             .bind(&endpoint.id)
             .execute(&mut *tx)
             .await
@@ -212,15 +214,17 @@ impl EndpointRepository for EndpointRepo<'_> {
             .await
             .map_err(|e| e.to_string())?;
 
-        insert_url_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
-        insert_url_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
+        insert_params(&mut tx, &endpoint.id, "path", &endpoint.path_params).await?;
+        insert_params(&mut tx, &endpoint.id, "query", &endpoint.query_params).await?;
+        insert_params(&mut tx, &endpoint.id, "header", &endpoint.header_params).await?;
+        insert_params(&mut tx, &endpoint.id, "cookie", &endpoint.cookie_params).await?;
         insert_body_fields(&mut tx, &endpoint.id, &body_fields).await?;
 
         // Параметр, которого в новом описании нет, значение не получает —
         // UPDATE просто не находит строку.
-        for (kind, name, value) in &kept_url {
+        for (kind, name, value) in &kept {
             sqlx::query(
-                "UPDATE endpoint_url_param SET value = ? \
+                "UPDATE endpoint_param SET value = ? \
                  WHERE endpoint_id = ? AND kind = ? AND name = ?",
             )
             .bind(value)
@@ -334,6 +338,62 @@ mod tests {
     use super::*;
     use crate::repository::sqlite::test_db;
     use sqlx::Executor;
+
+    /// Заголовки и куки становятся такими же параметрами, как путь и строка
+    /// запроса: таблица одна, видов четыре.
+    #[tokio::test]
+    async fn migration_0050_opens_the_table_for_headers_and_cookies() {
+        let pool = test_db::through("0049").await;
+
+        pool.execute(sqlx::raw_sql(
+            r#"
+            INSERT INTO platforms (id,name) VALUES ('p1','P');
+            INSERT INTO catalog_node (id,platform_id,kind,name) VALUES ('d1','p1','doc_api','D');
+            INSERT INTO doc_api (id) VALUES ('d1');
+            INSERT INTO "group" (id,doc_id,label,sort_ord) VALUES ('g1','d1','G',0);
+            INSERT INTO endpoint (id,group_id,method,path,name,description,auth,sort_ord)
+              VALUES ('e1','g1','GET','/posts/{postId}','P','',0,0);
+            INSERT INTO endpoint_url_param
+              (endpoint_id,kind,name,type,required,desc,default_val,value,sort_ord)
+              VALUES ('e1','query','page','integer',0,'Страница','1','PAGE_VAR',0);
+            "#,
+        ))
+        .await
+        .unwrap();
+
+        // До миграции заголовок описать нельзя.
+        assert!(
+            pool.execute(sqlx::raw_sql(
+                "INSERT INTO endpoint_url_param (endpoint_id,kind,name,type) \
+                 VALUES ('e1','header','X-Request-Id','string')",
+            ))
+            .await
+            .is_err(),
+            "до 0050 kind='header' должен отбиваться CHECK-констрейнтом"
+        );
+
+        test_db::apply(&pool, "0050_endpoint_param_kinds.sql").await;
+
+        let moved: Vec<(String, String, String)> =
+            sqlx::query_as("SELECT kind, name, value FROM endpoint_param WHERE endpoint_id = 'e1'")
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        assert_eq!(
+            moved,
+            vec![("query".into(), "page".into(), "PAGE_VAR".into())],
+            "описание и привязка к переменной переезжают как есть"
+        );
+
+        for kind in ["header", "cookie"] {
+            pool.execute(sqlx::raw_sql(&format!(
+                "INSERT INTO endpoint_param (endpoint_id,kind,name,type) \
+                 VALUES ('e1','{kind}','X','string')",
+            )))
+            .await
+            .unwrap_or_else(|e| panic!("вид {kind} должен приниматься: {e}"));
+        }
+    }
 
     /// Плоские поля тела сворачиваются в документ: порядок берётся из
     /// `sort_ord`, умолчание становится значением, а то, чего JSON не
@@ -734,6 +794,8 @@ mod tests {
                     auth: false,
                     path_params: vec![],
                     query_params: vec![],
+                    header_params: vec![],
+                    cookie_params: vec![],
                     body: String::new(),
                     body_fields: vec![],
                     body_params: vec![],
@@ -753,6 +815,8 @@ mod tests {
             auth: false,
             path_params: vec![],
             query_params: vec![],
+            header_params: vec![],
+            cookie_params: vec![],
             body: String::new(),
             body_fields: vec![],
             body_params: vec![],
