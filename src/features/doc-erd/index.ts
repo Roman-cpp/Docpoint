@@ -1,4 +1,9 @@
 export {
+	type ComparedWithDb,
+	CompareWithDbButton,
+	CompareWithDbModal,
+} from "./compare-with-db";
+export {
 	createFrame,
 	DEFAULT_FRAME_TITLE,
 	DrawFrameButton,

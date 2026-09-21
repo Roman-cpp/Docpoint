@@ -1,0 +1,1 @@
+export { ErdComparePanel } from "./ErdComparePanel";

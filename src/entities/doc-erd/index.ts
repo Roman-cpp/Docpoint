@@ -1,3 +1,13 @@
+export { compareErdWithDbApi } from "./compare/api/compare-erd-with-db-api";
+export type {
+	ColumnDiff,
+	DiffMismatch,
+	DiffStatus,
+	DiffSummary,
+	ErdDiff,
+	RelationDiff,
+	TableDiff,
+} from "./compare/model/erd-diff.type";
 export { createErdEntityApi } from "./entity/api/create-erd-entity-api";
 export { deleteEntityApi } from "./entity/api/delete-entity-api";
 export { getErdEntitiesApi } from "./entity/api/get-erd-entities-api";

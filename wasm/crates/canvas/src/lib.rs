@@ -5,6 +5,7 @@ use web_sys::CanvasRenderingContext2d;
 
 mod domain;
 
+use domain::diff::model::DiffStatus;
 use domain::frame::model::{
     Frame, Handle, CORNER_R as FRAME_CORNER_R, MIN_H as FRAME_MIN_H, MIN_W as FRAME_MIN_W,
     TITLE_H as FRAME_TITLE_H,
@@ -107,6 +108,57 @@ struct RelationEndpoints {
     to_field: String,
 }
 
+// ---------------------------------------------------------------------------
+// Wire shapes for `Scene::set_diff` — ответ команды `compare_erd_with_db`.
+// Сцена сравнение не считает: она получает готовое объединение и раскрашивает
+// его. Поля, которых на холсте не видно (типы, вид расхождения), не читаются —
+// их показывает панель рядом.
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DiffDTO {
+    tables: Vec<TableDiffDTO>,
+    #[serde(default)]
+    relations: Vec<RelationDiffDTO>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TableDiffDTO {
+    /// Id сущности на диаграмме; `None` — таблица есть только в базе.
+    #[serde(default)]
+    id: Option<String>,
+    name: String,
+    status: String,
+    #[serde(default)]
+    x: Option<f64>,
+    #[serde(default)]
+    y: Option<f64>,
+    columns: Vec<ColumnDiffDTO>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ColumnDiffDTO {
+    name: String,
+    status: String,
+    #[serde(default)]
+    pk: bool,
+    #[serde(default)]
+    nullable: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RelationDiffDTO {
+    status: String,
+    from_table: String,
+    from_column: String,
+    to_table: String,
+    to_column: String,
+}
+
 /// Новые границы области, адресованные её id. Ложатся в ту же пачку, что и
 /// позиции таблиц: перетаскивание области двигает и то, и другое разом.
 #[derive(Serialize)]
@@ -201,6 +253,8 @@ const HANDLE_HIT: f64 = 7.0; // grab tolerance around a resize handle, in screen
 /// Меньше этого протянутый прямоугольник считается промахом, а не областью:
 /// одиночный клик в режиме рисования ничего не создаёт.
 const DRAFT_MIN: f64 = 24.0;
+/// Место под знак расхождения у правого края строки.
+const SIGN_W: f64 = 14.0;
 
 // Light theme palette — mirrors the app's design tokens (tokens.css):
 // warm cream canvas, white surfaces, earthy accents.
@@ -224,6 +278,16 @@ const COL_FRAME_BG: &str = "rgba(240, 237, 232, 0.55)"; // --cat-bg, пригл�
 const COL_FRAME_BORDER: &str = "#ddd6ca"; // между --border и --border-h
 const COL_FRAME_TITLE: &str = "#555555"; // --ink-mid
 const COL_HANDLE_BG: &str = "#ffffff"; // --surface, заливка ручки растягивания
+                                       // Сравнение с живой базой. Цвет здесь не единственный носитель смысла: у строки
+                                       // с расхождением есть ещё и знак справа, а у таблицы, которой нет на диаграмме,
+                                       // — пунктирная рамка. Иначе режим был бы бесполезен при дальтонизме и на
+                                       // распечатанной схеме.
+const COL_DOC_ONLY: &str = "#75591a"; // --amber, описано, но в базе не найдено
+const COL_DOC_ONLY_BG: &str = "#f5edd9"; // --amber-bg
+const COL_DB_ONLY: &str = "#3f6b4a"; // --green, есть в базе, но не описано
+const COL_DB_ONLY_BG: &str = "#eaf0e9"; // --green-bg
+const COL_DIFFERS: &str = "#9b3b36"; // --red, описания расходятся
+const COL_DIFFERS_BG: &str = "#f4e4e2"; // --red-bg
 
 // Font stacks mirroring --font-serif / --font-mono in tokens.css.
 const FONT_HEAD: &str = "600 14px \"Lora\", Georgia, \"Times New Roman\", serif";
@@ -341,6 +405,13 @@ pub struct Scene {
     /// таблицами. Хит-тест идёт с конца, так что верхняя перекрывающая область
     /// выигрывает у нижней.
     frames: Vec<Frame>,
+    /// Сколько таблиц принадлежит документу. Сравнение дописывает в хвост те,
+    /// что нашлись только в базе, и по этому числу их потом отрезают обратно —
+    /// связи адресуют таблицы индексами, и вырезать из середины было бы нечем.
+    doc_tables: usize,
+    /// Идёт ли сейчас сравнение с базой: по нему JS подсвечивает кнопку, а
+    /// холст знает, что цвета на нём значат больше обычного.
+    comparing: bool,
     // Viewport in CSS pixels and the backing-store device-pixel ratio.
     width: f64,
     height: f64,
@@ -388,6 +459,8 @@ impl Scene {
             tables: Vec::new(),
             relations: Vec::new(),
             frames: Vec::new(),
+            doc_tables: 0,
+            comparing: false,
             width: 800.0,
             height: 600.0,
             dpr: 1.0,
@@ -477,8 +550,15 @@ impl Scene {
             y,
         });
 
+        // Новая таблица встаёт в конец, а там во время сравнения стоят
+        // призраки — сравнение приходится сбросить. Страница после создания
+        // всё равно перечитывает диаграмму и, если сравнивала, повторяет его.
+        self.reset_diff();
+        self.comparing = false;
+
         self.tables
             .push(Table::new(dto.id, dto.name, columns, x, y));
+        self.doc_tables = self.tables.len();
         self.selected = Some(self.tables.len() - 1);
         self.laid_out = false;
         Ok(())
@@ -580,6 +660,8 @@ impl Scene {
             })
             .collect();
 
+        self.doc_tables = tables.len();
+        self.comparing = false;
         self.tables = tables;
         self.relations = relations;
         self.frames = frames
@@ -688,6 +770,175 @@ impl Scene {
     /// поэтому на отдалении кольцо захвата рамки в мире шире.
     fn hit_tol(&self, screen_px: f64) -> f64 {
         screen_px / self.scale
+    }
+
+    // -----------------------------------------------------------------------
+    // Сравнение с живой базой
+    // -----------------------------------------------------------------------
+
+    /// Накладывает на холст результат `compare_erd_with_db`.
+    ///
+    /// Таблица, известная обеим сторонам, остаётся одна: ей проставляется
+    /// статус, а колонки, которые нашлись только в базе, дописываются ей в
+    /// хвост. Таблицы, которых на диаграмме нет, добавляются «призраками» — без
+    /// id, на месте, посчитанном раскладкой на бэкенде. Связи, найденные по
+    /// внешним ключам, дорисовываются пунктиром.
+    ///
+    /// Призрак нельзя ни сохранить, ни связать: id ему взять неоткуда. Поэтому
+    /// портов у него нет, позиция его никуда не пишется, а форму правки он не
+    /// открывает.
+    pub fn set_diff(&mut self, diff: JsValue) -> Result<(), JsValue> {
+        let dto: DiffDTO = serde_wasm_bindgen::from_value(diff)?;
+        self.apply_diff(dto);
+        Ok(())
+    }
+
+    /// Наложение уже разобранного ответа. Отдельно от [`Scene::set_diff`],
+    /// чтобы правила наложения проверялись тестами: `JsValue` вне браузера не
+    /// собрать.
+    fn apply_diff(&mut self, dto: DiffDTO) {
+        // С чистого листа: повторное сравнение не должно наслаиваться на
+        // прошлое своими же призраками.
+        self.reset_diff();
+
+        for table in &dto.tables {
+            let Some(id) = table.id.as_deref() else {
+                continue;
+            };
+            let Some(ti) = self.tables.iter().position(|t| t.id == id) else {
+                continue;
+            };
+
+            let target = &mut self.tables[ti];
+            target.status = DiffStatus::from_wire(&table.status);
+
+            for column in &table.columns {
+                let status = DiffStatus::from_wire(&column.status);
+                match target
+                    .columns
+                    .iter_mut()
+                    .find(|c| fold(&c.name) == fold(&column.name))
+                {
+                    Some(found) => found.status = status,
+                    None => {
+                        let mut extra =
+                            Column::new(column.name.clone(), column.pk, column.nullable);
+                        extra.status = status;
+                        target.columns.push(extra);
+                    }
+                }
+            }
+        }
+
+        // Призраки — только в хвост: связи адресуют таблицы индексами, и
+        // вставка в середину сдвинула бы уже нарисованное.
+        for table in &dto.tables {
+            if table.id.is_some() {
+                continue;
+            }
+            let columns = table
+                .columns
+                .iter()
+                .map(|c| {
+                    let mut column = Column::new(c.name.clone(), c.pk, c.nullable);
+                    column.status = DiffStatus::from_wire(&c.status);
+                    column
+                })
+                .collect();
+            let mut ghost = Table::new(
+                "",
+                table.name.clone(),
+                columns,
+                table.x.unwrap_or(0.0),
+                table.y.unwrap_or(0.0),
+            );
+            ghost.status = DiffStatus::OnlyInDb;
+            self.tables.push(ghost);
+        }
+
+        // Концы связей приходят именами: и документ, и база описывают их так.
+        let mut endpoint_of: HashMap<(String, String), Endpoint> = HashMap::new();
+        for (ti, table) in self.tables.iter().enumerate() {
+            for (ci, column) in table.columns.iter().enumerate() {
+                endpoint_of.insert((fold(&table.name), fold(&column.name)), (ti, ci));
+            }
+        }
+
+        for relation in &dto.relations {
+            let status = DiffStatus::from_wire(&relation.status);
+            let ends = (
+                endpoint_of.get(&(fold(&relation.from_table), fold(&relation.from_column))),
+                endpoint_of.get(&(fold(&relation.to_table), fold(&relation.to_column))),
+            );
+            let (Some(&from), Some(&to)) = ends else {
+                continue;
+            };
+
+            if status == DiffStatus::OnlyInDb {
+                let mut drawn = Relation::new(from, to);
+                drawn.status = status;
+                self.relations.push(drawn);
+            } else if let Some(found) = self.relations.iter_mut().find(|r| r.connects(from, to)) {
+                found.status = status;
+            }
+        }
+
+        self.comparing = true;
+        self.laid_out = false;
+        self.refresh_kinds();
+    }
+
+    /// Снимает сравнение: призраки и дорисованные связи уходят, цвета
+    /// возвращаются к обычным.
+    pub fn clear_diff(&mut self) {
+        self.reset_diff();
+        self.comparing = false;
+    }
+
+    /// Идёт ли сейчас сравнение.
+    pub fn is_comparing(&self) -> bool {
+        self.comparing
+    }
+
+    /// Имя выделенной таблицы, которой на диаграмме нет. По нему JS предлагает
+    /// перенести её в документ. `None` — выделено что-то другое.
+    pub fn selected_ghost_name(&self) -> Option<String> {
+        let table = self.tables.get(self.selected?)?;
+        (table.id.is_empty() && table.status == DiffStatus::OnlyInDb).then(|| table.name.clone())
+    }
+
+    /// Возвращает холст к тому, что лежит в документе: призраки отрезаются,
+    /// дорисованные связи убираются, статусы гаснут.
+    ///
+    /// Отрезать можно именно хвостом: призраки всегда дописываются в конец, а
+    /// связи на них помечены `OnlyInDb` и уходят вместе с ними — иначе индексы
+    /// оставшихся связей разъехались бы.
+    fn reset_diff(&mut self) {
+        self.relations.retain(|r| r.status != DiffStatus::OnlyInDb);
+        for relation in &mut self.relations {
+            relation.status = DiffStatus::Same;
+        }
+
+        self.tables.truncate(self.doc_tables);
+        for table in &mut self.tables {
+            table.status = DiffStatus::Same;
+            table.columns.truncate(table.doc_cols);
+            for column in &mut table.columns {
+                column.status = DiffStatus::Same;
+            }
+        }
+
+        // Всё, что адресовало призрака или связь на него, больше ни к чему не
+        // разрешается.
+        if self.selected.is_some_and(|i| i >= self.tables.len()) {
+            self.selected = None;
+        }
+        self.selected_rel = None;
+        self.hover_col = None;
+        self.drag = None;
+        self.link = None;
+        self.laid_out = false;
+        self.refresh_kinds();
     }
 
     fn screen_to_world(&self, x: f64, y: f64) -> (f64, f64) {
@@ -926,7 +1177,9 @@ impl Scene {
 
         if self.link.is_some() {
             // Reveal the prospective target row's ports while dragging.
-            let target = self.hit_row(wx, wy);
+            let target = self
+                .hit_row(wx, wy)
+                .filter(|(ti, _)| !self.tables[*ti].id.is_empty());
             if let Some(link) = self.link.as_mut() {
                 link.cursor = (wx, wy);
             }
@@ -944,7 +1197,9 @@ impl Scene {
 
         // Idle hover: ports follow the row under the cursor; pick a cursor.
         let prev = self.hover_col;
-        self.hover_col = self.hit_row(wx, wy);
+        self.hover_col = self
+            .hit_row(wx, wy)
+            .filter(|(ti, _)| !self.tables[*ti].id.is_empty());
 
         let over_badge = self
             .selected_rel
@@ -1055,7 +1310,12 @@ impl Scene {
 
         if let Some(link) = self.link.take() {
             let (wx, wy) = self.screen_to_world(x, y);
-            if let Some((ti, ci)) = self.hit_row(wx, wy) {
+            // Связь на призрака не заводится по той же причине, по которой у
+            // него нет портов: сохранить её нечем.
+            if let Some((ti, ci)) = self
+                .hit_row(wx, wy)
+                .filter(|(ti, _)| !self.tables[*ti].id.is_empty())
+            {
                 let to: Endpoint = (ti, ci);
                 // Внутри одной таблицы связь тоже имеет смысл (`parent_id →
                 // id`), бессмысленна только петля колонки на саму себя.
@@ -1189,6 +1449,11 @@ impl Scene {
     /// Ports sit at each row's vertical center on the left and right edges.
     fn hit_port(&self, wx: f64, wy: f64) -> Option<(usize, usize, bool)> {
         for (ti, t) in self.tables.iter().enumerate().rev() {
+            // У таблицы, которой нет в документе, портов нет: связь от неё
+            // некуда записать — её концы адресуются id сущностей.
+            if t.id.is_empty() {
+                continue;
+            }
             // Порты сидят на боках таблицы, поэтому дальше её габаритов плюс
             // допуск искать нечего — иначе на каждое движение мыши перебирались
             // бы все колонки всех таблиц схемы.
@@ -1395,7 +1660,14 @@ impl Scene {
             for col in &table.columns {
                 max = max.max(measure(ctx, &col.name));
             }
-            table.w = (PAD_X + ICON_W + TEXT_GAP + max + PAD_X).max(MIN_TABLE_W);
+            // Знак расхождения стоит у правого края — под него нужен запас,
+            // иначе он ляжет на длинное имя колонки.
+            let sign = if table.columns.iter().any(|c| c.status != DiffStatus::Same) {
+                SIGN_W
+            } else {
+                0.0
+            };
+            table.w = (PAD_X + ICON_W + TEXT_GAP + max + sign + PAD_X).max(MIN_TABLE_W);
         }
         self.laid_out = true;
     }
@@ -1526,13 +1798,24 @@ impl Scene {
                 continue;
             }
             let selected = self.selected_rel == Some(i);
-            ctx.set_stroke_style_str(if selected { COL_REL_SEL } else { COL_REL });
+            let status = status_colors(rel.status).map(|(line, _)| line);
+            ctx.set_stroke_style_str(match (selected, status) {
+                (true, _) => COL_REL_SEL,
+                (false, Some(line)) => line,
+                (false, None) => COL_REL,
+            });
             ctx.set_line_width(if selected { 2.0 } else { 1.5 });
+            // Связь, которой на диаграмме не рисовали, — пунктиром: её ещё нет
+            // в документе, и выглядеть как нарисованная она не должна.
+            if rel.status == DiffStatus::OnlyInDb {
+                set_dash(ctx, &[6.0, 4.0]);
+            }
 
             ctx.begin_path();
             ctx.move_to(c.ax, c.ay);
             ctx.bezier_curve_to(c.c1x, c.ay, c.c2x, c.by, c.bx, c.by);
             ctx.stroke();
+            set_dash(ctx, &[]);
 
             draw_one(ctx, c.ax, c.ay, c.src_right);
             draw_many(ctx, c.bx, c.by, c.dst_right);
@@ -1630,6 +1913,44 @@ impl Default for Scene {
 // Free drawing helpers (no `&self` borrow, so they compose freely in loops).
 // ---------------------------------------------------------------------------
 
+/// Ключ сопоставления имён: сравнение приходит с бэкенда в той же свёртке —
+/// PostgreSQL приводит незакавыченные имена к нижнему регистру, а в документе
+/// имя пишет человек.
+fn fold(name: &str) -> String {
+    name.trim().to_lowercase()
+}
+
+/// Пунктир для того, чего в документе нет. Пустой образец возвращает сплошную
+/// линию — чистить обязательно, иначе пунктир достанется следующей фигуре.
+fn set_dash(ctx: &CanvasRenderingContext2d, pattern: &[f64]) {
+    let dashes = js_sys::Array::new();
+    for step in pattern {
+        dashes.push(&JsValue::from_f64(*step));
+    }
+    let _ = ctx.set_line_dash(&dashes);
+}
+
+/// Цвета статуса: рамка/текст и заливка шапки. `None` — статус обычный, красить
+/// нечем.
+fn status_colors(status: DiffStatus) -> Option<(&'static str, &'static str)> {
+    match status {
+        DiffStatus::Same => None,
+        DiffStatus::OnlyInDoc => Some((COL_DOC_ONLY, COL_DOC_ONLY_BG)),
+        DiffStatus::OnlyInDb => Some((COL_DB_ONLY, COL_DB_ONLY_BG)),
+        DiffStatus::Differs => Some((COL_DIFFERS, COL_DIFFERS_BG)),
+    }
+}
+
+/// Знак у правого края строки — тот же смысл, что и цвет, но виден и без него.
+fn status_sign(status: DiffStatus) -> Option<&'static str> {
+    match status {
+        DiffStatus::Same => None,
+        DiffStatus::OnlyInDoc => Some("−"),
+        DiffStatus::OnlyInDb => Some("+"),
+        DiffStatus::Differs => Some("≠"),
+    }
+}
+
 fn measure(ctx: &CanvasRenderingContext2d, text: &str) -> f64 {
     ctx.measure_text(text).map(|m| m.width()).unwrap_or(0.0)
 }
@@ -1680,11 +2001,15 @@ fn draw_table(
     shadow: bool,
 ) {
     let h = t.height();
+    let status = status_colors(t.status);
+    // Таблицы, которой нет в документе, на холсте ещё не существует — она и
+    // рисуется как набросок: пунктиром и без тени карточки.
+    let ghost = t.status == DiffStatus::OnlyInDb;
 
     // Body — drawn with a soft drop shadow so surfaces read as cards on the
     // light canvas (mirrors --shadow-sm). The shadow is cleared immediately
     // afterwards so nothing else inherits it.
-    if shadow {
+    if shadow && !ghost {
         ctx.set_shadow_color(COL_SHADOW);
         ctx.set_shadow_blur(12.0);
         ctx.set_shadow_offset_x(0.0);
@@ -1693,15 +2018,19 @@ fn draw_table(
     rounded_rect(ctx, t.x, t.y, t.w, h, CORNER_R);
     ctx.set_fill_style_str(COL_TABLE_BG);
     ctx.fill();
-    if shadow {
+    if shadow && !ghost {
         ctx.set_shadow_color("rgba(0, 0, 0, 0)");
         ctx.set_shadow_blur(0.0);
         ctx.set_shadow_offset_y(0.0);
     }
 
-    // Header band.
+    // Header band. Её заливка и несёт статус таблицы: рамку может перекрыть
+    // выделение, а шапка видна всегда.
     rounded_top(ctx, t.x, t.y, t.w, HEADER_H, CORNER_R);
-    ctx.set_fill_style_str(COL_HEADER_BG);
+    ctx.set_fill_style_str(match status {
+        Some((_, bg)) => bg,
+        None => COL_HEADER_BG,
+    });
     ctx.fill();
 
     // Header: table glyph + name.
@@ -1726,19 +2055,41 @@ fn draw_table(
             let icon_cx = t.x + PAD_X + ICON_W * 0.5;
             draw_col_icon(ctx, col.kind, icon_cx, cy);
 
-            ctx.set_fill_style_str(match col.kind {
-                ColKind::Nullable => COL_TEXT_DIM,
-                _ => COL_TEXT,
-            });
+            let tone = match status_colors(col.status) {
+                Some((line, _)) => line,
+                None => match col.kind {
+                    ColKind::Nullable => COL_TEXT_DIM,
+                    _ => COL_TEXT,
+                },
+            };
+            ctx.set_fill_style_str(tone);
             let _ = ctx.fill_text(&col.name, t.x + PAD_X + ICON_W + TEXT_GAP, cy + 1.0);
+
+            if let Some(sign) = status_sign(col.status) {
+                ctx.set_text_align("right");
+                let _ = ctx.fill_text(sign, t.x + t.w - PAD_X, cy + 1.0);
+                ctx.set_text_align("left");
+            }
         }
     }
 
     // Border (drawn last so it sits on top of the fills).
     rounded_rect(ctx, t.x, t.y, t.w, h, CORNER_R);
-    ctx.set_stroke_style_str(if selected { COL_BORDER_SEL } else { COL_BORDER });
-    ctx.set_line_width(if selected { 2.0 } else { 1.0 });
+    ctx.set_stroke_style_str(match (selected, status) {
+        (true, _) => COL_BORDER_SEL,
+        (false, Some((line, _))) => line,
+        (false, None) => COL_BORDER,
+    });
+    ctx.set_line_width(if selected || status.is_some() {
+        2.0
+    } else {
+        1.0
+    });
+    if ghost {
+        set_dash(ctx, &[6.0, 4.0]);
+    }
     ctx.stroke();
+    set_dash(ctx, &[]);
 }
 
 /// A small "table" glyph for the header: an outlined box with a top stripe.
@@ -1840,22 +2191,18 @@ impl Scene {
         use ColKind::*;
 
         fn col(name: &str, kind: ColKind) -> Column {
-            Column {
-                name: name.to_string(),
-                pk: kind == Pk,
-                nullable: kind == Nullable,
-                kind,
-            }
+            // Иконку демо-схема задаёт сама: внешний ключ из флагов колонки не
+            // выводится, его знают только связи.
+            let mut column = Column::new(name.to_string(), kind == Pk, kind == Nullable);
+            column.kind = kind;
+            column
         }
 
         self.tables = vec![
-            Table {
-                id: String::new(),
-                x: 60.0,
-                y: 60.0,
-                w: MIN_TABLE_W,
-                name: "accounts".into(),
-                columns: vec![
+            Table::new(
+                "",
+                "accounts",
+                vec![
                     col("id", Pk),
                     col("archived_at", Nullable),
                     col("created_at", Plain),
@@ -1865,28 +2212,26 @@ impl Scene {
                     col("updated_at", Plain),
                     col("uuid", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 420.0,
-                y: 60.0,
-                w: MIN_TABLE_W,
-                name: "account_accesses".into(),
-                columns: vec![
+                60.0,
+                60.0,
+            ),
+            Table::new(
+                "",
+                "account_accesses",
+                vec![
                     col("id", Pk),
                     col("account_id", Fk),
                     col("created_at", Plain),
                     col("updated_at", Plain),
                     col("user_id", Fk),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 780.0,
-                y: 40.0,
-                w: MIN_TABLE_W,
-                name: "email_messages".into(),
-                columns: vec![
+                420.0,
+                60.0,
+            ),
+            Table::new(
+                "",
+                "email_messages",
+                vec![
                     col("id", Pk),
                     col("account_id", Fk),
                     col("author_id", Fk),
@@ -1897,14 +2242,13 @@ impl Scene {
                     col("updated_at", Plain),
                     col("uuid", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 420.0,
-                y: 320.0,
-                w: MIN_TABLE_W,
-                name: "account_configs".into(),
-                columns: vec![
+                780.0,
+                40.0,
+            ),
+            Table::new(
+                "",
+                "account_configs",
+                vec![
                     col("id", Pk),
                     col("account_id", Fk),
                     col("created_at", Plain),
@@ -1912,14 +2256,13 @@ impl Scene {
                     col("updated_at", Plain),
                     col("value", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 60.0,
-                y: 400.0,
-                w: MIN_TABLE_W,
-                name: "oauth_applications".into(),
-                columns: vec![
+                420.0,
+                320.0,
+            ),
+            Table::new(
+                "",
+                "oauth_applications",
+                vec![
                     col("id", Pk),
                     col("confidential", Plain),
                     col("created_at", Plain),
@@ -1927,45 +2270,32 @@ impl Scene {
                     col("redirect_uri", Nullable),
                     col("scopes", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 780.0,
-                y: 440.0,
-                w: MIN_TABLE_W,
-                name: "access_tokens".into(),
-                columns: vec![
+                60.0,
+                400.0,
+            ),
+            Table::new(
+                "",
+                "access_tokens",
+                vec![
                     col("id", Pk),
                     col("created_at", Plain),
                     col("sha256", Plain),
                     col("token", Plain),
                     col("updated_at", Plain),
                 ],
-            },
+                780.0,
+                440.0,
+            ),
         ];
 
         // (table_index, column_index) pairs: primary-key side -> foreign-key side.
+        self.doc_tables = self.tables.len();
         self.relations = vec![
-            Relation {
-                from: (0, 0),
-                to: (1, 1),
-            }, // accounts.id -> account_accesses.account_id
-            Relation {
-                from: (0, 0),
-                to: (2, 1),
-            }, // accounts.id -> email_messages.account_id
-            Relation {
-                from: (0, 0),
-                to: (3, 1),
-            }, // accounts.id -> account_configs.account_id
-            Relation {
-                from: (1, 0),
-                to: (2, 2),
-            }, // account_accesses.id -> email_messages.author_id
-            Relation {
-                from: (4, 0),
-                to: (5, 0),
-            }, // oauth_applications.id -> access_tokens.id
+            Relation::new((0, 0), (1, 1)), // accounts.id -> account_accesses.account_id
+            Relation::new((0, 0), (2, 1)), // accounts.id -> email_messages.account_id
+            Relation::new((0, 0), (3, 1)), // accounts.id -> account_configs.account_id
+            Relation::new((1, 0), (2, 2)), // account_accesses.id -> email_messages.author_id
+            Relation::new((4, 0), (5, 0)), // oauth_applications.id -> access_tokens.id
         ];
     }
 }
@@ -2033,6 +2363,222 @@ mod tests {
             curve.c1x - curve.ax >= 56.0,
             "вынос петли слишком мал: {}",
             curve.c1x - curve.ax
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Сравнение с живой базой
+    // -----------------------------------------------------------------------
+
+    /// Диаграмма из одной таблицы `users` с колонкой `id`.
+    fn scene_with_users() -> Scene {
+        let mut scene = Scene::new();
+        scene.tables = vec![Table::new(
+            "e1",
+            "users",
+            vec![Column::new("id".to_string(), true, false)],
+            100.0,
+            100.0,
+        )];
+        scene.tables[0].w = 180.0;
+        scene.doc_tables = 1;
+        scene.relations.clear();
+        scene
+    }
+
+    fn column(name: &str, status: &str) -> ColumnDiffDTO {
+        ColumnDiffDTO {
+            name: name.to_string(),
+            status: status.to_string(),
+            pk: name == "id",
+            nullable: false,
+        }
+    }
+
+    /// Ровно то, ради чего всё затевалось: таблица, известная обеим сторонам,
+    /// остаётся на холсте одна.
+    #[test]
+    fn a_table_known_to_both_sides_is_not_drawn_twice() {
+        let mut scene = scene_with_users();
+
+        scene.apply_diff(DiffDTO {
+            tables: vec![
+                TableDiffDTO {
+                    id: Some("e1".into()),
+                    name: "users".into(),
+                    status: "same".into(),
+                    x: None,
+                    y: None,
+                    columns: vec![column("id", "same")],
+                },
+                TableDiffDTO {
+                    id: None,
+                    name: "orders".into(),
+                    status: "onlyInDb".into(),
+                    x: Some(400.0),
+                    y: Some(100.0),
+                    columns: vec![column("id", "onlyInDb")],
+                },
+            ],
+            relations: vec![],
+        });
+
+        assert_eq!(scene.tables.len(), 2, "одна своя и одна из базы");
+        assert_eq!(scene.tables[0].id, "e1");
+        assert_eq!(scene.tables[0].status, DiffStatus::Same);
+        assert_eq!(scene.tables[1].name, "orders");
+        assert_eq!(scene.tables[1].status, DiffStatus::OnlyInDb);
+        assert_eq!((scene.tables[1].x, scene.tables[1].y), (400.0, 100.0));
+        assert!(scene.is_comparing());
+    }
+
+    /// Колонка, которой в документе нет, дописывается в ту же таблицу, а не
+    /// заводит вторую.
+    #[test]
+    fn a_column_only_the_database_has_joins_the_table_it_belongs_to() {
+        let mut scene = scene_with_users();
+
+        scene.apply_diff(DiffDTO {
+            tables: vec![TableDiffDTO {
+                id: Some("e1".into()),
+                name: "users".into(),
+                status: "differs".into(),
+                x: None,
+                y: None,
+                columns: vec![column("id", "same"), column("email", "onlyInDb")],
+            }],
+            relations: vec![],
+        });
+
+        let table = &scene.tables[0];
+        assert_eq!(table.columns.len(), 2);
+        assert_eq!(table.columns[1].name, "email");
+        assert_eq!(table.columns[1].status, DiffStatus::OnlyInDb);
+        assert_eq!(table.doc_cols, 1, "своя у таблицы по-прежнему одна");
+    }
+
+    /// Внешний ключ, который есть в базе и не нарисован, появляется на холсте
+    /// связью — но связью помеченной.
+    #[test]
+    fn a_foreign_key_the_diagram_lacks_is_drawn_too() {
+        let mut scene = scene_with_users();
+
+        scene.apply_diff(DiffDTO {
+            tables: vec![
+                TableDiffDTO {
+                    id: Some("e1".into()),
+                    name: "users".into(),
+                    status: "same".into(),
+                    x: None,
+                    y: None,
+                    columns: vec![column("id", "same")],
+                },
+                TableDiffDTO {
+                    id: None,
+                    name: "orders".into(),
+                    status: "onlyInDb".into(),
+                    x: Some(400.0),
+                    y: Some(100.0),
+                    columns: vec![column("user_id", "onlyInDb")],
+                },
+            ],
+            relations: vec![RelationDiffDTO {
+                status: "onlyInDb".into(),
+                from_table: "users".into(),
+                from_column: "id".into(),
+                to_table: "orders".into(),
+                to_column: "user_id".into(),
+            }],
+        });
+
+        assert_eq!(scene.relations.len(), 1);
+        assert_eq!(scene.relations[0].status, DiffStatus::OnlyInDb);
+        assert_eq!(scene.relations[0].from, (0, 0));
+        assert_eq!(scene.relations[0].to, (1, 0));
+    }
+
+    /// Таблицу из базы нельзя ни сохранить, ни связать: id ей взять неоткуда.
+    #[test]
+    fn a_table_that_exists_only_in_the_database_cannot_be_linked_or_saved() {
+        let mut scene = scene_with_users();
+        scene.apply_diff(DiffDTO {
+            tables: vec![TableDiffDTO {
+                id: None,
+                name: "orders".into(),
+                status: "onlyInDb".into(),
+                x: Some(400.0),
+                y: Some(100.0),
+                columns: vec![column("id", "onlyInDb")],
+            }],
+            relations: vec![],
+        });
+
+        // Ширину таблице считает первый кадр по отрисованному тексту, а
+        // канваса в тесте нет — без неё в призрака не попасть мышью.
+        scene.tables[1].w = 180.0;
+
+        let (gx, gy) = (scene.tables[1].x, scene.tables[1].y);
+        let py = scene.tables[1].row_y(0);
+        assert!(scene.hit_port(gx, py).is_none(), "портов у призрака нет");
+
+        // Тянем призрака и отпускаем: на холсте он поедет, в базу не поедет.
+        scene.on_mouse_down(gx + 20.0, gy + 10.0);
+        scene.on_mouse_move(gx + 60.0, gy + 10.0);
+        scene.on_mouse_up(gx + 60.0, gy + 10.0);
+
+        assert!(
+            scene.pending_moves.is_empty(),
+            "позицию призрака сохранять некуда"
+        );
+        assert_eq!(scene.selected_ghost_name().as_deref(), Some("orders"));
+        assert!(
+            scene.selected_id().is_none(),
+            "форму правки призрак не открывает"
+        );
+    }
+
+    /// Выход из сравнения возвращает холст к тому, что лежит в документе.
+    #[test]
+    fn leaving_the_comparison_takes_the_database_side_with_it() {
+        let mut scene = scene_with_users();
+        scene.apply_diff(DiffDTO {
+            tables: vec![
+                TableDiffDTO {
+                    id: Some("e1".into()),
+                    name: "users".into(),
+                    status: "differs".into(),
+                    x: None,
+                    y: None,
+                    columns: vec![column("id", "same"), column("email", "onlyInDb")],
+                },
+                TableDiffDTO {
+                    id: None,
+                    name: "orders".into(),
+                    status: "onlyInDb".into(),
+                    x: Some(400.0),
+                    y: Some(100.0),
+                    columns: vec![column("user_id", "onlyInDb")],
+                },
+            ],
+            relations: vec![RelationDiffDTO {
+                status: "onlyInDb".into(),
+                from_table: "users".into(),
+                from_column: "id".into(),
+                to_table: "orders".into(),
+                to_column: "user_id".into(),
+            }],
+        });
+
+        scene.clear_diff();
+
+        assert!(!scene.is_comparing());
+        assert_eq!(scene.tables.len(), 1);
+        assert_eq!(scene.tables[0].columns.len(), 1);
+        assert_eq!(scene.tables[0].status, DiffStatus::Same);
+        assert_eq!(scene.tables[0].columns[0].status, DiffStatus::Same);
+        assert!(
+            scene.relations.is_empty(),
+            "дорисованная связь уходит с призраком"
         );
     }
 

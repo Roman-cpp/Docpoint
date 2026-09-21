@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { toast } from "@/core/toast";
 import {
+	compareErdWithDbApi,
 	createRelationApi,
 	deleteRelationApi,
 	type Entity,
@@ -18,6 +19,9 @@ import {
 	updateFrameBoundsApi,
 } from "@/entities/doc-erd";
 import {
+	type ComparedWithDb,
+	CompareWithDbButton,
+	CompareWithDbModal,
 	type CreatedTable,
 	CreateTableModal,
 	createFrame,
@@ -26,6 +30,7 @@ import {
 	EditTableModal,
 } from "@/features/doc-erd";
 import { CatalogBackLink } from "@/widgets/catalog-explorer";
+import { ErdComparePanel } from "@/widgets/erd-compare";
 import { Header } from "@/widgets/layout";
 import styles from "../CanvasPage.module.css";
 
@@ -62,10 +67,72 @@ export function DocErdShowPage() {
 	const [editingFrameId, setEditingFrameId] = useState<string | null>(null);
 	// Включён ли режим рисования области: подсвечивает кнопку в тулбаре.
 	const [drawing, setDrawing] = useState(false);
+	// Результат сравнения с базой вместе с тем, чем оно получено: по этим же
+	// реквизитам оно и повторяется. `null` — сравнение выключено.
+	const [compared, setCompared] = useState<ComparedWithDb | null>(null);
+	const [compareOpen, setCompareOpen] = useState(false);
+	const [rereading, setRereading] = useState(false);
 	const reloadRef = useRef<(() => Promise<void>) | null>(null);
 
 	const editing = entities.find((e) => e.id === editingId) ?? null;
 	const editingFrame = frames.find((f) => f.id === editingFrameId) ?? null;
+
+	/**
+	 * Перечитывает диаграмму и, если идёт сравнение, повторяет его: документ
+	 * изменился, и прежний ответ описывает уже не то, что на холсте.
+	 */
+	const reread = useCallback(async () => {
+		await reloadRef.current?.();
+		if (!id || !compared) return;
+
+		setRereading(true);
+		try {
+			const diff = await compareErdWithDbApi({
+				docErdId: id,
+				conn: compared.conn,
+				schema: compared.schema,
+			});
+			setCompared({ ...compared, diff });
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось обновить сравнение",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setRereading(false);
+		}
+	}, [id, compared]);
+
+	// Сравнение живёт на холсте отдельным наложением: сцена его не считает, а
+	// только раскрашивает по ответу. `load` наложение сбрасывает, поэтому
+	// накладывается оно после каждого перечитывания — сюда приходит новый
+	// объект ответа, и эффект повторяется.
+	useEffect(() => {
+		const scene = sceneRef.current;
+		if (!scene) return;
+
+		try {
+			if (compared) {
+				scene.set_diff(compared.diff);
+			} else {
+				scene.clear_diff();
+			}
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось показать сравнение",
+				description: err instanceof Error ? err.message : String(err),
+			});
+			return;
+		}
+		renderRef.current?.();
+	}, [compared]);
+
+	// Другая диаграмма — другое сравнение.
+	useEffect(() => {
+		setCompared(null);
+	}, [id]);
 
 	// The modal persists the entity first, so by the time this runs the table
 	// exists in the schema and only needs drawing.
@@ -77,7 +144,7 @@ export function DocErdShowPage() {
 		flushRef.current?.();
 		// Сцена таблицу уже нарисовала, но её поля нужны форме правки — и они
 		// живут в схеме, а не на холсте.
-		void reloadRef.current?.();
+		void reread();
 	};
 
 	useEffect(() => {
@@ -279,7 +346,21 @@ export function DocErdShowPage() {
 			// Таблицы под курсором нет — значит, двойной клик пришёлся на
 			// область: её выделил тот же mousedown.
 			const frame = scene?.selected_frame_id();
-			if (frame) setEditingFrameId(frame);
+			if (frame) {
+				setEditingFrameId(frame);
+				return;
+			}
+
+			// Таблицу, которой в документе нет, править нечем: её ещё не
+			// существует. Перенести её можно из панели сравнения.
+			const ghost = scene?.selected_ghost_name();
+			if (ghost) {
+				toast({
+					title: `«${ghost}» есть только в базе`,
+					description:
+						"Таблицы нет в документе — перенесите её из панели сравнения справа",
+				});
+			}
 		};
 
 		// Esc бросает незаконченный прямоугольник и выходит из режима рисования.
@@ -327,13 +408,18 @@ export function DocErdShowPage() {
 			flush();
 		});
 
+		// За размером следим по элементу, а не по окну: панель сравнения
+		// появляется и исчезает рядом с холстом, окно при этом не меняется, а
+		// буфер канваса остался бы от прежней ширины.
+		const observer = new ResizeObserver(resize);
+		observer.observe(canvas);
+
 		canvas.addEventListener("mousedown", handleMouseDown);
 		canvas.addEventListener("dblclick", handleDoubleClick);
 		canvas.addEventListener("wheel", handleWheel, { passive: false });
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseup", handleMouseUp);
 		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("resize", resize);
 
 		return () => {
 			disposed = true;
@@ -344,7 +430,7 @@ export function DocErdShowPage() {
 			window.removeEventListener("mousemove", handleMouseMove);
 			window.removeEventListener("mouseup", handleMouseUp);
 			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("resize", resize);
+			observer.disconnect();
 			scene?.free();
 			scene = null;
 			sceneRef.current = null;
@@ -368,6 +454,13 @@ export function DocErdShowPage() {
 							: "Тяните от поля к полю — связь · двойной клик по таблице или области — правка · клик по связи, затем ✕ — удалить · колесо — масштаб"}
 					</p>
 					<div className={styles.actions}>
+						<CompareWithDbButton
+							active={!!compared}
+							disabled={!id || rereading}
+							onClick={() =>
+								compared ? setCompared(null) : setCompareOpen(true)
+							}
+						/>
 						<DrawFrameButton
 							active={drawing}
 							disabled={!id}
@@ -386,8 +479,29 @@ export function DocErdShowPage() {
 						</button>
 					</div>
 				</div>
-				<canvas ref={canvasRef} className={styles.canvas} />
+				<div className={styles.stage}>
+					<canvas ref={canvasRef} className={styles.canvas} />
+					{id && compared && (
+						<ErdComparePanel
+							docErdId={id}
+							diff={compared.diff}
+							busy={rereading}
+							onRefresh={() => void reread()}
+							onClose={() => setCompared(null)}
+							onChanged={() => void reread()}
+						/>
+					)}
+				</div>
 			</div>
+
+			{id && (
+				<CompareWithDbModal
+					open={compareOpen}
+					onOpenChange={setCompareOpen}
+					docErdId={id}
+					onCompared={setCompared}
+				/>
+			)}
 
 			{id && (
 				<CreateTableModal
@@ -405,7 +519,7 @@ export function DocErdShowPage() {
 				relations={relations}
 				onSaved={() => {
 					setEditingId(null);
-					void reloadRef.current?.();
+					void reread();
 				}}
 			/>
 

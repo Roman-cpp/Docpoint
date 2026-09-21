@@ -8,13 +8,13 @@ mod state;
 mod webkit;
 
 use commands::{
-    authenticate_environment, clear_environment_session, create_endpoint, create_endpoint_request,
-    create_environment, create_erd_frame, create_erd_schema, create_node, create_platform,
-    create_relation, create_variable, create_websocket_message, db_introspect, db_list_schemas,
-    delete_endpoint, delete_endpoint_request, delete_environment, delete_erd_frame, delete_group,
-    delete_node, delete_platform, delete_relation, delete_schema, delete_variable,
-    delete_websocket_message, duplicate_environment, environments_by_platform, export_markdown,
-    export_platform, import_doc, import_erd, import_platform, import_websocket,
+    authenticate_environment, clear_environment_session, compare_erd_with_db, create_endpoint,
+    create_endpoint_request, create_environment, create_erd_frame, create_erd_schema, create_node,
+    create_platform, create_relation, create_variable, create_websocket_message, db_introspect,
+    db_list_schemas, delete_endpoint, delete_endpoint_request, delete_environment,
+    delete_erd_frame, delete_group, delete_node, delete_platform, delete_relation, delete_schema,
+    delete_variable, delete_websocket_message, duplicate_environment, environments_by_platform,
+    export_markdown, export_platform, import_doc, import_erd, import_platform, import_websocket,
     list_endpoint_requests, move_node, open_file_node, pick_db_file, read_catalog_tree, read_doc,
     read_docs, read_environment_auth, read_environment_proxy, read_environments_by_doc,
     read_erd_frames, read_erd_schemas, read_groups, read_markdown, read_node, read_platform,
@@ -177,6 +177,7 @@ pub fn run() {
             delete_relation,
             update_schema_positions,
             import_erd,
+            compare_erd_with_db,
             import_websocket,
             db_list_schemas,
             db_introspect,

@@ -1,4 +1,5 @@
-import type { DbConnectionDTO, DbKind, DbSslMode } from "@/entities/db-source";
+import type { DbConnectionDTO, DbSslMode } from "../model/db-source.dto";
+import type { DbKind } from "../model/db-source.type";
 
 /** Черновик формы подключения: всё строками, как их вводят. */
 export interface ConnectionDraft {
@@ -11,6 +12,13 @@ export interface ConnectionDraft {
 	file: string;
 	ssl: DbSslMode;
 }
+
+/** Название вида базы для человека — им подписывают источник в документе. */
+export const DB_KIND_LABEL: Record<DbKind, string> = {
+	postgres: "PostgreSQL",
+	mysql: "MySQL",
+	sqlite: "SQLite",
+};
 
 /** Порт по умолчанию подставляется при смене вида базы. */
 export const DEFAULT_PORT: Record<DbKind, string> = {

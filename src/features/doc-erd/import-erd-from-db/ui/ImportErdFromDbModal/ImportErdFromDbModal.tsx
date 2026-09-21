@@ -1,49 +1,25 @@
 import { type FC, useState } from "react";
 import { toast } from "@/core/toast";
 import {
-	type DbKind,
+	type ConnectionDraft,
+	DB_KIND_LABEL,
+	DbConnectionForm,
 	type DbSchema,
-	type DbSslMode,
+	draftProblem,
+	emptyDraft,
 	getDbSchemaApi,
 	getDbSchemasApi,
-	pickDbFileApi,
+	toConnection,
 } from "@/entities/db-source";
 import {
 	type ImportErdTarget,
 	useImportErd,
 } from "@/features/doc-erd/import-erd/@x/doc-erd/import-erd-from-db";
-import {
-	Button,
-	Checkbox,
-	Field,
-	Input,
-	Select,
-} from "@/shared/ui-kit/controls";
+import { Checkbox, Field, Input } from "@/shared/ui-kit/controls";
 import { Table, TableHead, TableRow } from "@/shared/ui-kit/data-display";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { dbSchemaToErd } from "../../lib/dbSchemaToErd";
-import {
-	type ConnectionDraft,
-	DEFAULT_PORT,
-	draftProblem,
-	emptyDraft,
-	isFileBased,
-	toConnection,
-} from "../../model/connectionDraft";
 import s from "./ImportErdFromDbModal.module.css";
-
-const KINDS: { value: DbKind; label: string }[] = [
-	{ value: "postgres", label: "PostgreSQL" },
-	{ value: "mysql", label: "MySQL" },
-	{ value: "sqlite", label: "SQLite (файл)" },
-];
-
-const SSL_MODES: { value: DbSslMode; label: string }[] = [
-	{ value: "prefer", label: "prefer — по возможности" },
-	{ value: "disable", label: "disable — без TLS" },
-	{ value: "require", label: "require — обязательно, без проверки" },
-	{ value: "verify-full", label: "verify-full — с проверкой сертификата" },
-];
 
 interface ImportErdFromDbModalProps {
 	open: boolean;
@@ -77,8 +53,11 @@ export const ImportErdFromDbModal: FC<ImportErdFromDbModalProps> = ({
 
 	const { importErdAsync, isImportingErd } = useImportErd(target);
 
-	const patch = (over: Partial<ConnectionDraft>) =>
+	const patch = (over: Partial<ConnectionDraft>) => {
 		setDraft((prev) => ({ ...prev, ...over }));
+		// Сменили вид базы — прежний список схем к новой не относится.
+		if (over.kind) setNamespaces(null);
+	};
 
 	const reset = () => {
 		setDraft(emptyDraft());
@@ -157,7 +136,7 @@ export const ImportErdFromDbModal: FC<ImportErdFromDbModalProps> = ({
 		if (!schema) return;
 		const payload = dbSchemaToErd(schema, selected, {
 			name: name.trim(),
-			desc: `Импортировано из ${KINDS.find((k) => k.value === draft.kind)?.label}`,
+			desc: `Импортировано из ${DB_KIND_LABEL[draft.kind]}`,
 		});
 
 		try {
@@ -192,107 +171,13 @@ export const ImportErdFromDbModal: FC<ImportErdFromDbModalProps> = ({
 
 			<Dialog.Body>
 				{!schema ? (
-					<div className={s.step}>
-						<Field label="База данных" required>
-							<Select
-								options={KINDS}
-								value={draft.kind}
-								onChange={(e) => {
-									const kind = e.target.value as DbKind;
-									patch({ kind, port: DEFAULT_PORT[kind] });
-									setNamespaces(null);
-								}}
-							/>
-						</Field>
-
-						{isFileBased(draft.kind) ? (
-							<Field label="Файл базы" required>
-								<div className={s.file}>
-									<Input
-										value={draft.file}
-										onChange={(e) => patch({ file: e.target.value })}
-										placeholder="/путь/до/base.db"
-									/>
-									<Button
-										variant="subtle"
-										onClick={async () => {
-											const picked = await pickDbFileApi();
-											if (picked) patch({ file: picked });
-										}}
-									>
-										Выбрать…
-									</Button>
-								</div>
-							</Field>
-						) : (
-							<>
-								<div className={s.row}>
-									<Field label="Хост" required>
-										<Input
-											value={draft.host}
-											onChange={(e) => patch({ host: e.target.value })}
-										/>
-									</Field>
-									<Field label="Порт" required>
-										<Input
-											value={draft.port}
-											onChange={(e) => patch({ port: e.target.value })}
-											inputMode="numeric"
-										/>
-									</Field>
-								</div>
-
-								<div className={s.pair}>
-									<Field label="Пользователь" required>
-										<Input
-											value={draft.user}
-											onChange={(e) => patch({ user: e.target.value })}
-										/>
-									</Field>
-									<Field label="Пароль">
-										<Input
-											type="password"
-											value={draft.password}
-											onChange={(e) => patch({ password: e.target.value })}
-										/>
-									</Field>
-								</div>
-
-								<div className={s.pair}>
-									<Field label="База" required>
-										<Input
-											value={draft.database}
-											onChange={(e) => patch({ database: e.target.value })}
-										/>
-									</Field>
-									<Field label="TLS">
-										<Select
-											options={SSL_MODES}
-											value={draft.ssl}
-											onChange={(e) =>
-												patch({ ssl: e.target.value as DbSslMode })
-											}
-										/>
-									</Field>
-								</div>
-							</>
-						)}
-
-						{namespaces && namespaces.length > 1 && (
-							<Field
-								label="Схема"
-								hint="Диаграмма собирается по одной схеме за раз"
-							>
-								<Select
-									options={namespaces.map((it) => ({ value: it, label: it }))}
-									value={namespace}
-									onChange={(e) => setNamespace(e.target.value)}
-								/>
-							</Field>
-						)}
-
-						{problem && <p className={s.problem}>{problem}</p>}
-					</div>
+					<DbConnectionForm
+						draft={draft}
+						onChange={patch}
+						namespaces={namespaces}
+						namespace={namespace}
+						onNamespaceChange={setNamespace}
+					/>
 				) : (
 					<div className={s.step}>
 						<Field label="Название диаграммы" required>
