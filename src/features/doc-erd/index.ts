@@ -1,4 +1,10 @@
+export {
+	createFrame,
+	DEFAULT_FRAME_TITLE,
+	DrawFrameButton,
+} from "./create-frame";
 export { type CreatedTable, CreateTableModal } from "./create-table";
+export { EditFrameModal } from "./edit-frame";
 export { EditTableModal } from "./edit-table";
 export type {
 	ImportErdPayload,

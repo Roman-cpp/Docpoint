@@ -1,0 +1,17 @@
+.footer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+}
+
+.spacer {
+	flex: 1;
+}
+
+.hint {
+	margin: 0;
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+}

@@ -18,6 +18,7 @@ export { EyeIcon } from "./ui/EyeIcon";
 export { EyeOffIcon } from "./ui/EyeOffIcon";
 export { FileIcon } from "./ui/FileIcon";
 export { FolderIcon } from "./ui/FolderIcon";
+export { FrameIcon } from "./ui/FrameIcon";
 export { GripIcon } from "./ui/GripIcon";
 export { ImageFileIcon } from "./ui/ImageFileIcon";
 export { LockIcon } from "./ui/LockIcon";

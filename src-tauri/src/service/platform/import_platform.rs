@@ -12,6 +12,8 @@ use crate::domain::doc_erd::entity::dto::{CreateEntityDTO, EntityPositionDTO};
 use crate::domain::doc_erd::entity::repository::EntityRepository;
 use crate::domain::doc_erd::entity_relation::dto::RelationEndpointsDTO;
 use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
+use crate::domain::doc_erd::frame::dto::CreateFrameDTO;
+use crate::domain::doc_erd::frame::repository::FrameRepository;
 use crate::domain::environment::environment::dto::{CreateEnvironmentDTO, CreateVariableDTO};
 use crate::domain::environment::environment::repository::EnvironmentRepository;
 use crate::domain::environment::environment_auth::dto::UpdateEnvironmentAuthDTO;
@@ -30,6 +32,7 @@ use crate::repository::sqlite::doc_file::DocFileRepo;
 use crate::repository::sqlite::entity::EntityRepo;
 use crate::repository::sqlite::entity_relation::RelationRepo;
 use crate::repository::sqlite::environment::EnvironmentRepo;
+use crate::repository::sqlite::erd_frame::FrameRepo;
 use crate::repository::sqlite::group::GroupRepo;
 use crate::repository::sqlite::platform::PlatformRepo;
 use crate::repository::sqlite::websocket_message::WebsocketMessageRepo;
@@ -471,6 +474,24 @@ async fn import_doc_erd_node(
                 to_entity,
                 to_field: relation.to_field.clone(),
             })
+            .await?;
+    }
+
+    // Области ни на что не ссылаются: их место на холсте — просто координаты,
+    // и переносятся они как есть, вместе с положением таблиц.
+    let frames = FrameRepo::new(&state.db);
+    for frame in &doc_erd.frames {
+        frames
+            .create_for_erd(
+                &created.id,
+                &CreateFrameDTO {
+                    title: frame.title.clone(),
+                    x: frame.x,
+                    y: frame.y,
+                    w: frame.w,
+                    h: frame.h,
+                },
+            )
             .await?;
     }
 

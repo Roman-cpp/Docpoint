@@ -8,6 +8,7 @@ use crate::domain::doc_api::endpoint_request::repository::EndpointRequestReposit
 use crate::domain::doc_api::group::repository::GroupRepository;
 use crate::domain::doc_erd::entity::repository::EntityRepository;
 use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
+use crate::domain::doc_erd::frame::repository::FrameRepository;
 use crate::domain::environment::environment_auth::repository as auth_repository;
 use crate::domain::environment::environment_proxy::repository as proxy_repository;
 use crate::domain::file::repository::DocFileRepository;
@@ -22,6 +23,7 @@ use crate::repository::sqlite::doc_websocket::DocWebsocketRepo;
 use crate::repository::sqlite::endpoint_request::EndpointRequestRepo;
 use crate::repository::sqlite::entity::EntityRepo;
 use crate::repository::sqlite::entity_relation::RelationRepo;
+use crate::repository::sqlite::erd_frame::FrameRepo;
 use crate::repository::sqlite::group::GroupRepo;
 use crate::repository::sqlite::platform::PlatformRepo;
 use crate::repository::sqlite::websocket_message::WebsocketMessageRepo;
@@ -247,10 +249,12 @@ async fn export_doc_ws(state: &AppState, node_id: &str) -> Result<ManifestDocWs,
 async fn export_doc_erd(state: &AppState, node_id: &str) -> Result<ManifestDocErd, String> {
     let entities = EntityRepo::new(&state.db).all_by_erd(node_id).await?;
     let relations = RelationRepo::new(&state.db).by_erd(node_id).await?;
+    let frames = FrameRepo::new(&state.db).all_by_erd(node_id).await?;
 
     Ok(ManifestDocErd {
         entities,
         relations,
+        frames,
     })
 }
 

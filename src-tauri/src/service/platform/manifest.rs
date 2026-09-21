@@ -17,6 +17,7 @@ use crate::domain::doc_api::endpoint_request::entity::{
 use crate::domain::doc_api::json_doc;
 use crate::domain::doc_erd::entity::entity::Entity;
 use crate::domain::doc_erd::entity_relation::entity::EntityRelation;
+use crate::domain::doc_erd::frame::entity::Frame;
 use crate::domain::environment::environment::entity::EnvValue;
 use crate::domain::environment::environment_auth::dto::EnvironmentAuthDTO;
 use crate::domain::environment::environment_proxy::dto::EnvironmentProxyDTO;
@@ -153,11 +154,15 @@ pub struct ManifestWebsocketMessage {
     pub desc: String,
 }
 
-/// Таблицы и связи ERD-диаграммы. `Entity`/`EntityRelation` читаются из базы
-/// уже в этой форме и переиспользуются как есть — их `id` внутри файла служит
-/// только ключом для связей.
+/// Таблицы, связи и области ERD-диаграммы. `Entity`/`EntityRelation`/`Frame`
+/// читаются из базы уже в этой форме и переиспользуются как есть — их `id`
+/// внутри файла служит только ключом для связей.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ManifestDocErd {
     pub entities: Vec<Entity>,
     pub relations: Vec<EntityRelation>,
+    /// Области появились позже таблиц и связей: в архивах, снятых до них, поля
+    /// нет, и диаграмма импортируется просто без группировки.
+    #[serde(default)]
+    pub frames: Vec<Frame>,
 }

@@ -5,6 +5,10 @@ use web_sys::CanvasRenderingContext2d;
 
 mod domain;
 
+use domain::frame::model::{
+    Frame, Handle, CORNER_R as FRAME_CORNER_R, MIN_H as FRAME_MIN_H, MIN_W as FRAME_MIN_W,
+    TITLE_H as FRAME_TITLE_H,
+};
 use domain::relation::model::{Endpoint, Relation};
 use domain::table::model::{ColKind, Column, Table, HEADER_H, ROW_H};
 
@@ -62,6 +66,19 @@ struct RelationDTO {
     to_field: String,
 }
 
+/// Область, как её возвращает команда `read_erd_frames` и как её принимает
+/// [`Scene::add_frame`]. Состава у области нет — только подпись и геометрия.
+#[derive(Deserialize)]
+struct FrameDTO {
+    id: String,
+    #[serde(default)]
+    title: String,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
 // ---------------------------------------------------------------------------
 // Wire shapes for `Scene::take_pending`. The scene never talks to the backend
 // itself: it accumulates what changed and hands the batch to JS, which spends
@@ -90,12 +107,35 @@ struct RelationEndpoints {
     to_field: String,
 }
 
+/// Новые границы области, адресованные её id. Ложатся в ту же пачку, что и
+/// позиции таблиц: перетаскивание области двигает и то, и другое разом.
+#[derive(Serialize)]
+struct FrameBounds {
+    id: String,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
+/// Прямоугольник, который пользователь только что протянул по холсту. Id у него
+/// ещё нет: сцена отдаёт геометрию, JS заводит область командой и возвращает
+/// готовую обратно через [`Scene::add_frame`].
+#[derive(Serialize)]
+struct FrameRect {
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
 /// Everything the scene has changed since the last flush.
 #[derive(Serialize)]
 struct Pending {
     moves: Vec<TablePosition>,
     links: Vec<RelationEndpoints>,
     unlinks: Vec<RelationEndpoints>,
+    frames: Vec<FrameBounds>,
 }
 
 /// Видимая часть мира в мировых координатах. Всё, что сюда не попадает, не
@@ -155,6 +195,12 @@ const PORT_R: f64 = 4.0; // visible connection-port radius
 const PORT_HIT: f64 = 8.0; // grab tolerance around a port, in world px
 const REL_HIT: f64 = 6.0; // click tolerance around a relation curve, in screen px
 const BADGE_R: f64 = 9.0; // delete-badge radius on a selected relation
+const FRAME_HIT: f64 = 6.0; // grab tolerance around a frame's border, in screen px
+const HANDLE_R: f64 = 4.0; // visible resize-handle half-size, in screen px
+const HANDLE_HIT: f64 = 7.0; // grab tolerance around a resize handle, in screen px
+/// Меньше этого протянутый прямоугольник считается промахом, а не областью:
+/// одиночный клик в режиме рисования ничего не создаёт.
+const DRAFT_MIN: f64 = 24.0;
 
 // Light theme palette — mirrors the app's design tokens (tokens.css):
 // warm cream canvas, white surfaces, earthy accents.
@@ -172,10 +218,17 @@ const COL_REL: &str = "#c8c0b4"; // --border-h
 const COL_REL_SEL: &str = "#3a5a78"; // --blue, selected relation
 const COL_DELETE: &str = "#9b3b36"; // --red, delete badge
 const COL_SHADOW: &str = "rgba(0, 0, 0, 0.08)"; // --shadow-sm tone
+                                                // Область — подложка под таблицами, поэтому заливка полупрозрачная: сквозь неё
+                                                // видно сетку, а карточки таблиц поверх остаются белыми и читаемыми.
+const COL_FRAME_BG: &str = "rgba(240, 237, 232, 0.55)"; // --cat-bg, приглушённый
+const COL_FRAME_BORDER: &str = "#ddd6ca"; // между --border и --border-h
+const COL_FRAME_TITLE: &str = "#555555"; // --ink-mid
+const COL_HANDLE_BG: &str = "#ffffff"; // --surface, заливка ручки растягивания
 
 // Font stacks mirroring --font-serif / --font-mono in tokens.css.
 const FONT_HEAD: &str = "600 14px \"Lora\", Georgia, \"Times New Roman\", serif";
 const FONT_ROW: &str = "13px \"Menlo\", \"SF Mono\", \"Courier New\", monospace";
+const FONT_FRAME: &str = "600 15px \"Lora\", Georgia, \"Times New Roman\", serif";
 
 /// An in-progress table drag: which table and the cursor offset from its
 /// top-left corner, in world coordinates.
@@ -205,6 +258,50 @@ struct LinkState {
     from: Endpoint,
     from_right: bool,
     cursor: (f64, f64),
+}
+
+/// Перетаскивание области: сама область, смещение курсора от её угла и состав,
+/// снятый в момент захвата. Состав — пары «индекс таблицы, её положение тогда»:
+/// таблицы едут не за курсором, а ровно на то же смещение, что и область, и
+/// ничего не разъезжается, если область упрётся в ограничение.
+struct FrameDrag {
+    index: usize,
+    offset_x: f64,
+    offset_y: f64,
+    start_x: f64,
+    start_y: f64,
+    carried: Vec<(usize, f64, f64)>,
+}
+
+/// Растягивание области за ручку: какую грань тянут, границы в момент захвата и
+/// точка захвата — смещение считается от неё, а не от предыдущего кадра, чтобы
+/// ошибка не накапливалась.
+struct FrameResize {
+    index: usize,
+    handle: Handle,
+    start: (f64, f64, f64, f64),
+    grab: (f64, f64),
+}
+
+/// Прямоугольник, который сейчас протягивают по холсту в режиме рисования:
+/// точка нажатия и текущая точка курсора, в мировых координатах.
+struct Draft {
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+}
+
+impl Draft {
+    /// Нормализованный прямоугольник — тянуть можно в любую сторону.
+    fn rect(&self) -> (f64, f64, f64, f64) {
+        (
+            self.ax.min(self.bx),
+            self.ay.min(self.by),
+            (self.bx - self.ax).abs(),
+            (self.by - self.ay).abs(),
+        )
+    }
 }
 
 /// The resolved cubic-bezier geometry of a relation, in world coordinates.
@@ -240,6 +337,10 @@ impl Curve {
 pub struct Scene {
     tables: Vec<Table>,
     relations: Vec<Relation>,
+    /// Области в порядке создания — в нём же они и рисуются, слоем под
+    /// таблицами. Хит-тест идёт с конца, так что верхняя перекрывающая область
+    /// выигрывает у нижней.
+    frames: Vec<Frame>,
     // Viewport in CSS pixels and the backing-store device-pixel ratio.
     width: f64,
     height: f64,
@@ -251,8 +352,18 @@ pub struct Scene {
     drag: Option<DragState>,
     pan: Option<PanState>,
     link: Option<LinkState>,
+    frame_drag: Option<FrameDrag>,
+    frame_resize: Option<FrameResize>,
+    /// Режим рисования области: включается кнопкой в тулбаре и гаснет, как
+    /// только прямоугольник протянут или нажат Esc.
+    drawing: bool,
+    draft: Option<Draft>,
+    /// Готовый прямоугольник, которого JS ещё не забрал, — пара к
+    /// `take_pending`, только для одноразового черновика.
+    draft_done: Option<FrameRect>,
     selected: Option<usize>,
     selected_rel: Option<usize>,
+    selected_frame: Option<usize>,
     // The column row whose ports are currently revealed (cursor hovering it).
     hover_col: Option<Endpoint>,
     // Desired CSS cursor for the current pointer state; read by JS. Статическая
@@ -264,6 +375,7 @@ pub struct Scene {
     pending_moves: Vec<TablePosition>,
     pending_links: Vec<RelationEndpoints>,
     pending_unlinks: Vec<RelationEndpoints>,
+    pending_frames: Vec<FrameBounds>,
 }
 
 #[wasm_bindgen]
@@ -275,6 +387,7 @@ impl Scene {
         let mut scene = Scene {
             tables: Vec::new(),
             relations: Vec::new(),
+            frames: Vec::new(),
             width: 800.0,
             height: 600.0,
             dpr: 1.0,
@@ -284,14 +397,21 @@ impl Scene {
             drag: None,
             pan: None,
             link: None,
+            frame_drag: None,
+            frame_resize: None,
+            drawing: false,
+            draft: None,
+            draft_done: None,
             selected: None,
             selected_rel: None,
+            selected_frame: None,
             hover_col: None,
             cursor: "default",
             laid_out: false,
             pending_moves: Vec::new(),
             pending_links: Vec::new(),
             pending_unlinks: Vec::new(),
+            pending_frames: Vec::new(),
         };
         scene.seed_sample();
         scene
@@ -377,14 +497,25 @@ impl Scene {
     /// positional `(tableIndex, columnIndex)` the renderer uses; any endpoint
     /// that cannot be resolved drops the relation. Column icons are derived from
     /// the resulting relation set by [`Scene::refresh_kinds`].
-    pub fn load(&mut self, entities: JsValue, relations: JsValue) -> Result<(), JsValue> {
+    ///
+    /// `frames` — области диаграммы (`read_erd_frames`). Они ложатся на холст
+    /// как есть: автолейаута у области нет, её прямоугольник всегда нарисован
+    /// руками.
+    pub fn load(
+        &mut self,
+        entities: JsValue,
+        relations: JsValue,
+        frames: JsValue,
+    ) -> Result<(), JsValue> {
         let entities: Vec<EntityDTO> = serde_wasm_bindgen::from_value(entities)?;
         let relations: Vec<RelationDTO> = serde_wasm_bindgen::from_value(relations)?;
+        let frames: Vec<FrameDTO> = serde_wasm_bindgen::from_value(frames)?;
 
         // Что не успели сохранить для прошлой диаграммы, к этой отношения не имеет.
         self.pending_moves.clear();
         self.pending_links.clear();
         self.pending_unlinks.clear();
+        self.pending_frames.clear();
 
         // (entity id, field name) -> (table index, column index), so relation
         // endpoints can be resolved to the positional form the scene uses.
@@ -451,15 +582,112 @@ impl Scene {
 
         self.tables = tables;
         self.relations = relations;
+        self.frames = frames
+            .into_iter()
+            .map(|f| Frame::new(f.id, f.title, f.x, f.y, f.w, f.h))
+            .collect();
         self.selected = None;
         self.selected_rel = None;
+        self.selected_frame = None;
         self.hover_col = None;
         self.drag = None;
         self.pan = None;
         self.link = None;
+        self.frame_drag = None;
+        self.frame_resize = None;
+        self.drawing = false;
+        self.draft = None;
         self.laid_out = false;
         self.refresh_kinds();
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Области
+    // -----------------------------------------------------------------------
+
+    /// Добавляет область, которую команда `create_erd_frame` только что
+    /// завела, и выделяет её — чтобы ручки растягивания появились сразу.
+    /// Границы приходят обратно те же, что сцена отдала в [`Scene::take_draft`],
+    /// так что нарисованное и сохранённое не могут разойтись.
+    pub fn add_frame(&mut self, frame: JsValue) -> Result<(), JsValue> {
+        let dto: FrameDTO = serde_wasm_bindgen::from_value(frame)?;
+        self.frames
+            .push(Frame::new(dto.id, dto.title, dto.x, dto.y, dto.w, dto.h));
+        self.selected_frame = Some(self.frames.len() - 1);
+        self.selected = None;
+        self.selected_rel = None;
+        Ok(())
+    }
+
+    /// Меняет подпись области. Молча ничего не делает, если области с таким id
+    /// на холсте уже нет.
+    pub fn rename_frame(&mut self, id: &str, title: &str) {
+        if let Some(f) = self.frames.iter_mut().find(|f| f.id == id) {
+            f.title = title.to_string();
+        }
+    }
+
+    /// Убирает область с холста. Таблицы, которые в ней лежали, остаются на
+    /// месте: членство геометрическое, и уносить с собой области нечего.
+    pub fn remove_frame(&mut self, id: &str) {
+        let Some(i) = self.frames.iter().position(|f| f.id == id) else {
+            return;
+        };
+        self.frames.remove(i);
+        self.selected_frame = None;
+        self.frame_drag = None;
+        self.frame_resize = None;
+        // Ждавшие записи границы этой области больше ни к чему не относятся.
+        self.pending_frames.retain(|b| b.id != id);
+    }
+
+    /// Id выделенной области — по нему JS открывает её форму. `None`, если
+    /// выделена таблица, связь или ничего.
+    pub fn selected_frame_id(&self) -> Option<String> {
+        Some(self.frames.get(self.selected_frame?)?.id.clone())
+    }
+
+    /// Включает режим рисования: следующее протаскивание по холсту задаёт
+    /// прямоугольник новой области.
+    pub fn begin_draw_frame(&mut self) {
+        self.drawing = true;
+        self.draft = None;
+        self.cursor = "crosshair";
+    }
+
+    /// Выходит из режима рисования, бросив незаконченный прямоугольник (Esc).
+    /// Возвращает `true`, если было что бросать, — тогда нужна перерисовка.
+    pub fn cancel_draw_frame(&mut self) -> bool {
+        let had = self.drawing || self.draft.is_some();
+        self.drawing = false;
+        self.draft = None;
+        self.cursor = "default";
+        had
+    }
+
+    /// Идёт ли сейчас рисование области — по этому флагу JS подсвечивает
+    /// кнопку в тулбаре.
+    pub fn is_drawing(&self) -> bool {
+        self.drawing
+    }
+
+    /// Протянут ли прямоугольник, которого JS ещё не забрал.
+    pub fn has_draft(&self) -> bool {
+        self.draft_done.is_some()
+    }
+
+    /// Забирает нарисованный прямоугольник `{ x, y, w, h }`. Сцена не заводит
+    /// область сама: id выдаёт база, и до ответа команды рисовать нечего.
+    pub fn take_draft(&mut self) -> Result<JsValue, JsValue> {
+        let rect = self.draft_done.take();
+        Ok(serde_wasm_bindgen::to_value(&rect)?)
+    }
+
+    /// Допуск попадания в мировых пикселях: на экране он всегда одинаков,
+    /// поэтому на отдалении кольцо захвата рамки в мире шире.
+    fn hit_tol(&self, screen_px: f64) -> f64 {
+        screen_px / self.scale
     }
 
     fn screen_to_world(&self, x: f64, y: f64) -> (f64, f64) {
@@ -472,12 +700,32 @@ impl Scene {
         self.cursor.to_string()
     }
 
-    /// Routes a left-button press, in priority order: delete a selected
-    /// relation via its badge, start a relation drag from a column port, select
-    /// a relation curve, drag a table, or pan empty space. Coordinates are CSS
-    /// pixels.
+    /// Routes a left-button press, in priority order: draw a frame, delete a
+    /// selected relation via its badge, resize the selected frame, start a
+    /// relation drag from a column port, select a relation curve, drag a table,
+    /// drag a frame by its title or border, or pan. Coordinates are CSS pixels.
+    ///
+    /// Таблица стоит в этом списке выше области, хотя рисуется поверх неё: так
+    /// таблица, лежащая на области, остаётся кликабельной, а область ловит
+    /// только то, что мимо неё не попало.
     pub fn on_mouse_down(&mut self, x: f64, y: f64) -> bool {
         let (wx, wy) = self.screen_to_world(x, y);
+
+        // 0. Режим рисования занимает холст целиком: пока он включён, нажатие
+        //    ничем другим не перехватывается.
+        if self.drawing {
+            self.draft = Some(Draft {
+                ax: wx,
+                ay: wy,
+                bx: wx,
+                by: wy,
+            });
+            self.selected = None;
+            self.selected_rel = None;
+            self.selected_frame = None;
+            self.cursor = "crosshair";
+            return true;
+        }
 
         // 1. The delete badge of the currently selected relation.
         if let Some(ri) = self.selected_rel {
@@ -495,10 +743,32 @@ impl Scene {
             }
         }
 
-        // 2. A column port — start drawing a new relation.
+        // 2. Ручка выделенной области. Ручки торчат по её граням, где под ними
+        //    может оказаться таблица, поэтому ловятся раньше всех — но только
+        //    у выделенной области, у которой они и нарисованы.
+        if let Some(fi) = self.selected_frame {
+            let tol = self.hit_tol(HANDLE_HIT);
+            let grabbed = self
+                .frames
+                .get(fi)
+                .and_then(|f| f.handle_at(wx, wy, tol).map(|h| (h, (f.x, f.y, f.w, f.h))));
+            if let Some((handle, start)) = grabbed {
+                self.frame_resize = Some(FrameResize {
+                    index: fi,
+                    handle,
+                    start,
+                    grab: (wx, wy),
+                });
+                self.cursor = handle.cursor();
+                return false;
+            }
+        }
+
+        // 3. A column port — start drawing a new relation.
         if let Some((ti, ci, right)) = self.hit_port(wx, wy) {
             self.selected = None;
             self.selected_rel = None;
+            self.selected_frame = None;
             self.link = Some(LinkState {
                 from: (ti, ci),
                 from_right: right,
@@ -508,15 +778,16 @@ impl Scene {
             return false;
         }
 
-        // 3. A relation curve — select it.
+        // 4. A relation curve — select it.
         if let Some(ri) = self.hit_relation(wx, wy) {
             self.selected = None;
             self.selected_rel = Some(ri);
+            self.selected_frame = None;
             self.cursor = "pointer";
             return false;
         }
 
-        // 4. A table body — drag it.
+        // 5. A table body — drag it.
         if let Some(index) = self.tables.iter().rposition(|t| t.contains(wx, wy)) {
             let t = &self.tables[index];
             self.drag = Some(DragState {
@@ -528,13 +799,43 @@ impl Scene {
             });
             self.selected = Some(index);
             self.selected_rel = None;
+            self.selected_frame = None;
             self.cursor = "grabbing";
             return true;
         }
 
-        // 5. Empty space — pan.
+        // 6. Подпись или рамка области — тянуть её вместе с содержимым.
+        let tol = self.hit_tol(FRAME_HIT);
+        if let Some(fi) = self
+            .frames
+            .iter()
+            .rposition(|f| f.on_title(wx, wy) || f.on_border(wx, wy, tol))
+        {
+            let (fx, fy) = (self.frames[fi].x, self.frames[fi].y);
+            self.frame_drag = Some(FrameDrag {
+                index: fi,
+                offset_x: wx - fx,
+                offset_y: wy - fy,
+                start_x: fx,
+                start_y: fy,
+                carried: self.carried_by(fi),
+            });
+            self.selected = None;
+            self.selected_rel = None;
+            self.selected_frame = Some(fi);
+            self.cursor = "grabbing";
+            return true;
+        }
+
+        // 7. Тело области или пустота: выделяем область под курсором — чтобы
+        //    показались её ручки — и панорамируем. Тело области перетаскивание
+        //    не начинает: иначе большая область отняла бы у холста пан.
+        let inside = self.frames.iter().rposition(|f| f.contains(wx, wy));
+        let dirty =
+            self.selected.is_some() || self.selected_rel.is_some() || self.selected_frame != inside;
         self.selected = None;
         self.selected_rel = None;
+        self.selected_frame = inside;
         self.pan = Some(PanState {
             start_x: x,
             start_y: y,
@@ -542,7 +843,23 @@ impl Scene {
             cam_y: self.cam_y,
         });
         self.cursor = "grabbing";
-        false
+        dirty
+    }
+
+    /// Состав области: индексы таблиц, целиком лежащих внутри неё, вместе с их
+    /// положением на момент вызова. Снимается один раз — в момент захвата, —
+    /// поэтому таблица, выехавшая за грань по дороге, всё равно доедет с
+    /// областью до конца перетаскивания.
+    fn carried_by(&self, fi: usize) -> Vec<(usize, f64, f64)> {
+        let Some(frame) = self.frames.get(fi) else {
+            return Vec::new();
+        };
+        self.tables
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| frame.holds(t.x, t.y, t.w, t.height()))
+            .map(|(i, t)| (i, t.x, t.y))
+            .collect()
     }
 
     /// Updates whatever interaction is live (table drag, relation drag, pan) or,
@@ -550,6 +867,53 @@ impl Scene {
     /// redraw is needed.
     pub fn on_mouse_move(&mut self, x: f64, y: f64) -> bool {
         let (wx, wy) = self.screen_to_world(x, y);
+
+        if let Some(draft) = self.draft.as_mut() {
+            draft.bx = wx;
+            draft.by = wy;
+            self.cursor = "crosshair";
+            return true;
+        }
+
+        if self.drawing {
+            self.cursor = "crosshair";
+            // Порты в режиме рисования не нужны: кликнуть по ним всё равно
+            // нельзя, а мигающие кружки под крестиком только мешают.
+            return self.hover_col.take().is_some();
+        }
+
+        if let Some(rz) = &self.frame_resize {
+            let (index, handle) = (rz.index, rz.handle);
+            let (x, y, w, h) = Frame::resized(rz.start, handle, wx - rz.grab.0, wy - rz.grab.1);
+            if let Some(f) = self.frames.get_mut(index) {
+                f.x = x;
+                f.y = y;
+                f.w = w;
+                f.h = h;
+            }
+            self.cursor = handle.cursor();
+            return true;
+        }
+
+        // Область забирается из поля целиком: двигать нужно и её, и таблицы, а
+        // одолженная ссылка на состав не дала бы тронуть ни то, ни другое.
+        if let Some(fd) = self.frame_drag.take() {
+            let (nx, ny) = (wx - fd.offset_x, wy - fd.offset_y);
+            let (dx, dy) = (nx - fd.start_x, ny - fd.start_y);
+            if let Some(f) = self.frames.get_mut(fd.index) {
+                f.x = nx;
+                f.y = ny;
+            }
+            for &(ti, sx, sy) in &fd.carried {
+                if let Some(t) = self.tables.get_mut(ti) {
+                    t.x = sx + dx;
+                    t.y = sy + dy;
+                }
+            }
+            self.frame_drag = Some(fd);
+            self.cursor = "grabbing";
+            return true;
+        }
 
         if let Some(drag) = &self.drag {
             if let Some(t) = self.tables.get_mut(drag.index) {
@@ -586,13 +950,30 @@ impl Scene {
             .selected_rel
             .is_some_and(|ri| self.over_delete_badge(ri, wx, wy));
 
-        self.cursor = if over_badge {
+        let handle_tol = self.hit_tol(HANDLE_HIT);
+        let over_handle = self
+            .selected_frame
+            .and_then(|fi| self.frames.get(fi))
+            .and_then(|f| f.handle_at(wx, wy, handle_tol))
+            .map(Handle::cursor);
+
+        let frame_tol = self.hit_tol(FRAME_HIT);
+
+        self.cursor = if let Some(c) = over_handle {
+            c
+        } else if over_badge {
             "pointer"
         } else if self.hit_port(wx, wy).is_some() {
             "crosshair"
         } else if self.hit_relation(wx, wy).is_some() {
             "pointer"
         } else if self.tables.iter().any(|t| t.contains(wx, wy)) {
+            "grab"
+        } else if self
+            .frames
+            .iter()
+            .any(|f| f.on_title(wx, wy) || f.on_border(wx, wy, frame_tol))
+        {
             "grab"
         } else {
             "default"
@@ -606,6 +987,71 @@ impl Scene {
     /// the table queues its new position. Returns `true` when a redraw is needed.
     pub fn on_mouse_up(&mut self, x: f64, y: f64) -> bool {
         let mut dirty = false;
+
+        // Прямоугольник дорисован. Область сцена не заводит: id выдаёт база, и
+        // до ответа команды рисовать нечего — геометрия ложится в черновик,
+        // который JS забирает сразу после этого вызова.
+        if let Some(draft) = self.draft.take() {
+            self.drawing = false;
+            self.cursor = "default";
+            let (dx, dy, dw, dh) = draft.rect();
+            if dw >= DRAFT_MIN && dh >= DRAFT_MIN {
+                self.draft_done = Some(FrameRect {
+                    x: dx,
+                    y: dy,
+                    w: dw.max(FRAME_MIN_W),
+                    h: dh.max(FRAME_MIN_H),
+                });
+            }
+            dirty = true;
+        }
+
+        // Область отпустили. Пишем и её границы, и положение всего, что она
+        // увезла с собой, — одной пачкой, как и обычное перетаскивание таблицы.
+        if let Some(fd) = self.frame_drag.take() {
+            let moved = self
+                .frames
+                .get(fd.index)
+                .is_some_and(|f| f.x != fd.start_x || f.y != fd.start_y);
+            if moved {
+                if let Some(f) = self.frames.get(fd.index) {
+                    self.pending_frames.push(FrameBounds {
+                        id: f.id.clone(),
+                        x: f.x,
+                        y: f.y,
+                        w: f.w,
+                        h: f.h,
+                    });
+                }
+                for &(ti, _, _) in &fd.carried {
+                    if let Some(t) = self.tables.get(ti) {
+                        if !t.id.is_empty() {
+                            self.pending_moves.push(TablePosition {
+                                id: t.id.clone(),
+                                x: t.x,
+                                y: t.y,
+                            });
+                        }
+                    }
+                }
+            }
+            dirty = true;
+        }
+
+        if let Some(rz) = self.frame_resize.take() {
+            if let Some(f) = self.frames.get(rz.index) {
+                if (f.x, f.y, f.w, f.h) != rz.start {
+                    self.pending_frames.push(FrameBounds {
+                        id: f.id.clone(),
+                        x: f.x,
+                        y: f.y,
+                        w: f.w,
+                        h: f.h,
+                    });
+                }
+            }
+            dirty = true;
+        }
 
         if let Some(link) = self.link.take() {
             let (wx, wy) = self.screen_to_world(x, y);
@@ -650,9 +1096,15 @@ impl Scene {
         dirty
     }
 
-    /// Whether a table drag, relation drag, or pan is currently active.
+    /// Whether a table drag, relation drag, frame drag/resize, frame drawing,
+    /// or pan is currently active.
     pub fn is_interacting(&self) -> bool {
-        self.drag.is_some() || self.pan.is_some() || self.link.is_some()
+        self.drag.is_some()
+            || self.pan.is_some()
+            || self.link.is_some()
+            || self.frame_drag.is_some()
+            || self.frame_resize.is_some()
+            || self.draft.is_some()
     }
 
     // -----------------------------------------------------------------------
@@ -665,9 +1117,10 @@ impl Scene {
         !self.pending_moves.is_empty()
             || !self.pending_links.is_empty()
             || !self.pending_unlinks.is_empty()
+            || !self.pending_frames.is_empty()
     }
 
-    /// Takes the accumulated changes — `{ moves, links, unlinks }` — and clears
+    /// Takes the accumulated changes — `{ moves, links, unlinks, frames }` — and clears
     /// the queue. The scene deliberately does not persist anything itself: it
     /// only records what changed, and JS spends the batch on the matching Tauri
     /// commands.
@@ -676,6 +1129,7 @@ impl Scene {
             moves: std::mem::take(&mut self.pending_moves),
             links: std::mem::take(&mut self.pending_links),
             unlinks: std::mem::take(&mut self.pending_unlinks),
+            frames: std::mem::take(&mut self.pending_frames),
         };
         Ok(serde_wasm_bindgen::to_value(&pending)?)
     }
@@ -878,7 +1332,10 @@ impl Scene {
         }
     }
 
-    /// Clears and redraws the whole scene: grid, relations, then tables.
+    /// Clears and redraws the whole scene: grid, frames, relations, then
+    /// tables. Порядок и есть группировка: области лежат слоем под таблицами,
+    /// поэтому таблица, поставленная на область, видна целиком, а область
+    /// читается как подложка под ней.
     ///
     /// Кадр стоит ровно столько, сколько видно на экране: за его пределами не
     /// рисуется ничего, а на отдалении таблицы теряют строки колонок. Без этого
@@ -904,6 +1361,7 @@ impl Scene {
         };
 
         self.draw_grid(ctx, view);
+        self.draw_frames(ctx, view);
         self.draw_relations(ctx, view);
 
         // Тень — гауссово размытие на карточку, самая дорогая примитива здесь.
@@ -921,6 +1379,8 @@ impl Scene {
         self.draw_ports(ctx);
         self.draw_link_preview(ctx);
         self.draw_delete_badge(ctx);
+        self.draw_frame_handles(ctx);
+        self.draw_draft(ctx);
     }
 
     /// Computes each table's width from its text, once. Mutates `w` in place.
@@ -969,6 +1429,83 @@ impl Scene {
             }
             gx += step;
         }
+    }
+
+    /// Слой областей: полупрозрачная заливка, рамка и подпись над верхней
+    /// гранью.
+    ///
+    /// Подпись рисуется и на отдалении, где таблицы уже теряют строки колонок:
+    /// там она единственное, по чему схему можно читать, и стоит она одну
+    /// надпись на область.
+    fn draw_frames(&self, ctx: &CanvasRenderingContext2d, view: Viewport) {
+        ctx.set_font(FONT_FRAME);
+        ctx.set_text_baseline("alphabetic");
+        ctx.set_text_align("left");
+
+        for (i, f) in self.frames.iter().enumerate() {
+            // Полоса подписи торчит над верхней гранью — её тоже нельзя терять
+            // у края экрана.
+            if !view.hits(f.x, f.y - FRAME_TITLE_H, f.w, f.h + FRAME_TITLE_H) {
+                continue;
+            }
+            let selected = self.selected_frame == Some(i);
+
+            rounded_rect(ctx, f.x, f.y, f.w, f.h, FRAME_CORNER_R);
+            ctx.set_fill_style_str(COL_FRAME_BG);
+            ctx.fill();
+            ctx.set_stroke_style_str(if selected {
+                COL_BORDER_SEL
+            } else {
+                COL_FRAME_BORDER
+            });
+            ctx.set_line_width(if selected { 2.0 } else { 1.5 });
+            ctx.stroke();
+
+            if !f.title.is_empty() {
+                ctx.set_fill_style_str(if selected {
+                    COL_BORDER_SEL
+                } else {
+                    COL_FRAME_TITLE
+                });
+                let _ = ctx.fill_text(&f.title, f.x + 4.0, f.y - 7.0);
+            }
+        }
+    }
+
+    /// Ручки растягивания выделенной области. Размер держится экранным: в мире
+    /// он делится на масштаб, иначе на отдалении ручка стала бы точкой, а
+    /// вблизи — плашкой в пол-области.
+    fn draw_frame_handles(&self, ctx: &CanvasRenderingContext2d) {
+        let Some(f) = self.selected_frame.and_then(|i| self.frames.get(i)) else {
+            return;
+        };
+
+        let r = HANDLE_R / self.scale;
+        ctx.set_fill_style_str(COL_HANDLE_BG);
+        ctx.set_stroke_style_str(COL_BORDER_SEL);
+        ctx.set_line_width(1.5 / self.scale);
+        for (_, hx, hy) in f.handles() {
+            ctx.begin_path();
+            ctx.rect(hx - r, hy - r, r * 2.0, r * 2.0);
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
+
+    /// Прямоугольник, который сейчас протягивают в режиме рисования. Рисуется
+    /// поверх всего: пока его тянут, важно только то, куда встанет область.
+    fn draw_draft(&self, ctx: &CanvasRenderingContext2d) {
+        let Some(draft) = &self.draft else {
+            return;
+        };
+
+        let (x, y, w, h) = draft.rect();
+        rounded_rect(ctx, x, y, w, h, FRAME_CORNER_R);
+        ctx.set_fill_style_str(COL_FRAME_BG);
+        ctx.fill();
+        ctx.set_stroke_style_str(COL_BORDER_SEL);
+        ctx.set_line_width(1.5 / self.scale);
+        ctx.stroke();
     }
 
     /// Draws every relation as a bezier curve with crow's-foot endpoints. The
@@ -1464,12 +2001,17 @@ mod tests {
         let scene = scene_with_one_table();
         let table = &scene.tables[0];
 
-        let curve = scene.rel_curve(&scene.relations[0]).expect("петля не построилась");
+        let curve = scene
+            .rel_curve(&scene.relations[0])
+            .expect("петля не построилась");
 
         assert_eq!(curve.ax, table.x + table.w, "опора на правой грани");
         assert_eq!(curve.bx, curve.ax, "обе опоры на одной грани");
         assert!(curve.c1x > curve.ax && curve.c2x > curve.ax);
-        assert!(curve.src_right && curve.dst_right, "оба конца смотрят вправо");
+        assert!(
+            curve.src_right && curve.dst_right,
+            "оба конца смотрят вправо"
+        );
         assert_ne!(curve.ay, curve.by, "опоры на разных строках");
 
         let (mx, _) = curve.point(0.5);
@@ -1494,6 +2036,142 @@ mod tests {
         );
     }
 
+    /// Сцена с областью, одной таблицей внутри неё и одной рядом.
+    fn scene_with_a_frame() -> Scene {
+        let mut scene = Scene::new();
+        scene.tables = vec![
+            Table::new(
+                "inside",
+                "invoice",
+                vec![Column::new("id".to_string(), true, false)],
+                140.0,
+                160.0,
+            ),
+            Table::new(
+                "outside",
+                "audit_log",
+                vec![Column::new("id".to_string(), true, false)],
+                700.0,
+                160.0,
+            ),
+        ];
+        for t in &mut scene.tables {
+            t.w = 180.0;
+        }
+        scene.relations.clear();
+        scene.frames = vec![Frame::new("f1", "Биллинг", 100.0, 100.0, 400.0, 300.0)];
+        scene
+    }
+
+    /// Группировка и держится на этом: область едет вместе с тем, что на ней
+    /// лежит, а соседняя таблица остаётся на месте.
+    #[test]
+    fn a_frame_carries_the_tables_that_lie_inside_it() {
+        let mut scene = scene_with_a_frame();
+        let grab_y = 100.0 - FRAME_TITLE_H * 0.5;
+
+        scene.on_mouse_down(120.0, grab_y);
+        assert!(scene.frame_drag.is_some(), "область берётся за подпись");
+        scene.on_mouse_move(170.0, grab_y + 25.0);
+        scene.on_mouse_up(170.0, grab_y + 25.0);
+
+        assert_eq!((scene.frames[0].x, scene.frames[0].y), (150.0, 125.0));
+        assert_eq!((scene.tables[0].x, scene.tables[0].y), (190.0, 185.0));
+        assert_eq!(
+            (scene.tables[1].x, scene.tables[1].y),
+            (700.0, 160.0),
+            "таблица снаружи области не сдвигается"
+        );
+        assert_eq!(
+            scene.pending_frames.len(),
+            1,
+            "границы области уходят на запись"
+        );
+        assert_eq!(scene.pending_moves.len(), 1);
+        assert_eq!(scene.pending_moves[0].id, "inside");
+    }
+
+    /// Таблица рисуется поверх области — и клик достаётся ей же, иначе таблицу
+    /// на области нельзя было бы ни выделить, ни подвинуть.
+    #[test]
+    fn a_table_lying_on_a_frame_still_takes_the_click() {
+        let mut scene = scene_with_a_frame();
+        let (x, y) = (scene.tables[0].x + 40.0, scene.tables[0].y + 10.0);
+
+        scene.on_mouse_down(x, y);
+
+        assert!(scene.drag.is_some(), "тянется таблица");
+        assert!(scene.frame_drag.is_none(), "а не область под ней");
+        assert_eq!(scene.selected, Some(0));
+        assert_eq!(scene.selected_frame, None);
+    }
+
+    /// По телу области холст панорамируется: иначе область в пол-экрана отняла
+    /// бы у холста пан.
+    #[test]
+    fn a_frames_body_selects_it_but_pans_the_canvas() {
+        let mut scene = scene_with_a_frame();
+
+        scene.on_mouse_down(450.0, 350.0);
+
+        assert_eq!(scene.selected_frame, Some(0), "область выделяется");
+        assert!(scene.pan.is_some(), "и холст при этом панорамируется");
+        assert!(scene.frame_drag.is_none());
+    }
+
+    /// Грань упирается, не доходя до противоположной.
+    #[test]
+    fn a_frame_cannot_be_squeezed_below_its_minimum() {
+        let mut scene = scene_with_a_frame();
+        scene.selected_frame = Some(0);
+
+        scene.on_mouse_down(100.0, 250.0);
+        assert!(scene.frame_resize.is_some(), "середина левой грани — ручка");
+        scene.on_mouse_move(480.0, 250.0);
+        scene.on_mouse_up(480.0, 250.0);
+
+        assert_eq!(scene.frames[0].w, FRAME_MIN_W);
+        assert_eq!(
+            scene.frames[0].x,
+            500.0 - FRAME_MIN_W,
+            "правая грань остаётся на месте"
+        );
+        assert_eq!(scene.pending_frames.len(), 1);
+    }
+
+    /// Сцена не заводит область сама: id выдаёт база, и до ответа команды на
+    /// холсте лежит только черновик.
+    #[test]
+    fn a_drawn_rectangle_waits_for_js_to_turn_it_into_a_frame() {
+        let mut scene = Scene::new();
+        scene.begin_draw_frame();
+
+        scene.on_mouse_down(200.0, 150.0);
+        scene.on_mouse_move(600.0, 450.0);
+        scene.on_mouse_up(600.0, 450.0);
+
+        assert!(!scene.is_drawing(), "режим рисования гаснет сам");
+        assert!(scene.frames.is_empty());
+        let draft = scene.draft_done.as_ref().expect("черновик не сохранился");
+        assert_eq!(
+            (draft.x, draft.y, draft.w, draft.h),
+            (200.0, 150.0, 400.0, 300.0)
+        );
+    }
+
+    /// Одиночный клик в режиме рисования — промах, а не область в пиксель.
+    #[test]
+    fn a_click_in_drawing_mode_draws_nothing() {
+        let mut scene = Scene::new();
+        scene.begin_draw_frame();
+
+        scene.on_mouse_down(200.0, 150.0);
+        scene.on_mouse_up(200.0, 150.0);
+
+        assert!(scene.draft_done.is_none());
+        assert!(!scene.is_drawing());
+    }
+
     /// Связь колонки с самой собой ничего не описывает: такую сцена не заводит.
     #[test]
     fn a_column_cannot_be_linked_to_itself() {
@@ -1510,7 +2188,10 @@ mod tests {
         let (x, y) = (table.x + 10.0, table.row_y(2));
         scene.on_mouse_up(x * scene.scale + scene.cam_x, y * scene.scale + scene.cam_y);
 
-        assert!(scene.relations.is_empty(), "петля колонки на себя не заводится");
+        assert!(
+            scene.relations.is_empty(),
+            "петля колонки на себя не заводится"
+        );
         assert!(scene.pending_links.is_empty());
     }
 }
