@@ -1,7 +1,13 @@
-import type { Doc, Endpoint, ParamKind } from "@/entities/doc-api";
+import type {
+	Doc,
+	DocumentNode,
+	Endpoint,
+	ParamKind,
+} from "@/entities/doc-api";
+import { buildDocumentTree, childPath, itemPath } from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
 import { joinUrl } from "@/shared/lib/url";
-import type { HeaderDraft, ParamValues } from "../model/tryIt.types";
+import type { NameValueDraft, ParamValues } from "../model/tryIt.types";
 
 /** Ключ значения параметра внутри набора: `${kind}:${name}`. */
 export function valueKey(kind: ParamKind, name: string): string {
@@ -126,53 +132,55 @@ export function parseBodyObject(body: string): JsonObject | null {
 }
 
 /**
- * Значение поля формы для параметра тела: то, что лежит в документе, иначе
- * ссылка на переменную окружения, закреплённую за параметром в схеме.
+ * Типы полей тела по их пути: уточнение из примечания, иначе тип из самого
+ * документа схемы. Нужны для полей, целиком состоящих из ссылки на переменную:
+ * подставленное значение всегда строка, и без типа числовое поле уехало бы
+ * строкой.
  */
-export function bodyFieldText(
-	doc: JsonObject,
-	name: string,
-	envVarName?: string | null,
-): string {
-	if (!(name in doc)) return envVarName ? `{{${envVarName}}}` : "";
-	const value = doc[name];
-	if (value === null) return "null";
-	return typeof value === "string" ? value : JSON.stringify(value);
+function bodyTypes(endpoint: Endpoint): Map<string, string> {
+	const tree = buildDocumentTree(
+		endpoint.body ?? "",
+		endpoint.bodyFields ?? [],
+	);
+	const types = new Map<string, string>();
+
+	const walk = (nodes: DocumentNode[]) => {
+		for (const node of nodes) {
+			types.set(node.path, node.format || node.type);
+			walk(node.children);
+		}
+	};
+	walk(tree.nodes);
+
+	return types;
 }
 
 /**
- * Записывает поле формы в тело и возвращает новый JSON-текст. Значение
- * приводится к типу параметра прямо здесь — в документе лежит уже число или
- * булево, а не строка, которую кто-то должен разобрать при отправке. Ссылки на
- * переменные остаются строками: их подставляют перед самой отправкой.
- *
- * Ключи, которых нет в схеме, документ сохраняет — форма их не показывает, но
- * и не затирает.
+ * Подставляет переменные окружения во всех строках документа, приводя поле к
+ * его типу там, где значение — целиком ссылка. Путь считается по дороге, так
+ * что вложенное поле приводится так же, как поле верхнего уровня.
  */
-export function setBodyField(
-	body: string,
-	name: string,
-	type: string,
-	text: string,
-): string {
-	const doc = parseBodyObject(body);
-	if (!doc) return body;
+function substituteDeep(
+	node: unknown,
+	path: string,
+	env: Environment,
+	types: Map<string, string>,
+): unknown {
+	if (typeof node === "string") {
+		const text = node.trim();
+		if (!VAR_ONLY_RE.test(text)) return resolveEnvVars(node, env);
 
-	if (!text.trim()) delete doc[name];
-	else if (VAR_ONLY_RE.test(text.trim())) doc[name] = text.trim();
-	else doc[name] = coerceParamValue(text, type);
-
-	return Object.keys(doc).length ? JSON.stringify(doc, null, 2) : "";
-}
-
-/** Подставляет переменные окружения во всех строках документа. */
-function substituteDeep(node: unknown, env: Environment): unknown {
-	if (typeof node === "string") return resolveEnvVars(node, env);
-	if (Array.isArray(node)) return node.map((item) => substituteDeep(item, env));
+		const resolved = resolveEnvVars(text, env);
+		const type = types.get(path);
+		return type ? coerceParamValue(resolved, type) : resolved;
+	}
+	if (Array.isArray(node)) {
+		return node.map((item) => substituteDeep(item, itemPath(path), env, types));
+	}
 	if (isJsonObject(node)) {
 		const result: JsonObject = {};
 		for (const [key, value] of Object.entries(node))
-			result[key] = substituteDeep(value, env);
+			result[key] = substituteDeep(value, childPath(path, key), env, types);
 		return result;
 	}
 	return node;
@@ -207,21 +215,7 @@ export function resolveRequestBody(
 		return resolveEnvVars(trimmed, env);
 	}
 
-	if (!isJsonObject(parsed)) return JSON.stringify(substituteDeep(parsed, env));
-
-	const types = new Map(
-		(endpoint.bodyParams ?? []).map((param) => [param.name, param.type]),
-	);
-
-	const result: JsonObject = {};
-	for (const [key, value] of Object.entries(parsed)) {
-		const type = types.get(key);
-		if (type && typeof value === "string" && VAR_ONLY_RE.test(value.trim()))
-			result[key] = coerceParamValue(resolveEnvVars(value, env), type);
-		else result[key] = substituteDeep(value, env);
-	}
-
-	return JSON.stringify(result);
+	return JSON.stringify(substituteDeep(parsed, "", env, bodyTypes(endpoint)));
 }
 
 /**
@@ -230,7 +224,8 @@ export function resolveRequestBody(
  * только если пользователь не задал `Authorization` сам.
  */
 export function buildHeaders(
-	headers: HeaderDraft[],
+	headers: NameValueDraft[],
+	cookies: NameValueDraft[],
 	env: Environment,
 	body: string | null,
 ): Record<string, string> {
@@ -241,6 +236,16 @@ export function buildHeaders(
 		Accept: "application/json, */*;q=0.8",
 	};
 	if (body !== null) result["Content-Type"] = "application/json";
+
+	// Куки набора идут раньше заголовков: свой `Cookie`, вписанный руками,
+	// должен побеждать собранный из списка.
+	const jar = cookies
+		.filter((cookie) => cookie.enabled && cookie.name.trim() !== "")
+		.map(
+			(cookie) =>
+				`${cookie.name.trim()}=${sanitizeCookie(resolveEnvVars(cookie.value, env))}`,
+		);
+	if (jar.length > 0) result.Cookie = jar.join("; ");
 
 	for (const header of headers) {
 		const name = header.name.trim();
@@ -254,4 +259,14 @@ export function buildHeaders(
 	}
 
 	return result;
+}
+
+/**
+ * Вырезает из значения куки то, что расщепило бы её на две пары или уронило
+ * заголовок: точку с запятой, запятую и управляющие символы. Бэкенд чистит
+ * так же свои куки окружения.
+ */
+function sanitizeCookie(value: string): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: управляющие символы здесь и вырезаются
+	return value.replace(/[;,\u0000-\u001f\u007f]/g, "");
 }

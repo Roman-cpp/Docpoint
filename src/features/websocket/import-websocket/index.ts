@@ -1,3 +1,7 @@
+export type {
+	ImportWebsocketReport,
+	ImportWsMessageDTO,
+} from "./api/importWebsocketApi";
 export type { ImportWebsocketPayload } from "./lib/parseWebsocketImport";
 export { parseWebsocketImport } from "./lib/parseWebsocketImport";
 export type { ImportWebsocketTarget } from "./model/useImportWebsocket";

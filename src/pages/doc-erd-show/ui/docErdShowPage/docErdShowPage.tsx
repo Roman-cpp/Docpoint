@@ -1,23 +1,36 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { toast } from "@/core/toast";
 import {
+	compareErdWithDbApi,
 	createRelationApi,
 	deleteRelationApi,
 	type Entity,
 	type EntityPosition,
 	type EntityRelation,
+	type Frame,
+	type FrameBounds,
+	type FrameRect,
 	getErdEntitiesApi,
+	getErdFramesApi,
 	getRelationsApi,
 	type RelationEndpoints,
 	updateEntityPositionsApi,
+	updateFrameBoundsApi,
 } from "@/entities/doc-erd";
 import {
+	type ComparedWithDb,
+	CompareWithDbButton,
+	CompareWithDbModal,
 	type CreatedTable,
 	CreateTableModal,
+	createFrame,
+	DrawFrameButton,
+	EditFrameModal,
 	EditTableModal,
 } from "@/features/doc-erd";
 import { CatalogBackLink } from "@/widgets/catalog-explorer";
+import { ErdComparePanel } from "@/widgets/erd-compare";
 import { Header } from "@/widgets/layout";
 import styles from "../CanvasPage.module.css";
 
@@ -30,6 +43,7 @@ interface ScenePending {
 	moves: EntityPosition[];
 	links: RelationEndpoints[];
 	unlinks: RelationEndpoints[];
+	frames: FrameBounds[];
 }
 
 export function DocErdShowPage() {
@@ -40,6 +54,7 @@ export function DocErdShowPage() {
 	const sceneRef = useRef<import("canvas-wasm").Scene | null>(null);
 	const renderRef = useRef<(() => void) | null>(null);
 	const flushRef = useRef<(() => void) | null>(null);
+	const beginDrawRef = useRef<(() => void) | null>(null);
 
 	const [createOpen, setCreateOpen] = useState(false);
 	// Схема, по которой построен холст: сцена рисует таблицы, но их поля,
@@ -47,9 +62,77 @@ export function DocErdShowPage() {
 	const [entities, setEntities] = useState<Entity[]>([]);
 	const [relations, setRelations] = useState<EntityRelation[]>([]);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	// Области холст рисует сам, но их подписи правит форма — а ей нужен список.
+	const [frames, setFrames] = useState<Frame[]>([]);
+	const [editingFrameId, setEditingFrameId] = useState<string | null>(null);
+	// Включён ли режим рисования области: подсвечивает кнопку в тулбаре.
+	const [drawing, setDrawing] = useState(false);
+	// Результат сравнения с базой вместе с тем, чем оно получено: по этим же
+	// реквизитам оно и повторяется. `null` — сравнение выключено.
+	const [compared, setCompared] = useState<ComparedWithDb | null>(null);
+	const [compareOpen, setCompareOpen] = useState(false);
+	const [rereading, setRereading] = useState(false);
 	const reloadRef = useRef<(() => Promise<void>) | null>(null);
 
 	const editing = entities.find((e) => e.id === editingId) ?? null;
+	const editingFrame = frames.find((f) => f.id === editingFrameId) ?? null;
+
+	/**
+	 * Перечитывает диаграмму и, если идёт сравнение, повторяет его: документ
+	 * изменился, и прежний ответ описывает уже не то, что на холсте.
+	 */
+	const reread = useCallback(async () => {
+		await reloadRef.current?.();
+		if (!id || !compared) return;
+
+		setRereading(true);
+		try {
+			const diff = await compareErdWithDbApi({
+				docErdId: id,
+				conn: compared.conn,
+				schema: compared.schema,
+			});
+			setCompared({ ...compared, diff });
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось обновить сравнение",
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setRereading(false);
+		}
+	}, [id, compared]);
+
+	// Сравнение живёт на холсте отдельным наложением: сцена его не считает, а
+	// только раскрашивает по ответу. `load` наложение сбрасывает, поэтому
+	// накладывается оно после каждого перечитывания — сюда приходит новый
+	// объект ответа, и эффект повторяется.
+	useEffect(() => {
+		const scene = sceneRef.current;
+		if (!scene) return;
+
+		try {
+			if (compared) {
+				scene.set_diff(compared.diff);
+			} else {
+				scene.clear_diff();
+			}
+		} catch (err) {
+			toast({
+				variant: "error",
+				title: "Не удалось показать сравнение",
+				description: err instanceof Error ? err.message : String(err),
+			});
+			return;
+		}
+		renderRef.current?.();
+	}, [compared]);
+
+	// Другая диаграмма — другое сравнение.
+	useEffect(() => {
+		setCompared(null);
+	}, [id]);
 
 	// The modal persists the entity first, so by the time this runs the table
 	// exists in the schema and only needs drawing.
@@ -61,7 +144,7 @@ export function DocErdShowPage() {
 		flushRef.current?.();
 		// Сцена таблицу уже нарисовала, но её поля нужны форме правки — и они
 		// живут в схеме, а не на холсте.
-		void reloadRef.current?.();
+		void reread();
 	};
 
 	useEffect(() => {
@@ -94,6 +177,9 @@ export function DocErdShowPage() {
 					}
 					for (const unlink of pending.unlinks) {
 						await deleteRelationApi(unlink);
+					}
+					if (pending.frames.length > 0) {
+						await updateFrameBoundsApi(pending.frames);
 					}
 				})
 				.catch((err: unknown) => {
@@ -149,14 +235,16 @@ export function DocErdShowPage() {
 			await writes;
 			if (disposed || scene !== sceneRef.current) return;
 
-			const [nextEntities, nextRelations] = await Promise.all([
+			const [nextEntities, nextRelations, nextFrames] = await Promise.all([
 				getErdEntitiesApi({ docErdId: id }),
 				getRelationsApi({ docErdId: id }),
+				getErdFramesApi({ docErdId: id }),
 			]);
 			if (disposed || scene !== sceneRef.current) return;
 			setEntities(nextEntities);
 			setRelations(nextRelations);
-			scene.load(nextEntities, nextRelations);
+			setFrames(nextFrames);
+			scene.load(nextEntities, nextRelations, nextFrames);
 			requestDraw();
 			// Сущностям без сохранённой позиции её только что назначил
 			// автолейаут — закрепляем результат, чтобы он не пересчитывался при
@@ -184,6 +272,32 @@ export function DocErdShowPage() {
 			requestDraw();
 		};
 
+		// Включение режима рисования живёт здесь, а не в обработчике кнопки:
+		// курсор холста ставит `applyCursor`, и он у эффекта свой.
+		const beginDraw = () => {
+			if (!scene) return;
+			scene.begin_draw_frame();
+			setDrawing(true);
+			applyCursor();
+		};
+
+		// Протянутый прямоугольник превращается в область: сначала запись, потом
+		// отрисовка — иначе при отказе бэкенда на холсте осталась бы область,
+		// которой нет в базе. Форма открывается сразу: область без подписи
+		// ничего не группирует.
+		const addDrawnFrame = async (rect: FrameRect) => {
+			// Сцену закрепляем до записи: пока команда идёт, эффект может
+			// переехать на другую диаграмму — рисовать область на ней нельзя.
+			const live = scene;
+			if (!id || !live) return;
+			const created = await createFrame({ docErdId: id, rect });
+			if (!created || disposed || live !== sceneRef.current) return;
+			live.add_frame(created);
+			setFrames((prev) => [...prev, created]);
+			requestDraw();
+			setEditingFrameId(created.id);
+		};
+
 		const handleMouseDown = (e: MouseEvent) => {
 			if (e.button !== 0 || !scene) return;
 			const { x, y } = getPos(e);
@@ -208,8 +322,15 @@ export function DocErdShowPage() {
 			const dirty = scene.on_mouse_up(x, y);
 			applyCursor();
 			if (dirty) requestDraw();
-			// Здесь оседают и конец перетаскивания таблицы, и новая связь.
+			// Здесь оседают и конец перетаскивания таблицы, и новая связь, и
+			// новые границы области вместе с уехавшими за ней таблицами.
 			flush();
+			// Режим рисования гаснет сам — и после нарисованного прямоугольника,
+			// и после промаха, на котором черновика не осталось.
+			setDrawing(scene.is_drawing());
+			if (scene.has_draft()) {
+				void addDrawnFrame(scene.take_draft() as FrameRect);
+			}
 		};
 
 		const handleDoubleClick = () => {
@@ -218,7 +339,38 @@ export function DocErdShowPage() {
 			// бы перетаскивание, которое некому завершить: своего mouseup у
 			// двойного клика нет, и таблица поехала бы за курсором.
 			const picked = scene?.selected_id();
-			if (picked) setEditingId(picked);
+			if (picked) {
+				setEditingId(picked);
+				return;
+			}
+			// Таблицы под курсором нет — значит, двойной клик пришёлся на
+			// область: её выделил тот же mousedown.
+			const frame = scene?.selected_frame_id();
+			if (frame) {
+				setEditingFrameId(frame);
+				return;
+			}
+
+			// Таблицу, которой в документе нет, править нечем: её ещё не
+			// существует. Перенести её можно из панели сравнения.
+			const ghost = scene?.selected_ghost_name();
+			if (ghost) {
+				toast({
+					title: `«${ghost}» есть только в базе`,
+					description:
+						"Таблицы нет в документе — перенесите её из панели сравнения справа",
+				});
+			}
+		};
+
+		// Esc бросает незаконченный прямоугольник и выходит из режима рисования.
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key !== "Escape" || !scene) return;
+			if (scene.cancel_draw_frame()) {
+				setDrawing(false);
+				applyCursor();
+				requestDraw();
+			}
 		};
 
 		const handleWheel = (e: WheelEvent) => {
@@ -242,6 +394,7 @@ export function DocErdShowPage() {
 			sceneRef.current = scene;
 			renderRef.current = requestDraw;
 			flushRef.current = flush;
+			beginDrawRef.current = beginDraw;
 
 			// Populate the diagram from the ERD's persisted schema. Without an id
 			// there is nothing to show, so the scene stays empty.
@@ -255,12 +408,18 @@ export function DocErdShowPage() {
 			flush();
 		});
 
+		// За размером следим по элементу, а не по окну: панель сравнения
+		// появляется и исчезает рядом с холстом, окно при этом не меняется, а
+		// буфер канваса остался бы от прежней ширины.
+		const observer = new ResizeObserver(resize);
+		observer.observe(canvas);
+
 		canvas.addEventListener("mousedown", handleMouseDown);
 		canvas.addEventListener("dblclick", handleDoubleClick);
 		canvas.addEventListener("wheel", handleWheel, { passive: false });
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseup", handleMouseUp);
-		window.addEventListener("resize", resize);
+		window.addEventListener("keydown", handleKeyDown);
 
 		return () => {
 			disposed = true;
@@ -270,12 +429,14 @@ export function DocErdShowPage() {
 			canvas.removeEventListener("wheel", handleWheel);
 			window.removeEventListener("mousemove", handleMouseMove);
 			window.removeEventListener("mouseup", handleMouseUp);
-			window.removeEventListener("resize", resize);
+			window.removeEventListener("keydown", handleKeyDown);
+			observer.disconnect();
 			scene?.free();
 			scene = null;
 			sceneRef.current = null;
 			renderRef.current = null;
 			flushRef.current = null;
+			beginDrawRef.current = null;
 			reloadRef.current = null;
 		};
 	}, [id]);
@@ -288,23 +449,59 @@ export function DocErdShowPage() {
 				{id && <CatalogBackLink nodeId={id} className={styles.back} />}
 				<div className={styles.toolbar}>
 					<p className={styles.hint}>
-						Тяните от поля к полю — связь · двойной клик по таблице — правка ·
-						клик по связи, затем ✕ — удалить · колесо — масштаб
+						{drawing
+							? "Протяните прямоугольник по холсту — Esc отменяет"
+							: "Тяните от поля к полю — связь · двойной клик по таблице или области — правка · клик по связи, затем ✕ — удалить · колесо — масштаб"}
 					</p>
-					<button
-						type="button"
-						className={styles.addBtn}
-						onClick={() => setCreateOpen(true)}
-						disabled={!id}
-					>
-						<span className={styles.addBtnIcon} aria-hidden>
-							+
-						</span>
-						Таблица
-					</button>
+					<div className={styles.actions}>
+						<CompareWithDbButton
+							active={!!compared}
+							disabled={!id || rereading}
+							onClick={() =>
+								compared ? setCompared(null) : setCompareOpen(true)
+							}
+						/>
+						<DrawFrameButton
+							active={drawing}
+							disabled={!id}
+							onClick={() => beginDrawRef.current?.()}
+						/>
+						<button
+							type="button"
+							className={styles.addBtn}
+							onClick={() => setCreateOpen(true)}
+							disabled={!id}
+						>
+							<span className={styles.addBtnIcon} aria-hidden>
+								+
+							</span>
+							Таблица
+						</button>
+					</div>
 				</div>
-				<canvas ref={canvasRef} className={styles.canvas} />
+				<div className={styles.stage}>
+					<canvas ref={canvasRef} className={styles.canvas} />
+					{id && compared && (
+						<ErdComparePanel
+							docErdId={id}
+							diff={compared.diff}
+							busy={rereading}
+							onRefresh={() => void reread()}
+							onClose={() => setCompared(null)}
+							onChanged={() => void reread()}
+						/>
+					)}
+				</div>
 			</div>
+
+			{id && (
+				<CompareWithDbModal
+					open={compareOpen}
+					onOpenChange={setCompareOpen}
+					docErdId={id}
+					onCompared={setCompared}
+				/>
+			)}
 
 			{id && (
 				<CreateTableModal
@@ -322,7 +519,33 @@ export function DocErdShowPage() {
 				relations={relations}
 				onSaved={() => {
 					setEditingId(null);
-					void reloadRef.current?.();
+					void reread();
+				}}
+			/>
+
+			{/* Область правится на месте, без перечитывания диаграммы: подпись и
+			    удаление не трогают ни таблицы, ни связи. */}
+			<EditFrameModal
+				open={!!editingFrame}
+				onOpenChange={(next) => !next && setEditingFrameId(null)}
+				frame={editingFrame}
+				onSaved={(title) => {
+					if (!editingFrame) return;
+					const frameId = editingFrame.id;
+					setFrames((prev) =>
+						prev.map((f) => (f.id === frameId ? { ...f, title } : f)),
+					);
+					sceneRef.current?.rename_frame(frameId, title);
+					renderRef.current?.();
+					setEditingFrameId(null);
+				}}
+				onDeleted={() => {
+					if (!editingFrame) return;
+					const frameId = editingFrame.id;
+					setFrames((prev) => prev.filter((f) => f.id !== frameId));
+					sceneRef.current?.remove_frame(frameId);
+					renderRef.current?.();
+					setEditingFrameId(null);
 				}}
 			/>
 		</div>

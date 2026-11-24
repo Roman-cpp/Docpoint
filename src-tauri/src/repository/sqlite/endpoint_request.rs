@@ -2,13 +2,12 @@ use crate::domain::doc_api::endpoint_request::dto::{
     ImportEndpointRequestDTO, SaveEndpointRequestDTO,
 };
 use crate::domain::doc_api::endpoint_request::entity::{
-    BodyMode, EndpointRequest, ParamValue, RequestHeader,
+    BodyMode, EndpointRequest, ParamValue, RequestCookie, RequestHeader,
 };
 use crate::domain::doc_api::endpoint_request::repository::{
-    EndpointRequestRepository, RequestTarget,
+    resolve_values, EndpointRequestRepository, RequestTarget,
 };
 use sqlx::{Row, SqlitePool};
-use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct EndpointRequestRepo<'a> {
@@ -53,6 +52,14 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
         )
         .await?;
 
+        let cookie_rows = fetch_in(
+            self.db,
+            "SELECT request_id, name, value, enabled FROM request_cookie WHERE request_id IN (",
+            &request_ids,
+            " ORDER BY sort_ord",
+        )
+        .await?;
+
         let requests = req_rows
             .iter()
             .map(|r| {
@@ -64,6 +71,16 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
                     .iter()
                     .filter(is_mine)
                     .map(|row| RequestHeader {
+                        name: row.get("name"),
+                        value: row.get("value"),
+                        enabled: row.get::<i64, _>("enabled") != 0,
+                    })
+                    .collect();
+
+                let cookies = cookie_rows
+                    .iter()
+                    .filter(is_mine)
+                    .map(|row| RequestCookie {
                         name: row.get("name"),
                         value: row.get("value"),
                         enabled: row.get::<i64, _>("enabled") != 0,
@@ -88,6 +105,7 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
                     body_mode: BodyMode::parse(r.get::<String, _>("body_mode").as_str()),
                     body: r.get("body"),
                     headers,
+                    cookies,
                     values,
                 }
             })
@@ -102,61 +120,7 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
         sort_ord: i64,
         request: &ImportEndpointRequestDTO,
     ) -> Result<(), String> {
-        // Кривой `kind` уронил бы вставку на CHECK-констрейнте таблицы с
-        // невнятным текстом от SQLite — проверяем заранее, до записи.
-        for value in &request.values {
-            if value.kind == "body" {
-                return Err(format!(
-                    "набор {:?}: тело задаётся полем \"body\", а не значением с kind: \"body\"",
-                    request.name
-                ));
-            }
-            if !matches!(value.kind.as_str(), "path" | "query") {
-                return Err(format!(
-                    "неизвестный вид параметра {:?} в наборе {:?}",
-                    value.kind, request.name
-                ));
-            }
-        }
-
-        // Пустые значения не храним — как и `save`, иначе состояние после
-        // импорта разъезжалось бы с тем, что видно в панели. Дубликаты по
-        // (kind, name) запрещены первичным ключом; на импорте побеждает
-        // последний, вместо того чтобы ронять весь файл. Устаревший
-        // `values[]` кладём первым, чтобы явные карты его перекрывали.
-        let mut values: HashMap<(&str, &str), &str> = HashMap::new();
-        for value in request.values.iter().filter(|v| !v.value.is_empty()) {
-            values.insert((&value.kind, &value.name), &value.value);
-        }
-        for (name, value) in request.path.iter().filter(|(_, v)| !v.is_empty()) {
-            values.insert(("path", name), value);
-        }
-        for (name, value) in request.query.iter().filter(|(_, v)| !v.is_empty()) {
-            values.insert(("query", name), value);
-        }
-
-        // Значение с чужим именем никуда не подставится: сегменты берутся из
-        // пути, а query — из схемы эндпоинта. Молча сохранить его — значит
-        // спрятать опечатку до первой отправки запроса.
-        let path_params = target.path_params();
-        for (kind, name) in values.keys() {
-            let known = match *kind {
-                "path" => path_params.contains(name),
-                _ => target.query_names.contains(name),
-            };
-            if !known {
-                return Err(match *kind {
-                    "path" => format!(
-                        "набор {:?}: в пути {} нет сегмента {name:?}",
-                        request.name, target.path
-                    ),
-                    _ => format!(
-                        "набор {:?}: параметр {name:?} не описан в queryParams эндпоинта {}",
-                        request.name, target.path
-                    ),
-                });
-            }
-        }
+        let values = resolve_values(target, request)?;
 
         let id = Uuid::new_v4().to_string();
         let mut tx = self.db.begin().await.map_err(|e| e.to_string())?;
@@ -189,6 +153,22 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             .map_err(|e| e.to_string())?;
         }
 
+        for (ord, cookie) in request.cookies.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO request_cookie (id, request_id, name, value, enabled, sort_ord) \
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(Uuid::new_v4().to_string())
+            .bind(&id)
+            .bind(&cookie.name)
+            .bind(&cookie.value)
+            .bind(if cookie.enabled { 1i64 } else { 0i64 })
+            .bind(ord as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
         for (ord, header) in request.headers.iter().enumerate() {
             sqlx::query(
                 "INSERT INTO request_headers (id, request_id, name, value, enabled, sort_ord) \
@@ -207,6 +187,44 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
 
         tx.commit().await.map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    async fn upsert(
+        &self,
+        target: &RequestTarget<'_>,
+        request: &ImportEndpointRequestDTO,
+    ) -> Result<(), String> {
+        // Разбор до удаления: иначе набор с опечаткой в файле сначала снёс бы
+        // сохранённый, а уже потом отказался записываться на его место.
+        resolve_values(target, request)?;
+
+        let existing: Option<(String, i64)> = sqlx::query_as(
+            "SELECT id, sort_ord FROM endpoint_requests WHERE endpoint_id = ? AND name = ? \
+             ORDER BY sort_ord, created_at",
+        )
+        .bind(target.endpoint_id)
+        .bind(&request.name)
+        .fetch_optional(self.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        // Место в списке у одноимённого набора сохраняется: файл описывает его
+        // содержимое, а не порядок, в котором пользователь их разложил.
+        let sort_ord = match existing {
+            Some((id, sort_ord)) => {
+                self.delete(&id).await?;
+                sort_ord
+            }
+            None => {
+                sqlx::query_scalar("SELECT COUNT(*) FROM endpoint_requests WHERE endpoint_id = ?")
+                    .bind(target.endpoint_id)
+                    .fetch_one(self.db)
+                    .await
+                    .map_err(|e| e.to_string())?
+            }
+        };
+
+        self.insert(target, sort_ord, request).await
     }
 
     async fn create(&self, endpoint_id: &str, name: &str) -> Result<EndpointRequest, String> {
@@ -237,6 +255,7 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             body_mode: BodyMode::Fields,
             body: String::new(),
             headers: Vec::new(),
+            cookies: Vec::new(),
             values: Vec::new(),
         })
     }
@@ -306,6 +325,28 @@ impl EndpointRequestRepository for EndpointRequestRepo<'_> {
             .bind(&header.name)
             .bind(&header.value)
             .bind(if header.enabled { 1i64 } else { 0i64 })
+            .bind(ord as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        sqlx::query("DELETE FROM request_cookie WHERE request_id = ?")
+            .bind(&request.id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for (ord, cookie) in request.cookies.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO request_cookie (id, request_id, name, value, enabled, sort_ord) \
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(Uuid::new_v4().to_string())
+            .bind(&request.id)
+            .bind(&cookie.name)
+            .bind(&cookie.value)
+            .bind(if cookie.enabled { 1i64 } else { 0i64 })
             .bind(ord as i64)
             .execute(&mut *tx)
             .await
@@ -445,6 +486,36 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(kinds, ["path", "query"]);
+    }
+
+    /// Куки набора читаются объектом и списком — как заголовки, — и ложатся
+    /// в свою таблицу со своим порядком и флагом отправки.
+    #[tokio::test]
+    async fn cookies_of_a_request_are_stored_like_headers() {
+        let pool = seeded().await;
+        let request: ImportEndpointRequestDTO = serde_json::from_value(serde_json::json!({
+            "name": "С сессией",
+            "path": { "postId": 1, "commentId": "c-1" },
+            "cookies": [
+                { "name": "session", "value": "abc" },
+                { "name": "debug", "value": "1", "enabled": false }
+            ],
+        }))
+        .unwrap();
+
+        EndpointRequestRepo::new(&pool)
+            .insert(&target(), 0, &request)
+            .await
+            .unwrap();
+
+        let stored = EndpointRequestRepo::new(&pool).list("e1").await.unwrap();
+        assert_eq!(stored[0].cookies.len(), 2);
+        assert_eq!(stored[0].cookies[0].name, "session");
+        assert!(stored[0].cookies[0].enabled);
+        assert!(
+            !stored[0].cookies[1].enabled,
+            "выключенная кука хранится, но не отправляется"
+        );
     }
 
     /// Эндпоинт `e1` из [`seeded`] глазами импорта.

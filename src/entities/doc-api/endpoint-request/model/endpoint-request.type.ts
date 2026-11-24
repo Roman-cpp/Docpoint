@@ -24,6 +24,16 @@ export interface RequestHeader {
 	enabled: boolean;
 }
 
+/**
+ * Кука набора: та же тройка, что у заголовка, но уходит не отдельной строкой,
+ * а парой внутри `Cookie` — туда же, куда бэкенд домешивает сессию окружения.
+ */
+export interface RequestCookie {
+	name: string;
+	value: string;
+	enabled: boolean;
+}
+
 /** Именованный набор значений параметров для одного эндпоинта. */
 export interface EndpointRequest {
 	id: string;
@@ -34,6 +44,7 @@ export interface EndpointRequest {
 	/** Тело запроса как JSON-документ. Пустая строка — тела нет. */
 	body: string;
 	headers: RequestHeader[];
+	cookies: RequestCookie[];
 	values: RequestParamValue[];
 }
 

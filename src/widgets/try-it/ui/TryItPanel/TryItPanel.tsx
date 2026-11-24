@@ -9,7 +9,7 @@ import {
 	useEnvironmentsStore,
 } from "@/features/environment";
 import { useResponseStore } from "@/features/request";
-import { HeadersEditor } from "@/shared/ui-kit/controls";
+import { COMMON_HEADER_NAMES, NameValueEditor } from "@/shared/ui-kit/controls";
 import { buildUrl, canHaveBody } from "../../lib/buildRequest";
 import { getJsonError } from "../../lib/validateJson";
 import type { RequestDraft } from "../../model/tryIt.types";
@@ -90,9 +90,23 @@ export const TryItPanel: FC = () => {
 					onChange={setValue}
 				/>
 
-				<HeadersEditor
-					headers={active.headers}
+				<NameValueEditor
+					title="Headers"
+					addLabel="+ Add header"
+					suggestions={COMMON_HEADER_NAMES}
+					duplicateHint="Заголовок повторяется"
+					rows={active.headers}
 					onChange={(headers) => patchActive({ headers })}
+				/>
+
+				{/* Куки набора: в заголовок `Cookie` они собираются при отправке,
+				    там же к ним домешивается сессия окружения. */}
+				<NameValueEditor
+					title="Cookies"
+					addLabel="+ Add cookie"
+					duplicateHint="Кука повторяется"
+					rows={active.cookies}
+					onChange={(cookies) => patchActive({ cookies })}
 				/>
 
 				{hasBody && (

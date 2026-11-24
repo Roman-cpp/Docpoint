@@ -5,6 +5,7 @@ import type {
 	CreateEndpointDTO,
 	Doc,
 	Endpoint,
+	EndpointParamKind,
 	Group,
 	UpdateEndpointDTO,
 } from "@/entities/doc-api";
@@ -35,7 +36,7 @@ type DocApiActions = {
 
 	updateEndpointParamValue: (
 		endpointId: string,
-		kind: "path" | "query" | "body",
+		kind: EndpointParamKind,
 		name: string,
 		value: string,
 	) => Promise<void>;

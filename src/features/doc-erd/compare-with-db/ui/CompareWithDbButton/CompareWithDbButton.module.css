@@ -1,0 +1,46 @@
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: var(--fw-medium);
+	line-height: 1;
+	padding: 8px 12px;
+	border-radius: var(--r-md);
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--ink);
+	cursor: pointer;
+	transition:
+		background var(--t-base),
+		border-color var(--t-base),
+		color var(--t-base);
+}
+
+.btn:hover {
+	background: var(--cat-bg);
+	border-color: var(--border-h);
+}
+
+.btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Пока сравнение на холсте, кнопка его и выключает. */
+.active,
+.active:hover {
+	background: var(--blue-bg);
+	border-color: var(--blue-border);
+	color: var(--blue);
+}
+
+.icon {
+	color: var(--ink-mid);
+}
+
+.active .icon {
+	color: var(--blue);
+}

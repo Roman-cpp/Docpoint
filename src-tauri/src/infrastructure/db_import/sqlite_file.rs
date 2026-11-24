@@ -182,7 +182,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn the_erd_payload_keeps_only_what_the_canvas_can_draw() {
+    async fn the_erd_payload_carries_every_relation_of_the_schema() {
         let mut conn = foreign_db().await;
         let schema = LiteSource { conn: &mut conn }
             .introspect("main")
@@ -190,9 +190,16 @@ mod tests {
             .unwrap();
         let erd = normalize::to_erd(&schema);
 
-        assert_eq!(erd.relations.len(), 1, "самоссылка employees не в счёт");
-        assert_eq!(erd.relations[0].from_table, "users");
-        assert_eq!(erd.relations[0].to_table, "orders");
-        assert!(erd.notices.iter().any(|n| n.kind == "selfRef"));
+        // Самоссылка employees — такая же связь, как остальные: холст рисует
+        // её петлёй.
+        assert_eq!(erd.relations.len(), 2);
+        assert!(erd
+            .relations
+            .iter()
+            .any(|r| r.from_table == "users" && r.to_table == "orders"));
+        assert!(erd
+            .relations
+            .iter()
+            .any(|r| r.from_table == "employees" && r.to_table == "employees"));
     }
 }

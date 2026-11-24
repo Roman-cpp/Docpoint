@@ -42,6 +42,9 @@ pub struct EndpointRequest {
     /// Тело запроса как JSON-документ. Пустая строка — тела нет.
     pub body: String,
     pub headers: Vec<RequestHeader>,
+    /// Куки набора. В заголовок `Cookie` они собираются при отправке — там же,
+    /// где к ним домешивается сессия окружения.
+    pub cookies: Vec<RequestCookie>,
     pub values: Vec<ParamValue>,
 }
 
@@ -52,6 +55,16 @@ pub struct RequestHeader {
     pub value: String,
     /// В файле импорта поле можно опустить: заголовок без пометки —
     /// включённый. Фронт всегда присылает его явно.
+    #[serde(default = "enabled_by_default")]
+    pub enabled: bool,
+}
+
+/// Кука набора: та же тройка, что у заголовка, но живёт своей жизнью —
+/// отправляется не отдельной строкой, а парой внутри `Cookie`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RequestCookie {
+    pub name: String,
+    pub value: String,
     #[serde(default = "enabled_by_default")]
     pub enabled: bool,
 }

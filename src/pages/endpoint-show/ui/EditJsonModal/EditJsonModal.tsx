@@ -14,9 +14,13 @@ interface EditJsonModalProps {
 	onSave: (json: string) => void;
 }
 
-/** Возвращает текст ошибки парсинга или null, если JSON валиден */
+/**
+ * Текст ошибки разбора или `null`. Это предупреждение, а не запрет: документ не
+ * обязан быть JSON — ответ бывает текстом метрик, а тело формой. Пустой
+ * документ тоже допустим: он означает «тела нет».
+ */
 const getJsonError = (raw: string): string | null => {
-	if (!raw.trim()) return "JSON не может быть пустым";
+	if (!raw.trim()) return null;
 	try {
 		JSON.parse(raw);
 		return null;
@@ -51,9 +55,10 @@ export const EditJsonModal: FC<EditJsonModalProps> = ({
 		}
 	};
 
+	// Разобрался — сохраняем отформатированным, нет — дословно: другого
+	// представления у такого документа нет.
 	const save = () => {
-		if (error) return;
-		onSave(JSON.stringify(JSON.parse(text), null, 2));
+		onSave(error ? text : JSON.stringify(JSON.parse(text), null, 2));
 		onOpenChange(false);
 	};
 
@@ -76,14 +81,15 @@ export const EditJsonModal: FC<EditJsonModalProps> = ({
 						Форматировать
 					</button>
 					<span className={`${s.status} ${error ? s.statusError : s.statusOk}`}>
-						{error ? `Ошибка: ${error}` : "Валидный JSON"}
+						{error
+							? `Не JSON: ${error} — сохранить можно, полей у такого документа не будет`
+							: "Валидный JSON"}
 					</span>
 				</div>
 
 				<Textarea
 					value={text}
 					onChange={(e) => setText(e.target.value)}
-					error={!!error}
 					rows={18}
 					spellCheck={false}
 					className={s.editor}
@@ -94,7 +100,7 @@ export const EditJsonModal: FC<EditJsonModalProps> = ({
 				<Dialog.BtnCancel onClick={() => onOpenChange(false)}>
 					Отмена
 				</Dialog.BtnCancel>
-				<Dialog.BtnPrimary onClick={save} disabled={!!error || !isDirty}>
+				<Dialog.BtnPrimary onClick={save} disabled={!isDirty}>
 					Сохранить
 				</Dialog.BtnPrimary>
 			</Dialog.Footer>

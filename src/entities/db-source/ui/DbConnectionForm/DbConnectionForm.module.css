@@ -1,0 +1,34 @@
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.row {
+	display: grid;
+	grid-template-columns: 1fr 120px;
+	gap: 12px;
+}
+
+.pair {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.file {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.file > :first-child {
+	flex: 1;
+}
+
+.problem {
+	margin: 0;
+	color: var(--red);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+}

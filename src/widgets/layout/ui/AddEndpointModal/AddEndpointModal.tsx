@@ -8,6 +8,7 @@ import {
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { PlusIcon, TrashIcon } from "@/shared/svg";
 import {
+	Checkbox,
 	Field,
 	Input,
 	Select,
@@ -50,7 +51,8 @@ const TYPE_OPTIONS = [
 ];
 
 /** Какие параметры правим: сегменты пути, строка запроса или тело. */
-type ParamTab = "path" | "query" | "body";
+/** Тело описывается отдельно, своим редактором: там документ, а не список. */
+type ParamTab = "path" | "query";
 
 /** Локальная форма одного параметра (без runtime-поля value). */
 interface ParamDraft {
@@ -71,7 +73,6 @@ interface FormValues {
 	auth: boolean;
 	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
-	bodyParams: ParamDraft[];
 }
 
 const emptyParam = (): ParamDraft => ({
@@ -103,7 +104,6 @@ const makeDefaults = (groups: Group[]): FormValues => ({
 	auth: false,
 	pathParams: [],
 	queryParams: [],
-	bodyParams: [],
 });
 
 export const AddEndpointModal: FC<AddEndpointModalProps> = ({
@@ -128,12 +128,10 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 
 	const pathArray = useFieldArray({ control, name: "pathParams" });
 	const queryArray = useFieldArray({ control, name: "queryParams" });
-	const bodyArray = useFieldArray({ control, name: "bodyParams" });
 
 	const [tab, setTab] = useState<ParamTab>("query");
 	const [saveError, setSaveError] = useState<string | null>(null);
-	const activeArray =
-		tab === "path" ? pathArray : tab === "query" ? queryArray : bodyArray;
+	const activeArray = tab === "path" ? pathArray : queryArray;
 	const arrayName = `${tab}Params` as const;
 
 	const groupOptions = [
@@ -155,7 +153,14 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 			auth: values.auth,
 			pathParams: values.pathParams.map(fromDraft),
 			queryParams: values.queryParams.map(fromDraft),
-			bodyParams: values.bodyParams.map(fromDraft),
+			// Заголовки и куки описываются на странице, когда уже понятно, что
+			// эндпоинт ожидает.
+			headerParams: [],
+			cookieParams: [],
+			// Тело у нового эндпоинта пустое: его описывают документом на
+			// странице, когда уже понятно, что он принимает.
+			body: "",
+			bodyFields: [],
 			responses: {},
 		};
 
@@ -334,23 +339,12 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 					>
 						Query ({queryArray.fields.length})
 					</button>
-					<button
-						type="button"
-						className={`${s.tab} ${tab === "body" ? s.tabActive : ""}`}
-						onClick={() => setTab("body")}
-					>
-						Body ({bodyArray.fields.length})
-					</button>
 				</div>
 
 				<div className={s.section}>
 					<div className={s.sectionHead}>
 						<span className={s.sectionTitle}>
-							{tab === "path"
-								? "Сегменты пути"
-								: tab === "query"
-									? "Query-параметры"
-									: "Body-параметры"}
+							{tab === "path" ? "Сегменты пути" : "Query-параметры"}
 						</span>
 						{tab !== "path" && (
 							<button
@@ -395,7 +389,7 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 									control={control}
 									name={`${arrayName}.${i}.type`}
 									render={({ field }) => (
-										<Select options={TYPE_OPTIONS} {...field} />
+										<Select size="sm" options={TYPE_OPTIONS} {...field} />
 									)}
 								/>
 								<Controller
@@ -409,15 +403,13 @@ export const AddEndpointModal: FC<AddEndpointModalProps> = ({
 									control={control}
 									name={`${arrayName}.${i}.required`}
 									render={({ field: { value, onChange, ...field } }) => (
-										<label className={s.reqToggle}>
-											<input
-												type="checkbox"
-												checked={value}
-												onChange={(e) => onChange(e.target.checked)}
-												{...field}
-											/>
-											req
-										</label>
+										<Checkbox
+											size="sm"
+											label="req"
+											checked={value}
+											onChange={(e) => onChange(e.target.checked)}
+											{...field}
+										/>
 									)}
 								/>
 								{tab !== "path" && (

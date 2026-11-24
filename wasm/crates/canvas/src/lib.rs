@@ -5,6 +5,11 @@ use web_sys::CanvasRenderingContext2d;
 
 mod domain;
 
+use domain::diff::model::DiffStatus;
+use domain::frame::model::{
+    Frame, Handle, CORNER_R as FRAME_CORNER_R, MIN_H as FRAME_MIN_H, MIN_W as FRAME_MIN_W,
+    TITLE_H as FRAME_TITLE_H,
+};
 use domain::relation::model::{Endpoint, Relation};
 use domain::table::model::{ColKind, Column, Table, HEADER_H, ROW_H};
 
@@ -62,6 +67,19 @@ struct RelationDTO {
     to_field: String,
 }
 
+/// Область, как её возвращает команда `read_erd_frames` и как её принимает
+/// [`Scene::add_frame`]. Состава у области нет — только подпись и геометрия.
+#[derive(Deserialize)]
+struct FrameDTO {
+    id: String,
+    #[serde(default)]
+    title: String,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
 // ---------------------------------------------------------------------------
 // Wire shapes for `Scene::take_pending`. The scene never talks to the backend
 // itself: it accumulates what changed and hands the batch to JS, which spends
@@ -90,12 +108,86 @@ struct RelationEndpoints {
     to_field: String,
 }
 
+// ---------------------------------------------------------------------------
+// Wire shapes for `Scene::set_diff` — ответ команды `compare_erd_with_db`.
+// Сцена сравнение не считает: она получает готовое объединение и раскрашивает
+// его. Поля, которых на холсте не видно (типы, вид расхождения), не читаются —
+// их показывает панель рядом.
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DiffDTO {
+    tables: Vec<TableDiffDTO>,
+    #[serde(default)]
+    relations: Vec<RelationDiffDTO>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TableDiffDTO {
+    /// Id сущности на диаграмме; `None` — таблица есть только в базе.
+    #[serde(default)]
+    id: Option<String>,
+    name: String,
+    status: String,
+    #[serde(default)]
+    x: Option<f64>,
+    #[serde(default)]
+    y: Option<f64>,
+    columns: Vec<ColumnDiffDTO>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ColumnDiffDTO {
+    name: String,
+    status: String,
+    #[serde(default)]
+    pk: bool,
+    #[serde(default)]
+    nullable: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RelationDiffDTO {
+    status: String,
+    from_table: String,
+    from_column: String,
+    to_table: String,
+    to_column: String,
+}
+
+/// Новые границы области, адресованные её id. Ложатся в ту же пачку, что и
+/// позиции таблиц: перетаскивание области двигает и то, и другое разом.
+#[derive(Serialize)]
+struct FrameBounds {
+    id: String,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
+/// Прямоугольник, который пользователь только что протянул по холсту. Id у него
+/// ещё нет: сцена отдаёт геометрию, JS заводит область командой и возвращает
+/// готовую обратно через [`Scene::add_frame`].
+#[derive(Serialize)]
+struct FrameRect {
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
 /// Everything the scene has changed since the last flush.
 #[derive(Serialize)]
 struct Pending {
     moves: Vec<TablePosition>,
     links: Vec<RelationEndpoints>,
     unlinks: Vec<RelationEndpoints>,
+    frames: Vec<FrameBounds>,
 }
 
 /// Видимая часть мира в мировых координатах. Всё, что сюда не попадает, не
@@ -155,6 +247,14 @@ const PORT_R: f64 = 4.0; // visible connection-port radius
 const PORT_HIT: f64 = 8.0; // grab tolerance around a port, in world px
 const REL_HIT: f64 = 6.0; // click tolerance around a relation curve, in screen px
 const BADGE_R: f64 = 9.0; // delete-badge radius on a selected relation
+const FRAME_HIT: f64 = 6.0; // grab tolerance around a frame's border, in screen px
+const HANDLE_R: f64 = 4.0; // visible resize-handle half-size, in screen px
+const HANDLE_HIT: f64 = 7.0; // grab tolerance around a resize handle, in screen px
+/// Меньше этого протянутый прямоугольник считается промахом, а не областью:
+/// одиночный клик в режиме рисования ничего не создаёт.
+const DRAFT_MIN: f64 = 24.0;
+/// Место под знак расхождения у правого края строки.
+const SIGN_W: f64 = 14.0;
 
 // Light theme palette — mirrors the app's design tokens (tokens.css):
 // warm cream canvas, white surfaces, earthy accents.
@@ -172,10 +272,27 @@ const COL_REL: &str = "#c8c0b4"; // --border-h
 const COL_REL_SEL: &str = "#3a5a78"; // --blue, selected relation
 const COL_DELETE: &str = "#9b3b36"; // --red, delete badge
 const COL_SHADOW: &str = "rgba(0, 0, 0, 0.08)"; // --shadow-sm tone
+                                                // Область — подложка под таблицами, поэтому заливка полупрозрачная: сквозь неё
+                                                // видно сетку, а карточки таблиц поверх остаются белыми и читаемыми.
+const COL_FRAME_BG: &str = "rgba(240, 237, 232, 0.55)"; // --cat-bg, приглушённый
+const COL_FRAME_BORDER: &str = "#ddd6ca"; // между --border и --border-h
+const COL_FRAME_TITLE: &str = "#555555"; // --ink-mid
+const COL_HANDLE_BG: &str = "#ffffff"; // --surface, заливка ручки растягивания
+                                       // Сравнение с живой базой. Цвет здесь не единственный носитель смысла: у строки
+                                       // с расхождением есть ещё и знак справа, а у таблицы, которой нет на диаграмме,
+                                       // — пунктирная рамка. Иначе режим был бы бесполезен при дальтонизме и на
+                                       // распечатанной схеме.
+const COL_DOC_ONLY: &str = "#75591a"; // --amber, описано, но в базе не найдено
+const COL_DOC_ONLY_BG: &str = "#f5edd9"; // --amber-bg
+const COL_DB_ONLY: &str = "#3f6b4a"; // --green, есть в базе, но не описано
+const COL_DB_ONLY_BG: &str = "#eaf0e9"; // --green-bg
+const COL_DIFFERS: &str = "#9b3b36"; // --red, описания расходятся
+const COL_DIFFERS_BG: &str = "#f4e4e2"; // --red-bg
 
 // Font stacks mirroring --font-serif / --font-mono in tokens.css.
 const FONT_HEAD: &str = "600 14px \"Lora\", Georgia, \"Times New Roman\", serif";
 const FONT_ROW: &str = "13px \"Menlo\", \"SF Mono\", \"Courier New\", monospace";
+const FONT_FRAME: &str = "600 15px \"Lora\", Georgia, \"Times New Roman\", serif";
 
 /// An in-progress table drag: which table and the cursor offset from its
 /// top-left corner, in world coordinates.
@@ -205,6 +322,50 @@ struct LinkState {
     from: Endpoint,
     from_right: bool,
     cursor: (f64, f64),
+}
+
+/// Перетаскивание области: сама область, смещение курсора от её угла и состав,
+/// снятый в момент захвата. Состав — пары «индекс таблицы, её положение тогда»:
+/// таблицы едут не за курсором, а ровно на то же смещение, что и область, и
+/// ничего не разъезжается, если область упрётся в ограничение.
+struct FrameDrag {
+    index: usize,
+    offset_x: f64,
+    offset_y: f64,
+    start_x: f64,
+    start_y: f64,
+    carried: Vec<(usize, f64, f64)>,
+}
+
+/// Растягивание области за ручку: какую грань тянут, границы в момент захвата и
+/// точка захвата — смещение считается от неё, а не от предыдущего кадра, чтобы
+/// ошибка не накапливалась.
+struct FrameResize {
+    index: usize,
+    handle: Handle,
+    start: (f64, f64, f64, f64),
+    grab: (f64, f64),
+}
+
+/// Прямоугольник, который сейчас протягивают по холсту в режиме рисования:
+/// точка нажатия и текущая точка курсора, в мировых координатах.
+struct Draft {
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+}
+
+impl Draft {
+    /// Нормализованный прямоугольник — тянуть можно в любую сторону.
+    fn rect(&self) -> (f64, f64, f64, f64) {
+        (
+            self.ax.min(self.bx),
+            self.ay.min(self.by),
+            (self.bx - self.ax).abs(),
+            (self.by - self.ay).abs(),
+        )
+    }
 }
 
 /// The resolved cubic-bezier geometry of a relation, in world coordinates.
@@ -240,6 +401,17 @@ impl Curve {
 pub struct Scene {
     tables: Vec<Table>,
     relations: Vec<Relation>,
+    /// Области в порядке создания — в нём же они и рисуются, слоем под
+    /// таблицами. Хит-тест идёт с конца, так что верхняя перекрывающая область
+    /// выигрывает у нижней.
+    frames: Vec<Frame>,
+    /// Сколько таблиц принадлежит документу. Сравнение дописывает в хвост те,
+    /// что нашлись только в базе, и по этому числу их потом отрезают обратно —
+    /// связи адресуют таблицы индексами, и вырезать из середины было бы нечем.
+    doc_tables: usize,
+    /// Идёт ли сейчас сравнение с базой: по нему JS подсвечивает кнопку, а
+    /// холст знает, что цвета на нём значат больше обычного.
+    comparing: bool,
     // Viewport in CSS pixels and the backing-store device-pixel ratio.
     width: f64,
     height: f64,
@@ -251,8 +423,18 @@ pub struct Scene {
     drag: Option<DragState>,
     pan: Option<PanState>,
     link: Option<LinkState>,
+    frame_drag: Option<FrameDrag>,
+    frame_resize: Option<FrameResize>,
+    /// Режим рисования области: включается кнопкой в тулбаре и гаснет, как
+    /// только прямоугольник протянут или нажат Esc.
+    drawing: bool,
+    draft: Option<Draft>,
+    /// Готовый прямоугольник, которого JS ещё не забрал, — пара к
+    /// `take_pending`, только для одноразового черновика.
+    draft_done: Option<FrameRect>,
     selected: Option<usize>,
     selected_rel: Option<usize>,
+    selected_frame: Option<usize>,
     // The column row whose ports are currently revealed (cursor hovering it).
     hover_col: Option<Endpoint>,
     // Desired CSS cursor for the current pointer state; read by JS. Статическая
@@ -264,6 +446,7 @@ pub struct Scene {
     pending_moves: Vec<TablePosition>,
     pending_links: Vec<RelationEndpoints>,
     pending_unlinks: Vec<RelationEndpoints>,
+    pending_frames: Vec<FrameBounds>,
 }
 
 #[wasm_bindgen]
@@ -275,6 +458,9 @@ impl Scene {
         let mut scene = Scene {
             tables: Vec::new(),
             relations: Vec::new(),
+            frames: Vec::new(),
+            doc_tables: 0,
+            comparing: false,
             width: 800.0,
             height: 600.0,
             dpr: 1.0,
@@ -284,14 +470,21 @@ impl Scene {
             drag: None,
             pan: None,
             link: None,
+            frame_drag: None,
+            frame_resize: None,
+            drawing: false,
+            draft: None,
+            draft_done: None,
             selected: None,
             selected_rel: None,
+            selected_frame: None,
             hover_col: None,
             cursor: "default",
             laid_out: false,
             pending_moves: Vec::new(),
             pending_links: Vec::new(),
             pending_unlinks: Vec::new(),
+            pending_frames: Vec::new(),
         };
         scene.seed_sample();
         scene
@@ -357,8 +550,15 @@ impl Scene {
             y,
         });
 
+        // Новая таблица встаёт в конец, а там во время сравнения стоят
+        // призраки — сравнение приходится сбросить. Страница после создания
+        // всё равно перечитывает диаграмму и, если сравнивала, повторяет его.
+        self.reset_diff();
+        self.comparing = false;
+
         self.tables
             .push(Table::new(dto.id, dto.name, columns, x, y));
+        self.doc_tables = self.tables.len();
         self.selected = Some(self.tables.len() - 1);
         self.laid_out = false;
         Ok(())
@@ -377,14 +577,25 @@ impl Scene {
     /// positional `(tableIndex, columnIndex)` the renderer uses; any endpoint
     /// that cannot be resolved drops the relation. Column icons are derived from
     /// the resulting relation set by [`Scene::refresh_kinds`].
-    pub fn load(&mut self, entities: JsValue, relations: JsValue) -> Result<(), JsValue> {
+    ///
+    /// `frames` — области диаграммы (`read_erd_frames`). Они ложатся на холст
+    /// как есть: автолейаута у области нет, её прямоугольник всегда нарисован
+    /// руками.
+    pub fn load(
+        &mut self,
+        entities: JsValue,
+        relations: JsValue,
+        frames: JsValue,
+    ) -> Result<(), JsValue> {
         let entities: Vec<EntityDTO> = serde_wasm_bindgen::from_value(entities)?;
         let relations: Vec<RelationDTO> = serde_wasm_bindgen::from_value(relations)?;
+        let frames: Vec<FrameDTO> = serde_wasm_bindgen::from_value(frames)?;
 
         // Что не успели сохранить для прошлой диаграммы, к этой отношения не имеет.
         self.pending_moves.clear();
         self.pending_links.clear();
         self.pending_unlinks.clear();
+        self.pending_frames.clear();
 
         // (entity id, field name) -> (table index, column index), so relation
         // endpoints can be resolved to the positional form the scene uses.
@@ -449,17 +660,285 @@ impl Scene {
             })
             .collect();
 
+        self.doc_tables = tables.len();
+        self.comparing = false;
         self.tables = tables;
         self.relations = relations;
+        self.frames = frames
+            .into_iter()
+            .map(|f| Frame::new(f.id, f.title, f.x, f.y, f.w, f.h))
+            .collect();
         self.selected = None;
         self.selected_rel = None;
+        self.selected_frame = None;
         self.hover_col = None;
         self.drag = None;
         self.pan = None;
         self.link = None;
+        self.frame_drag = None;
+        self.frame_resize = None;
+        self.drawing = false;
+        self.draft = None;
         self.laid_out = false;
         self.refresh_kinds();
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Области
+    // -----------------------------------------------------------------------
+
+    /// Добавляет область, которую команда `create_erd_frame` только что
+    /// завела, и выделяет её — чтобы ручки растягивания появились сразу.
+    /// Границы приходят обратно те же, что сцена отдала в [`Scene::take_draft`],
+    /// так что нарисованное и сохранённое не могут разойтись.
+    pub fn add_frame(&mut self, frame: JsValue) -> Result<(), JsValue> {
+        let dto: FrameDTO = serde_wasm_bindgen::from_value(frame)?;
+        self.frames
+            .push(Frame::new(dto.id, dto.title, dto.x, dto.y, dto.w, dto.h));
+        self.selected_frame = Some(self.frames.len() - 1);
+        self.selected = None;
+        self.selected_rel = None;
+        Ok(())
+    }
+
+    /// Меняет подпись области. Молча ничего не делает, если области с таким id
+    /// на холсте уже нет.
+    pub fn rename_frame(&mut self, id: &str, title: &str) {
+        if let Some(f) = self.frames.iter_mut().find(|f| f.id == id) {
+            f.title = title.to_string();
+        }
+    }
+
+    /// Убирает область с холста. Таблицы, которые в ней лежали, остаются на
+    /// месте: членство геометрическое, и уносить с собой области нечего.
+    pub fn remove_frame(&mut self, id: &str) {
+        let Some(i) = self.frames.iter().position(|f| f.id == id) else {
+            return;
+        };
+        self.frames.remove(i);
+        self.selected_frame = None;
+        self.frame_drag = None;
+        self.frame_resize = None;
+        // Ждавшие записи границы этой области больше ни к чему не относятся.
+        self.pending_frames.retain(|b| b.id != id);
+    }
+
+    /// Id выделенной области — по нему JS открывает её форму. `None`, если
+    /// выделена таблица, связь или ничего.
+    pub fn selected_frame_id(&self) -> Option<String> {
+        Some(self.frames.get(self.selected_frame?)?.id.clone())
+    }
+
+    /// Включает режим рисования: следующее протаскивание по холсту задаёт
+    /// прямоугольник новой области.
+    pub fn begin_draw_frame(&mut self) {
+        self.drawing = true;
+        self.draft = None;
+        self.cursor = "crosshair";
+    }
+
+    /// Выходит из режима рисования, бросив незаконченный прямоугольник (Esc).
+    /// Возвращает `true`, если было что бросать, — тогда нужна перерисовка.
+    pub fn cancel_draw_frame(&mut self) -> bool {
+        let had = self.drawing || self.draft.is_some();
+        self.drawing = false;
+        self.draft = None;
+        self.cursor = "default";
+        had
+    }
+
+    /// Идёт ли сейчас рисование области — по этому флагу JS подсвечивает
+    /// кнопку в тулбаре.
+    pub fn is_drawing(&self) -> bool {
+        self.drawing
+    }
+
+    /// Протянут ли прямоугольник, которого JS ещё не забрал.
+    pub fn has_draft(&self) -> bool {
+        self.draft_done.is_some()
+    }
+
+    /// Забирает нарисованный прямоугольник `{ x, y, w, h }`. Сцена не заводит
+    /// область сама: id выдаёт база, и до ответа команды рисовать нечего.
+    pub fn take_draft(&mut self) -> Result<JsValue, JsValue> {
+        let rect = self.draft_done.take();
+        Ok(serde_wasm_bindgen::to_value(&rect)?)
+    }
+
+    /// Допуск попадания в мировых пикселях: на экране он всегда одинаков,
+    /// поэтому на отдалении кольцо захвата рамки в мире шире.
+    fn hit_tol(&self, screen_px: f64) -> f64 {
+        screen_px / self.scale
+    }
+
+    // -----------------------------------------------------------------------
+    // Сравнение с живой базой
+    // -----------------------------------------------------------------------
+
+    /// Накладывает на холст результат `compare_erd_with_db`.
+    ///
+    /// Таблица, известная обеим сторонам, остаётся одна: ей проставляется
+    /// статус, а колонки, которые нашлись только в базе, дописываются ей в
+    /// хвост. Таблицы, которых на диаграмме нет, добавляются «призраками» — без
+    /// id, на месте, посчитанном раскладкой на бэкенде. Связи, найденные по
+    /// внешним ключам, дорисовываются пунктиром.
+    ///
+    /// Призрак нельзя ни сохранить, ни связать: id ему взять неоткуда. Поэтому
+    /// портов у него нет, позиция его никуда не пишется, а форму правки он не
+    /// открывает.
+    pub fn set_diff(&mut self, diff: JsValue) -> Result<(), JsValue> {
+        let dto: DiffDTO = serde_wasm_bindgen::from_value(diff)?;
+        self.apply_diff(dto);
+        Ok(())
+    }
+
+    /// Наложение уже разобранного ответа. Отдельно от [`Scene::set_diff`],
+    /// чтобы правила наложения проверялись тестами: `JsValue` вне браузера не
+    /// собрать.
+    fn apply_diff(&mut self, dto: DiffDTO) {
+        // С чистого листа: повторное сравнение не должно наслаиваться на
+        // прошлое своими же призраками.
+        self.reset_diff();
+
+        for table in &dto.tables {
+            let Some(id) = table.id.as_deref() else {
+                continue;
+            };
+            let Some(ti) = self.tables.iter().position(|t| t.id == id) else {
+                continue;
+            };
+
+            let target = &mut self.tables[ti];
+            target.status = DiffStatus::from_wire(&table.status);
+
+            for column in &table.columns {
+                let status = DiffStatus::from_wire(&column.status);
+                match target
+                    .columns
+                    .iter_mut()
+                    .find(|c| fold(&c.name) == fold(&column.name))
+                {
+                    Some(found) => found.status = status,
+                    None => {
+                        let mut extra =
+                            Column::new(column.name.clone(), column.pk, column.nullable);
+                        extra.status = status;
+                        target.columns.push(extra);
+                    }
+                }
+            }
+        }
+
+        // Призраки — только в хвост: связи адресуют таблицы индексами, и
+        // вставка в середину сдвинула бы уже нарисованное.
+        for table in &dto.tables {
+            if table.id.is_some() {
+                continue;
+            }
+            let columns = table
+                .columns
+                .iter()
+                .map(|c| {
+                    let mut column = Column::new(c.name.clone(), c.pk, c.nullable);
+                    column.status = DiffStatus::from_wire(&c.status);
+                    column
+                })
+                .collect();
+            let mut ghost = Table::new(
+                "",
+                table.name.clone(),
+                columns,
+                table.x.unwrap_or(0.0),
+                table.y.unwrap_or(0.0),
+            );
+            ghost.status = DiffStatus::OnlyInDb;
+            self.tables.push(ghost);
+        }
+
+        // Концы связей приходят именами: и документ, и база описывают их так.
+        let mut endpoint_of: HashMap<(String, String), Endpoint> = HashMap::new();
+        for (ti, table) in self.tables.iter().enumerate() {
+            for (ci, column) in table.columns.iter().enumerate() {
+                endpoint_of.insert((fold(&table.name), fold(&column.name)), (ti, ci));
+            }
+        }
+
+        for relation in &dto.relations {
+            let status = DiffStatus::from_wire(&relation.status);
+            let ends = (
+                endpoint_of.get(&(fold(&relation.from_table), fold(&relation.from_column))),
+                endpoint_of.get(&(fold(&relation.to_table), fold(&relation.to_column))),
+            );
+            let (Some(&from), Some(&to)) = ends else {
+                continue;
+            };
+
+            if status == DiffStatus::OnlyInDb {
+                let mut drawn = Relation::new(from, to);
+                drawn.status = status;
+                self.relations.push(drawn);
+            } else if let Some(found) = self.relations.iter_mut().find(|r| r.connects(from, to)) {
+                found.status = status;
+            }
+        }
+
+        self.comparing = true;
+        self.laid_out = false;
+        self.refresh_kinds();
+    }
+
+    /// Снимает сравнение: призраки и дорисованные связи уходят, цвета
+    /// возвращаются к обычным.
+    pub fn clear_diff(&mut self) {
+        self.reset_diff();
+        self.comparing = false;
+    }
+
+    /// Идёт ли сейчас сравнение.
+    pub fn is_comparing(&self) -> bool {
+        self.comparing
+    }
+
+    /// Имя выделенной таблицы, которой на диаграмме нет. По нему JS предлагает
+    /// перенести её в документ. `None` — выделено что-то другое.
+    pub fn selected_ghost_name(&self) -> Option<String> {
+        let table = self.tables.get(self.selected?)?;
+        (table.id.is_empty() && table.status == DiffStatus::OnlyInDb).then(|| table.name.clone())
+    }
+
+    /// Возвращает холст к тому, что лежит в документе: призраки отрезаются,
+    /// дорисованные связи убираются, статусы гаснут.
+    ///
+    /// Отрезать можно именно хвостом: призраки всегда дописываются в конец, а
+    /// связи на них помечены `OnlyInDb` и уходят вместе с ними — иначе индексы
+    /// оставшихся связей разъехались бы.
+    fn reset_diff(&mut self) {
+        self.relations.retain(|r| r.status != DiffStatus::OnlyInDb);
+        for relation in &mut self.relations {
+            relation.status = DiffStatus::Same;
+        }
+
+        self.tables.truncate(self.doc_tables);
+        for table in &mut self.tables {
+            table.status = DiffStatus::Same;
+            table.columns.truncate(table.doc_cols);
+            for column in &mut table.columns {
+                column.status = DiffStatus::Same;
+            }
+        }
+
+        // Всё, что адресовало призрака или связь на него, больше ни к чему не
+        // разрешается.
+        if self.selected.is_some_and(|i| i >= self.tables.len()) {
+            self.selected = None;
+        }
+        self.selected_rel = None;
+        self.hover_col = None;
+        self.drag = None;
+        self.link = None;
+        self.laid_out = false;
+        self.refresh_kinds();
     }
 
     fn screen_to_world(&self, x: f64, y: f64) -> (f64, f64) {
@@ -472,12 +951,32 @@ impl Scene {
         self.cursor.to_string()
     }
 
-    /// Routes a left-button press, in priority order: delete a selected
-    /// relation via its badge, start a relation drag from a column port, select
-    /// a relation curve, drag a table, or pan empty space. Coordinates are CSS
-    /// pixels.
+    /// Routes a left-button press, in priority order: draw a frame, delete a
+    /// selected relation via its badge, resize the selected frame, start a
+    /// relation drag from a column port, select a relation curve, drag a table,
+    /// drag a frame by its title or border, or pan. Coordinates are CSS pixels.
+    ///
+    /// Таблица стоит в этом списке выше области, хотя рисуется поверх неё: так
+    /// таблица, лежащая на области, остаётся кликабельной, а область ловит
+    /// только то, что мимо неё не попало.
     pub fn on_mouse_down(&mut self, x: f64, y: f64) -> bool {
         let (wx, wy) = self.screen_to_world(x, y);
+
+        // 0. Режим рисования занимает холст целиком: пока он включён, нажатие
+        //    ничем другим не перехватывается.
+        if self.drawing {
+            self.draft = Some(Draft {
+                ax: wx,
+                ay: wy,
+                bx: wx,
+                by: wy,
+            });
+            self.selected = None;
+            self.selected_rel = None;
+            self.selected_frame = None;
+            self.cursor = "crosshair";
+            return true;
+        }
 
         // 1. The delete badge of the currently selected relation.
         if let Some(ri) = self.selected_rel {
@@ -495,10 +994,32 @@ impl Scene {
             }
         }
 
-        // 2. A column port — start drawing a new relation.
+        // 2. Ручка выделенной области. Ручки торчат по её граням, где под ними
+        //    может оказаться таблица, поэтому ловятся раньше всех — но только
+        //    у выделенной области, у которой они и нарисованы.
+        if let Some(fi) = self.selected_frame {
+            let tol = self.hit_tol(HANDLE_HIT);
+            let grabbed = self
+                .frames
+                .get(fi)
+                .and_then(|f| f.handle_at(wx, wy, tol).map(|h| (h, (f.x, f.y, f.w, f.h))));
+            if let Some((handle, start)) = grabbed {
+                self.frame_resize = Some(FrameResize {
+                    index: fi,
+                    handle,
+                    start,
+                    grab: (wx, wy),
+                });
+                self.cursor = handle.cursor();
+                return false;
+            }
+        }
+
+        // 3. A column port — start drawing a new relation.
         if let Some((ti, ci, right)) = self.hit_port(wx, wy) {
             self.selected = None;
             self.selected_rel = None;
+            self.selected_frame = None;
             self.link = Some(LinkState {
                 from: (ti, ci),
                 from_right: right,
@@ -508,15 +1029,16 @@ impl Scene {
             return false;
         }
 
-        // 3. A relation curve — select it.
+        // 4. A relation curve — select it.
         if let Some(ri) = self.hit_relation(wx, wy) {
             self.selected = None;
             self.selected_rel = Some(ri);
+            self.selected_frame = None;
             self.cursor = "pointer";
             return false;
         }
 
-        // 4. A table body — drag it.
+        // 5. A table body — drag it.
         if let Some(index) = self.tables.iter().rposition(|t| t.contains(wx, wy)) {
             let t = &self.tables[index];
             self.drag = Some(DragState {
@@ -528,13 +1050,43 @@ impl Scene {
             });
             self.selected = Some(index);
             self.selected_rel = None;
+            self.selected_frame = None;
             self.cursor = "grabbing";
             return true;
         }
 
-        // 5. Empty space — pan.
+        // 6. Подпись или рамка области — тянуть её вместе с содержимым.
+        let tol = self.hit_tol(FRAME_HIT);
+        if let Some(fi) = self
+            .frames
+            .iter()
+            .rposition(|f| f.on_title(wx, wy) || f.on_border(wx, wy, tol))
+        {
+            let (fx, fy) = (self.frames[fi].x, self.frames[fi].y);
+            self.frame_drag = Some(FrameDrag {
+                index: fi,
+                offset_x: wx - fx,
+                offset_y: wy - fy,
+                start_x: fx,
+                start_y: fy,
+                carried: self.carried_by(fi),
+            });
+            self.selected = None;
+            self.selected_rel = None;
+            self.selected_frame = Some(fi);
+            self.cursor = "grabbing";
+            return true;
+        }
+
+        // 7. Тело области или пустота: выделяем область под курсором — чтобы
+        //    показались её ручки — и панорамируем. Тело области перетаскивание
+        //    не начинает: иначе большая область отняла бы у холста пан.
+        let inside = self.frames.iter().rposition(|f| f.contains(wx, wy));
+        let dirty =
+            self.selected.is_some() || self.selected_rel.is_some() || self.selected_frame != inside;
         self.selected = None;
         self.selected_rel = None;
+        self.selected_frame = inside;
         self.pan = Some(PanState {
             start_x: x,
             start_y: y,
@@ -542,7 +1094,23 @@ impl Scene {
             cam_y: self.cam_y,
         });
         self.cursor = "grabbing";
-        false
+        dirty
+    }
+
+    /// Состав области: индексы таблиц, целиком лежащих внутри неё, вместе с их
+    /// положением на момент вызова. Снимается один раз — в момент захвата, —
+    /// поэтому таблица, выехавшая за грань по дороге, всё равно доедет с
+    /// областью до конца перетаскивания.
+    fn carried_by(&self, fi: usize) -> Vec<(usize, f64, f64)> {
+        let Some(frame) = self.frames.get(fi) else {
+            return Vec::new();
+        };
+        self.tables
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| frame.holds(t.x, t.y, t.w, t.height()))
+            .map(|(i, t)| (i, t.x, t.y))
+            .collect()
     }
 
     /// Updates whatever interaction is live (table drag, relation drag, pan) or,
@@ -550,6 +1118,53 @@ impl Scene {
     /// redraw is needed.
     pub fn on_mouse_move(&mut self, x: f64, y: f64) -> bool {
         let (wx, wy) = self.screen_to_world(x, y);
+
+        if let Some(draft) = self.draft.as_mut() {
+            draft.bx = wx;
+            draft.by = wy;
+            self.cursor = "crosshair";
+            return true;
+        }
+
+        if self.drawing {
+            self.cursor = "crosshair";
+            // Порты в режиме рисования не нужны: кликнуть по ним всё равно
+            // нельзя, а мигающие кружки под крестиком только мешают.
+            return self.hover_col.take().is_some();
+        }
+
+        if let Some(rz) = &self.frame_resize {
+            let (index, handle) = (rz.index, rz.handle);
+            let (x, y, w, h) = Frame::resized(rz.start, handle, wx - rz.grab.0, wy - rz.grab.1);
+            if let Some(f) = self.frames.get_mut(index) {
+                f.x = x;
+                f.y = y;
+                f.w = w;
+                f.h = h;
+            }
+            self.cursor = handle.cursor();
+            return true;
+        }
+
+        // Область забирается из поля целиком: двигать нужно и её, и таблицы, а
+        // одолженная ссылка на состав не дала бы тронуть ни то, ни другое.
+        if let Some(fd) = self.frame_drag.take() {
+            let (nx, ny) = (wx - fd.offset_x, wy - fd.offset_y);
+            let (dx, dy) = (nx - fd.start_x, ny - fd.start_y);
+            if let Some(f) = self.frames.get_mut(fd.index) {
+                f.x = nx;
+                f.y = ny;
+            }
+            for &(ti, sx, sy) in &fd.carried {
+                if let Some(t) = self.tables.get_mut(ti) {
+                    t.x = sx + dx;
+                    t.y = sy + dy;
+                }
+            }
+            self.frame_drag = Some(fd);
+            self.cursor = "grabbing";
+            return true;
+        }
 
         if let Some(drag) = &self.drag {
             if let Some(t) = self.tables.get_mut(drag.index) {
@@ -562,7 +1177,9 @@ impl Scene {
 
         if self.link.is_some() {
             // Reveal the prospective target row's ports while dragging.
-            let target = self.hit_row(wx, wy);
+            let target = self
+                .hit_row(wx, wy)
+                .filter(|(ti, _)| !self.tables[*ti].id.is_empty());
             if let Some(link) = self.link.as_mut() {
                 link.cursor = (wx, wy);
             }
@@ -580,19 +1197,38 @@ impl Scene {
 
         // Idle hover: ports follow the row under the cursor; pick a cursor.
         let prev = self.hover_col;
-        self.hover_col = self.hit_row(wx, wy);
+        self.hover_col = self
+            .hit_row(wx, wy)
+            .filter(|(ti, _)| !self.tables[*ti].id.is_empty());
 
         let over_badge = self
             .selected_rel
             .is_some_and(|ri| self.over_delete_badge(ri, wx, wy));
 
-        self.cursor = if over_badge {
+        let handle_tol = self.hit_tol(HANDLE_HIT);
+        let over_handle = self
+            .selected_frame
+            .and_then(|fi| self.frames.get(fi))
+            .and_then(|f| f.handle_at(wx, wy, handle_tol))
+            .map(Handle::cursor);
+
+        let frame_tol = self.hit_tol(FRAME_HIT);
+
+        self.cursor = if let Some(c) = over_handle {
+            c
+        } else if over_badge {
             "pointer"
         } else if self.hit_port(wx, wy).is_some() {
             "crosshair"
         } else if self.hit_relation(wx, wy).is_some() {
             "pointer"
         } else if self.tables.iter().any(|t| t.contains(wx, wy)) {
+            "grab"
+        } else if self
+            .frames
+            .iter()
+            .any(|f| f.on_title(wx, wy) || f.on_border(wx, wy, frame_tol))
+        {
             "grab"
         } else {
             "default"
@@ -607,12 +1243,84 @@ impl Scene {
     pub fn on_mouse_up(&mut self, x: f64, y: f64) -> bool {
         let mut dirty = false;
 
+        // Прямоугольник дорисован. Область сцена не заводит: id выдаёт база, и
+        // до ответа команды рисовать нечего — геометрия ложится в черновик,
+        // который JS забирает сразу после этого вызова.
+        if let Some(draft) = self.draft.take() {
+            self.drawing = false;
+            self.cursor = "default";
+            let (dx, dy, dw, dh) = draft.rect();
+            if dw >= DRAFT_MIN && dh >= DRAFT_MIN {
+                self.draft_done = Some(FrameRect {
+                    x: dx,
+                    y: dy,
+                    w: dw.max(FRAME_MIN_W),
+                    h: dh.max(FRAME_MIN_H),
+                });
+            }
+            dirty = true;
+        }
+
+        // Область отпустили. Пишем и её границы, и положение всего, что она
+        // увезла с собой, — одной пачкой, как и обычное перетаскивание таблицы.
+        if let Some(fd) = self.frame_drag.take() {
+            let moved = self
+                .frames
+                .get(fd.index)
+                .is_some_and(|f| f.x != fd.start_x || f.y != fd.start_y);
+            if moved {
+                if let Some(f) = self.frames.get(fd.index) {
+                    self.pending_frames.push(FrameBounds {
+                        id: f.id.clone(),
+                        x: f.x,
+                        y: f.y,
+                        w: f.w,
+                        h: f.h,
+                    });
+                }
+                for &(ti, _, _) in &fd.carried {
+                    if let Some(t) = self.tables.get(ti) {
+                        if !t.id.is_empty() {
+                            self.pending_moves.push(TablePosition {
+                                id: t.id.clone(),
+                                x: t.x,
+                                y: t.y,
+                            });
+                        }
+                    }
+                }
+            }
+            dirty = true;
+        }
+
+        if let Some(rz) = self.frame_resize.take() {
+            if let Some(f) = self.frames.get(rz.index) {
+                if (f.x, f.y, f.w, f.h) != rz.start {
+                    self.pending_frames.push(FrameBounds {
+                        id: f.id.clone(),
+                        x: f.x,
+                        y: f.y,
+                        w: f.w,
+                        h: f.h,
+                    });
+                }
+            }
+            dirty = true;
+        }
+
         if let Some(link) = self.link.take() {
             let (wx, wy) = self.screen_to_world(x, y);
-            if let Some((ti, ci)) = self.hit_row(wx, wy) {
+            // Связь на призрака не заводится по той же причине, по которой у
+            // него нет портов: сохранить её нечем.
+            if let Some((ti, ci)) = self
+                .hit_row(wx, wy)
+                .filter(|(ti, _)| !self.tables[*ti].id.is_empty())
+            {
                 let to: Endpoint = (ti, ci);
+                // Внутри одной таблицы связь тоже имеет смысл (`parent_id →
+                // id`), бессмысленна только петля колонки на саму себя.
                 let valid =
-                    ti != link.from.0 && !self.relations.iter().any(|r| r.connects(link.from, to));
+                    to != link.from && !self.relations.iter().any(|r| r.connects(link.from, to));
                 if valid {
                     self.relations.push(Relation::new(link.from, to));
                     let ri = self.relations.len() - 1;
@@ -648,9 +1356,15 @@ impl Scene {
         dirty
     }
 
-    /// Whether a table drag, relation drag, or pan is currently active.
+    /// Whether a table drag, relation drag, frame drag/resize, frame drawing,
+    /// or pan is currently active.
     pub fn is_interacting(&self) -> bool {
-        self.drag.is_some() || self.pan.is_some() || self.link.is_some()
+        self.drag.is_some()
+            || self.pan.is_some()
+            || self.link.is_some()
+            || self.frame_drag.is_some()
+            || self.frame_resize.is_some()
+            || self.draft.is_some()
     }
 
     // -----------------------------------------------------------------------
@@ -663,9 +1377,10 @@ impl Scene {
         !self.pending_moves.is_empty()
             || !self.pending_links.is_empty()
             || !self.pending_unlinks.is_empty()
+            || !self.pending_frames.is_empty()
     }
 
-    /// Takes the accumulated changes — `{ moves, links, unlinks }` — and clears
+    /// Takes the accumulated changes — `{ moves, links, unlinks, frames }` — and clears
     /// the queue. The scene deliberately does not persist anything itself: it
     /// only records what changed, and JS spends the batch on the matching Tauri
     /// commands.
@@ -674,6 +1389,7 @@ impl Scene {
             moves: std::mem::take(&mut self.pending_moves),
             links: std::mem::take(&mut self.pending_links),
             unlinks: std::mem::take(&mut self.pending_unlinks),
+            frames: std::mem::take(&mut self.pending_frames),
         };
         Ok(serde_wasm_bindgen::to_value(&pending)?)
     }
@@ -733,6 +1449,11 @@ impl Scene {
     /// Ports sit at each row's vertical center on the left and right edges.
     fn hit_port(&self, wx: f64, wy: f64) -> Option<(usize, usize, bool)> {
         for (ti, t) in self.tables.iter().enumerate().rev() {
+            // У таблицы, которой нет в документе, портов нет: связь от неё
+            // некуда записать — её концы адресуются id сущностей.
+            if t.id.is_empty() {
+                continue;
+            }
             // Порты сидят на боках таблицы, поэтому дальше её габаритов плюс
             // допуск искать нечего — иначе на каждое движение мыши перебирались
             // бы все колонки всех таблиц схемы.
@@ -803,6 +1524,32 @@ impl Scene {
             return None;
         }
 
+        // Ссылка таблицы на саму себя (`parent_id → id` есть едва ли не в
+        // каждой схеме) рисуется петлёй у правой грани: обе опоры на одной
+        // стороне, кривая выгибается наружу. Общая ветка ниже тут не годится —
+        // она выбирает стороны по центрам таблиц, а у одной таблицы центр один,
+        // и линия прошла бы сквозь неё саму.
+        if rel.from.0 == rel.to.0 {
+            let x = src.x + src.w;
+            let ay = src.row_y(rel.from.1);
+            let by = src.row_y(rel.to.1);
+            // Вынос растёт с расстоянием между строками: у соседних петля иначе
+            // вырождается в плоский штрих. Потолок держит её в пределах
+            // просвета, который раскладка оставляет между слоями.
+            let dx = ((ay - by).abs() * 0.8).clamp(56.0, 130.0);
+
+            return Some(Curve {
+                ax: x,
+                ay,
+                c1x: x + dx,
+                c2x: x + dx,
+                bx: x,
+                by,
+                src_right: true,
+                dst_right: true,
+            });
+        }
+
         let src_right = src.center_x() <= dst.center_x();
         let dst_right = !src_right;
         let ax = if src_right { src.x + src.w } else { src.x };
@@ -850,7 +1597,10 @@ impl Scene {
         }
     }
 
-    /// Clears and redraws the whole scene: grid, relations, then tables.
+    /// Clears and redraws the whole scene: grid, frames, relations, then
+    /// tables. Порядок и есть группировка: области лежат слоем под таблицами,
+    /// поэтому таблица, поставленная на область, видна целиком, а область
+    /// читается как подложка под ней.
     ///
     /// Кадр стоит ровно столько, сколько видно на экране: за его пределами не
     /// рисуется ничего, а на отдалении таблицы теряют строки колонок. Без этого
@@ -876,6 +1626,7 @@ impl Scene {
         };
 
         self.draw_grid(ctx, view);
+        self.draw_frames(ctx, view);
         self.draw_relations(ctx, view);
 
         // Тень — гауссово размытие на карточку, самая дорогая примитива здесь.
@@ -893,6 +1644,8 @@ impl Scene {
         self.draw_ports(ctx);
         self.draw_link_preview(ctx);
         self.draw_delete_badge(ctx);
+        self.draw_frame_handles(ctx);
+        self.draw_draft(ctx);
     }
 
     /// Computes each table's width from its text, once. Mutates `w` in place.
@@ -907,7 +1660,14 @@ impl Scene {
             for col in &table.columns {
                 max = max.max(measure(ctx, &col.name));
             }
-            table.w = (PAD_X + ICON_W + TEXT_GAP + max + PAD_X).max(MIN_TABLE_W);
+            // Знак расхождения стоит у правого края — под него нужен запас,
+            // иначе он ляжет на длинное имя колонки.
+            let sign = if table.columns.iter().any(|c| c.status != DiffStatus::Same) {
+                SIGN_W
+            } else {
+                0.0
+            };
+            table.w = (PAD_X + ICON_W + TEXT_GAP + max + sign + PAD_X).max(MIN_TABLE_W);
         }
         self.laid_out = true;
     }
@@ -943,6 +1703,83 @@ impl Scene {
         }
     }
 
+    /// Слой областей: полупрозрачная заливка, рамка и подпись над верхней
+    /// гранью.
+    ///
+    /// Подпись рисуется и на отдалении, где таблицы уже теряют строки колонок:
+    /// там она единственное, по чему схему можно читать, и стоит она одну
+    /// надпись на область.
+    fn draw_frames(&self, ctx: &CanvasRenderingContext2d, view: Viewport) {
+        ctx.set_font(FONT_FRAME);
+        ctx.set_text_baseline("alphabetic");
+        ctx.set_text_align("left");
+
+        for (i, f) in self.frames.iter().enumerate() {
+            // Полоса подписи торчит над верхней гранью — её тоже нельзя терять
+            // у края экрана.
+            if !view.hits(f.x, f.y - FRAME_TITLE_H, f.w, f.h + FRAME_TITLE_H) {
+                continue;
+            }
+            let selected = self.selected_frame == Some(i);
+
+            rounded_rect(ctx, f.x, f.y, f.w, f.h, FRAME_CORNER_R);
+            ctx.set_fill_style_str(COL_FRAME_BG);
+            ctx.fill();
+            ctx.set_stroke_style_str(if selected {
+                COL_BORDER_SEL
+            } else {
+                COL_FRAME_BORDER
+            });
+            ctx.set_line_width(if selected { 2.0 } else { 1.5 });
+            ctx.stroke();
+
+            if !f.title.is_empty() {
+                ctx.set_fill_style_str(if selected {
+                    COL_BORDER_SEL
+                } else {
+                    COL_FRAME_TITLE
+                });
+                let _ = ctx.fill_text(&f.title, f.x + 4.0, f.y - 7.0);
+            }
+        }
+    }
+
+    /// Ручки растягивания выделенной области. Размер держится экранным: в мире
+    /// он делится на масштаб, иначе на отдалении ручка стала бы точкой, а
+    /// вблизи — плашкой в пол-области.
+    fn draw_frame_handles(&self, ctx: &CanvasRenderingContext2d) {
+        let Some(f) = self.selected_frame.and_then(|i| self.frames.get(i)) else {
+            return;
+        };
+
+        let r = HANDLE_R / self.scale;
+        ctx.set_fill_style_str(COL_HANDLE_BG);
+        ctx.set_stroke_style_str(COL_BORDER_SEL);
+        ctx.set_line_width(1.5 / self.scale);
+        for (_, hx, hy) in f.handles() {
+            ctx.begin_path();
+            ctx.rect(hx - r, hy - r, r * 2.0, r * 2.0);
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
+
+    /// Прямоугольник, который сейчас протягивают в режиме рисования. Рисуется
+    /// поверх всего: пока его тянут, важно только то, куда встанет область.
+    fn draw_draft(&self, ctx: &CanvasRenderingContext2d) {
+        let Some(draft) = &self.draft else {
+            return;
+        };
+
+        let (x, y, w, h) = draft.rect();
+        rounded_rect(ctx, x, y, w, h, FRAME_CORNER_R);
+        ctx.set_fill_style_str(COL_FRAME_BG);
+        ctx.fill();
+        ctx.set_stroke_style_str(COL_BORDER_SEL);
+        ctx.set_line_width(1.5 / self.scale);
+        ctx.stroke();
+    }
+
     /// Draws every relation as a bezier curve with crow's-foot endpoints. The
     /// selected relation is highlighted in the accent color.
     fn draw_relations(&self, ctx: &CanvasRenderingContext2d, view: Viewport) {
@@ -961,13 +1798,24 @@ impl Scene {
                 continue;
             }
             let selected = self.selected_rel == Some(i);
-            ctx.set_stroke_style_str(if selected { COL_REL_SEL } else { COL_REL });
+            let status = status_colors(rel.status).map(|(line, _)| line);
+            ctx.set_stroke_style_str(match (selected, status) {
+                (true, _) => COL_REL_SEL,
+                (false, Some(line)) => line,
+                (false, None) => COL_REL,
+            });
             ctx.set_line_width(if selected { 2.0 } else { 1.5 });
+            // Связь, которой на диаграмме не рисовали, — пунктиром: её ещё нет
+            // в документе, и выглядеть как нарисованная она не должна.
+            if rel.status == DiffStatus::OnlyInDb {
+                set_dash(ctx, &[6.0, 4.0]);
+            }
 
             ctx.begin_path();
             ctx.move_to(c.ax, c.ay);
             ctx.bezier_curve_to(c.c1x, c.ay, c.c2x, c.by, c.bx, c.by);
             ctx.stroke();
+            set_dash(ctx, &[]);
 
             draw_one(ctx, c.ax, c.ay, c.src_right);
             draw_many(ctx, c.bx, c.by, c.dst_right);
@@ -1065,6 +1913,44 @@ impl Default for Scene {
 // Free drawing helpers (no `&self` borrow, so they compose freely in loops).
 // ---------------------------------------------------------------------------
 
+/// Ключ сопоставления имён: сравнение приходит с бэкенда в той же свёртке —
+/// PostgreSQL приводит незакавыченные имена к нижнему регистру, а в документе
+/// имя пишет человек.
+fn fold(name: &str) -> String {
+    name.trim().to_lowercase()
+}
+
+/// Пунктир для того, чего в документе нет. Пустой образец возвращает сплошную
+/// линию — чистить обязательно, иначе пунктир достанется следующей фигуре.
+fn set_dash(ctx: &CanvasRenderingContext2d, pattern: &[f64]) {
+    let dashes = js_sys::Array::new();
+    for step in pattern {
+        dashes.push(&JsValue::from_f64(*step));
+    }
+    let _ = ctx.set_line_dash(&dashes);
+}
+
+/// Цвета статуса: рамка/текст и заливка шапки. `None` — статус обычный, красить
+/// нечем.
+fn status_colors(status: DiffStatus) -> Option<(&'static str, &'static str)> {
+    match status {
+        DiffStatus::Same => None,
+        DiffStatus::OnlyInDoc => Some((COL_DOC_ONLY, COL_DOC_ONLY_BG)),
+        DiffStatus::OnlyInDb => Some((COL_DB_ONLY, COL_DB_ONLY_BG)),
+        DiffStatus::Differs => Some((COL_DIFFERS, COL_DIFFERS_BG)),
+    }
+}
+
+/// Знак у правого края строки — тот же смысл, что и цвет, но виден и без него.
+fn status_sign(status: DiffStatus) -> Option<&'static str> {
+    match status {
+        DiffStatus::Same => None,
+        DiffStatus::OnlyInDoc => Some("−"),
+        DiffStatus::OnlyInDb => Some("+"),
+        DiffStatus::Differs => Some("≠"),
+    }
+}
+
 fn measure(ctx: &CanvasRenderingContext2d, text: &str) -> f64 {
     ctx.measure_text(text).map(|m| m.width()).unwrap_or(0.0)
 }
@@ -1115,11 +2001,15 @@ fn draw_table(
     shadow: bool,
 ) {
     let h = t.height();
+    let status = status_colors(t.status);
+    // Таблицы, которой нет в документе, на холсте ещё не существует — она и
+    // рисуется как набросок: пунктиром и без тени карточки.
+    let ghost = t.status == DiffStatus::OnlyInDb;
 
     // Body — drawn with a soft drop shadow so surfaces read as cards on the
     // light canvas (mirrors --shadow-sm). The shadow is cleared immediately
     // afterwards so nothing else inherits it.
-    if shadow {
+    if shadow && !ghost {
         ctx.set_shadow_color(COL_SHADOW);
         ctx.set_shadow_blur(12.0);
         ctx.set_shadow_offset_x(0.0);
@@ -1128,15 +2018,19 @@ fn draw_table(
     rounded_rect(ctx, t.x, t.y, t.w, h, CORNER_R);
     ctx.set_fill_style_str(COL_TABLE_BG);
     ctx.fill();
-    if shadow {
+    if shadow && !ghost {
         ctx.set_shadow_color("rgba(0, 0, 0, 0)");
         ctx.set_shadow_blur(0.0);
         ctx.set_shadow_offset_y(0.0);
     }
 
-    // Header band.
+    // Header band. Её заливка и несёт статус таблицы: рамку может перекрыть
+    // выделение, а шапка видна всегда.
     rounded_top(ctx, t.x, t.y, t.w, HEADER_H, CORNER_R);
-    ctx.set_fill_style_str(COL_HEADER_BG);
+    ctx.set_fill_style_str(match status {
+        Some((_, bg)) => bg,
+        None => COL_HEADER_BG,
+    });
     ctx.fill();
 
     // Header: table glyph + name.
@@ -1161,19 +2055,41 @@ fn draw_table(
             let icon_cx = t.x + PAD_X + ICON_W * 0.5;
             draw_col_icon(ctx, col.kind, icon_cx, cy);
 
-            ctx.set_fill_style_str(match col.kind {
-                ColKind::Nullable => COL_TEXT_DIM,
-                _ => COL_TEXT,
-            });
+            let tone = match status_colors(col.status) {
+                Some((line, _)) => line,
+                None => match col.kind {
+                    ColKind::Nullable => COL_TEXT_DIM,
+                    _ => COL_TEXT,
+                },
+            };
+            ctx.set_fill_style_str(tone);
             let _ = ctx.fill_text(&col.name, t.x + PAD_X + ICON_W + TEXT_GAP, cy + 1.0);
+
+            if let Some(sign) = status_sign(col.status) {
+                ctx.set_text_align("right");
+                let _ = ctx.fill_text(sign, t.x + t.w - PAD_X, cy + 1.0);
+                ctx.set_text_align("left");
+            }
         }
     }
 
     // Border (drawn last so it sits on top of the fills).
     rounded_rect(ctx, t.x, t.y, t.w, h, CORNER_R);
-    ctx.set_stroke_style_str(if selected { COL_BORDER_SEL } else { COL_BORDER });
-    ctx.set_line_width(if selected { 2.0 } else { 1.0 });
+    ctx.set_stroke_style_str(match (selected, status) {
+        (true, _) => COL_BORDER_SEL,
+        (false, Some((line, _))) => line,
+        (false, None) => COL_BORDER,
+    });
+    ctx.set_line_width(if selected || status.is_some() {
+        2.0
+    } else {
+        1.0
+    });
+    if ghost {
+        set_dash(ctx, &[6.0, 4.0]);
+    }
     ctx.stroke();
+    set_dash(ctx, &[]);
 }
 
 /// A small "table" glyph for the header: an outlined box with a top stripe.
@@ -1275,22 +2191,18 @@ impl Scene {
         use ColKind::*;
 
         fn col(name: &str, kind: ColKind) -> Column {
-            Column {
-                name: name.to_string(),
-                pk: kind == Pk,
-                nullable: kind == Nullable,
-                kind,
-            }
+            // Иконку демо-схема задаёт сама: внешний ключ из флагов колонки не
+            // выводится, его знают только связи.
+            let mut column = Column::new(name.to_string(), kind == Pk, kind == Nullable);
+            column.kind = kind;
+            column
         }
 
         self.tables = vec![
-            Table {
-                id: String::new(),
-                x: 60.0,
-                y: 60.0,
-                w: MIN_TABLE_W,
-                name: "accounts".into(),
-                columns: vec![
+            Table::new(
+                "",
+                "accounts",
+                vec![
                     col("id", Pk),
                     col("archived_at", Nullable),
                     col("created_at", Plain),
@@ -1300,28 +2212,26 @@ impl Scene {
                     col("updated_at", Plain),
                     col("uuid", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 420.0,
-                y: 60.0,
-                w: MIN_TABLE_W,
-                name: "account_accesses".into(),
-                columns: vec![
+                60.0,
+                60.0,
+            ),
+            Table::new(
+                "",
+                "account_accesses",
+                vec![
                     col("id", Pk),
                     col("account_id", Fk),
                     col("created_at", Plain),
                     col("updated_at", Plain),
                     col("user_id", Fk),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 780.0,
-                y: 40.0,
-                w: MIN_TABLE_W,
-                name: "email_messages".into(),
-                columns: vec![
+                420.0,
+                60.0,
+            ),
+            Table::new(
+                "",
+                "email_messages",
+                vec![
                     col("id", Pk),
                     col("account_id", Fk),
                     col("author_id", Fk),
@@ -1332,14 +2242,13 @@ impl Scene {
                     col("updated_at", Plain),
                     col("uuid", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 420.0,
-                y: 320.0,
-                w: MIN_TABLE_W,
-                name: "account_configs".into(),
-                columns: vec![
+                780.0,
+                40.0,
+            ),
+            Table::new(
+                "",
+                "account_configs",
+                vec![
                     col("id", Pk),
                     col("account_id", Fk),
                     col("created_at", Plain),
@@ -1347,14 +2256,13 @@ impl Scene {
                     col("updated_at", Plain),
                     col("value", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 60.0,
-                y: 400.0,
-                w: MIN_TABLE_W,
-                name: "oauth_applications".into(),
-                columns: vec![
+                420.0,
+                320.0,
+            ),
+            Table::new(
+                "",
+                "oauth_applications",
+                vec![
                     col("id", Pk),
                     col("confidential", Plain),
                     col("created_at", Plain),
@@ -1362,45 +2270,474 @@ impl Scene {
                     col("redirect_uri", Nullable),
                     col("scopes", Plain),
                 ],
-            },
-            Table {
-                id: String::new(),
-                x: 780.0,
-                y: 440.0,
-                w: MIN_TABLE_W,
-                name: "access_tokens".into(),
-                columns: vec![
+                60.0,
+                400.0,
+            ),
+            Table::new(
+                "",
+                "access_tokens",
+                vec![
                     col("id", Pk),
                     col("created_at", Plain),
                     col("sha256", Plain),
                     col("token", Plain),
                     col("updated_at", Plain),
                 ],
-            },
+                780.0,
+                440.0,
+            ),
         ];
 
         // (table_index, column_index) pairs: primary-key side -> foreign-key side.
+        self.doc_tables = self.tables.len();
         self.relations = vec![
-            Relation {
-                from: (0, 0),
-                to: (1, 1),
-            }, // accounts.id -> account_accesses.account_id
-            Relation {
-                from: (0, 0),
-                to: (2, 1),
-            }, // accounts.id -> email_messages.account_id
-            Relation {
-                from: (0, 0),
-                to: (3, 1),
-            }, // accounts.id -> account_configs.account_id
-            Relation {
-                from: (1, 0),
-                to: (2, 2),
-            }, // account_accesses.id -> email_messages.author_id
-            Relation {
-                from: (4, 0),
-                to: (5, 0),
-            }, // oauth_applications.id -> access_tokens.id
+            Relation::new((0, 0), (1, 1)), // accounts.id -> account_accesses.account_id
+            Relation::new((0, 0), (2, 1)), // accounts.id -> email_messages.account_id
+            Relation::new((0, 0), (3, 1)), // accounts.id -> account_configs.account_id
+            Relation::new((1, 0), (2, 2)), // account_accesses.id -> email_messages.author_id
+            Relation::new((4, 0), (5, 0)), // oauth_applications.id -> access_tokens.id
         ];
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Сцена с одной таблицей в трёх колонках — ровно то, что нужно связи
+    /// таблицы с самой собой.
+    fn scene_with_one_table() -> Scene {
+        let mut scene = Scene::new();
+        scene.tables = vec![Table::new(
+            "t1",
+            "catalog_node",
+            vec![
+                Column::new("id".to_string(), true, false),
+                Column::new("name".to_string(), false, false),
+                Column::new("parent_id".to_string(), false, true),
+            ],
+            100.0,
+            200.0,
+        )];
+        scene.tables[0].w = 180.0;
+        scene.relations = vec![Relation::new((0, 0), (0, 2))];
+        scene
+    }
+
+    /// `parent_id → id` есть едва ли не в каждой схеме. Петля рисуется у правой
+    /// грани и выгибается наружу — иначе она прошла бы сквозь саму таблицу.
+    #[test]
+    fn a_self_relation_loops_out_of_the_right_edge() {
+        let scene = scene_with_one_table();
+        let table = &scene.tables[0];
+
+        let curve = scene
+            .rel_curve(&scene.relations[0])
+            .expect("петля не построилась");
+
+        assert_eq!(curve.ax, table.x + table.w, "опора на правой грани");
+        assert_eq!(curve.bx, curve.ax, "обе опоры на одной грани");
+        assert!(curve.c1x > curve.ax && curve.c2x > curve.ax);
+        assert!(
+            curve.src_right && curve.dst_right,
+            "оба конца смотрят вправо"
+        );
+        assert_ne!(curve.ay, curve.by, "опоры на разных строках");
+
+        let (mx, _) = curve.point(0.5);
+        assert!(
+            mx > table.x + table.w,
+            "середина петли должна лежать снаружи таблицы: {mx}"
+        );
+    }
+
+    /// Соседние строки не должны схлопывать петлю в плоский штрих.
+    #[test]
+    fn a_loop_between_neighbouring_rows_still_bulges() {
+        let mut scene = scene_with_one_table();
+        scene.relations = vec![Relation::new((0, 0), (0, 1))];
+
+        let curve = scene.rel_curve(&scene.relations[0]).unwrap();
+
+        assert!(
+            curve.c1x - curve.ax >= 56.0,
+            "вынос петли слишком мал: {}",
+            curve.c1x - curve.ax
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Сравнение с живой базой
+    // -----------------------------------------------------------------------
+
+    /// Диаграмма из одной таблицы `users` с колонкой `id`.
+    fn scene_with_users() -> Scene {
+        let mut scene = Scene::new();
+        scene.tables = vec![Table::new(
+            "e1",
+            "users",
+            vec![Column::new("id".to_string(), true, false)],
+            100.0,
+            100.0,
+        )];
+        scene.tables[0].w = 180.0;
+        scene.doc_tables = 1;
+        scene.relations.clear();
+        scene
+    }
+
+    fn column(name: &str, status: &str) -> ColumnDiffDTO {
+        ColumnDiffDTO {
+            name: name.to_string(),
+            status: status.to_string(),
+            pk: name == "id",
+            nullable: false,
+        }
+    }
+
+    /// Ровно то, ради чего всё затевалось: таблица, известная обеим сторонам,
+    /// остаётся на холсте одна.
+    #[test]
+    fn a_table_known_to_both_sides_is_not_drawn_twice() {
+        let mut scene = scene_with_users();
+
+        scene.apply_diff(DiffDTO {
+            tables: vec![
+                TableDiffDTO {
+                    id: Some("e1".into()),
+                    name: "users".into(),
+                    status: "same".into(),
+                    x: None,
+                    y: None,
+                    columns: vec![column("id", "same")],
+                },
+                TableDiffDTO {
+                    id: None,
+                    name: "orders".into(),
+                    status: "onlyInDb".into(),
+                    x: Some(400.0),
+                    y: Some(100.0),
+                    columns: vec![column("id", "onlyInDb")],
+                },
+            ],
+            relations: vec![],
+        });
+
+        assert_eq!(scene.tables.len(), 2, "одна своя и одна из базы");
+        assert_eq!(scene.tables[0].id, "e1");
+        assert_eq!(scene.tables[0].status, DiffStatus::Same);
+        assert_eq!(scene.tables[1].name, "orders");
+        assert_eq!(scene.tables[1].status, DiffStatus::OnlyInDb);
+        assert_eq!((scene.tables[1].x, scene.tables[1].y), (400.0, 100.0));
+        assert!(scene.is_comparing());
+    }
+
+    /// Колонка, которой в документе нет, дописывается в ту же таблицу, а не
+    /// заводит вторую.
+    #[test]
+    fn a_column_only_the_database_has_joins_the_table_it_belongs_to() {
+        let mut scene = scene_with_users();
+
+        scene.apply_diff(DiffDTO {
+            tables: vec![TableDiffDTO {
+                id: Some("e1".into()),
+                name: "users".into(),
+                status: "differs".into(),
+                x: None,
+                y: None,
+                columns: vec![column("id", "same"), column("email", "onlyInDb")],
+            }],
+            relations: vec![],
+        });
+
+        let table = &scene.tables[0];
+        assert_eq!(table.columns.len(), 2);
+        assert_eq!(table.columns[1].name, "email");
+        assert_eq!(table.columns[1].status, DiffStatus::OnlyInDb);
+        assert_eq!(table.doc_cols, 1, "своя у таблицы по-прежнему одна");
+    }
+
+    /// Внешний ключ, который есть в базе и не нарисован, появляется на холсте
+    /// связью — но связью помеченной.
+    #[test]
+    fn a_foreign_key_the_diagram_lacks_is_drawn_too() {
+        let mut scene = scene_with_users();
+
+        scene.apply_diff(DiffDTO {
+            tables: vec![
+                TableDiffDTO {
+                    id: Some("e1".into()),
+                    name: "users".into(),
+                    status: "same".into(),
+                    x: None,
+                    y: None,
+                    columns: vec![column("id", "same")],
+                },
+                TableDiffDTO {
+                    id: None,
+                    name: "orders".into(),
+                    status: "onlyInDb".into(),
+                    x: Some(400.0),
+                    y: Some(100.0),
+                    columns: vec![column("user_id", "onlyInDb")],
+                },
+            ],
+            relations: vec![RelationDiffDTO {
+                status: "onlyInDb".into(),
+                from_table: "users".into(),
+                from_column: "id".into(),
+                to_table: "orders".into(),
+                to_column: "user_id".into(),
+            }],
+        });
+
+        assert_eq!(scene.relations.len(), 1);
+        assert_eq!(scene.relations[0].status, DiffStatus::OnlyInDb);
+        assert_eq!(scene.relations[0].from, (0, 0));
+        assert_eq!(scene.relations[0].to, (1, 0));
+    }
+
+    /// Таблицу из базы нельзя ни сохранить, ни связать: id ей взять неоткуда.
+    #[test]
+    fn a_table_that_exists_only_in_the_database_cannot_be_linked_or_saved() {
+        let mut scene = scene_with_users();
+        scene.apply_diff(DiffDTO {
+            tables: vec![TableDiffDTO {
+                id: None,
+                name: "orders".into(),
+                status: "onlyInDb".into(),
+                x: Some(400.0),
+                y: Some(100.0),
+                columns: vec![column("id", "onlyInDb")],
+            }],
+            relations: vec![],
+        });
+
+        // Ширину таблице считает первый кадр по отрисованному тексту, а
+        // канваса в тесте нет — без неё в призрака не попасть мышью.
+        scene.tables[1].w = 180.0;
+
+        let (gx, gy) = (scene.tables[1].x, scene.tables[1].y);
+        let py = scene.tables[1].row_y(0);
+        assert!(scene.hit_port(gx, py).is_none(), "портов у призрака нет");
+
+        // Тянем призрака и отпускаем: на холсте он поедет, в базу не поедет.
+        scene.on_mouse_down(gx + 20.0, gy + 10.0);
+        scene.on_mouse_move(gx + 60.0, gy + 10.0);
+        scene.on_mouse_up(gx + 60.0, gy + 10.0);
+
+        assert!(
+            scene.pending_moves.is_empty(),
+            "позицию призрака сохранять некуда"
+        );
+        assert_eq!(scene.selected_ghost_name().as_deref(), Some("orders"));
+        assert!(
+            scene.selected_id().is_none(),
+            "форму правки призрак не открывает"
+        );
+    }
+
+    /// Выход из сравнения возвращает холст к тому, что лежит в документе.
+    #[test]
+    fn leaving_the_comparison_takes_the_database_side_with_it() {
+        let mut scene = scene_with_users();
+        scene.apply_diff(DiffDTO {
+            tables: vec![
+                TableDiffDTO {
+                    id: Some("e1".into()),
+                    name: "users".into(),
+                    status: "differs".into(),
+                    x: None,
+                    y: None,
+                    columns: vec![column("id", "same"), column("email", "onlyInDb")],
+                },
+                TableDiffDTO {
+                    id: None,
+                    name: "orders".into(),
+                    status: "onlyInDb".into(),
+                    x: Some(400.0),
+                    y: Some(100.0),
+                    columns: vec![column("user_id", "onlyInDb")],
+                },
+            ],
+            relations: vec![RelationDiffDTO {
+                status: "onlyInDb".into(),
+                from_table: "users".into(),
+                from_column: "id".into(),
+                to_table: "orders".into(),
+                to_column: "user_id".into(),
+            }],
+        });
+
+        scene.clear_diff();
+
+        assert!(!scene.is_comparing());
+        assert_eq!(scene.tables.len(), 1);
+        assert_eq!(scene.tables[0].columns.len(), 1);
+        assert_eq!(scene.tables[0].status, DiffStatus::Same);
+        assert_eq!(scene.tables[0].columns[0].status, DiffStatus::Same);
+        assert!(
+            scene.relations.is_empty(),
+            "дорисованная связь уходит с призраком"
+        );
+    }
+
+    /// Сцена с областью, одной таблицей внутри неё и одной рядом.
+    fn scene_with_a_frame() -> Scene {
+        let mut scene = Scene::new();
+        scene.tables = vec![
+            Table::new(
+                "inside",
+                "invoice",
+                vec![Column::new("id".to_string(), true, false)],
+                140.0,
+                160.0,
+            ),
+            Table::new(
+                "outside",
+                "audit_log",
+                vec![Column::new("id".to_string(), true, false)],
+                700.0,
+                160.0,
+            ),
+        ];
+        for t in &mut scene.tables {
+            t.w = 180.0;
+        }
+        scene.relations.clear();
+        scene.frames = vec![Frame::new("f1", "Биллинг", 100.0, 100.0, 400.0, 300.0)];
+        scene
+    }
+
+    /// Группировка и держится на этом: область едет вместе с тем, что на ней
+    /// лежит, а соседняя таблица остаётся на месте.
+    #[test]
+    fn a_frame_carries_the_tables_that_lie_inside_it() {
+        let mut scene = scene_with_a_frame();
+        let grab_y = 100.0 - FRAME_TITLE_H * 0.5;
+
+        scene.on_mouse_down(120.0, grab_y);
+        assert!(scene.frame_drag.is_some(), "область берётся за подпись");
+        scene.on_mouse_move(170.0, grab_y + 25.0);
+        scene.on_mouse_up(170.0, grab_y + 25.0);
+
+        assert_eq!((scene.frames[0].x, scene.frames[0].y), (150.0, 125.0));
+        assert_eq!((scene.tables[0].x, scene.tables[0].y), (190.0, 185.0));
+        assert_eq!(
+            (scene.tables[1].x, scene.tables[1].y),
+            (700.0, 160.0),
+            "таблица снаружи области не сдвигается"
+        );
+        assert_eq!(
+            scene.pending_frames.len(),
+            1,
+            "границы области уходят на запись"
+        );
+        assert_eq!(scene.pending_moves.len(), 1);
+        assert_eq!(scene.pending_moves[0].id, "inside");
+    }
+
+    /// Таблица рисуется поверх области — и клик достаётся ей же, иначе таблицу
+    /// на области нельзя было бы ни выделить, ни подвинуть.
+    #[test]
+    fn a_table_lying_on_a_frame_still_takes_the_click() {
+        let mut scene = scene_with_a_frame();
+        let (x, y) = (scene.tables[0].x + 40.0, scene.tables[0].y + 10.0);
+
+        scene.on_mouse_down(x, y);
+
+        assert!(scene.drag.is_some(), "тянется таблица");
+        assert!(scene.frame_drag.is_none(), "а не область под ней");
+        assert_eq!(scene.selected, Some(0));
+        assert_eq!(scene.selected_frame, None);
+    }
+
+    /// По телу области холст панорамируется: иначе область в пол-экрана отняла
+    /// бы у холста пан.
+    #[test]
+    fn a_frames_body_selects_it_but_pans_the_canvas() {
+        let mut scene = scene_with_a_frame();
+
+        scene.on_mouse_down(450.0, 350.0);
+
+        assert_eq!(scene.selected_frame, Some(0), "область выделяется");
+        assert!(scene.pan.is_some(), "и холст при этом панорамируется");
+        assert!(scene.frame_drag.is_none());
+    }
+
+    /// Грань упирается, не доходя до противоположной.
+    #[test]
+    fn a_frame_cannot_be_squeezed_below_its_minimum() {
+        let mut scene = scene_with_a_frame();
+        scene.selected_frame = Some(0);
+
+        scene.on_mouse_down(100.0, 250.0);
+        assert!(scene.frame_resize.is_some(), "середина левой грани — ручка");
+        scene.on_mouse_move(480.0, 250.0);
+        scene.on_mouse_up(480.0, 250.0);
+
+        assert_eq!(scene.frames[0].w, FRAME_MIN_W);
+        assert_eq!(
+            scene.frames[0].x,
+            500.0 - FRAME_MIN_W,
+            "правая грань остаётся на месте"
+        );
+        assert_eq!(scene.pending_frames.len(), 1);
+    }
+
+    /// Сцена не заводит область сама: id выдаёт база, и до ответа команды на
+    /// холсте лежит только черновик.
+    #[test]
+    fn a_drawn_rectangle_waits_for_js_to_turn_it_into_a_frame() {
+        let mut scene = Scene::new();
+        scene.begin_draw_frame();
+
+        scene.on_mouse_down(200.0, 150.0);
+        scene.on_mouse_move(600.0, 450.0);
+        scene.on_mouse_up(600.0, 450.0);
+
+        assert!(!scene.is_drawing(), "режим рисования гаснет сам");
+        assert!(scene.frames.is_empty());
+        let draft = scene.draft_done.as_ref().expect("черновик не сохранился");
+        assert_eq!(
+            (draft.x, draft.y, draft.w, draft.h),
+            (200.0, 150.0, 400.0, 300.0)
+        );
+    }
+
+    /// Одиночный клик в режиме рисования — промах, а не область в пиксель.
+    #[test]
+    fn a_click_in_drawing_mode_draws_nothing() {
+        let mut scene = Scene::new();
+        scene.begin_draw_frame();
+
+        scene.on_mouse_down(200.0, 150.0);
+        scene.on_mouse_up(200.0, 150.0);
+
+        assert!(scene.draft_done.is_none());
+        assert!(!scene.is_drawing());
+    }
+
+    /// Связь колонки с самой собой ничего не описывает: такую сцена не заводит.
+    #[test]
+    fn a_column_cannot_be_linked_to_itself() {
+        let mut scene = scene_with_one_table();
+        scene.relations.clear();
+        scene.link = Some(LinkState {
+            from: (0, 2),
+            from_right: true,
+            cursor: (0.0, 0.0),
+        });
+
+        // Отпускаем ровно на той же строке, из которой тянули.
+        let table = &scene.tables[0];
+        let (x, y) = (table.x + 10.0, table.row_y(2));
+        scene.on_mouse_up(x * scene.scale + scene.cam_x, y * scene.scale + scene.cam_y);
+
+        assert!(
+            scene.relations.is_empty(),
+            "петля колонки на себя не заводится"
+        );
+        assert!(scene.pending_links.is_empty());
     }
 }

@@ -12,6 +12,8 @@ use crate::domain::doc_erd::entity::dto::{CreateEntityDTO, EntityPositionDTO};
 use crate::domain::doc_erd::entity::repository::EntityRepository;
 use crate::domain::doc_erd::entity_relation::dto::RelationEndpointsDTO;
 use crate::domain::doc_erd::entity_relation::repository::RelationRepository;
+use crate::domain::doc_erd::frame::dto::CreateFrameDTO;
+use crate::domain::doc_erd::frame::repository::FrameRepository;
 use crate::domain::environment::environment::dto::{CreateEnvironmentDTO, CreateVariableDTO};
 use crate::domain::environment::environment::repository::EnvironmentRepository;
 use crate::domain::environment::environment_auth::dto::UpdateEnvironmentAuthDTO;
@@ -30,6 +32,7 @@ use crate::repository::sqlite::doc_file::DocFileRepo;
 use crate::repository::sqlite::entity::EntityRepo;
 use crate::repository::sqlite::entity_relation::RelationRepo;
 use crate::repository::sqlite::environment::EnvironmentRepo;
+use crate::repository::sqlite::erd_frame::FrameRepo;
 use crate::repository::sqlite::group::GroupRepo;
 use crate::repository::sqlite::platform::PlatformRepo;
 use crate::repository::sqlite::websocket_message::WebsocketMessageRepo;
@@ -249,6 +252,7 @@ async fn import_node(
             let created = create_tree_node(
                 state,
                 &CreateNodeDTO {
+                    id: None,
                     platform_id: platform_id.to_string(),
                     parent_id,
                     name: node.name.clone(),
@@ -262,6 +266,7 @@ async fn import_node(
             let created = create_tree_node(
                 state,
                 &CreateNodeDTO {
+                    id: None,
                     platform_id: platform_id.to_string(),
                     parent_id,
                     name: node.name.clone(),
@@ -294,6 +299,7 @@ async fn import_doc_api_node(
     let created = create_tree_node(
         state,
         &CreateNodeDTO {
+            id: None,
             platform_id: platform_id.to_string(),
             parent_id,
             name: node.name.clone(),
@@ -320,7 +326,11 @@ async fn import_doc_api_node(
                     auth: endpoint.auth,
                     path_params: endpoint.path_params.clone(),
                     query_params: endpoint.query_params.clone(),
-                    body_params: endpoint.body_params.clone(),
+                    header_params: endpoint.header_params.clone(),
+                    cookie_params: endpoint.cookie_params.clone(),
+                    body: endpoint.body.clone(),
+                    body_fields: endpoint.body_fields.clone(),
+                    body_params: Vec::new(),
                     responses: endpoint.responses.clone(),
                     requests: endpoint
                         .requests
@@ -330,6 +340,7 @@ async fn import_doc_api_node(
                             body_mode: request.body_mode,
                             body: request.body.clone(),
                             headers: request.headers.clone(),
+                            cookies: request.cookies.clone(),
                             path: Default::default(),
                             query: Default::default(),
                             values: request.values.clone(),
@@ -361,6 +372,7 @@ async fn import_doc_ws_node(
     let created = create_tree_node(
         state,
         &CreateNodeDTO {
+            id: None,
             platform_id: platform_id.to_string(),
             parent_id,
             name: node.name.clone(),
@@ -400,6 +412,7 @@ async fn import_doc_erd_node(
     let created = create_tree_node(
         state,
         &CreateNodeDTO {
+            id: None,
             platform_id: platform_id.to_string(),
             parent_id,
             name: node.name.clone(),
@@ -461,6 +474,24 @@ async fn import_doc_erd_node(
                 to_entity,
                 to_field: relation.to_field.clone(),
             })
+            .await?;
+    }
+
+    // Области ни на что не ссылаются: их место на холсте — просто координаты,
+    // и переносятся они как есть, вместе с положением таблиц.
+    let frames = FrameRepo::new(&state.db);
+    for frame in &doc_erd.frames {
+        frames
+            .create_for_erd(
+                &created.id,
+                &CreateFrameDTO {
+                    title: frame.title.clone(),
+                    x: frame.x,
+                    y: frame.y,
+                    w: frame.w,
+                    h: frame.h,
+                },
+            )
             .await?;
     }
 

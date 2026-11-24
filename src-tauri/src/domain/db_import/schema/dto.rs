@@ -31,7 +31,7 @@ pub struct DbRelationDTO {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DbNoticeDTO {
-    /// `selfRef` | `composite` | `duplicate` | `externalRef` | `empty` | `large`
+    /// `composite` | `duplicate` | `externalRef` | `empty` | `large`
     pub kind: String,
     pub message: String,
 }

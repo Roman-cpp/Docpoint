@@ -67,19 +67,10 @@
 	white-space: nowrap;
 }
 
+/* Сегмент пути только описывается: имя задаёт путь, а тип и обязательность
+   видны по самому адресу — колонок остаётся две. */
 .paramRowFixed {
-	grid-template-columns: 1.2fr 0.9fr 1.6fr auto;
-}
-
-.reqToggle {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	font-family: var(--font-sans);
-	font-size: 11px;
-	color: var(--ink-mid);
-	cursor: pointer;
-	white-space: nowrap;
+	grid-template-columns: minmax(110px, 0.9fr) 2.4fr;
 }
 
 .removeBtn {

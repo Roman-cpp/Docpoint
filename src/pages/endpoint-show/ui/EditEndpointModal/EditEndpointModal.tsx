@@ -1,6 +1,12 @@
 import { type FC, useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { type Endpoint, extractPathParams } from "@/entities/doc-api";
+import {
+	type Endpoint,
+	type EndpointParamKind,
+	extractPathParams,
+	type FieldNote,
+	formatDocument,
+} from "@/entities/doc-api";
 import type { Environment } from "@/entities/environment";
 import type { HttpMethod } from "@/entities/shared/http-method";
 import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
@@ -11,6 +17,7 @@ import {
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { PlusIcon, TrashIcon } from "@/shared/svg";
 import {
+	Checkbox,
 	Field,
 	Input,
 	Select,
@@ -18,6 +25,7 @@ import {
 	Toggle,
 } from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
+import { DocumentEditor } from "../DocumentEditor";
 import s from "./EditEndpointModal.module.css";
 
 interface EditEndpointModalProps {
@@ -43,8 +51,9 @@ const TYPE_OPTIONS = [
 	{ value: "array", label: "array" },
 ];
 
-/** Какие параметры правим: сегменты пути, строка запроса или тело. */
-type ParamTab = "path" | "query" | "body";
+/** Что правим: один из видов плоских параметров или тело. Тело — не список
+ *  параметров, а документ, поэтому у него и редактор свой. */
+type ParamTab = EndpointParamKind | "body";
 
 /** Локальная форма одного параметра (без runtime-поля value) */
 interface ParamDraft {
@@ -63,8 +72,21 @@ interface FormValues {
 	auth: boolean;
 	pathParams: ParamDraft[];
 	queryParams: ParamDraft[];
-	bodyParams: ParamDraft[];
+	headerParams: ParamDraft[];
+	cookieParams: ParamDraft[];
+	/** Структура тела документом и примечания к её полям. */
+	body: string;
+	bodyFields: FieldNote[];
 }
+
+/** Подпись списка на каждой вкладке параметров. */
+const SECTION_TITLE: Record<ParamTab, string> = {
+	path: "Сегменты пути",
+	query: "Query-параметры",
+	header: "Заголовки запроса",
+	cookie: "Куки запроса",
+	body: "Тело запроса",
+};
 
 const emptyParam = (): ParamDraft => ({
 	name: "",
@@ -91,15 +113,37 @@ const fromDraft = (d: ParamDraft): Endpoint["queryParams"][number] => ({
 	value: "",
 });
 
+/**
+ * Строки сегментов пути: перечень задаёт сам путь, а описания подтягиваются к
+ * ним по имени.
+ *
+ * Считается на каждый сброс формы, а не берётся из `endpoint.pathParams`:
+ * неописанного сегмента в документе нет, и форма, открытая по сохранённым
+ * значениям, показывала бы пустой раздел у эндпоинта, у которого сегмент в
+ * пути есть — достроить строки успевал только эффект синхронизации при
+ * монтировании, а он не повторяется, пока не меняется сам путь.
+ */
+const pathDrafts = (endpoint: Endpoint): ParamDraft[] => {
+	const described = new Map(
+		(endpoint.pathParams ?? []).map((param) => [param.name, toDraft(param)]),
+	);
+	return extractPathParams(endpoint.path).map(
+		(name) => described.get(name) ?? { ...emptyParam(), name },
+	);
+};
+
 const toFormValues = (endpoint: Endpoint): FormValues => ({
 	method: endpoint.method,
 	path: endpoint.path,
 	name: endpoint.name,
 	description: endpoint.description,
 	auth: endpoint.auth,
-	pathParams: (endpoint.pathParams ?? []).map(toDraft),
+	pathParams: pathDrafts(endpoint),
 	queryParams: (endpoint.queryParams ?? []).map(toDraft),
-	bodyParams: (endpoint.bodyParams ?? []).map(toDraft),
+	headerParams: (endpoint.headerParams ?? []).map(toDraft),
+	cookieParams: (endpoint.cookieParams ?? []).map(toDraft),
+	body: formatDocument(endpoint.body ?? ""),
+	bodyFields: endpoint.bodyFields ?? [],
 });
 
 export const EditEndpointModal: FC<EditEndpointModalProps> = ({
@@ -111,7 +155,7 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 	const selectedEnv = useEnvironmentsStore(selectSelectedEnvironment);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const { control, getValues, handleSubmit, watch, reset } =
+	const { control, getValues, handleSubmit, setValue, watch, reset } =
 		useForm<FormValues>({
 			defaultValues: toFormValues(endpoint),
 		});
@@ -123,12 +167,20 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 
 	const pathArray = useFieldArray({ control, name: "pathParams" });
 	const queryArray = useFieldArray({ control, name: "queryParams" });
-	const bodyArray = useFieldArray({ control, name: "bodyParams" });
+	const headerArray = useFieldArray({ control, name: "headerParams" });
+	const cookieArray = useFieldArray({ control, name: "cookieParams" });
 
 	const [tab, setTab] = useState<ParamTab>("query");
-	const activeArray =
-		tab === "path" ? pathArray : tab === "query" ? queryArray : bodyArray;
-	const arrayName = `${tab}Params` as const;
+	const PARAM_ARRAY = {
+		path: pathArray,
+		query: queryArray,
+		header: headerArray,
+		cookie: cookieArray,
+	};
+	const activeArray = tab === "body" ? queryArray : PARAM_ARRAY[tab];
+	// Тело в этот список не входит: там документ, а не массив параметров.
+	const arrayName =
+		tab === "path" ? ("pathParams" as const) : ("queryParams" as const);
 
 	const close = () => {
 		if (isSaving) return;
@@ -147,7 +199,10 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 				auth: values.auth,
 				pathParams: values.pathParams.map(fromDraft),
 				queryParams: values.queryParams.map(fromDraft),
-				bodyParams: values.bodyParams.map(fromDraft),
+				headerParams: values.headerParams.map(fromDraft),
+				cookieParams: values.cookieParams.map(fromDraft),
+				body: values.body.trim(),
+				bodyFields: values.bodyFields,
 			});
 			onOpenChange(false);
 		} catch (e) {
@@ -176,6 +231,8 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 			segments.map((name) => described.get(name) ?? { ...emptyParam(), name }),
 		);
 	}, [path, getValues, replacePathParams]);
+	const bodyValue = watch("body");
+	const bodyFields = watch("bodyFields");
 	const name = watch("name");
 	const authValue = watch("auth");
 	const canSave = path.trim().length > 0 && name.trim().length > 0 && !isSaving;
@@ -279,104 +336,139 @@ export const EditEndpointModal: FC<EditEndpointModalProps> = ({
 					</button>
 					<button
 						type="button"
+						className={`${s.tab} ${tab === "header" ? s.tabActive : ""}`}
+						onClick={() => setTab("header")}
+					>
+						Headers ({headerArray.fields.length})
+					</button>
+					<button
+						type="button"
+						className={`${s.tab} ${tab === "cookie" ? s.tabActive : ""}`}
+						onClick={() => setTab("cookie")}
+					>
+						Cookies ({cookieArray.fields.length})
+					</button>
+					<button
+						type="button"
 						className={`${s.tab} ${tab === "body" ? s.tabActive : ""}`}
 						onClick={() => setTab("body")}
 					>
-						Body ({bodyArray.fields.length})
+						Тело ({bodyFields.length})
 					</button>
 				</div>
 
-				<div className={s.section}>
-					<div className={s.sectionHead}>
-						<span className={s.sectionTitle}>
-							{tab === "path"
-								? "Сегменты пути"
-								: tab === "query"
-									? "Query-параметры"
-									: "Body-параметры"}
-						</span>
-						{tab !== "path" && (
-							<button
-								type="button"
-								className={s.addBtn}
-								onClick={() => activeArray.append(emptyParam())}
-							>
-								<PlusIcon size={11} /> Добавить
-							</button>
+				{tab === "body" ? (
+					<div className={s.section}>
+						<DocumentEditor
+							body={bodyValue}
+							fields={bodyFields}
+							onChange={({ body, fields }) => {
+								setValue("body", body, { shouldDirty: true });
+								setValue("bodyFields", fields, { shouldDirty: true });
+							}}
+							hint="Вставьте настоящее тело запроса: структура и типы возьмутся из него"
+							empty="Полей нет — опишите структуру на соседней вкладке"
+							placeholder={'{\n  "title": "",\n  "meta": { "labels": [] }\n}'}
+						/>
+					</div>
+				) : (
+					<div className={s.section}>
+						<div className={s.sectionHead}>
+							<span className={s.sectionTitle}>{SECTION_TITLE[tab]}</span>
+							{tab !== "path" && (
+								<button
+									type="button"
+									className={s.addBtn}
+									onClick={() => activeArray.append(emptyParam())}
+								>
+									<PlusIcon size={11} /> Добавить
+								</button>
+							)}
+						</div>
+
+						{activeArray.fields.length === 0 ? (
+							<div className={s.empty}>
+								{tab === "path"
+									? "В пути нет сегментов в фигурных скобках"
+									: "Параметров пока нет"}
+							</div>
+						) : (
+							activeArray.fields.map((f, i) => (
+								<div
+									className={`${s.paramRow} ${tab === "path" ? s.paramRowFixed : ""}`}
+									key={f.id}
+								>
+									{tab === "path" ? (
+										<>
+											<span className={s.paramNameFixed}>{`{${f.name}}`}</span>
+											<Controller
+												control={control}
+												name={`${arrayName}.${i}.desc`}
+												render={({ field }) => (
+													<Input
+														size="sm"
+														{...field}
+														placeholder="что это за сегмент"
+													/>
+												)}
+											/>
+										</>
+									) : (
+										<>
+											<Controller
+												control={control}
+												name={`${arrayName}.${i}.name`}
+												render={({ field }) => (
+													<Input
+														size="sm"
+														{...field}
+														placeholder="name"
+														style={{ fontFamily: "var(--font-mono)" }}
+													/>
+												)}
+											/>
+											<Controller
+												control={control}
+												name={`${arrayName}.${i}.type`}
+												render={({ field }) => (
+													<Select size="sm" options={TYPE_OPTIONS} {...field} />
+												)}
+											/>
+											<Controller
+												control={control}
+												name={`${arrayName}.${i}.desc`}
+												render={({ field }) => (
+													<Input size="sm" {...field} placeholder="описание" />
+												)}
+											/>
+											<Controller
+												control={control}
+												name={`${arrayName}.${i}.required`}
+												render={({ field: { value, onChange, ...field } }) => (
+													<Checkbox
+														size="sm"
+														label="req"
+														checked={value}
+														onChange={(e) => onChange(e.target.checked)}
+														{...field}
+													/>
+												)}
+											/>
+											<button
+												type="button"
+												className={s.removeBtn}
+												onClick={() => activeArray.remove(i)}
+												aria-label="Удалить параметр"
+											>
+												<TrashIcon size={13} />
+											</button>
+										</>
+									)}
+								</div>
+							))
 						)}
 					</div>
-
-					{activeArray.fields.length === 0 ? (
-						<div className={s.empty}>
-							{tab === "path"
-								? "В пути нет сегментов в фигурных скобках"
-								: "Параметров пока нет"}
-						</div>
-					) : (
-						activeArray.fields.map((f, i) => (
-							<div
-								className={`${s.paramRow} ${tab === "path" ? s.paramRowFixed : ""}`}
-								key={f.id}
-							>
-								{tab === "path" ? (
-									<span className={s.paramNameFixed}>{`{${f.name}}`}</span>
-								) : (
-									<Controller
-										control={control}
-										name={`${arrayName}.${i}.name`}
-										render={({ field }) => (
-											<Input
-												size="sm"
-												{...field}
-												placeholder="name"
-												style={{ fontFamily: "var(--font-mono)" }}
-											/>
-										)}
-									/>
-								)}
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.type`}
-									render={({ field }) => (
-										<Select options={TYPE_OPTIONS} {...field} />
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.desc`}
-									render={({ field }) => (
-										<Input size="sm" {...field} placeholder="описание" />
-									)}
-								/>
-								<Controller
-									control={control}
-									name={`${arrayName}.${i}.required`}
-									render={({ field: { value, onChange, ...field } }) => (
-										<label className={s.reqToggle}>
-											<input
-												type="checkbox"
-												checked={value}
-												onChange={(e) => onChange(e.target.checked)}
-												{...field}
-											/>
-											req
-										</label>
-									)}
-								/>
-								{tab !== "path" && (
-									<button
-										type="button"
-										className={s.removeBtn}
-										onClick={() => activeArray.remove(i)}
-										aria-label="Удалить параметр"
-									>
-										<TrashIcon size={13} />
-									</button>
-								)}
-							</div>
-						))
-					)}
-				</div>
+				)}
 			</Dialog.Body>
 			<Dialog.Footer>
 				<Dialog.BtnCancel onClick={close} disabled={isSaving}>

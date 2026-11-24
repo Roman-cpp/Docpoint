@@ -1,7 +1,13 @@
 /** Файл импорта WebSocket-документа: сам сокет плюс его примеры сообщений. */
 export interface ImportWebsocketPayload {
 	version: number;
-	websocket: { name: string; url: string };
+	websocket: {
+		/** Id сокета. По нему импорт находит сокет, в который файл уже заливали,
+		 *  и дописывает его вместо того, чтобы завести рядом второй. */
+		id?: string;
+		name: string;
+		url: string;
+	};
 	messages: { name: string; desc?: string; payload: string }[];
 }
 
@@ -43,6 +49,7 @@ export function parseWebsocketImport(raw: string): ImportWebsocketPayload {
 			"Нет блока websocket — при импорте в каталог он обязателен: из него берутся имя и адрес сокета",
 		);
 
+	const id = text(websocket.id);
 	const name = text(websocket.name);
 	const url = text(websocket.url);
 	if (!name) throw new Error("websocket.name пуст — сокету нужно имя");
@@ -71,7 +78,7 @@ export function parseWebsocketImport(raw: string): ImportWebsocketPayload {
 
 	return {
 		version: 1,
-		websocket: { name, url },
+		websocket: id ? { id, name, url } : { name, url },
 		messages,
 	};
 }

@@ -9,6 +9,26 @@ export { createEndpointApi } from "./endpoint/api/create-endpoint-api";
 export { deleteEndpointApi } from "./endpoint/api/delete-endpoint-api";
 export { updateEndpointApi } from "./endpoint/api/update-endpoint-api";
 export { updateParamValueApi } from "./endpoint/api/update-param-value-api";
+export type {
+	DocumentNode,
+	DocumentTree,
+} from "./endpoint/lib/document-tree";
+export {
+	buildDocumentTree,
+	countDocumentNodes,
+} from "./endpoint/lib/document-tree";
+export { readAt, writeAt } from "./endpoint/lib/document-value";
+export type { PathSegment } from "./endpoint/lib/field-path";
+export {
+	childPath,
+	isInsideList,
+	itemPath,
+	parseFieldPath,
+} from "./endpoint/lib/field-path";
+export {
+	formatDocument,
+	isJsonDocument,
+} from "./endpoint/lib/format-document";
 export { extractPathParams } from "./endpoint/lib/path";
 export type {
 	CreateEndpointDTO,
@@ -17,9 +37,10 @@ export type {
 } from "./endpoint/model/endpoint.dto";
 export type {
 	Endpoint,
+	EndpointParamKind,
 	EndpointResponse,
+	FieldNote,
 	Param,
-	ResponseField,
 } from "./endpoint/model/endpoint.type";
 export {
 	createEndpointRequestApi,
@@ -31,6 +52,7 @@ export type {
 	BodyMode,
 	EndpointRequest,
 	ParamKind,
+	RequestCookie,
 	RequestHeader,
 	RequestParamValue,
 	UpdateEndpointRequestDTO,

@@ -1,0 +1,55 @@
+.block {
+	margin-bottom: 34px;
+	scroll-margin-top: 58px;
+}
+
+.frame {
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--code-bg);
+	overflow: hidden;
+}
+
+.tabs {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.tab {
+	padding: 4px 10px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink-low);
+	font-size: var(--fs-11);
+	cursor: pointer;
+	transition:
+		color var(--t-base),
+		background var(--t-base),
+		border-color var(--t-base);
+}
+.tab:hover {
+	color: var(--ink);
+}
+.active {
+	border-color: var(--border);
+	background: var(--cat-bg);
+	color: var(--ink);
+}
+
+.code {
+	margin: 0;
+	padding: 14px 16px;
+	max-height: 340px;
+	overflow: auto;
+	color: var(--code-ink);
+	font-family: var(--font-mono);
+	font-size: var(--fs-12);
+	line-height: var(--lh-normal);
+	white-space: pre;
+	tab-size: 2;
+}

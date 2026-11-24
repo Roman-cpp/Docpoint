@@ -37,3 +37,21 @@ pub struct AppState {
     /// [`ClientPool::get`](crate::infrastructure::http_client::ClientPool::get).
     pub http_clients: ClientPool,
 }
+
+#[cfg(test)]
+impl AppState {
+    /// Состояние поверх тестовой базы. Сервисам импорта нужна только она, но
+    /// узлы они заводят общим путём создания, а тому нужно всё состояние
+    /// целиком. Каталоги отдаются временные: документы, которые кладут тела на
+    /// диск, в этих тестах не участвуют, но существовать каталоги обязаны.
+    pub fn for_tests(db: SqlitePool, dir: &std::path::Path) -> Self {
+        Self {
+            db,
+            selected_environment_id: Mutex::new(None),
+            content_dir: dir.join("content"),
+            files_dir: dir.join("files"),
+            ws_conns: DashMap::new(),
+            http_clients: ClientPool::new(),
+        }
+    }
+}

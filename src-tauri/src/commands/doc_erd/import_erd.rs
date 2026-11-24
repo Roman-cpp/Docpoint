@@ -1,5 +1,6 @@
 use crate::domain::catalog::dto::CreateNodeDTO;
 use crate::domain::doc_erd::import::dto::{ImportRelationDTO, ImportTableDTO};
+use crate::domain::doc_erd::import::entity::ImportErdReport;
 use crate::state::AppState;
 use tauri::State;
 
@@ -9,7 +10,7 @@ pub async fn import_erd(
     node: CreateNodeDTO,
     tables: Vec<ImportTableDTO>,
     relations: Vec<ImportRelationDTO>,
-) -> Result<String, String> {
+) -> Result<ImportErdReport, String> {
     crate::logging::logged(
         "import_erd",
         crate::service::import_erd(&state, node, tables, relations).await,

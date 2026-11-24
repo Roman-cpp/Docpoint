@@ -34,6 +34,24 @@ pub enum NodePayload {
 }
 
 impl NodePayload {
+    /// Префикс doc-api, если нагрузка — документ API. Импорт берёт его из
+    /// заголовка файла и на ветке обновления, где узел не создаётся.
+    pub fn doc_api_prefix(&self) -> Option<&str> {
+        match self {
+            Self::DocApi { prefix } => Some(prefix),
+            _ => None,
+        }
+    }
+
+    /// Адрес doc-ws, если нагрузка — WebSocket-документ. Нужен импорту на
+    /// ветке обновления, где узел не создаётся.
+    pub fn doc_ws_url(&self) -> Option<&str> {
+        match self {
+            Self::DocWs { url } => Some(url),
+            _ => None,
+        }
+    }
+
     pub fn kind(&self) -> NodeKind {
         match self {
             Self::Catalog => NodeKind::Catalog,
@@ -49,6 +67,10 @@ impl NodePayload {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateNodeDTO {
+    /// Id создаваемого узла. `None` — сгенерировать; задаёт его только импорт,
+    /// которому id приезжает из файла.
+    #[serde(default)]
+    pub id: Option<String>,
     pub platform_id: String,
     /// `None` — создать в корне платформы.
     #[serde(default)]

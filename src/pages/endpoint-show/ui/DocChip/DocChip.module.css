@@ -1,0 +1,56 @@
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 2px 8px;
+	border: 1px solid transparent;
+	border-radius: var(--r-pill);
+	font-size: var(--fs-11);
+	line-height: 1.6;
+	white-space: nowrap;
+}
+
+.mono {
+	font-family: var(--font-mono);
+	font-size: var(--fs-10);
+	letter-spacing: 0.2px;
+}
+
+/* Подпись внутри чипа — тише значения: «по умолчанию 20». */
+.label {
+	color: var(--ink-low);
+	font-family: var(--font-sans);
+	font-size: var(--fs-10);
+	letter-spacing: 0.3px;
+}
+
+.neutral {
+	background: var(--cat-bg);
+	border-color: var(--border);
+	color: var(--cat-ink);
+}
+
+.accent {
+	background: var(--blue-bg);
+	border-color: var(--blue-border);
+	color: var(--blue);
+}
+
+.warn {
+	background: var(--amber-bg);
+	border-color: var(--amber-border);
+	color: var(--amber);
+}
+
+.danger {
+	background: var(--red-bg);
+	border-color: var(--red-border);
+	color: var(--red);
+}
+
+/* Для того, что есть, но говорит шёпотом: тип поля, счётчик. */
+.muted {
+	background: transparent;
+	border-color: var(--border);
+	color: var(--ink-low);
+}

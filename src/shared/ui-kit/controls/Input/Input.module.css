@@ -13,6 +13,10 @@
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--r-md);
+	/* Явная строка вместо `normal`: иначе высоту поля задают метрики шрифта, и
+	   моноширинный Input оказывается не одной высоты с соседним Select. Значение
+	   совпадает с тем, что движок считал сам, — ничего не съезжает. */
+	line-height: var(--lh-tight);
 	padding: 8px 12px;
 	transition:
 		border-color var(--t-fast),

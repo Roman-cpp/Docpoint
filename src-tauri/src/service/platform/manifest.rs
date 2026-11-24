@@ -10,10 +10,14 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::domain::catalog::entity::NodeKind;
-use crate::domain::doc_api::endpoint::entity::{ParamDef, ResponseDef};
-use crate::domain::doc_api::endpoint_request::entity::{BodyMode, ParamValue, RequestHeader};
+use crate::domain::doc_api::endpoint::entity::{FieldDef, ParamDef, ResponseDef};
+use crate::domain::doc_api::endpoint_request::entity::{
+    BodyMode, ParamValue, RequestCookie, RequestHeader,
+};
+use crate::domain::doc_api::json_doc;
 use crate::domain::doc_erd::entity::entity::Entity;
 use crate::domain::doc_erd::entity_relation::entity::EntityRelation;
+use crate::domain::doc_erd::frame::entity::Frame;
 use crate::domain::environment::environment::entity::EnvValue;
 use crate::domain::environment::environment_auth::dto::EnvironmentAuthDTO;
 use crate::domain::environment::environment_proxy::dto::EnvironmentProxyDTO;
@@ -102,7 +106,19 @@ pub struct ManifestEndpoint {
     pub path_params: Vec<ParamDef>,
     #[serde(rename = "queryParams")]
     pub query_params: Vec<ParamDef>,
-    #[serde(rename = "bodyParams")]
+    #[serde(rename = "headerParams", default)]
+    pub header_params: Vec<ParamDef>,
+    #[serde(rename = "cookieParams", default)]
+    pub cookie_params: Vec<ParamDef>,
+    /// Структура тела запроса документом; читается и объектом, и строкой —
+    /// архивы, выгруженные до перехода, несут прежний `bodyParams`.
+    #[serde(default, deserialize_with = "json_doc::from_json")]
+    pub body: String,
+    #[serde(rename = "bodyFields", default)]
+    pub body_fields: Vec<FieldDef>,
+    /// Прежняя форма описания тела: пишется только в старых архивах, в новые
+    /// не попадает.
+    #[serde(rename = "bodyParams", default, skip_serializing_if = "Vec::is_empty")]
     pub body_params: Vec<ParamDef>,
     pub responses: HashMap<String, ResponseDef>,
     /// Сохранённые наборы «Try it» — экспорт ходит за ними отдельно
@@ -120,6 +136,8 @@ pub struct ManifestEndpointRequest {
     #[serde(default)]
     pub headers: Vec<RequestHeader>,
     #[serde(default)]
+    pub cookies: Vec<RequestCookie>,
+    #[serde(default)]
     pub values: Vec<ParamValue>,
 }
 
@@ -136,11 +154,15 @@ pub struct ManifestWebsocketMessage {
     pub desc: String,
 }
 
-/// Таблицы и связи ERD-диаграммы. `Entity`/`EntityRelation` читаются из базы
-/// уже в этой форме и переиспользуются как есть — их `id` внутри файла служит
-/// только ключом для связей.
+/// Таблицы, связи и области ERD-диаграммы. `Entity`/`EntityRelation`/`Frame`
+/// читаются из базы уже в этой форме и переиспользуются как есть — их `id`
+/// внутри файла служит только ключом для связей.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ManifestDocErd {
     pub entities: Vec<Entity>,
     pub relations: Vec<EntityRelation>,
+    /// Области появились позже таблиц и связей: в архивах, снятых до них, поля
+    /// нет, и диаграмма импортируется просто без группировки.
+    #[serde(default)]
+    pub frames: Vec<Frame>,
 }

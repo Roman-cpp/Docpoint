@@ -18,7 +18,12 @@ export interface ImportErdRelation {
 /** Разобранный файл импорта ERD. */
 export interface ImportErdPayload {
 	version: 1;
-	erd: { name: string };
+	erd: {
+		/** Id диаграммы. По нему импорт находит диаграмму, в которую файл уже
+		 *  заливали, и дописывает её вместо того, чтобы завести рядом вторую. */
+		id?: string;
+		name: string;
+	};
 	tables: ImportErdTable[];
 	relations: ImportErdRelation[];
 }

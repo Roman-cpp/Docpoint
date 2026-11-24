@@ -36,7 +36,10 @@ import {
 import { getEnvDotColor } from "@/shared/lib/env-color";
 import { joinUrl } from "@/shared/lib/url";
 import { BoltIcon, CopyIcon, TrashIcon } from "@/shared/svg";
-import { createHeaderDraft, type HeaderDraft } from "@/shared/ui-kit/controls";
+import {
+	createNameValueDraft,
+	type NameValueDraft,
+} from "@/shared/ui-kit/controls";
 import { Dialog } from "@/shared/ui-kit/modal";
 import { Header } from "@/widgets/layout";
 import { AuthRequestSection } from "../AuthRequestSection";
@@ -71,7 +74,7 @@ const asBodyContentType = (value: string): BodyContentType =>
 	value === "form" ? "form" : "json";
 
 /** Заголовки логин-запроса как редактируемый список ↔ как объект для API. */
-const headersToRecord = (headers: HeaderDraft[]): Record<string, string> => {
+const headersToRecord = (headers: NameValueDraft[]): Record<string, string> => {
 	const record: Record<string, string> = {};
 	for (const h of headers) {
 		const name = h.name.trim();
@@ -81,9 +84,9 @@ const headersToRecord = (headers: HeaderDraft[]): Record<string, string> => {
 	return record;
 };
 
-const recordToHeaders = (record: Record<string, string>): HeaderDraft[] =>
+const recordToHeaders = (record: Record<string, string>): NameValueDraft[] =>
 	Object.entries(record).map(([name, value]) => ({
-		...createHeaderDraft(),
+		...createNameValueDraft(),
 		name,
 		value,
 	}));
@@ -133,7 +136,7 @@ export const EnvironmentPage: FC = () => {
 	const [authBody, setAuthBody] = useState("");
 	const [bodyContentType, setBodyContentType] =
 		useState<BodyContentType>("json");
-	const [extraHeaders, setExtraHeaders] = useState<HeaderDraft[]>([]);
+	const [extraHeaders, setExtraHeaders] = useState<NameValueDraft[]>([]);
 	const [authTokenPath, setAuthTokenPath] = useState("");
 	const [authTokenPlacement, setAuthTokenPlacement] =
 		useState<TokenPlacement>("header");

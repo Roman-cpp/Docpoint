@@ -47,6 +47,13 @@
 	color: var(--ink);
 }
 
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
 .addBtn {
 	display: inline-flex;
 	align-items: center;
@@ -79,9 +86,16 @@
 	color: var(--ink-mid);
 }
 
+.stage {
+	display: flex;
+	gap: 12px;
+	flex: 1;
+	min-height: 0;
+}
+
 .canvas {
 	flex: 1;
-	width: 100%;
+	min-width: 0;
 	min-height: 0;
 	display: block;
 	border: 1px solid var(--border);

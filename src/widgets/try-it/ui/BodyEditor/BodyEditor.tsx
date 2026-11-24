@@ -1,13 +1,35 @@
-import type { FC } from "react";
-import type { BodyMode, Endpoint } from "@/entities/doc-api";
+import { type FC, useMemo } from "react";
+import type { BodyMode, DocumentNode, Endpoint } from "@/entities/doc-api";
 import {
-	bodyFieldText,
-	parseBodyObject,
-	setBodyField,
-} from "../../lib/buildRequest";
+	buildDocumentTree,
+	isInsideList,
+	readAt,
+	writeAt,
+} from "@/entities/doc-api";
+import { coerceParamValue, parseBodyObject } from "../../lib/buildRequest";
 import { formatJson, getJsonError } from "../../lib/validateJson";
 import { ParamField } from "../ParamField";
 import s from "./BodyEditor.module.css";
+
+/** Листья документа: поля, у которых нет вложенных. */
+function leaves(nodes: DocumentNode[]): DocumentNode[] {
+	return nodes.flatMap((node) =>
+		node.children.length > 0 ? leaves(node.children) : [node],
+	);
+}
+
+/** Значение поля формы: строка как есть, остальное — как в JSON. */
+function fieldText(value: unknown): string {
+	if (value === undefined) return "";
+	if (value === null) return "null";
+	return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+/** Что записать обратно в документ: пустая строка убирает поле. */
+function fieldValue(text: string, type: string): unknown {
+	if (text.trim() === "") return undefined;
+	return coerceParamValue(text, type);
+}
 
 const MODES: { mode: BodyMode; label: string }[] = [
 	{ mode: "fields", label: "Fields" },
@@ -34,11 +56,21 @@ export const BodyEditor: FC<BodyEditorProps> = ({
 	onModeChange,
 	onBodyChange,
 }) => {
-	const bodyParams = endpoint.bodyParams ?? [];
 	const jsonError = getJsonError(body);
 	// Форма умеет править только JSON-объект: массив, скаляр или сломанный
 	// JSON редактируются лишь текстом.
 	const doc = parseBodyObject(body);
+
+	// Поля формы — листья документа схемы. Поля внутри массивов пропускаются:
+	// какой именно элемент правит строка формы, сказать нельзя, и такие поля
+	// остаются на вкладке JSON.
+	const fields = useMemo(
+		() =>
+			leaves(
+				buildDocumentTree(endpoint.body ?? "", endpoint.bodyFields ?? []).nodes,
+			).filter((node) => !isInsideList(node.path)),
+		[endpoint.body, endpoint.bodyFields],
+	);
 
 	return (
 		<div className={s.group}>
@@ -63,25 +95,29 @@ export const BodyEditor: FC<BodyEditorProps> = ({
 					<div className={s.empty}>
 						Тело не является JSON-объектом — правьте его в режиме JSON.
 					</div>
-				) : bodyParams.length > 0 ? (
-					bodyParams.map((param) => (
+				) : fields.length > 0 ? (
+					fields.map((field) => (
 						<ParamField
-							key={param.name}
-							name={param.name}
-							required={param.required}
-							type={param.type}
-							placeholder={
-								param.default ? `default: ${param.default}` : param.desc
-							}
-							value={bodyFieldText(doc, param.name, param.value)}
+							key={field.path}
+							name={field.path}
+							required={field.required}
+							type={field.format || field.type}
+							placeholder={field.desc || field.sample}
+							value={fieldText(readAt(doc, field.path))}
 							onChange={(value) =>
-								onBodyChange(setBodyField(body, param.name, param.type, value))
+								onBodyChange(
+									writeAt(
+										body,
+										field.path,
+										fieldValue(value, field.format || field.type),
+									),
+								)
 							}
 						/>
 					))
 				) : (
 					<div className={s.empty}>
-						В схеме эндпоинта нет полей тела — переключитесь на JSON.
+						У эндпоинта не описана структура тела — переключитесь на JSON.
 					</div>
 				)
 			) : (

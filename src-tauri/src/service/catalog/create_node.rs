@@ -32,14 +32,17 @@ pub async fn create_tree_node(
 ) -> Result<CatalogNode, String> {
     let catalog = CatalogRepo::new(&state.db);
 
-    let created = catalog
-        .create(&NewNode {
-            platform_id: &dto.platform_id,
-            parent_id: dto.parent_id.as_deref(),
-            kind: dto.payload.kind(),
-            name: &dto.name,
-        })
-        .await?;
+    let node = NewNode {
+        platform_id: &dto.platform_id,
+        parent_id: dto.parent_id.as_deref(),
+        kind: dto.payload.kind(),
+        name: &dto.name,
+    };
+
+    let created = match &dto.id {
+        Some(id) => catalog.create_with_id(id, &node).await?,
+        None => catalog.create(&node).await?,
+    };
 
     if let Err(error) = write_payload(state, &created.id, &dto.payload).await {
         // Ошибка отката не должна подменять собой настоящую причину.

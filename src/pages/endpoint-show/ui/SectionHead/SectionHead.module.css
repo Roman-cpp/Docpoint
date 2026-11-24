@@ -1,0 +1,80 @@
+.head {
+	margin-bottom: 12px;
+}
+
+.titleRow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 24px;
+}
+
+.title {
+	font-family: var(--font-serif);
+	font-size: var(--fs-15);
+	color: var(--ink);
+	line-height: var(--lh-tight);
+}
+
+/* Раздел отбивается сверху линией — читается как новая глава. */
+.section {
+	margin-bottom: 18px;
+	padding-top: 8px;
+}
+.section .title {
+	font-size: var(--fs-20);
+}
+
+.count {
+	min-width: 18px;
+	padding: 1px 6px;
+	border-radius: var(--r-pill);
+	background: var(--cat-bg);
+	color: var(--ink-low);
+	font-size: var(--fs-10);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: auto;
+}
+
+.edit {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 8px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	color: var(--ink-low);
+	font-size: var(--fs-11);
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity var(--t-base),
+		color var(--t-base),
+		border-color var(--t-base);
+}
+
+/* Кнопка правки проявляется при наведении на блок — читать документацию она
+   не мешает, но и искать её не приходится. */
+.head:hover .edit,
+.edit:focus-visible {
+	opacity: 1;
+}
+.edit:hover {
+	border-color: var(--border);
+	color: var(--ink);
+}
+
+.hint {
+	margin-top: 4px;
+	color: var(--ink-low);
+	font-size: var(--fs-12);
+	line-height: var(--lh-snug);
+}

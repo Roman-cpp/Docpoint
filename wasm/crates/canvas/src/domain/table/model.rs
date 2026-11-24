@@ -24,6 +24,8 @@ pub enum ColKind {
     Nullable,
 }
 
+use super::super::diff::model::DiffStatus;
+
 /// A single column within a table.
 ///
 /// `pk` and `nullable` are the column's own facts, carried over from the
@@ -35,6 +37,8 @@ pub struct Column {
     pub pk: bool,
     pub nullable: bool,
     pub kind: ColKind,
+    /// Откуда эта колонка известна. Вне сравнения — `Same`.
+    pub status: DiffStatus,
 }
 
 impl Column {
@@ -53,6 +57,7 @@ impl Column {
             } else {
                 ColKind::Plain
             },
+            status: DiffStatus::Same,
         }
     }
 }
@@ -69,6 +74,11 @@ pub struct Table {
     pub w: f64,
     pub name: String,
     pub columns: Vec<Column>,
+    /// Сколько колонок принадлежит документу. Сравнение дописывает в хвост те,
+    /// что нашлись только в базе, и по этому числу их потом отрезают обратно.
+    pub doc_cols: usize,
+    /// Откуда эта таблица известна. Вне сравнения — `Same`.
+    pub status: DiffStatus,
 }
 
 impl Table {
@@ -93,7 +103,9 @@ impl Table {
             y,
             w: 0.0,
             name: name.into(),
+            doc_cols: columns.len(),
             columns,
+            status: DiffStatus::Same,
         }
     }
 

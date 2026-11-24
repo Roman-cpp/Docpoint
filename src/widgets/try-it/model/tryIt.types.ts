@@ -1,7 +1,7 @@
 import type { BodyMode } from "@/entities/doc-api";
-import type { HeaderDraft } from "@/shared/ui-kit/controls";
+import type { NameValueDraft } from "@/shared/ui-kit/controls";
 
-export type { HeaderDraft };
+export type { NameValueDraft };
 
 /**
  * Значения path- и query-параметров одного набора, индексированные ключом
@@ -20,6 +20,8 @@ export interface RequestDraft {
 	name: string;
 	bodyMode: BodyMode;
 	body: string;
-	headers: HeaderDraft[];
+	headers: NameValueDraft[];
+	/** Куки набора: отдельной строкой в UI, одним заголовком при отправке. */
+	cookies: NameValueDraft[];
 	values: ParamValues;
 }

@@ -1,134 +1,72 @@
-import type { FC, ReactNode } from "react";
-import { useState } from "react";
+import { type FC, type ReactNode, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "@/core/toast";
 import {
-	type Endpoint,
+	buildDocumentTree,
+	countDocumentNodes,
+	type EndpointParamKind,
 	extractPathParams,
+	formatDocument,
 	type Param,
 } from "@/entities/doc-api";
-import type { HttpMethod } from "@/entities/shared/http-method";
-import { actionUpdateEndpoint, useDocApiStore } from "@/features/doc-api";
-import { getStatusDotColor } from "@/shared/lib/status-color";
-import s from "@/shared/styles/apiDocs.module.css";
-import { CheckIcon, CopyIcon, PencilIcon } from "@/shared/svg";
-import { JsonCode } from "@/shared/ui-kit/data-display";
+import {
+	actionUpdateEndpoint,
+	selectDocApi,
+	selectGroups,
+	useDocApiStore,
+} from "@/features/doc-api";
+import {
+	selectSelectedEnvironment,
+	useEnvironmentsStore,
+} from "@/features/environment";
+import { cx } from "@/shared/lib/cx";
+import { getMethodStyle } from "@/shared/lib/method-color";
+import { joinUrl } from "@/shared/lib/url";
+import { LockIcon, WarningIcon } from "@/shared/svg";
+import { MarkdownView } from "@/shared/ui-kit/MarkdownView";
 import { CatalogBackLink } from "@/widgets/catalog-explorer";
+import type { DocEndpoint } from "../../lib/doc-endpoint";
+import { buildRequestPreview } from "../../lib/request-preview";
+import { buildSnippets } from "../../lib/snippets";
+import { useActiveSection } from "../../model/useActiveSection";
+import { CopyButton } from "../CopyButton";
+import { DocChip } from "../DocChip";
+import { EditBodyModal } from "../EditBodyModal";
 import { EditJsonModal } from "../EditJsonModal";
-import { EditParamsModal, type ParamKind } from "../EditParamsModal";
+import { EditParamsModal } from "../EditParamsModal";
 import { EditResponsesModal } from "../EditResponsesModal";
+import { FieldTree } from "../FieldTree";
+import { ParamsBlock } from "../ParamsBlock";
+import { ResponsesBlock } from "../ResponsesBlock";
+import { SectionHead } from "../SectionHead";
+import { SnippetBlock } from "../SnippetBlock";
+import s from "./EndpointPage.module.css";
 
-const METHOD_STYLES: Record<HttpMethod, { color: string; bg: string }> = {
-	GET: { color: "var(--get)", bg: "var(--get-bg)" },
-	POST: { color: "var(--post)", bg: "var(--post-bg)" },
-	PUT: { color: "var(--put)", bg: "var(--put-bg)" },
-	PATCH: { color: "var(--patch)", bg: "var(--patch-bg)" },
-	DELETE: { color: "var(--delete)", bg: "var(--delete-bg)" },
-	HEAD: { color: "var(--delete)", bg: "var(--delete-bg)" },
-};
+/** Разделы страницы для навигации: подпись и якорь. */
+const SECTIONS = [
+	{ id: "overview", label: "Обзор" },
+	{ id: "request", label: "Запрос" },
+	{ id: "responses", label: "Ответы" },
+	{ id: "snippet", label: "Пример" },
+];
 
-/* Цвет бейджа зависит от метода, поэтому он единственный остаётся инлайном. */
-const MethodBadge: FC<{ method: HttpMethod }> = ({ method }) => {
-	const ms = METHOD_STYLES[method];
-	return (
-		<span
-			className={s.methodBadge}
-			style={{ color: ms.color, background: ms.bg }}
-		>
-			{method}
-		</span>
-	);
-};
-
-export const CopyBtn: FC<{ text: string }> = ({ text }) => {
-	const [copied, setCopied] = useState(false);
-	const copy = () => {
-		navigator.clipboard?.writeText(text).catch(() => {});
-		setCopied(true);
-		setTimeout(() => setCopied(false), 1500);
-	};
-	return (
-		<button className={s.copyBtn} onClick={copy} type="button">
-			{copied ? (
-				<>
-					<CheckIcon size={11} /> Copied
-				</>
+/** Путь с выделенными сегментами: `{id}` виден до чтения описаний. */
+const PathLine: FC<{ path: string }> = ({ path }) => (
+	<span className={s.path}>
+		{path.split(/(\{\w+\})/g).map((part, i) =>
+			part.startsWith("{") ? (
+				<span key={`${part}-${i}`} className={s.pathSegment}>
+					{part}
+				</span>
 			) : (
-				<>
-					<CopyIcon size={11} /> Copy
-				</>
-			)}
-		</button>
-	);
-};
-
-/** Заголовок секции документа с кнопкой правки. */
-const SectionHead: FC<{ title: string; onEdit?: () => void }> = ({
-	title,
-	onEdit,
-}) => (
-	<h2 className={s.sectionHead}>
-		{title}
-		{onEdit && (
-			<button
-				type="button"
-				className={s.sectionEdit}
-				onClick={onEdit}
-				aria-label={`Редактировать: ${title}`}
-			>
-				<PencilIcon size={12} /> Изменить
-			</button>
+				part
+			),
 		)}
-	</h2>
-);
-
-const PARAM_LABEL: Record<ParamKind, string> = {
-	path: "Path params",
-	query: "Query params",
-	body: "Request body",
-};
-
-/** Таблица параметров одного вида. Без параметров — пустое состояние, чтобы
- *  секцию было откуда открыть на правку. */
-const ParamsTable: FC<{
-	kind: ParamKind;
-	params: Param[];
-	onEdit: () => void;
-}> = ({ kind, params, onEdit }) => (
-	<div className={s.sectionBlock}>
-		<SectionHead title={PARAM_LABEL[kind]} onEdit={onEdit} />
-		{params.length === 0 ? (
-			<div className={s.sectionEmpty}>
-				{kind === "path"
-					? "Сегменты пути не описаны"
-					: "Параметров нет — добавьте через «Изменить»"}
-			</div>
-		) : (
-			<div className={s.paramsTable}>
-				<div className={s.paramsTableHead}>
-					<span>Name</span>
-					<span>Type</span>
-					<span>Description</span>
-					<span>Default</span>
-				</div>
-				{params.map((p) => (
-					<div className={s.paramRow} key={p.name}>
-						<span className={s.paramName}>
-							{p.name}
-							{p.required && <span className={s.paramRequired}>*</span>}
-						</span>
-						<span className={s.paramType}>{p.type}</span>
-						<span className={s.paramDesc}>{p.desc}</span>
-						<span className={s.paramDefault}>{p.default ?? "—"}</span>
-					</div>
-				))}
-			</div>
-		)}
-	</div>
+	</span>
 );
 
 interface EndpointPageProps {
-	detail: Endpoint;
+	detail: DocEndpoint;
 	/** Документ, которому принадлежит эндпоинт, — для хлебных крошек. */
 	docId?: string;
 	docName?: string;
@@ -136,6 +74,12 @@ interface EndpointPageProps {
 	actions?: ReactNode;
 }
 
+/**
+ * Страница одного эндпоинта: всё описание сверху вниз — шапка с адресом,
+ * запрос, ответы, готовый пример вызова. Разделы одинаковые у каждого
+ * эндпоинта и стоят в порядке, в котором запрос и читают: куда идём, что
+ * посылаем, что получаем, как позвать.
+ */
 export const EndpointPage: FC<EndpointPageProps> = ({
 	detail,
 	docId,
@@ -143,13 +87,26 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 	actions,
 }) => {
 	const updateEndpoint = useDocApiStore(actionUpdateEndpoint);
+	const doc = useDocApiStore(selectDocApi);
+	const groups = useDocApiStore(selectGroups);
+	const env = useEnvironmentsStore(selectSelectedEnvironment);
+
+	const rootRef = useRef<HTMLDivElement>(null);
+	const activeSection = useActiveSection(
+		SECTIONS.map((section) => section.id),
+		rootRef,
+	);
+
 	const [selectedResponse, setSelectedResponse] = useState<string | null>(null);
 	const [jsonModalOpen, setJsonModalOpen] = useState(false);
-	const [editingParams, setEditingParams] = useState<ParamKind | null>(null);
+	const [editingParams, setEditingParams] = useState<EndpointParamKind | null>(
+		null,
+	);
+	const [editingBody, setEditingBody] = useState(false);
 	const [editingResponses, setEditingResponses] = useState(false);
 
-	// Сегменты пути показываем по самому пути: описание к ним необязательно,
-	// но сам сегмент в документации быть обязан.
+	// Перечень сегментов задаёт сам путь: неописанный сегмент всё равно едет в
+	// документацию — просто строкой без пояснения.
 	const described = new Map(
 		(detail.pathParams ?? []).map((param): [string, Param] => [
 			param.name,
@@ -166,6 +123,7 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 				value: null,
 			},
 	);
+
 	// Выбранный ответ мог исчезнуть после правки — тогда показываем первый.
 	const responseKeys = Object.keys(detail.responses).sort();
 	const activeResponse =
@@ -173,30 +131,71 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 			? selectedResponse
 			: (responseKeys[0] ?? "");
 	const activeResp = detail.responses[activeResponse];
-	const activeExample = activeResp?.example ?? "";
+	const activeDocument = formatDocument(activeResp?.body ?? "");
 
-	/** Пример ответа из окна JSON уходит на бэкенд вместе с остальным эндпоинтом. */
-	const saveExample = async (json: string) => {
+	const envBase = joinUrl(env?.baseUrl, env?.prefix);
+	const preview = useMemo(
+		() =>
+			buildRequestPreview({
+				endpoint: detail,
+				baseUrl: envBase,
+				docPrefix: doc?.prefix,
+			}),
+		[detail, envBase, doc?.prefix],
+	);
+	const snippets = useMemo(() => buildSnippets(preview), [preview]);
+
+	// Форму тела задаёт документ, примечания цепляются к его полям по пути.
+	const bodyTree = useMemo(
+		() => buildDocumentTree(detail.body ?? "", detail.bodyFields ?? []),
+		[detail.body, detail.bodyFields],
+	);
+
+	// Раздел выводится, только если в нём что-то есть: у простого GET-эндпоинта
+	// страница иначе превращается в перечень пустых таблиц.
+	const has = {
+		path: pathParams.length > 0,
+		query: (detail.queryParams ?? []).length > 0,
+		header: (detail.headerParams ?? []).length > 0,
+		cookie: (detail.cookieParams ?? []).length > 0,
+		body:
+			(detail.body ?? "").trim() !== "" || (detail.bodyFields ?? []).length > 0,
+		responses: responseKeys.length > 0,
+	};
+
+	const group = groups?.find((candidate) =>
+		candidate.endpoints.some((endpoint) => endpoint.id === detail.id),
+	);
+	const method = getMethodStyle(detail.method);
+
+	/** Структура ответа из окна JSON уходит вместе с остальным эндпоинтом. */
+	const saveDocument = async (json: string) => {
 		if (!activeResp) return;
 		try {
 			await updateEndpoint({
 				...detail,
 				responses: {
 					...detail.responses,
-					[activeResponse]: { ...activeResp, example: json },
+					[activeResponse]: { ...activeResp, body: json },
 				},
 			});
 		} catch (err) {
 			toast({
 				variant: "error",
-				title: "Не удалось сохранить пример ответа",
+				title: "Не удалось сохранить структуру ответа",
 				description: err instanceof Error ? err.message : String(err),
 			});
 		}
 	};
 
+	const goTo = (id: string) => {
+		rootRef.current
+			?.querySelector(`#${id}`)
+			?.scrollIntoView({ behavior: "smooth", block: "start" });
+	};
+
 	return (
-		<div>
+		<div className={s.doc} ref={rootRef}>
 			<div className={s.breadcrumb}>
 				{docId && (
 					<>
@@ -208,128 +207,174 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 						<span className={s.bcSep}>/</span>
 					</>
 				)}
+				{group && (
+					<>
+						<span className={s.bcItem}>{group.label}</span>
+						<span className={s.bcSep}>/</span>
+					</>
+				)}
 				<span className={s.bcCurrent}>{detail.name || detail.path}</span>
 			</div>
 
-			<div className={s.headerCard}>
-				<div className={s.endpointTitleRow}>
-					<MethodBadge method={detail.method} />
-					<span className={s.endpointPath}>{detail.path}</span>
-					{actions && <div className={s.headerActions}>{actions}</div>}
+			{/* ─── Шапка: адрес, имя, метки, описание ─── */}
+			<header className={s.hero} id="overview">
+				<div className={s.heroTop}>
+					<span
+						className={s.method}
+						style={{ color: method.color, background: method.bg }}
+					>
+						{detail.method}
+					</span>
+					<PathLine path={detail.path} />
+					<div className={s.heroActions}>{actions}</div>
 				</div>
-				{detail.auth && (
-					<div className={s.endpointTagsRow}>
-						<span className={`${s.tag} ${s.tagAuth}`}>🔐 Auth required</span>
+
+				<h1 className={s.title}>{detail.name || "Без названия"}</h1>
+
+				<div className={s.chips}>
+					{detail.auth ? (
+						<DocChip tone="accent" icon={<LockIcon size={11} />}>
+							Требует авторизации
+						</DocChip>
+					) : (
+						<DocChip tone="muted">Открытый доступ</DocChip>
+					)}
+					{detail.deprecated && (
+						<DocChip tone="warn" icon={<WarningIcon size={11} />}>
+							Устарел
+						</DocChip>
+					)}
+					{detail.operationId && (
+						<DocChip tone="neutral" mono label="operationId">
+							{detail.operationId}
+						</DocChip>
+					)}
+					{detail.tags?.map((tag) => (
+						<DocChip key={tag} tone="neutral">
+							{tag}
+						</DocChip>
+					))}
+					{group && (
+						<DocChip tone="neutral" label="группа">
+							{group.label}
+						</DocChip>
+					)}
+				</div>
+
+				{detail.description && (
+					<div className={s.description}>
+						<MarkdownView>{detail.description}</MarkdownView>
 					</div>
 				)}
-				{detail.description && (
-					<p className={s.endpointDesc}>{detail.description}</p>
-				)}
-			</div>
 
-			{pathParams.length > 0 && (
-				<ParamsTable
-					kind="path"
-					params={pathParams}
-					onEdit={() => setEditingParams("path")}
+				{/* Полный адрес запроса: окружение + префикс документа + путь. */}
+				<div className={s.urlBar}>
+					<span className={s.urlLabel}>
+						{env ? env.label : "Окружение не выбрано"}
+					</span>
+					<code className={s.url}>{preview.url}</code>
+					<CopyButton text={preview.url} compact label="Скопировать URL" />
+				</div>
+			</header>
+
+			{/* ─── Навигация по разделам ─── */}
+			<nav className={s.rail} aria-label="Разделы эндпоинта">
+				{SECTIONS.filter(
+					(section) => section.id !== "responses" || has.responses,
+				).map((section) => (
+					<button
+						type="button"
+						key={section.id}
+						className={cx(
+							s.railLink,
+							activeSection === section.id && s.railActive,
+						)}
+						onClick={() => goTo(section.id)}
+					>
+						{section.label}
+					</button>
+				))}
+			</nav>
+
+			{/* ─── Запрос ─── */}
+			<section className={s.section} id="request">
+				<SectionHead title="Запрос" level="section" />
+
+				{has.path && (
+					<ParamsBlock
+						title="Сегменты пути"
+						hint="Перечень задаёт сам путь — здесь у сегментов появляется описание"
+						params={pathParams}
+						segments
+						onEdit={() => setEditingParams("path")}
+					/>
+				)}
+
+				{has.query && (
+					<ParamsBlock
+						title="Параметры строки запроса"
+						params={detail.queryParams}
+						onEdit={() => setEditingParams("query")}
+					/>
+				)}
+
+				{has.header && (
+					<ParamsBlock
+						title="Заголовки запроса"
+						params={detail.headerParams}
+						onEdit={() => setEditingParams("header")}
+					/>
+				)}
+
+				{has.cookie && (
+					<ParamsBlock
+						title="Куки запроса"
+						params={detail.cookieParams}
+						onEdit={() => setEditingParams("cookie")}
+					/>
+				)}
+
+				{has.body && (
+					<div className={s.bodyBlock}>
+						<SectionHead
+							title="Тело запроса"
+							count={countDocumentNodes(bodyTree.nodes)}
+							hint="Форму и типы задаёт сам документ — примечания добавляют остальное"
+							onEdit={() => setEditingBody(true)}
+						/>
+						<FieldTree
+							tree={bodyTree}
+							document={detail.body}
+							empty="Структура тела не описана"
+						/>
+					</div>
+				)}
+			</section>
+
+			{/* ─── Ответы ─── */}
+			{has.responses && (
+				<ResponsesBlock
+					responses={detail.responses}
+					active={activeResponse}
+					onSelect={setSelectedResponse}
+					onEdit={() => setEditingResponses(true)}
+					onEditExample={() => setJsonModalOpen(true)}
 				/>
 			)}
-			<ParamsTable
-				kind="query"
-				params={detail.queryParams ?? []}
-				onEdit={() => setEditingParams("query")}
-			/>
-			<ParamsTable
-				kind="body"
-				params={detail.bodyParams ?? []}
-				onEdit={() => setEditingParams("body")}
-			/>
 
-			<div className={s.sectionBlock}>
-				<SectionHead
-					title="Responses"
-					onEdit={() => setEditingResponses(true)}
-				/>
-				{responseKeys.length === 0 && (
-					<div className={s.sectionEmpty}>
-						Ответы не описаны — добавьте через «Изменить»
-					</div>
-				)}
-				{responseKeys.length > 0 && (
-					<>
-						<div className={s.responseTabs}>
-							{responseKeys.map((key) => {
-								const r = detail.responses[key];
-								return (
-									<button
-										type="button"
-										key={key}
-										className={`${s.responseTab} ${activeResponse === key ? s.active : ""}`}
-										onClick={() => setSelectedResponse(key)}
-									>
-										<span
-											className={s.statusDot}
-											style={{ background: getStatusDotColor(key) }}
-										/>
-										{r.label}
-									</button>
-								);
-							})}
-						</div>
-						<div className={s.responseBody}>
-							{activeResp && (
-								<>
-									<div className={s.responseSchema}>
-										<div className={s.responseSubhead}>Schema</div>
-										{activeResp.schema.map((field, i) => (
-											<div className={s.schemaRow} key={i}>
-												<span className={s.schemaKey}>{field.key}</span>
-												<span className={s.schemaType}>{field.type}</span>
-												<div>
-													<div className={s.schemaDesc}>{field.desc}</div>
-													{field.example && (
-														<div className={s.schemaExample}>
-															e.g. {field.example}
-														</div>
-													)}
-												</div>
-											</div>
-										))}
-									</div>
-									<div className={s.responseSubhead}>Example response</div>
-									<div className={`${s.codeHeader} ${s.responseCodeHeader}`}>
-										<span className={s.codeLang}>JSON</span>
-										<div className={s.codeActions}>
-											<button
-												type="button"
-												className={s.copyBtn}
-												onClick={() => setJsonModalOpen(true)}
-											>
-												<PencilIcon size={11} /> Edit
-											</button>
-											<CopyBtn text={activeExample} />
-										</div>
-									</div>
-									<div className={`${s.codeBody} ${s.responseCodeBody}`}>
-										<JsonCode>{activeExample}</JsonCode>
-									</div>
-								</>
-							)}
-						</div>
-					</>
-				)}
-			</div>
+			{/* ─── Пример вызова ─── */}
+			<SnippetBlock snippets={snippets} />
 
 			<EditJsonModal
 				open={jsonModalOpen}
 				onOpenChange={setJsonModalOpen}
-				value={activeExample}
+				value={activeDocument}
 				subtitle={
 					activeResp
-						? `Пример ответа «${activeResp.label}»`
-						: "Пример ответа в формате JSON"
+						? `Структура ответа «${activeResp.label}»`
+						: "Структура ответа в формате JSON"
 				}
-				onSave={(json) => void saveExample(json)}
+				onSave={(json) => void saveDocument(json)}
 			/>
 
 			{editingParams && (
@@ -340,6 +385,12 @@ export const EndpointPage: FC<EndpointPageProps> = ({
 					kind={editingParams}
 				/>
 			)}
+
+			<EditBodyModal
+				open={editingBody}
+				onOpenChange={setEditingBody}
+				endpoint={detail}
+			/>
 
 			<EditResponsesModal
 				open={editingResponses}

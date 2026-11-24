@@ -1,7 +1,7 @@
 .label {
 	display: inline-flex;
 	align-items: center;
-	gap: 9px;
+	gap: 8px;
 	cursor: pointer;
 	user-select: none;
 }
@@ -11,6 +11,8 @@
 	cursor: not-allowed;
 }
 
+/* Настоящий флажок остаётся на месте — он держит фокус, клавиатуру и форму,
+   просто не виден: рисуем вместо него соседний квадрат. */
 .input {
 	position: absolute;
 	opacity: 0;
@@ -20,9 +22,9 @@
 
 .box {
 	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
-	border: 1.5px solid var(--border);
+	width: 14px;
+	height: 14px;
+	border: 1px solid var(--border-h);
 	border-radius: var(--r-xs);
 	background: var(--surface);
 	display: flex;
@@ -35,21 +37,25 @@
 }
 
 .label:hover:not(.disabled) .box {
-	border-color: var(--border-h);
+	border-color: var(--ink-low);
 }
 
-.input:focus + .box {
+/* Кольцо фокуса — только для клавиатуры: по клику мышью оно ни о чём не
+   сообщает, зато остаётся висеть на строке. */
+.input:focus-visible + .box {
 	border-color: var(--ink-mid);
 	box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.06);
 }
 
+/* Отмеченное состояние: мягкая заливка вместо сплошного тёмного квадрата —
+   в плотной таблице он читался как ряд чёрных точек. */
 .input:checked + .box {
-	background: var(--ink);
-	border-color: var(--ink);
+	background: var(--cat-bg);
+	border-color: var(--cat-ink);
 }
 
 .check {
-	color: var(--surface);
+	color: var(--cat-ink);
 	opacity: 0;
 	transition: opacity var(--t-fast);
 }
@@ -59,13 +65,31 @@
 }
 
 .text {
+	display: block;
 	font-size: var(--fs-13);
 	color: var(--ink);
 	line-height: var(--lh-snug);
 }
 
 .hint {
+	display: block;
 	font-size: var(--fs-12);
 	color: var(--ink-low);
 	margin-top: 1px;
+}
+
+/* ─── Плотный размер: строки таблиц ─── */
+.sm {
+	gap: 6px;
+}
+
+.sm .box {
+	width: 12px;
+	height: 12px;
+	border-radius: 3px;
+}
+
+.sm .text {
+	font-size: var(--fs-11);
+	color: var(--ink-mid);
 }

@@ -1,3 +1,13 @@
+export { compareErdWithDbApi } from "./compare/api/compare-erd-with-db-api";
+export type {
+	ColumnDiff,
+	DiffMismatch,
+	DiffStatus,
+	DiffSummary,
+	ErdDiff,
+	RelationDiff,
+	TableDiff,
+} from "./compare/model/erd-diff.type";
 export { createErdEntityApi } from "./entity/api/create-erd-entity-api";
 export { deleteEntityApi } from "./entity/api/delete-entity-api";
 export { getErdEntitiesApi } from "./entity/api/get-erd-entities-api";
@@ -28,6 +38,13 @@ export type {
 	EntityRelation,
 	RelationEndpoints,
 } from "./entity-relation/model/entity-relation.type";
+export { createErdFrameApi } from "./frame/api/create-erd-frame-api";
+export { deleteErdFrameApi } from "./frame/api/delete-erd-frame-api";
+export { getErdFramesApi } from "./frame/api/get-erd-frames-api";
+export { updateErdFrameApi } from "./frame/api/update-erd-frame-api";
+export { updateFrameBoundsApi } from "./frame/api/update-frame-bounds-api";
+export type { CreateFrameDTO, UpdateFrameDTO } from "./frame/model/frame.dto";
+export type { Frame, FrameBounds, FrameRect } from "./frame/model/frame.type";
 export type {
 	ImportErdPayload,
 	ImportErdRelation,

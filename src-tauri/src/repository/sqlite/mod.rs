@@ -8,6 +8,7 @@ pub mod endpoint_request;
 pub mod entity;
 pub mod entity_relation;
 pub mod environment;
+pub mod erd_frame;
 pub mod group;
 pub mod platform;
 pub mod websocket_message;
