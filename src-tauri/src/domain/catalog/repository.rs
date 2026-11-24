@@ -16,11 +16,7 @@ pub trait CatalogRepository {
     /// Заводит узел с заданным id вместо сгенерированного. Нужен импорту:
     /// id документа живёт в файле, и по нему файл в следующий раз находит
     /// свой документ вместо того, чтобы создавать рядом второй.
-    async fn create_with_id(
-        &self,
-        id: &str,
-        node: &NewNode<'_>,
-    ) -> Result<CatalogNode, String>;
+    async fn create_with_id(&self, id: &str, node: &NewNode<'_>) -> Result<CatalogNode, String>;
     async fn rename(&self, dto: &RenameNodeDTO) -> Result<(), String>;
     async fn move_to(&self, dto: &MoveNodeDTO) -> Result<(), String>;
     /// Удаляет узел вместе с поддеревом (каскад по `parent_id`).
